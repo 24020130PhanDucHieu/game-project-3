@@ -27,13 +27,36 @@
         </div>
       </div>
 
-      <!-- KHỐI DANH TÍNH & ĐĂNG NHẬP (USER / AUTH CARD) -->
+      <!-- KHỐI DANH TÍNH & ĐĂNG NHẬP (PREMIUM AUTH & USER CARD) -->
       <div class="sidebar-user-card" id="sidebar-user-card">
-        <div class="user-role-badge-row">
-          <span class="user-role-pill" id="user-role-pill">CHƯA ĐĂNG NHẬP</span>
-          <button class="btn-auth-action" id="btn-user-auth-action">Đăng Nhập</button>
+        <!-- Chế độ Khách (Guest) -->
+        <div class="user-card-guest" id="user-card-guest-view">
+          <div class="guest-card-header">
+            <span class="user-role-pill guest" id="user-role-pill">CHƯA ĐĂNG NHẬP</span>
+          </div>
+          <div class="guest-card-body">
+            <div class="guest-title">Khách Thăm Quan</div>
+            <p class="guest-desc">Đăng nhập tài khoản đội để vào nhánh đấu và nộp bài bot</p>
+          </div>
+          <button class="btn btn-primary btn-full btn-auth-action" id="btn-user-auth-action">
+            <span>🔐 ĐĂNG NHẬP NGAY</span>
+          </button>
         </div>
-        <div class="user-name-text" id="user-display-name">Khách</div>
+
+        <!-- Chế độ Đã Đăng Nhập (Authenticated: Team / Admin) -->
+        <div class="user-card-authenticated" id="user-card-auth-view" style="display: none;">
+          <div class="user-auth-header">
+            <span class="user-role-pill" id="user-auth-pill">ĐỘI TUYỂN</span>
+            <button class="btn-logout-link" id="btn-user-logout">Đăng Xuất</button>
+          </div>
+          <div class="user-auth-info">
+            <div class="user-auth-avatar" id="user-auth-avatar">K69</div>
+            <div class="user-auth-details">
+              <div class="user-auth-name" id="user-display-name">Tên Đội Tuyển</div>
+              <div class="user-auth-sid" id="user-display-sid">SBD: 24020130</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- 6 TAB CHÍNH THEO ĐÚNG THỨ TỰ BẮT BUỘC -->
@@ -44,19 +67,19 @@
         </button>
 
         <!-- 2-6: CHỈ HIỂN THỊ KHI ĐÃ ĐĂNG NHẬP (ADMIN HOẶC ĐỘI TUYỂN) -->
-        <button class="nav-tab-btn auth-required" data-tab="tab-tournaments" id="nav-btn-tournaments">
+        <button class="nav-tab-btn auth-required" data-tab="tab-tournaments" id="nav-btn-tournaments" style="display: none;">
           <span class="nav-label">Các bảng đấu</span>
         </button>
-        <button class="nav-tab-btn auth-required" data-tab="tab-bracket" id="nav-btn-bracket">
+        <button class="nav-tab-btn auth-required" data-tab="tab-bracket" id="nav-btn-bracket" style="display: none;">
           <span class="nav-label">Sơ đồ nhánh đấu</span>
         </button>
-        <button class="nav-tab-btn auth-required" data-tab="tab-teams" id="nav-btn-teams">
+        <button class="nav-tab-btn auth-required" data-tab="tab-teams" id="nav-btn-teams" style="display: none;">
           <span class="nav-label">Danh sách đội</span>
         </button>
-        <button class="nav-tab-btn auth-required" data-tab="tab-ranking" id="nav-btn-ranking">
+        <button class="nav-tab-btn auth-required" data-tab="tab-ranking" id="nav-btn-ranking" style="display: none;">
           <span class="nav-label">Bảng xếp hạng</span>
         </button>
-        <button class="nav-tab-btn auth-required" data-tab="tab-history" id="nav-btn-history">
+        <button class="nav-tab-btn auth-required" data-tab="tab-history" id="nav-btn-history" style="display: none;">
           <span class="nav-label">Lịch sử đấu</span>
         </button>
 
@@ -461,8 +484,8 @@
       <section class="tab-pane" id="tab-match-arena">
         <div class="match-room-nav">
           <div style="display: flex; align-items: center; gap: 10px;">
-            <button class="btn btn-outline" id="btn-match-back-bracket">&larr; Sơ Đồ Nhánh</button>
-            <select class="input-text-sm" id="select-arena-match" style="max-width: 200px;" title="Chuyển nhanh sang trận khác trong giải"></select>
+            <button class="btn btn-outline" id="btn-match-back-bracket">&larr; Quay Lại Sơ Đồ Nhánh</button>
+            <span class="badge-tag highlight" id="arena-current-match-badge" style="font-weight: 700;">Đang Xem Trực Tiếp</span>
           </div>
           <div class="match-room-title-box">
             <h2 id="match-room-title">TRẬN ĐẤU</h2>
@@ -723,112 +746,196 @@
   </div>
 
   <!-- =================================================================== -->
-  <!-- MODAL XÁC THỰC DANH TÍNH & ĐĂNG NHẬP -->
+  <!-- MODAL XÁC THỰC DANH TÍNH & ĐĂNG NHẬP (PREMIUM REDESIGNED) -->
   <!-- =================================================================== -->
   <div class="modal-overlay" id="modal-auth-role" style="display: none;">
-    <div class="modal-card modal-md">
-      <div class="modal-header">
-        <div>
-          <h3 class="modal-title">Đăng Nhập Hệ Thống</h3>
-          <span class="modal-subtitle">Chọn vai trò để đăng nhập vào đấu trường</span>
+    <div class="modal-card modal-lg auth-modal-premium">
+      <div class="modal-header auth-modal-header">
+        <div class="auth-header-title-group">
+          <div class="auth-header-icon-badge">🏆</div>
+          <div>
+            <h3 class="modal-title auth-modal-title">CỔNG ĐĂNG NHẬP ĐẤU TRƯỜNG OTTV2</h3>
+            <span class="modal-subtitle">Xác thực danh tính để tự động so khớp vào đúng nhánh đấu của bạn</span>
+          </div>
         </div>
         <button class="btn-clean btn-modal-close" id="btn-close-role-modal-x" title="Đóng">✕</button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body auth-modal-body">
         <!-- ROLE SELECTOR TABS -->
-        <div class="role-selector-pills">
-          <button class="role-pill-btn active" data-role-choice="TEAM" id="btn-role-choice-team">Đội Tuyển</button>
-          <button class="role-pill-btn" data-role-choice="ADMIN" id="btn-role-choice-admin">Ban Tổ Chức</button>
-          <button class="role-pill-btn" data-role-choice="REFEREE" id="btn-role-choice-referee">Trọng Tài</button>
-          <button class="role-pill-btn" data-role-choice="GUEST" id="btn-role-choice-guest">Khách</button>
+        <div class="role-selector-pills-large">
+          <button class="role-pill-btn active" data-role-choice="TEAM" id="btn-role-choice-team">
+            <span class="role-pill-icon">🎓</span>
+            <span class="role-pill-text">Đội Tuyển / Thí Sinh</span>
+          </button>
+          <button class="role-pill-btn" data-role-choice="ADMIN" id="btn-role-choice-admin">
+            <span class="role-pill-icon">👑</span>
+            <span class="role-pill-text">Ban Tổ Chức (Admin)</span>
+          </button>
+          <button class="role-pill-btn" data-role-choice="REFEREE" id="btn-role-choice-referee">
+            <span class="role-pill-icon">⚖️</span>
+            <span class="role-pill-text">Trọng Tài</span>
+          </button>
+          <button class="role-pill-btn" data-role-choice="GUEST" id="btn-role-choice-guest">
+            <span class="role-pill-icon">👁️</span>
+            <span class="role-pill-text">Khách Thăm Quan</span>
+          </button>
         </div>
 
-        <!-- PANE 1: TEAM -->
+        <!-- PANE 1: TEAM / THÍ SINH -->
         <div class="role-auth-pane active" id="pane-role-team">
-          <div class="role-intro-card">
-            <div class="role-intro-text">
-              <strong>Đội Tuyển Thi Đấu (Team Member)</strong>
-              <p>Mở khóa toàn bộ 6 tab, nộp mã lệnh bot, chạy thử nghiệm và theo dõi giải đấu.</p>
+          <div class="auth-alert-box info">
+            <div class="auth-alert-icon">⚡</div>
+            <div class="auth-alert-content">
+              <strong>Quy Định So Khớp Nhánh Đấu:</strong>
+              <p>Mỗi sinh viên đăng nhập bằng <strong>Số Báo Danh (MSSV)</strong>. Khi bấm <em>"Tham Gia Giải Đấu"</em>, hệ thống sẽ đối soát Số Báo Danh này với danh sách bảng đấu để mở đúng phòng nộp code của bạn. Bạn không thể nộp bài vào nhánh đấu của thí sinh khác!</p>
             </div>
           </div>
-          <div class="form-group">
-            <label class="form-label" for="inp-team-auth-sid">Mã Số Sinh Viên (MSSV) Hoặc Chọn Đội:</label>
-            <div style="display: flex; gap: 8px;">
-              <input class="input-text" id="inp-team-auth-sid" placeholder="Ví dụ: 24020199" type="text" style="flex: 1;"/>
-              <select class="input-text-sm" id="sel-quick-team-auth" style="width: 140px;">
-                <option value="">-- Chọn Đội --</option>
+
+          <div class="form-group-large">
+            <label class="form-label-bold" for="inp-team-auth-sid">
+              Số Báo Danh / Mã Sinh Viên (MSSV):
+              <span class="text-danger">*</span>
+            </label>
+            <div class="input-with-action">
+              <input class="input-text-lg" id="inp-team-auth-sid" placeholder="Ví dụ: 24020130, 24020001..." type="text" autocomplete="off"/>
+              <select class="input-select-quick" id="sel-quick-team-auth">
+                <option value="">-- Hoặc chọn nhanh sinh viên đã đăng ký --</option>
               </select>
             </div>
           </div>
-          <div class="form-group">
-            <label class="form-label" for="inp-team-auth-pass">Mật Khẩu Đội:</label>
-            <input class="input-text" id="inp-team-auth-pass" placeholder="Mật khẩu (mặc định: 123 hoặc 12345)" type="password" value="123"/>
-            <small class="form-hint">Mật khẩu mặc định: <code>123</code> hoặc <code>12345</code>.</small>
+
+          <div class="form-group-large">
+            <label class="form-label-bold" for="inp-team-auth-name">
+              Tên Đội Tuyển (Tự động nhận diện):
+            </label>
+            <input class="input-text-lg" id="inp-team-auth-name" placeholder="Tên đội tương ứng với MSSV..." type="text"/>
           </div>
-          <button class="btn btn-primary btn-full btn-lg" id="btn-confirm-team-role">
-            Đăng Nhập Đội Tuyển
+
+          <div class="form-group-large">
+            <label class="form-label-bold" for="inp-team-auth-pass">
+              Mật Khẩu Đội / PIN Bảo Mật:
+            </label>
+            <input class="input-text-lg" id="inp-team-auth-pass" placeholder="Mật khẩu đội (mặc định: 123 hoặc 12345)" type="password" value="123"/>
+            <small class="form-hint">Mật khẩu thử nghiệm mặc định: <code>123</code> hoặc <code>12345</code></small>
+          </div>
+
+          <div class="auth-preview-badge" id="auth-team-preview-badge" style="display: none;">
+            <span class="badge-tag highlight" id="auth-preview-text">Đã khớp: ---</span>
+          </div>
+
+          <button class="btn btn-primary btn-full btn-xl" id="btn-confirm-team-role">
+            <span>✅ XÁC NHẬN ĐĂNG NHẬP &amp; VÀO NHÁNH ĐẤU</span>
           </button>
         </div>
 
         <!-- PANE 2: ADMIN -->
         <div class="role-auth-pane" id="pane-role-admin" style="display: none;">
-          <div class="role-intro-card">
-            <div class="role-intro-text">
-              <strong>Ban Tổ Chức (Administrator)</strong>
-              <p>Toàn quyền tạo giải đấu, duyệt đội, xếp lịch, thay đổi luật thi đấu và cấu hình máy chủ.</p>
+          <div class="auth-alert-box warning">
+            <div class="auth-alert-icon">👑</div>
+            <div class="auth-alert-content">
+              <strong>Khu Vực Ban Tổ Chức (Administrator):</strong>
+              <p>Toàn quyền khởi tạo bảng đấu, xếp lịch nhánh đấu, duyệt danh sách sinh viên, điều chỉnh luật thi đấu và giám sát mã nguồn trực tiếp.</p>
             </div>
           </div>
-          <div class="form-group">
-            <label class="form-label" for="inp-admin-auth-user">Tài Khoản Quản Trị:</label>
-            <input class="input-text" id="inp-admin-auth-user" placeholder="admin" type="text" value="admin"/>
+          <div class="form-group-large">
+            <label class="form-label-bold" for="inp-admin-auth-user">Tài Khoản Quản Trị:</label>
+            <input class="input-text-lg" id="inp-admin-auth-user" placeholder="admin" type="text" value="admin"/>
           </div>
-          <div class="form-group">
-            <label class="form-label" for="inp-admin-auth-pass">Mật Khẩu Quản Trị:</label>
-            <input class="input-text" id="inp-admin-auth-pass" placeholder="admin123" type="password" value="admin123"/>
-            <small class="form-hint">Mặc định: <code>admin</code> / <code>admin123</code></small>
+          <div class="form-group-large">
+            <label class="form-label-bold" for="inp-admin-auth-pass">Mật Khẩu Quản Trị:</label>
+            <input class="input-text-lg" id="inp-admin-auth-pass" placeholder="admin123" type="password" value="admin123"/>
+            <small class="form-hint">Mặc định tài khoản BTC: <code>admin</code> / <code>admin123</code></small>
           </div>
-          <button class="btn btn-primary btn-full btn-lg" id="btn-confirm-admin-role">
-            Đăng Nhập Quản Trị Viên
+          <button class="btn btn-primary btn-full btn-xl" id="btn-confirm-admin-role">
+            <span>ĐĂNG NHẬP BAN TỔ CHỨC (ADMIN)</span>
           </button>
         </div>
 
         <!-- PANE 3: REFEREE -->
         <div class="role-auth-pane" id="pane-role-referee" style="display: none;">
-          <div class="role-intro-card">
-            <div class="role-intro-text">
-              <strong>Trọng Tài Giải Đấu (Referee)</strong>
-              <p>Điều hành trận đấu: Bắt đầu Round, nạp code kiểm thử nhanh, đặt lại hiệp đấu.</p>
+          <div class="auth-alert-box warning">
+            <div class="auth-alert-icon">⚖️</div>
+            <div class="auth-alert-content">
+              <strong>Trọng Tài Điều Hành Trận Đấu:</strong>
+              <p>Quyền kích hoạt round thi đấu, kiểm tra tính hợp lệ bài nộp và ghi nhận kết quả điểm số.</p>
             </div>
           </div>
-          <div class="form-group">
-            <label class="form-label" for="inp-referee-auth-user">Tài Khoản Trọng Tài:</label>
-            <input class="input-text" id="inp-referee-auth-user" placeholder="referee" type="text" value="referee"/>
+          <div class="form-group-large">
+            <label class="form-label-bold" for="inp-referee-auth-user">Tài Khoản Trọng Tài:</label>
+            <input class="input-text-lg" id="inp-referee-auth-user" placeholder="referee" type="text" value="referee"/>
           </div>
-          <div class="form-group">
-            <label class="form-label" for="inp-referee-auth-pass">Mật Khẩu Trọng Tài:</label>
-            <input class="input-text" id="inp-referee-auth-pass" placeholder="ref123" type="password" value="ref123"/>
+          <div class="form-group-large">
+            <label class="form-label-bold" for="inp-referee-auth-pass">Mật Khẩu Trọng Tài:</label>
+            <input class="input-text-lg" id="inp-referee-auth-pass" placeholder="ref123" type="password" value="ref123"/>
             <small class="form-hint">Mặc định: <code>referee</code> / <code>ref123</code></small>
           </div>
-          <button class="btn btn-primary btn-full btn-lg" id="btn-confirm-referee-role">
-            Xác Thực Quyền Trọng Tài
+          <button class="btn btn-primary btn-full btn-xl" id="btn-confirm-referee-role">
+            <span>XÁC THỰC QUYỀN TRỌNG TÀI</span>
           </button>
         </div>
 
         <!-- PANE 4: GUEST -->
         <div class="role-auth-pane" id="pane-role-guest" style="display: none;">
-          <div class="role-intro-card">
-            <div class="role-intro-text">
-              <strong>Khách Chưa Đăng Nhập (Guest)</strong>
-              <p>Chỉ xem trang Tổng quan tóm tắt. Các chức năng chi tiết và giải đấu yêu cầu đăng nhập.</p>
+          <div class="auth-alert-box info">
+            <div class="auth-alert-icon">👁️</div>
+            <div class="auth-alert-content">
+              <strong>Chế Độ Khách Thăm Quan:</strong>
+              <p>Bạn chỉ có thể xem trang Tổng quan tóm tắt. Các chức năng xem nhánh đấu, nộp code và xem lịch sử chi tiết yêu cầu đăng nhập tài khoản đội hoặc BTC.</p>
             </div>
           </div>
-          <button class="btn btn-outline btn-full btn-lg" id="btn-confirm-guest-role">
-            Tiếp Tục Với Tư Cách Khách
+          <button class="btn btn-outline btn-full btn-xl" id="btn-confirm-guest-role">
+            <span>TIẾP TỤC VỚI TƯ CÁCH KHÁCH</span>
           </button>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-outline" id="btn-close-role-modal">Đóng</button>
+        <button class="btn btn-outline" id="btn-close-role-modal">Đóng Cửa Sổ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- MODAL CẢNH BÁO TỪ CHỐI TRUY CẬP DO LỆCH SỐ BÁO DANH / NHÁNH ĐẤU -->
+  <!-- =================================================================== -->
+  <div class="modal-overlay" id="modal-branch-mismatch" style="display: none;">
+    <div class="modal-card modal-md">
+      <div class="modal-header" style="background: #fef2f2; border-bottom: 1px solid #fee2e2;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 24px;">⛔</span>
+          <div>
+            <h3 class="modal-title" style="color: #dc2626;">KHÔNG THUỘC NHÁNH ĐẤU NÀY</h3>
+            <span class="modal-subtitle" style="color: #991b1b;">Từ chối truy cập phòng nộp code của bảng đấu</span>
+          </div>
+        </div>
+        <button class="btn-clean btn-modal-close" id="btn-close-mismatch-x">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="mismatch-info-card">
+          <div class="mismatch-row">
+            <span>Số Báo Danh đăng nhập:</span>
+            <strong id="mismatch-user-sid">---</strong>
+          </div>
+          <div class="mismatch-row">
+            <span>Tên Đội Tuyển:</span>
+            <strong id="mismatch-user-team">---</strong>
+          </div>
+          <div class="mismatch-row">
+            <span>Bảng đấu đang chọn:</span>
+            <strong id="mismatch-tourn-name">---</strong>
+          </div>
+        </div>
+
+        <div class="auth-alert-box warning" style="margin-top: 14px;">
+          <div class="auth-alert-content">
+            <p id="mismatch-detail-msg">
+              Hệ thống đã so khớp và <strong>không tìm thấy Số Báo Danh của bạn</strong> trong nhánh đấu của bảng này. Vì lý do bảo mật và tính công bằng, bạn không thể truy cập hoặc nộp bài vào nhánh đấu của các sinh viên khác!
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; gap: 8px; justify-content: flex-end;">
+        <button class="btn btn-outline" id="btn-mismatch-change-account">Đổi Tài Khoản / Đổi MSSV</button>
+        <button class="btn btn-primary" id="btn-mismatch-switch-tourn">Xem Các Bảng Đấu Khác</button>
       </div>
     </div>
   </div>

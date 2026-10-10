@@ -1312,7 +1312,7 @@
                   "preferred_move": "ROCK",
                   "side": "team_a",
                   "status": "EXECUTED",
-                  "submission_id": "sub_d673241c",
+                  "submission_id": "sub_71853545",
                   "team_name": "K69_AlphaBot"
                 },
                 {
@@ -1321,7 +1321,7 @@
                   "preferred_move": "PAPER",
                   "side": "team_b",
                   "status": "EXECUTED",
-                  "submission_id": "sub_302496c3",
+                  "submission_id": "sub_dd48ffce",
                   "team_name": "BK_Gladiator"
                 }
               ],
@@ -1404,13 +1404,13 @@
                 }
               ],
               "round_number": 1,
-              "sub_a_id": "sub_d673241c",
-              "sub_b_id": "sub_302496c3",
+              "sub_a_id": "sub_71853545",
+              "sub_b_id": "sub_dd48ffce",
               "system_logs": [
-                "[02:05:40] [Ban Tổ Chức] Phát lệnh KHAI HỎA Round 1. Đã khóa mã nguồn 2 đội (sub_d673241c, sub_302496c3).",
-                "[02:05:40] [Game Engine] Khởi tạo bàn cờ 9x9 (81 ô). Quân cờ 2 bên bước vào giao tranh.",
-                "[02:05:40] [Kết Quả Round 1] ĐỘI XANH CHIẾN THẮNG! Đột kích thành công vào Căn Cứ Đích [0, 8] của đối phương!.",
-                "[02:05:40] [Hệ Thống] Tự động hiển thị bàn cờ kết quả 5 giây trước khi chuyển sang round tiếp theo."
+                "[02:49:03] [Ban Tổ Chức] Phát lệnh KHAI HỎA Round 1. Đã khóa mã nguồn 2 đội (sub_71853545, sub_dd48ffce).",
+                "[02:49:03] [Game Engine] Khởi tạo bàn cờ 9x9 (81 ô). Quân cờ 2 bên bước vào giao tranh.",
+                "[02:49:03] [Kết Quả Round 1] ĐỘI XANH CHIẾN THẮNG! Đột kích thành công vào Căn Cứ Đích [0, 8] của đối phương!.",
+                "[02:49:03] [Hệ Thống] Tự động hiển thị bàn cờ kết quả 5 giây trước khi chuyển sang round tiếp theo."
               ],
               "team_a_code": "\nimport random\ndef decide_move(game_state):\n    cards = game_state.get('remaining_cards', {})\n    avail = [c for c, count in cards.items() if count \u003e 0]\n    return 'ROCK' if 'ROCK' in avail else (avail[0] if avail else 'ROCK')\n",
               "team_a_hp": 85,
@@ -1422,7 +1422,7 @@
               "team_b_lang": "PYTHON",
               "team_b_move": "PAPER",
               "team_b_name": "BK_Gladiator",
-              "timestamp": 1791659140.8349435,
+              "timestamp": 1791661743.6932755,
               "win_reason": "ĐỘI XANH CHIẾN THẮNG! Đột kích thành công vào Căn Cứ Đích [0, 8] của đối phương!",
               "winner": "team_b",
               "winner_name": "BK_Gladiator"
@@ -1709,6 +1709,57 @@
               "student_id": "24020160",
               "submission_id": "sub_302496c3",
               "submitted_at": 1791659140.7829182,
+              "team_name": "BK_Gladiator",
+              "test_move": "PAPER",
+              "validation_status": "VALIDATED"
+            },
+            {
+              "code": "def get_move(game_state):\n    syntax error here ???",
+              "error_message": "Lỗi cú pháp Python (Syntax Error): dòng 2: invalid syntax",
+              "execution_time_ms": 0,
+              "is_locked": false,
+              "is_valid": false,
+              "language": "PYTHON",
+              "match_id": "m_lvl1_1",
+              "round_number": 1,
+              "side": "team_a",
+              "student_id": "24020001",
+              "submission_id": "sub_1390b71c",
+              "submitted_at": 1791661743.539646,
+              "team_name": "K69_AlphaBot",
+              "test_move": null,
+              "validation_status": "INVALID"
+            },
+            {
+              "code": "\nimport random\ndef decide_move(game_state):\n    cards = game_state.get('remaining_cards', {})\n    avail = [c for c, count in cards.items() if count \u003e 0]\n    return 'ROCK' if 'ROCK' in avail else (avail[0] if avail else 'ROCK')\n",
+              "error_message": null,
+              "execution_time_ms": 0,
+              "is_locked": true,
+              "is_valid": true,
+              "language": "PYTHON",
+              "match_id": "m_lvl1_1",
+              "round_number": 1,
+              "side": "team_a",
+              "student_id": "24020001",
+              "submission_id": "sub_71853545",
+              "submitted_at": 1791661743.588827,
+              "team_name": "K69_AlphaBot",
+              "test_move": "ROCK",
+              "validation_status": "VALIDATED"
+            },
+            {
+              "code": "\nimport random\ndef decide_move(game_state):\n    cards = game_state.get('remaining_cards', {})\n    avail = [c for c, count in cards.items() if count \u003e 0]\n    return 'PAPER' if 'PAPER' in avail else (avail[0] if avail else 'ROCK')\n",
+              "error_message": null,
+              "execution_time_ms": 0,
+              "is_locked": true,
+              "is_valid": true,
+              "language": "PYTHON",
+              "match_id": "m_lvl1_1",
+              "round_number": 1,
+              "side": "team_b",
+              "student_id": "24020160",
+              "submission_id": "sub_dd48ffce",
+              "submitted_at": 1791661743.642149,
               "team_name": "BK_Gladiator",
               "test_move": "PAPER",
               "validation_status": "VALIDATED"
@@ -10364,6 +10415,2979 @@
       "status": "CONFIGURING",
       "teams": [],
       "tournament_id": "tourn_1d415e"
+    },
+    "tourn_2ebcb7": {
+      "champion": null,
+      "created_at": 1791661743.9714706,
+      "matches": {
+        "m_gf": {
+          "all_teams_ready": false,
+          "battle_running": false,
+          "current_round_idx": 1,
+          "intermission_ends_at": null,
+          "match_id": "m_gf",
+          "max_rounds": 5,
+          "next_match_id": null,
+          "next_slot": null,
+          "round_level": 3,
+          "round_name": "Chung Kết",
+          "round_status": "AWAITING_SUBMISSIONS",
+          "rounds_history": [],
+          "status": "WAITING",
+          "submissions_history": [],
+          "team_a": null,
+          "team_b": null,
+          "title": "Chung Kết Tổng",
+          "winner": null,
+          "winner_name": null
+        },
+        "m_lvl1_1": {
+          "all_teams_ready": true,
+          "battle_running": false,
+          "current_round_idx": 1,
+          "intermission_ends_at": 1791661749.4893558,
+          "match_id": "m_lvl1_1",
+          "max_rounds": 5,
+          "next_match_id": "m_lvl2_1",
+          "next_slot": "team_a",
+          "round_level": 1,
+          "round_name": "Tứ Kết",
+          "round_status": "ROUND_FINISHED",
+          "rounds_history": [
+            {
+              "board_steps": [
+                {
+                  "blue_alive": 9,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "b_1",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "log": "Khởi tạo bàn cờ 9x9. Đội Đỏ ưu tiên [ROCK], Đội Xanh ưu tiên [ROCK].",
+                  "red_alive": 9,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "r_6",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 0,
+                  "turn_label": "Bắt đầu hiệp đấu"
+                },
+                {
+                  "blue_alive": 9,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 2,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "b_1",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "log": "Lượt 1: Đội Xanh điều quân (ROCK) áp sát tọa độ [0,2].",
+                  "red_alive": 9,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_6",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 1,
+                  "turn_label": "Lượt 1"
+                },
+                {
+                  "blue_alive": 9,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 3,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "b_1",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "log": "Lượt 2: Đội Xanh điều quân (ROCK) áp sát tọa độ [0,3].",
+                  "red_alive": 9,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 5,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 2,
+                  "turn_label": "Lượt 2"
+                },
+                {
+                  "blue_alive": 9,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 4,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "b_1",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "log": "Lượt 3: Đội Xanh điều quân (ROCK) áp sát tọa độ [0,4].",
+                  "red_alive": 9,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 4,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 3,
+                  "turn_label": "Lượt 3"
+                },
+                {
+                  "blue_alive": 9,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 5,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "b_1",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "log": "Lượt 4: Đội Xanh điều quân (ROCK) áp sát tọa độ [0,5].",
+                  "red_alive": 9,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 3,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 4,
+                  "turn_label": "Lượt 4"
+                },
+                {
+                  "blue_alive": 9,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 5,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "b_1",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_7",
+                      "row": 2,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": {
+                    "col": 8,
+                    "log": "Lượt 5: Quân Xanh (✋ Bao) phản kích ĂN GỌN Quân Đỏ (✊ Đấm) tại ô [8,2]!",
+                    "loser_type": "ROCK",
+                    "row": 2,
+                    "type": "CLASH",
+                    "winner": "blue",
+                    "winner_type": "PAPER"
+                  },
+                  "log": "Lượt 5: Quân Xanh (✋ Bao) phản kích ĂN GỌN Quân Đỏ (✊ Đấm) tại ô [8,2]!",
+                  "red_alive": 8,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 2,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 5,
+                  "turn_label": "Lượt 5"
+                },
+                {
+                  "blue_alive": 9,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "b_1",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_7",
+                      "row": 2,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "log": "Lượt 6: Đội Xanh điều quân (ROCK) áp sát tọa độ [0,6].",
+                  "red_alive": 8,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_3",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 2,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 6,
+                  "turn_label": "Lượt 6"
+                },
+                {
+                  "blue_alive": 8,
+                  "blue_pieces": [
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "b_1",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_3",
+                      "row": 2,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_7",
+                      "row": 2,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": {
+                    "col": 0,
+                    "log": "Lượt 7: Quân Đỏ (✋ Bao) phục kích ĂN GỌN Quân Xanh (✊ Đấm) tại ô [0,6]!",
+                    "loser_type": "ROCK",
+                    "row": 6,
+                    "type": "CLASH",
+                    "winner": "red",
+                    "winner_type": "PAPER"
+                  },
+                  "log": "Lượt 7: Đội Xanh điều quân (ROCK) áp sát tọa độ [2,2].",
+                  "red_alive": 8,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_1",
+                      "row": 6,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_3",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 2,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 7,
+                  "turn_label": "Lượt 7"
+                },
+                {
+                  "blue_alive": 8,
+                  "blue_pieces": [
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "b_1",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "b_3",
+                      "row": 3,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_7",
+                      "row": 2,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "log": "Lượt 8: Đội Xanh điều quân (ROCK) áp sát tọa độ [1,3].",
+                  "red_alive": 8,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_1",
+                      "row": 6,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_3",
+                      "row": 5,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 2,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 8,
+                  "turn_label": "Lượt 8"
+                },
+                {
+                  "blue_alive": 8,
+                  "blue_pieces": [
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "b_1",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_3",
+                      "row": 4,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_7",
+                      "row": 2,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "log": "Lượt 9: Đội Xanh điều quân (ROCK) áp sát tọa độ [0,4].",
+                  "red_alive": 8,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_1",
+                      "row": 6,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "r_3",
+                      "row": 4,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 2,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 9,
+                  "turn_label": "Lượt 9"
+                },
+                {
+                  "blue_alive": 8,
+                  "blue_pieces": [
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "b_1",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_3",
+                      "row": 4,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 3,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": {
+                    "col": 7,
+                    "log": "Lượt 10: Quân Xanh (✋ Bao) phản kích ĂN GỌN Quân Đỏ (✊ Đấm) tại ô [7,3]!",
+                    "loser_type": "ROCK",
+                    "row": 3,
+                    "type": "CLASH",
+                    "winner": "blue",
+                    "winner_type": "PAPER"
+                  },
+                  "log": "Lượt 10: Quân Xanh (✋ Bao) phản kích ĂN GỌN Quân Đỏ (✊ Đấm) tại ô [7,3]!",
+                  "red_alive": 7,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_1",
+                      "row": 6,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 7,
+                      "id": "r_3",
+                      "row": 3,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 2,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 10,
+                  "turn_label": "Lượt 10"
+                },
+                {
+                  "blue_alive": 8,
+                  "blue_pieces": [
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "b_1",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_3",
+                      "row": 5,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 3,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "log": "Lượt 11: Đội Xanh điều quân (ROCK) áp sát tọa độ [0,5].",
+                  "red_alive": 7,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_0",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_1",
+                      "row": 6,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 7,
+                      "id": "r_3",
+                      "row": 3,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 2,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 11,
+                  "turn_label": "Lượt 11"
+                },
+                {
+                  "blue_alive": 7,
+                  "blue_pieces": [
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "b_1",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "b_3",
+                      "row": 5,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_6",
+                      "row": 2,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 3,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": {
+                    "col": 0,
+                    "log": "Lượt 12: Quân Đỏ (✋ Bao) phục kích ĂN GỌN Quân Xanh (✊ Đấm) tại ô [0,5]!",
+                    "loser_type": "ROCK",
+                    "row": 5,
+                    "type": "CLASH",
+                    "winner": "red",
+                    "winner_type": "PAPER"
+                  },
+                  "log": "Lượt 12: Đội Xanh điều quân (ROCK) áp sát tọa độ [5,2].",
+                  "red_alive": 7,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_0",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_1",
+                      "row": 5,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 7,
+                      "id": "r_3",
+                      "row": 3,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 2,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 12,
+                  "turn_label": "Lượt 12"
+                },
+                {
+                  "blue_alive": 7,
+                  "blue_pieces": [
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "b_1",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "b_3",
+                      "row": 5,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_6",
+                      "row": 3,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 3,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "log": "Lượt 13: Đội Xanh điều quân (ROCK) áp sát tọa độ [4,3].",
+                  "red_alive": 7,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_0",
+                      "row": 5,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_1",
+                      "row": 5,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 7,
+                      "id": "r_3",
+                      "row": 3,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 2,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 13,
+                  "turn_label": "Lượt 13"
+                },
+                {
+                  "blue_alive": 6,
+                  "blue_pieces": [
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "b_1",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "b_3",
+                      "row": 5,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 3,
+                      "id": "b_6",
+                      "row": 4,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 3,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": {
+                    "col": 3,
+                    "log": "Lượt 14: Hai bên cùng (✊ Đấm) đụng độ - Cùng bị loại tại [3,4]!",
+                    "loser_type": "ROCK",
+                    "row": 4,
+                    "type": "CLASH",
+                    "winner": "draw",
+                    "winner_type": "ROCK"
+                  },
+                  "log": "Lượt 14: Hai bên cùng (✊ Đấm) đụng độ - Cùng bị loại tại [3,4]!",
+                  "red_alive": 6,
+                  "red_pieces": [
+                    {
+                      "alive": false,
+                      "col": 3,
+                      "id": "r_0",
+                      "row": 4,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_1",
+                      "row": 5,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 7,
+                      "id": "r_3",
+                      "row": 3,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 2,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 14,
+                  "turn_label": "Lượt 14"
+                },
+                {
+                  "blue_alive": 6,
+                  "blue_pieces": [
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_1",
+                      "row": 2,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "b_3",
+                      "row": 5,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 3,
+                      "id": "b_6",
+                      "row": 4,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 3,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "log": "Lượt 15: Đội Xanh điều quân (PAPER) áp sát tọa độ [0,2].",
+                  "red_alive": 6,
+                  "red_pieces": [
+                    {
+                      "alive": false,
+                      "col": 3,
+                      "id": "r_0",
+                      "row": 4,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_1",
+                      "row": 5,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 7,
+                      "id": "r_3",
+                      "row": 3,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 2,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 6,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 15,
+                  "turn_label": "Lượt 15"
+                },
+                {
+                  "blue_alive": 6,
+                  "blue_pieces": [
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_1",
+                      "row": 3,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "b_3",
+                      "row": 5,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 3,
+                      "id": "b_6",
+                      "row": 4,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 3,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "log": "Lượt 16: Đội Xanh điều quân (PAPER) áp sát tọa độ [0,3].",
+                  "red_alive": 6,
+                  "red_pieces": [
+                    {
+                      "alive": false,
+                      "col": 3,
+                      "id": "r_0",
+                      "row": 4,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_1",
+                      "row": 5,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 7,
+                      "id": "r_3",
+                      "row": 3,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 2,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 5,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 16,
+                  "turn_label": "Lượt 16"
+                }
+              ],
+              "bot_logs": [
+                {
+                  "lang": "PYTHON",
+                  "log": "Bot K69_AlphaBot (Đỏ) thực thi thành công trong Sandbox: Nước cờ ưu tiên [ROCK].",
+                  "preferred_move": "ROCK",
+                  "side": "team_a",
+                  "status": "EXECUTED",
+                  "submission_id": "sub_ca4d3e5b",
+                  "team_name": "K69_AlphaBot"
+                },
+                {
+                  "lang": "PYTHON",
+                  "log": "Bot BK_Gladiator (Xanh) thực thi thành công trong Sandbox: Nước cờ ưu tiên [ROCK].",
+                  "preferred_move": "ROCK",
+                  "side": "team_b",
+                  "status": "EXECUTED",
+                  "submission_id": "sub_822ec129",
+                  "team_name": "BK_Gladiator"
+                }
+              ],
+              "damage": 0,
+              "final_blue_alive": 6,
+              "final_red_alive": 6,
+              "log": "Round 1: HÒA CỜ! Cả hai bên đều còn 6 quân trên bàn đấu.",
+              "move_logs": [
+                {
+                  "blue_alive": 9,
+                  "is_clash": false,
+                  "log": "Khởi tạo bàn cờ 9x9. Đội Đỏ ưu tiên [ROCK], Đội Xanh ưu tiên [ROCK].",
+                  "red_alive": 9,
+                  "step": 0,
+                  "turn_label": "Bắt đầu hiệp đấu"
+                },
+                {
+                  "blue_alive": 9,
+                  "is_clash": false,
+                  "log": "Lượt 1: Đội Xanh điều quân (ROCK) áp sát tọa độ [0,2].",
+                  "red_alive": 9,
+                  "step": 1,
+                  "turn_label": "Lượt 1"
+                },
+                {
+                  "blue_alive": 9,
+                  "is_clash": false,
+                  "log": "Lượt 2: Đội Xanh điều quân (ROCK) áp sát tọa độ [0,3].",
+                  "red_alive": 9,
+                  "step": 2,
+                  "turn_label": "Lượt 2"
+                },
+                {
+                  "blue_alive": 9,
+                  "is_clash": false,
+                  "log": "Lượt 3: Đội Xanh điều quân (ROCK) áp sát tọa độ [0,4].",
+                  "red_alive": 9,
+                  "step": 3,
+                  "turn_label": "Lượt 3"
+                },
+                {
+                  "blue_alive": 9,
+                  "is_clash": false,
+                  "log": "Lượt 4: Đội Xanh điều quân (ROCK) áp sát tọa độ [0,5].",
+                  "red_alive": 9,
+                  "step": 4,
+                  "turn_label": "Lượt 4"
+                },
+                {
+                  "blue_alive": 9,
+                  "is_clash": true,
+                  "log": "Lượt 5: Quân Xanh (✋ Bao) phản kích ĂN GỌN Quân Đỏ (✊ Đấm) tại ô [8,2]!",
+                  "red_alive": 8,
+                  "step": 5,
+                  "turn_label": "Lượt 5"
+                },
+                {
+                  "blue_alive": 9,
+                  "is_clash": false,
+                  "log": "Lượt 6: Đội Xanh điều quân (ROCK) áp sát tọa độ [0,6].",
+                  "red_alive": 8,
+                  "step": 6,
+                  "turn_label": "Lượt 6"
+                },
+                {
+                  "blue_alive": 8,
+                  "is_clash": true,
+                  "log": "Lượt 7: Đội Xanh điều quân (ROCK) áp sát tọa độ [2,2].",
+                  "red_alive": 8,
+                  "step": 7,
+                  "turn_label": "Lượt 7"
+                },
+                {
+                  "blue_alive": 8,
+                  "is_clash": false,
+                  "log": "Lượt 8: Đội Xanh điều quân (ROCK) áp sát tọa độ [1,3].",
+                  "red_alive": 8,
+                  "step": 8,
+                  "turn_label": "Lượt 8"
+                },
+                {
+                  "blue_alive": 8,
+                  "is_clash": false,
+                  "log": "Lượt 9: Đội Xanh điều quân (ROCK) áp sát tọa độ [0,4].",
+                  "red_alive": 8,
+                  "step": 9,
+                  "turn_label": "Lượt 9"
+                },
+                {
+                  "blue_alive": 8,
+                  "is_clash": true,
+                  "log": "Lượt 10: Quân Xanh (✋ Bao) phản kích ĂN GỌN Quân Đỏ (✊ Đấm) tại ô [7,3]!",
+                  "red_alive": 7,
+                  "step": 10,
+                  "turn_label": "Lượt 10"
+                },
+                {
+                  "blue_alive": 8,
+                  "is_clash": false,
+                  "log": "Lượt 11: Đội Xanh điều quân (ROCK) áp sát tọa độ [0,5].",
+                  "red_alive": 7,
+                  "step": 11,
+                  "turn_label": "Lượt 11"
+                },
+                {
+                  "blue_alive": 7,
+                  "is_clash": true,
+                  "log": "Lượt 12: Đội Xanh điều quân (ROCK) áp sát tọa độ [5,2].",
+                  "red_alive": 7,
+                  "step": 12,
+                  "turn_label": "Lượt 12"
+                },
+                {
+                  "blue_alive": 7,
+                  "is_clash": false,
+                  "log": "Lượt 13: Đội Xanh điều quân (ROCK) áp sát tọa độ [4,3].",
+                  "red_alive": 7,
+                  "step": 13,
+                  "turn_label": "Lượt 13"
+                },
+                {
+                  "blue_alive": 6,
+                  "is_clash": true,
+                  "log": "Lượt 14: Hai bên cùng (✊ Đấm) đụng độ - Cùng bị loại tại [3,4]!",
+                  "red_alive": 6,
+                  "step": 14,
+                  "turn_label": "Lượt 14"
+                },
+                {
+                  "blue_alive": 6,
+                  "is_clash": false,
+                  "log": "Lượt 15: Đội Xanh điều quân (PAPER) áp sát tọa độ [0,2].",
+                  "red_alive": 6,
+                  "step": 15,
+                  "turn_label": "Lượt 15"
+                },
+                {
+                  "blue_alive": 6,
+                  "is_clash": false,
+                  "log": "Lượt 16: Đội Xanh điều quân (PAPER) áp sát tọa độ [0,3].",
+                  "red_alive": 6,
+                  "step": 16,
+                  "turn_label": "Lượt 16"
+                }
+              ],
+              "round_number": 1,
+              "sub_a_id": "sub_ca4d3e5b",
+              "sub_b_id": "sub_822ec129",
+              "system_logs": [
+                "[02:49:04] [Ban Tổ Chức] Phát lệnh KHAI HỎA Round 1. Đã khóa mã nguồn 2 đội (sub_ca4d3e5b, sub_822ec129).",
+                "[02:49:04] [Game Engine] Khởi tạo bàn cờ 9x9 (81 ô). Quân cờ 2 bên bước vào giao tranh.",
+                "[02:49:04] [Kết Quả Round 1] HÒA CỜ! Cả hai bên đều còn 6 quân trên bàn đấu..",
+                "[02:49:04] [Hệ Thống] Tự động hiển thị bàn cờ kết quả 5 giây trước khi chuyển sang round tiếp theo."
+              ],
+              "team_a_code": "def decide_move(game_state):\n    return 'ROCK'",
+              "team_a_hp": 100,
+              "team_a_lang": "PYTHON",
+              "team_a_move": "ROCK",
+              "team_a_name": "K69_AlphaBot",
+              "team_b_code": "def decide_move(game_state):\n    return 'ROCK'",
+              "team_b_hp": 100,
+              "team_b_lang": "PYTHON",
+              "team_b_move": "ROCK",
+              "team_b_name": "BK_Gladiator",
+              "timestamp": 1791661744.4893558,
+              "win_reason": "HÒA CỜ! Cả hai bên đều còn 6 quân trên bàn đấu.",
+              "winner": "draw",
+              "winner_name": "Hòa"
+            }
+          ],
+          "status": "IN_PROGRESS",
+          "submissions_history": [
+            {
+              "code": "def decide_move(game_state):\n    return 'ROCK'",
+              "is_locked": true,
+              "is_valid": true,
+              "language": "PYTHON",
+              "match_id": "m_lvl1_1",
+              "round_number": 1,
+              "side": "team_a",
+              "student_id": "24020001",
+              "submission_id": "sub_ca4d3e5b",
+              "submitted_at": 1791661744.415467,
+              "team_name": "K69_AlphaBot",
+              "validation_status": "VALIDATED"
+            },
+            {
+              "code": "def decide_move(game_state):\n    return 'ROCK'",
+              "is_locked": true,
+              "is_valid": true,
+              "language": "PYTHON",
+              "match_id": "m_lvl1_1",
+              "round_number": 1,
+              "side": "team_b",
+              "student_id": "24020160",
+              "submission_id": "sub_822ec129",
+              "submitted_at": 1791661744.415467,
+              "team_name": "BK_Gladiator",
+              "validation_status": "VALIDATED"
+            }
+          ],
+          "team_a": {
+            "active_submission_id": "sub_ca4d3e5b",
+            "authenticated": true,
+            "bot_id": "bot_24020001",
+            "code_submitted": true,
+            "code_valid": true,
+            "current_code": "def decide_move(game_state):\n    return 'ROCK'",
+            "current_lang": "PYTHON",
+            "draft_code": "# Draft live code typing test\ndef decide_move(s):\n    return 'SCISSORS'",
+            "draft_lang": "PYTHON",
+            "draft_updated_at": 1791661744.3388329,
+            "hp": 100,
+            "rounds_won": 0,
+            "student_id": "24020001",
+            "team_name": "K69_AlphaBot",
+            "university": "ĐHQG Hà Nội",
+            "validation_error": null
+          },
+          "team_b": {
+            "active_submission_id": "sub_822ec129",
+            "authenticated": true,
+            "bot_id": "bot_24020160",
+            "code_submitted": true,
+            "code_valid": true,
+            "current_code": "def decide_move(game_state):\n    return 'ROCK'",
+            "current_lang": "PYTHON",
+            "draft_code": "def decide_move(game_state):\n    return 'ROCK'",
+            "draft_lang": "PYTHON",
+            "hp": 100,
+            "rounds_won": 0,
+            "student_id": "24020160",
+            "team_name": "BK_Gladiator",
+            "university": "ĐHBK Hà Nội",
+            "validation_error": null
+          },
+          "title": "Tứ Kết 1",
+          "winner": null,
+          "winner_name": null
+        },
+        "m_lvl1_2": {
+          "all_teams_ready": false,
+          "battle_running": false,
+          "current_round_idx": 1,
+          "intermission_ends_at": null,
+          "match_id": "m_lvl1_2",
+          "max_rounds": 5,
+          "next_match_id": "m_lvl2_1",
+          "next_slot": "team_b",
+          "round_level": 1,
+          "round_name": "Tứ Kết",
+          "round_status": "AWAITING_SUBMISSIONS",
+          "rounds_history": [],
+          "status": "READY",
+          "submissions_history": [],
+          "team_a": {
+            "active_submission_id": null,
+            "authenticated": false,
+            "bot_id": "bot_24020300",
+            "code_submitted": false,
+            "code_valid": false,
+            "current_code": "def decide_move(game_state):\n    return 'ROCK'",
+            "current_lang": "PYTHON",
+            "draft_code": "def decide_move(game_state):\n    return 'ROCK'",
+            "draft_lang": "PYTHON",
+            "hp": 100,
+            "rounds_won": 0,
+            "student_id": "24020300",
+            "team_name": "PTIT_Ninja",
+            "university": "Học Viện PTIT",
+            "validation_error": null
+          },
+          "team_b": {
+            "active_submission_id": null,
+            "authenticated": false,
+            "bot_id": "bot_24020450",
+            "code_submitted": false,
+            "code_valid": false,
+            "current_code": "def decide_move(game_state):\n    return 'ROCK'",
+            "current_lang": "PYTHON",
+            "draft_code": "def decide_move(game_state):\n    return 'ROCK'",
+            "draft_lang": "PYTHON",
+            "hp": 100,
+            "rounds_won": 0,
+            "student_id": "24020450",
+            "team_name": "DUT_Striker",
+            "university": "ĐH Bách Khoa ĐN",
+            "validation_error": null
+          },
+          "title": "Tứ Kết 2",
+          "winner": null,
+          "winner_name": null
+        },
+        "m_lvl1_3": {
+          "all_teams_ready": false,
+          "battle_running": false,
+          "current_round_idx": 1,
+          "intermission_ends_at": null,
+          "match_id": "m_lvl1_3",
+          "max_rounds": 5,
+          "next_match_id": "m_lvl2_2",
+          "next_slot": "team_a",
+          "round_level": 1,
+          "round_name": "Tứ Kết",
+          "round_status": "AWAITING_SUBMISSIONS",
+          "rounds_history": [],
+          "status": "READY",
+          "submissions_history": [],
+          "team_a": {
+            "active_submission_id": null,
+            "authenticated": false,
+            "bot_id": "bot_24020520",
+            "code_submitted": false,
+            "code_valid": false,
+            "current_code": "def decide_move(game_state):\n    return 'ROCK'",
+            "current_lang": "PYTHON",
+            "draft_code": "def decide_move(game_state):\n    return 'ROCK'",
+            "draft_lang": "PYTHON",
+            "hp": 100,
+            "rounds_won": 0,
+            "student_id": "24020520",
+            "team_name": "UET_Phoenix",
+            "university": "ĐH Công Nghệ ĐHQG",
+            "validation_error": null
+          },
+          "team_b": {
+            "active_submission_id": null,
+            "authenticated": false,
+            "bot_id": "bot_24020610",
+            "code_submitted": false,
+            "code_valid": false,
+            "current_code": "def decide_move(game_state):\n    return 'ROCK'",
+            "current_lang": "PYTHON",
+            "draft_code": "def decide_move(game_state):\n    return 'ROCK'",
+            "draft_lang": "PYTHON",
+            "hp": 100,
+            "rounds_won": 0,
+            "student_id": "24020610",
+            "team_name": "HCMUS_Titans",
+            "university": "ĐH KHTN ĐHQG-HCM",
+            "validation_error": null
+          },
+          "title": "Tứ Kết 3",
+          "winner": null,
+          "winner_name": null
+        },
+        "m_lvl1_4": {
+          "all_teams_ready": false,
+          "battle_running": false,
+          "current_round_idx": 1,
+          "intermission_ends_at": null,
+          "match_id": "m_lvl1_4",
+          "max_rounds": 5,
+          "next_match_id": "m_lvl2_2",
+          "next_slot": "team_b",
+          "round_level": 1,
+          "round_name": "Tứ Kết",
+          "round_status": "AWAITING_SUBMISSIONS",
+          "rounds_history": [],
+          "status": "READY",
+          "submissions_history": [],
+          "team_a": {
+            "active_submission_id": null,
+            "authenticated": false,
+            "bot_id": "bot_24020740",
+            "code_submitted": false,
+            "code_valid": false,
+            "current_code": "def decide_move(game_state):\n    return 'ROCK'",
+            "current_lang": "PYTHON",
+            "draft_code": "def decide_move(game_state):\n    return 'ROCK'",
+            "draft_lang": "PYTHON",
+            "hp": 100,
+            "rounds_won": 0,
+            "student_id": "24020740",
+            "team_name": "HUST_Cyborg",
+            "university": "Viện CNTT HUST",
+            "validation_error": null
+          },
+          "team_b": {
+            "active_submission_id": null,
+            "authenticated": false,
+            "bot_id": "bot_24020880",
+            "code_submitted": false,
+            "code_valid": false,
+            "current_code": "def decide_move(game_state):\n    return 'ROCK'",
+            "current_lang": "PYTHON",
+            "draft_code": "def decide_move(game_state):\n    return 'ROCK'",
+            "draft_lang": "PYTHON",
+            "hp": 100,
+            "rounds_won": 0,
+            "student_id": "24020880",
+            "team_name": "FPT_Warriors",
+            "university": "Đại Học FPT",
+            "validation_error": null
+          },
+          "title": "Tứ Kết 4",
+          "winner": null,
+          "winner_name": null
+        },
+        "m_lvl2_1": {
+          "all_teams_ready": false,
+          "battle_running": false,
+          "current_round_idx": 1,
+          "intermission_ends_at": null,
+          "match_id": "m_lvl2_1",
+          "max_rounds": 5,
+          "next_match_id": "m_gf",
+          "next_slot": "team_a",
+          "round_level": 2,
+          "round_name": "Bán Kết",
+          "round_status": "AWAITING_SUBMISSIONS",
+          "rounds_history": [],
+          "status": "WAITING",
+          "submissions_history": [],
+          "team_a": null,
+          "team_b": null,
+          "title": "Bán Kết 1",
+          "winner": null,
+          "winner_name": null
+        },
+        "m_lvl2_2": {
+          "all_teams_ready": false,
+          "battle_running": false,
+          "current_round_idx": 1,
+          "intermission_ends_at": null,
+          "match_id": "m_lvl2_2",
+          "max_rounds": 5,
+          "next_match_id": "m_gf",
+          "next_slot": "team_b",
+          "round_level": 2,
+          "round_name": "Bán Kết",
+          "round_status": "AWAITING_SUBMISSIONS",
+          "rounds_history": [],
+          "status": "WAITING",
+          "submissions_history": [],
+          "team_a": null,
+          "team_b": null,
+          "title": "Bán Kết 2",
+          "winner": null,
+          "winner_name": null
+        }
+      },
+      "name": "Giải Đấu Kiểm Thử Tự Động 2026",
+      "num_teams": 8,
+      "status": "RUNNING",
+      "teams": [
+        {
+          "bot_id": "bot_24020001",
+          "code_content": "def decide_move(game_state):\n    return 'ROCK'",
+          "elo": 1200,
+          "language": "PYTHON",
+          "seed": 1,
+          "student_id": "24020001",
+          "team_name": "K69_AlphaBot",
+          "university": "ĐHQG Hà Nội"
+        },
+        {
+          "bot_id": "bot_24020160",
+          "code_content": "def decide_move(game_state):\n    return 'ROCK'",
+          "elo": 1215,
+          "language": "PYTHON",
+          "seed": 2,
+          "student_id": "24020160",
+          "team_name": "BK_Gladiator",
+          "university": "ĐHBK Hà Nội"
+        },
+        {
+          "bot_id": "bot_24020300",
+          "code_content": "def decide_move(game_state):\n    return 'ROCK'",
+          "elo": 1230,
+          "language": "PYTHON",
+          "seed": 3,
+          "student_id": "24020300",
+          "team_name": "PTIT_Ninja",
+          "university": "Học Viện PTIT"
+        },
+        {
+          "bot_id": "bot_24020450",
+          "code_content": "def decide_move(game_state):\n    return 'ROCK'",
+          "elo": 1245,
+          "language": "PYTHON",
+          "seed": 4,
+          "student_id": "24020450",
+          "team_name": "DUT_Striker",
+          "university": "ĐH Bách Khoa ĐN"
+        },
+        {
+          "bot_id": "bot_24020520",
+          "code_content": "def decide_move(game_state):\n    return 'ROCK'",
+          "elo": 1260,
+          "language": "PYTHON",
+          "seed": 5,
+          "student_id": "24020520",
+          "team_name": "UET_Phoenix",
+          "university": "ĐH Công Nghệ ĐHQG"
+        },
+        {
+          "bot_id": "bot_24020610",
+          "code_content": "def decide_move(game_state):\n    return 'ROCK'",
+          "elo": 1275,
+          "language": "PYTHON",
+          "seed": 6,
+          "student_id": "24020610",
+          "team_name": "HCMUS_Titans",
+          "university": "ĐH KHTN ĐHQG-HCM"
+        },
+        {
+          "bot_id": "bot_24020740",
+          "code_content": "def decide_move(game_state):\n    return 'ROCK'",
+          "elo": 1290,
+          "language": "PYTHON",
+          "seed": 7,
+          "student_id": "24020740",
+          "team_name": "HUST_Cyborg",
+          "university": "Viện CNTT HUST"
+        },
+        {
+          "bot_id": "bot_24020880",
+          "code_content": "def decide_move(game_state):\n    return 'ROCK'",
+          "elo": 1305,
+          "language": "PYTHON",
+          "seed": 8,
+          "student_id": "24020880",
+          "team_name": "FPT_Warriors",
+          "university": "Đại Học FPT"
+        }
+      ],
+      "tournament_id": "tourn_2ebcb7"
     },
     "tourn_3c300e": {
       "champion": "K69_AlphaBot",
