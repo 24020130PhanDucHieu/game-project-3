@@ -3,7 +3,7 @@
 // Hỗ trợ đa giải đấu, cây sơ đồ nhánh, màn hình nộp code riêng tư, trọng tài tự động
 // =============================================================================
 
-const API_BASE = localStorage.getItem("ARENA_API_URL") || window.location.origin;
+const API_BASE = localStorage.getItem("ARENA_API_URL") || (window.location.hostname.includes("workers.dev") || window.location.hostname.includes("pages.dev") ? "https://game-project-3.onrender.com" : (window.location.origin === "null" || window.location.protocol === "file:" ? "https://game-project-3.onrender.com" : window.location.origin));
 
 // Các nhãn hiển thị quân bài chuẩn Oẳn tù tì (Không dùng emoji)
 const PIECE_ICONS = {
