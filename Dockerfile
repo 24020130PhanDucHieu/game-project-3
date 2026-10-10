@@ -4,7 +4,7 @@
 # ==============================================================================
 
 # STAGE 1: Biên dịch Go Backend API Gateway
-FROM golang:1.24-alpine AS go-builder
+FROM golang:alpine AS go-builder
 WORKDIR /app
 ENV GOTOOLCHAIN=auto
 COPY backend/go.mod backend/go.sum ./
