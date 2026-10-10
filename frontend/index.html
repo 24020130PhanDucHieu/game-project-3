@@ -27,41 +27,28 @@
         </div>
       </div>
 
-      <!-- KHỐI DANH TÍNH & VAI TRÒ NGƯỜI DÙNG (ROLE IDENTITY BAR) -->
+      <!-- KHỐI DANH TÍNH & VAI TRÒ NGƯỜI DÙNG -->
       <div class="sidebar-user-card" id="sidebar-user-card">
         <div class="user-role-badge-row">
-          <span class="user-role-pill" id="user-role-pill">KHÁCH (GUEST)</span>
+          <span class="user-role-pill" id="user-role-pill">GUEST</span>
           <button class="btn-switch-role" id="btn-open-role-modal" title="Đổi Vai Trò Hoặc Đăng Nhập">Đổi Vai Trò</button>
         </div>
         <div class="user-name-text" id="user-display-name">Khán Giả Công Khai</div>
-        <div class="user-sub-text" id="user-sub-detail">Chế độ xem trực tiếp không cần tài khoản</div>
       </div>
 
-      <!-- DANH SÁCH 4 KHU VỰC ĐIỀU HƯỚNG CHÍNH (4 PRIMARY AREAS) -->
+      <!-- DANH SÁCH 4 KHU VỰC ĐIỀU HƯỚNG CHÍNH -->
       <nav class="sidebar-nav">
         <button class="nav-tab-btn active" data-tab="public-arena-tab" id="nav-btn-public">
-          <div class="nav-info">
-            <span class="nav-label">1. Public Arena</span>
-            <span class="nav-desc">Sơ đồ, BXH ELO &amp; Lịch sử</span>
-          </div>
+          <span class="nav-label">Đấu Trường Chung</span>
         </button>
         <button class="nav-tab-btn" data-tab="team-workspace-tab" id="nav-btn-team">
-          <div class="nav-info">
-            <span class="nav-label">2. Team Workspace</span>
-            <span class="nav-desc">Bot Studio, Đấu thử &amp; Nộp bài</span>
-          </div>
+          <span class="nav-label">Khu Vực Đội Thi</span>
         </button>
         <button class="nav-tab-btn" data-tab="match-arena-tab" id="nav-btn-match">
-          <div class="nav-info">
-            <span class="nav-label">3. Match Arena</span>
-            <span class="nav-desc">Võ đài 9x9 Live &amp; Replay</span>
-          </div>
+          <span class="nav-label">Phòng Trận Đấu</span>
         </button>
         <button class="nav-tab-btn admin-btn" data-tab="admin-console-tab" id="nav-btn-admin">
-          <div class="nav-info">
-            <span class="nav-label">4. Admin Console</span>
-            <span class="nav-desc">Quản lý giải, Xếp lịch &amp; Đổi luật</span>
-          </div>
+          <span class="nav-label">Bàn Quản Trị</span>
         </button>
       </nav>
 
@@ -72,8 +59,6 @@
             <span class="status-indicator online"></span>
             <span class="status-text" id="sidebar-stage-text">Vòng 1: Luật Chuẩn</span>
           </div>
-          <div class="cloud-status">Cloudflare Anycast Active</div>
-          <button id="btn-set-backend" class="btn-config-server">Cấu Hình Máy Chủ API</button>
         </div>
       </div>
     </aside>

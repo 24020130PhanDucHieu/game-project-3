@@ -2,8 +2,8 @@
   <!-- THANH ĐIỀU HƯỚNG TRẬN ĐẤU -->
   <div class="match-room-nav">
     <div style="display: flex; align-items: center; gap: 10px;">
-      <button class="btn btn-outline" id="btn-back-to-bracket">← Quay Lại Sơ Đồ</button>
-      <select class="input-text-sm" id="select-arena-match" style="max-width: 180px;" title="Chuyển nhanh sang trận khác trong giải"></select>
+      <button class="btn btn-outline" id="btn-back-to-bracket">&larr; Sơ Đồ Nhánh</button>
+      <select class="input-text-sm" id="select-arena-match" style="max-width: 200px;" title="Chuyển nhanh sang trận khác trong giải"></select>
     </div>
     <div class="match-room-title-box">
       <h2 id="match-room-title">TỨ KẾT 1</h2>
@@ -57,7 +57,7 @@
     <!-- DÒNG TƯỜNG THUẬT CHIẾN THUẬT & ĂN QUÂN REALTIME -->
     <div class="board-bottom-status">
       <div class="live-commentary-ticker" id="live-commentary-ticker">
-        Sẵn sàng cho hiệp đấu! Chờ Trọng tài khai hỏa trên bàn cờ 9x9...
+        Sẵn sàng cho hiệp đấu. Chờ Trọng tài khai hỏa trên bàn cờ 9x9...
       </div>
     </div>
 
@@ -79,7 +79,7 @@
     </div>
   </div>
 
-  <!-- KHUNG 2 ĐỘI THI ĐẤU (BẢO MẬT MÃ LỆNH) -->
+  <!-- KHUNG 2 ĐỘI THI ĐẤU -->
   <div class="match-fighters-grid">
     <!-- ĐỘI ĐỎ (TEAM A) -->
     <div class="fighter-side-card red-side" id="card-team-a">
@@ -141,11 +141,11 @@
       <span id="current-round-text">ROUND 1 / 5</span>
       <div class="ready-banner-status" id="ready-banner-status">
         <h4 id="arena-readiness-title">CHỜ 2 ĐỘI NỘP MÃ LỆNH</h4>
-        <p id="round-tip-text">Chờ cả 2 đội vào màn hình riêng nộp mã Bot hợp lệ cho round này, nút Bắt Đầu Trận Đấu sẽ tự động kích hoạt!</p>
+        <p id="round-tip-text">Chờ cả 2 đội vào màn hình riêng nộp mã Bot hợp lệ cho round này, nút Bắt Đầu Trận Đấu sẽ tự động kích hoạt.</p>
       </div>
     </div>
 
-    <!-- NÚT BẮT ĐẦU TRẬN ĐẤU CHÍNH (ĐIỀU HÀNH DUY NHẤT CỦA TRỌNG TÀI / ADMIN) -->
+    <!-- NÚT BẮT ĐẦU TRẬN ĐẤU CHÍNH (TRỌNG TÀI / ADMIN) -->
     <div class="referee-control-btns">
       <button class="btn btn-lg btn-referee-start" disabled="" id="btn-referee-start">
         BẮT ĐẦU TRẬN ĐẤU (ROUND 1)
@@ -156,7 +156,7 @@
       </div>
       <!-- THÔNG BÁO CHO KHÁN GIẢ NẾU KHÔNG CÓ QUYỀN ĐIỀU HÀNH -->
       <div class="referee-role-notice" id="referee-role-notice" style="display: none; margin-top: 8px; font-size: 12px; color: var(--text-muted); text-align: center;">
-        ℹ️ Bạn đang xem ở chế độ Khán giả. Quyền kích hoạt trận đấu thuộc về Trọng tài hoặc Ban tổ chức.
+        Chế độ xem khán giả. Quyền kích hoạt trận đấu thuộc về Trọng tài hoặc Ban tổ chức.
       </div>
     </div>
 
@@ -201,7 +201,7 @@
   <div class="round-history-table-card">
     <div class="history-card-header">
       <h3>Nhật Ký Từng Round &amp; Trình Chiếu Replay</h3>
-      <span class="history-sub">Lưu trữ từng hiệp đấu, nước đi và mã lệnh đã khóa. Bấm Xem Replay để chiếu lại step-by-step.</span>
+      <span class="history-sub">Lưu trữ từng hiệp đấu, nước đi và mã lệnh đã khóa. Bấm Xem Replay để chiếu lại từng bước.</span>
     </div>
     <div class="table-responsive">
       <table class="table-clean" id="table-round-history">

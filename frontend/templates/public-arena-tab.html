@@ -1,61 +1,183 @@
 <section class="tab-pane active" id="public-arena-tab">
-  <!-- THANH ĐIỀU HÀNH GIẢI ĐẤU (TOURNAMENT CONTROL BAR) -->
+  <!-- THANH TIÊU ĐỀ BẢNG ĐẤU HIỆN TẠI (COMPACT TOURNAMENT TOP BAR) -->
   <div class="tournament-control-bar">
     <div class="tourn-selector-cluster">
-      <label class="control-label">Giải Đấu Hiện Tại:</label>
+      <label class="control-label">Bảng Đấu Hiện Tại:</label>
       <select class="tourn-dropdown" id="select-active-tournament"></select>
-      <button class="btn btn-primary" id="btn-open-create-tourn">+ Tạo Giải Mới</button>
-      <button class="btn btn-outline" id="btn-refresh-tourn">Làm Mới</button>
+      <button class="btn btn-primary" id="btn-goto-tournaments-page">Các Bảng Đấu</button>
       <button class="btn btn-outline" id="btn-open-team-manager">Đội Thi Đấu (<span id="count-teams-badge">0/8</span>)</button>
     </div>
     <div class="tourn-stats-cluster">
       <div class="stat-badge">
-        <span>Quy Mô:</span>
+        <span>Quy mô:</span>
         <strong id="tourn-teams-count">8 Đội</strong>
       </div>
       <div class="stat-badge">
-        <span>Định Dạng:</span>
-        <strong>Mỗi Trận 5 Round (Bo5)</strong>
+        <span>Thể thức:</span>
+        <strong>Bo5 (5 Round)</strong>
       </div>
       <div class="stat-badge highlight" id="tourn-champion-pill">
-        <span>Quán Quân:</span>
+        <span>Quán quân:</span>
         <strong id="tourn-champ-name">Đang tranh tài...</strong>
       </div>
     </div>
   </div>
 
-  <!-- THANH ĐIỀU HƯỚNG PHỤ KHU VỰC PUBLIC ARENA (SUB-NAVIGATION TABS) -->
+  <!-- THANH ĐIỀU HƯỚNG PHỤ (PUBLIC SUB-NAVIGATION - GỌN GÀNG, KHÔNG SUBTITLE DÀI DÒNG) -->
   <div class="public-subnav-bar">
     <div class="subnav-pills">
-      <button class="subnav-pill active" data-subview="bracket" id="btn-sub-bracket">
+      <button class="subnav-pill active" data-subview="overview" id="btn-sub-overview">
+        Tổng Quan
+      </button>
+      <button class="subnav-pill" data-subview="tournaments" id="btn-sub-tournaments">
+        Các Bảng Đấu
+      </button>
+      <button class="subnav-pill" data-subview="bracket" id="btn-sub-bracket">
         Sơ Đồ Nhánh Đấu
       </button>
       <button class="subnav-pill" data-subview="teams" id="btn-sub-teams">
-        Toàn Diện Các Đội
+        Danh Sách Đội
       </button>
       <button class="subnav-pill" data-subview="ranking" id="btn-sub-ranking">
         Bảng Xếp Hạng ELO
       </button>
       <button class="subnav-pill" data-subview="history" id="btn-sub-history">
-        Nhật Ký &amp; Lịch Sử
+        Lịch Sử Thi Đấu
       </button>
     </div>
     <div class="subnav-hint">
-      Bấm vào trận bất kỳ trên sơ đồ để mở <strong>Match Arena</strong> trực tiếp
+      Chọn bảng đấu hoặc bấm vào trận để xem trực tiếp
     </div>
   </div>
 
-  <!-- SUBVIEW 1: CÂY SƠ ĐỒ PHÂN NHÁNH GIẢI ĐẤU (BRACKET TREE) -->
-  <div class="public-subview active" id="pub-view-bracket">
+  <!-- =================================================================== -->
+  <!-- SUBVIEW 1: TỔNG QUAN (DASHBOARD LANDING OVERVIEW) -->
+  <!-- =================================================================== -->
+  <div class="public-subview active" id="pub-view-overview">
+    <div class="dashboard-overview-grid">
+      <!-- THẺ 1: TRẠNG THÁI BẢNG ĐẤU HIỆN TẠI -->
+      <div class="content-card dashboard-card">
+        <div class="card-head-compact">
+          <h3 class="panel-title">Bảng Đấu Đang Chọn</h3>
+          <span class="badge-tag highlight" id="dash-tourn-status">Đang diễn ra</span>
+        </div>
+        <div class="dash-tourn-name" id="dash-tourn-title">Giải Đấu Tân Sinh Viên K69</div>
+        <p class="dash-tourn-desc">Đấu trường lập trình thuật toán Oẳn Tù Tì V2 trên bàn cờ 9x9.</p>
+        <div class="dash-metrics-row">
+          <div class="dash-metric-item">
+            <span>Số đội tham gia:</span>
+            <strong id="dash-teams-num">8 Đội</strong>
+          </div>
+          <div class="dash-metric-item">
+            <span>Tiến độ các vòng:</span>
+            <strong id="dash-progress-status">Tứ Kết &rarr; Chung Kết</strong>
+          </div>
+        </div>
+        <div class="dash-card-actions">
+          <button class="btn btn-primary" id="btn-dash-view-bracket">Xem Sơ Đồ Nhánh Đấu</button>
+          <button class="btn btn-outline" id="btn-dash-manage-tourn">Quản Lý Các Bảng Đấu</button>
+        </div>
+      </div>
+
+      <!-- THẺ 2: TRẬN ĐẤU ĐÁNG CHÚ Ý / TRỰC TIẾP -->
+      <div class="content-card dashboard-card">
+        <div class="card-head-compact">
+          <h3 class="panel-title">Trận Đấu Trọng Tâm</h3>
+          <span class="badge-tag" id="dash-match-status">Sẵn Sàng</span>
+        </div>
+        <div class="dash-match-pairing" id="dash-match-pairing">
+          <span class="dash-team red" id="dash-match-team-a">Đội Đỏ</span>
+          <span class="dash-vs">VS</span>
+          <span class="dash-team blue" id="dash-match-team-b">Đội Xanh</span>
+        </div>
+        <div class="dash-match-meta" id="dash-match-meta">Round 1 / 5 • Thể thức Bo5</div>
+        <div class="dash-card-actions">
+          <button class="btn btn-success" id="btn-dash-enter-match">Vào Xem Bàn Đấu 9x9</button>
+          <button class="btn btn-outline" id="btn-dash-team-workspace">Nộp Bài Cho Đội</button>
+        </div>
+      </div>
+
+      <!-- THẺ 3: TOP 3 BẢNG XẾP HẠNG ELO -->
+      <div class="content-card dashboard-card">
+        <div class="card-head-compact">
+          <h3 class="panel-title">Top Đầu Bảng Xếp Hạng</h3>
+          <button class="btn-clean text-primary" id="btn-dash-view-full-ranking">Xem tất cả &rarr;</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table-clean compact-table" id="table-dash-top-ranking">
+            <thead>
+              <tr>
+                <th>Hạng</th>
+                <th>Đội / Bot</th>
+                <th>MSSV</th>
+                <th>Điểm ELO</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-dash-top-ranking">
+              <tr><td class="text-center text-muted" colspan="4">Đang tải xếp hạng...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- SUBVIEW 2: CÁC BẢNG ĐẤU (CENTRAL TOURNAMENT MANAGEMENT PAGE - MỤC 6) -->
+  <!-- =================================================================== -->
+  <div class="public-subview" id="pub-view-tournaments" style="display: none;">
+    <div class="content-header-row">
+      <div>
+        <h3 class="page-title">Các Bảng Đấu</h3>
+        <p class="page-subtitle">Danh sách và quản lý tập trung tất cả các bảng đấu trong hệ thống.</p>
+      </div>
+      <button class="btn btn-primary" id="btn-central-create-tourn">+ Tạo Bảng Đấu Mới</button>
+    </div>
+
+    <div class="table-toolbar">
+      <div class="search-filter-box" style="flex: 1; max-width: 320px;">
+        <input class="input-text" id="inp-search-tournaments" placeholder="Tìm theo tên bảng đấu..." type="text"/>
+      </div>
+      <div class="toolbar-stats">
+        <span>Tổng số: <strong id="count-total-tournaments">0</strong> bảng đấu</span>
+      </div>
+    </div>
+
+    <div class="table-card-container">
+      <table class="table-clean" id="table-all-tournaments">
+        <thead>
+          <tr>
+            <th>Mã Bảng Đấu</th>
+            <th>Tên Bảng Đấu</th>
+            <th>Quy Mô</th>
+            <th>Định Dạng</th>
+            <th>Trạng Thái</th>
+            <th>Quán Quân</th>
+            <th>Thao Tác</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-all-tournaments">
+          <tr><td class="text-center text-muted" colspan="7">Đang tải danh sách bảng đấu...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- SUBVIEW 3: SƠ ĐỒ NHÁNH ĐẤU (BRACKET TREE) -->
+  <!-- =================================================================== -->
+  <div class="public-subview" id="pub-view-bracket" style="display: none;">
     <div class="tree-header-notice">
-      <span>Sơ đồ thi đấu loại trực tiếp (Single Elimination). Bấm vào trận đấu để vào bàn cờ 9x9 trực quan và xem diễn biến 5 round!</span>
+      <span>Sơ đồ thi đấu loại trực tiếp (Single Elimination). Bấm vào trận đấu để mở bàn đấu trực tiếp.</span>
     </div>
     <div class="bracket-tree-canvas" id="bracket-tree-canvas">
       <!-- Render tự động: Tứ Kết -> Bán Kết -> Chung Kết -> Quán Quân -->
     </div>
   </div>
 
-  <!-- SUBVIEW 2: XEM TOÀN DIỆN CÁC ĐỘI (TEAMS LIST) -->
+  <!-- =================================================================== -->
+  <!-- SUBVIEW 4: DANH SÁCH ĐỘI (TEAMS LIST) -->
+  <!-- =================================================================== -->
   <div class="public-subview" id="pub-view-teams" style="display: none;">
     <div class="content-header-row">
       <div>
@@ -88,14 +210,15 @@
     </div>
   </div>
 
-  <!-- SUBVIEW 3: BẢNG XẾP HẠNG ELO (LEADERBOARD) -->
+  <!-- =================================================================== -->
+  <!-- SUBVIEW 5: BẢNG XẾP HẠNG ELO (LEADERBOARD) -->
+  <!-- =================================================================== -->
   <div class="public-subview" id="pub-view-ranking" style="display: none;">
     <div class="content-header-row">
       <div>
         <h3 class="page-title">Bảng Xếp Hạng ELO Toàn Trường</h3>
         <p class="page-subtitle">Điểm ELO động tính toán tự động từ toàn bộ lịch sử các hiệp đối đầu chính thức.</p>
       </div>
-      <button class="btn btn-sm btn-outline" id="btn-refresh-ranking">Làm Mới Xếp Hạng</button>
     </div>
     <div class="table-card-container">
       <table class="table-clean" id="table-ranking-overview">
@@ -119,14 +242,15 @@
     </div>
   </div>
 
-  <!-- SUBVIEW 4: NHẬT KÝ & LỊCH SỬ TRẬN ĐẤU (MATCH HISTORY) -->
+  <!-- =================================================================== -->
+  <!-- SUBVIEW 6: NHẬT KÝ & LỊCH SỬ THI ĐẤU (MATCH HISTORY) -->
+  <!-- =================================================================== -->
   <div class="public-subview" id="pub-view-history" style="display: none;">
     <div class="content-header-row">
       <div>
         <h3 class="page-title">Nhật Ký &amp; Lịch Sử Trận Đấu Chính Thức</h3>
-        <p class="page-subtitle">Minh bạch toàn bộ kết quả, tỷ số và hỗ trợ xem lại step-by-step từng hiệp.</p>
+        <p class="page-subtitle">Minh bạch kết quả đối đầu và hỗ trợ xem lại diễn biến từng hiệp.</p>
       </div>
-      <button class="btn btn-sm btn-outline" id="btn-refresh-history">Làm Mới Lịch Sử</button>
     </div>
     <div class="table-card-container">
       <table class="table-clean">

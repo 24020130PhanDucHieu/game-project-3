@@ -1,15 +1,14 @@
 <section class="tab-pane" id="team-workspace-tab">
   <!-- THÔNG BÁO CHO KHÁCH NẾU CHƯA ĐĂNG NHẬP ĐỘI -->
   <div class="workspace-guest-banner" id="workspace-guest-alert" style="display: none;">
-    <div class="guest-banner-icon">🔒</div>
     <div class="guest-banner-content">
-      <h4>Chế Độ Khách (Guest) — Trình Soạn Thảo Đang Khóa</h4>
+      <h4>Chế Độ Khán Giả — Trình Soạn Thảo Đang Khóa</h4>
       <p>Bạn cần đăng nhập tài khoản Đội tuyển (MSSV &amp; Mật khẩu) hoặc quyền Admin để nộp mã lệnh và thử nghiệm thuật toán.</p>
     </div>
     <button class="btn btn-primary" id="btn-workspace-guest-login">Đăng Nhập Đội Tuyển</button>
   </div>
 
-  <!-- HỒ SƠ ĐỘI TUYỂN & TRẬN ĐẤU MỤC TIÊU -->
+  <!-- HỒ SƠ ĐỘI TUYỂN & TRẬN ĐẤU MỤC TIÊU (COMPACT) -->
   <div class="workspace-team-profile-card" id="workspace-team-profile">
     <div class="profile-header-col">
       <div class="profile-avatar-pill" id="ws-avatar-pill">TEAM</div>
@@ -17,19 +16,18 @@
         <div class="profile-title-row">
           <h2 class="team-profile-name" id="ws-team-name">Chưa Đăng Nhập Đội</h2>
           <span class="badge-tag highlight" id="ws-team-sid">MSSV: ---</span>
-          <span class="badge-tag" id="ws-team-uni">Đơn Vị: ---</span>
+          <span class="badge-tag" id="ws-team-uni">Đơn vị: ---</span>
         </div>
         <p class="profile-sub-desc" id="ws-match-pairing-info">
-          Trận đấu tiếp theo: Chọn trận đấu trong giải để xem đối thủ &amp; mục tiêu round.
+          Trận đấu tiếp theo: Chọn trận đấu trong giải để xem đối thủ và mục tiêu round.
         </p>
       </div>
     </div>
     <div class="profile-actions-col">
       <div class="immutable-lock-pill">
-        <span class="lock-icon">🔒</span>
         <div class="lock-text">
           <strong>Khóa Phiên Bản Bất Biến</strong>
-          <span>Mã lệnh được đóng băng vĩnh viễn khi bắt đầu hiệp</span>
+          <span>Mã lệnh tự động đóng băng khi bắt đầu hiệp</span>
         </div>
       </div>
     </div>
@@ -38,7 +36,7 @@
   <!-- BẢNG TÌNH BÁO CHIẾN THUẬT & TRẠNG THÁI HIỆP ĐẤU -->
   <div class="studio-intel-card" id="workspace-intel-card">
     <div class="intel-header">
-      <span class="intel-title" id="studio-round-target-title">Đang Soạn Mã Lệnh Cho Round 1 / 5</span>
+      <span class="intel-title" id="studio-round-target-title">Đang Soạn Mã Cho Round 1 / 5</span>
       <div class="intel-round-badges" id="ws-round-selector-pills">
         <span class="intel-badge active" data-target-round="1">Round 1</span>
         <span class="intel-badge" data-target-round="2">Round 2</span>
@@ -48,7 +46,7 @@
       </div>
     </div>
     <div class="intel-history-chips" id="studio-intel-history-chips">
-      <span class="intel-chip">Hệ thống OTTV2: Bàn cờ 9x9, mỗi bên 9 quân (3 Búa, 3 Bao, 3 Kéo). Mục tiêu: Chiếm cứ điểm hoặc tiêu diệt đối phương!</span>
+      <span class="intel-chip">Hệ thống OTTV2: Bàn cờ 9x9, mỗi bên 9 quân (3 Búa, 3 Bao, 3 Kéo). Mục tiêu: Chiếm cứ điểm hoặc tiêu diệt đối phương.</span>
     </div>
   </div>
 
@@ -80,7 +78,7 @@
           <option value="ADAPTIVE">Boss 3: Adaptive Counter Bot</option>
         </select>
         <button class="btn btn-outline" id="btn-studio-test-practice">
-          Đấu Thử Nghiệm Với Bot BTC
+          Chạy Thử Với Bot BTC
         </button>
       </div>
 
@@ -96,8 +94,8 @@
   <div class="kaggle-submissions-card" id="kaggle-submissions-card">
     <div class="history-card-header">
       <div>
-        <h3>Lịch Sử Các Bài Nộp Bot (Submissions Hub)</h3>
-        <span class="history-sub">Danh sách các phiên bản mã lệnh bot đã nộp, kết quả sandbox validation và mã khóa round.</span>
+        <h3>Lịch Sử Các Bài Nộp Bot</h3>
+        <span class="history-sub">Danh sách các phiên bản mã lệnh bot đã nộp và kết quả sandbox validation.</span>
       </div>
       <button class="btn btn-sm btn-outline" id="btn-refresh-submissions">Làm Mới Bài Nộp</button>
     </div>

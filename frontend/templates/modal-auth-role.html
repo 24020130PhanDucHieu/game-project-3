@@ -19,10 +19,9 @@
       <!-- PANE 1: GUEST -->
       <div class="role-auth-pane active" id="pane-role-guest">
         <div class="role-intro-card">
-          <div class="role-intro-icon">🌐</div>
           <div class="role-intro-text">
             <strong>Chế Độ Khán Giả Công Khai (Guest)</strong>
-            <p>Xem sơ đồ giải đấu, theo dõi trực tiếp các trận đấu trên bàn cờ 9x9, tra cứu bảng xếp hạng ELO và xem lại lịch sử các round đấu mà không cần đăng nhập.</p>
+            <p>Xem sơ đồ giải đấu, theo dõi trực tiếp các trận đấu trên bàn cờ 9x9, tra cứu bảng xếp hạng ELO và xem lại lịch sử các round đấu.</p>
           </div>
         </div>
         <button class="btn btn-primary btn-full btn-lg" id="btn-confirm-guest-role">
@@ -33,10 +32,9 @@
       <!-- PANE 2: TEAM -->
       <div class="role-auth-pane" id="pane-role-team" style="display: none;">
         <div class="role-intro-card">
-          <div class="role-intro-icon">🤖</div>
           <div class="role-intro-text">
-            <strong>Đội Tuyển Thi Đấu (Team Member / Captain)</strong>
-            <p>Mở khóa Trình soạn thảo mã nguồn Bot Studio, thực hiện dry-run thẩm định sandbox, chạy thử nghiệm với Bot BTC và nộp mã chính thức cho hiệp đấu.</p>
+            <strong>Đội Tuyển Thi Đấu (Team Member)</strong>
+            <p>Soạn thảo mã nguồn Bot Studio, thực hiện dry-run thẩm định sandbox, chạy thử nghiệm và nộp mã chính thức.</p>
           </div>
         </div>
         <div class="form-group">
@@ -51,7 +49,7 @@
         <div class="form-group">
           <label class="form-label" for="inp-team-auth-pass">Mật Khẩu Đội:</label>
           <input class="input-text" id="inp-team-auth-pass" placeholder="Mật khẩu (mặc định: 123 hoặc 12345)" type="password" value="123"/>
-          <small class="form-hint">Mật khẩu mặc định của các đội trong giải là <code>123</code> hoặc <code>12345</code>.</small>
+          <small class="form-hint">Mật khẩu mặc định: <code>123</code> hoặc <code>12345</code>.</small>
         </div>
         <button class="btn btn-primary btn-full btn-lg" id="btn-confirm-team-role">
           Đăng Nhập Đội Tuyển
@@ -61,10 +59,9 @@
       <!-- PANE 3: REFEREE -->
       <div class="role-auth-pane" id="pane-role-referee" style="display: none;">
         <div class="role-intro-card">
-          <div class="role-intro-icon">⚖️</div>
           <div class="role-intro-text">
-            <strong>Trọng Tài Giải Đấu (Operator / Referee)</strong>
-            <p>Quyền điều hành trận đấu: Kích hoạt lệnh Bắt đầu Round, Nạp sẵn code mẫu để kiểm thử nhanh, Đặt lại hiệp đấu và ghi nhận sự cố.</p>
+            <strong>Trọng Tài Giải Đấu (Referee)</strong>
+            <p>Điều hành trận đấu: Bắt đầu Round, nạp code kiểm thử nhanh, đặt lại hiệp đấu.</p>
           </div>
         </div>
         <div class="form-group">
@@ -72,9 +69,9 @@
           <input class="input-text" id="inp-referee-auth-user" placeholder="referee" type="text" value="referee"/>
         </div>
         <div class="form-group">
-          <label class="form-label" for="inp-referee-auth-pass">Mã Xác Thực / Mật Khẩu:</label>
+          <label class="form-label" for="inp-referee-auth-pass">Mật Khẩu Trọng Tài:</label>
           <input class="input-text" id="inp-referee-auth-pass" placeholder="ref123" type="password" value="ref123"/>
-          <small class="form-hint">Tài khoản mặc định: <code>referee</code>, mật khẩu: <code>ref123</code></small>
+          <small class="form-hint">Mặc định: <code>referee</code> / <code>ref123</code></small>
         </div>
         <button class="btn btn-primary btn-full btn-lg" id="btn-confirm-referee-role">
           Xác Thực Quyền Trọng Tài
@@ -84,10 +81,9 @@
       <!-- PANE 4: ADMIN -->
       <div class="role-auth-pane" id="pane-role-admin" style="display: none;">
         <div class="role-intro-card">
-          <div class="role-intro-icon">👑</div>
           <div class="role-intro-text">
-            <strong>Ban Tổ Chức Toàn Quyền (Administrator)</strong>
-            <p>Toàn quyền tạo giải đấu mới, quản lý danh sách và phê duyệt đội, tự động sắp xếp sơ đồ nhánh, thay đổi luật thi đấu đột biến và giám sát mã nguồn realtime.</p>
+            <strong>Ban Tổ Chức (Administrator)</strong>
+            <p>Toàn quyền tạo giải đấu, duyệt đội, xếp lịch, thay đổi luật thi đấu và cấu hình máy chủ.</p>
           </div>
         </div>
         <div class="form-group">
@@ -95,12 +91,12 @@
           <input class="input-text" id="inp-admin-auth-user" placeholder="admin" type="text" value="admin"/>
         </div>
         <div class="form-group">
-          <label class="form-label" for="inp-admin-auth-pass">Mật Khẩu Ban Tổ Chức:</label>
+          <label class="form-label" for="inp-admin-auth-pass">Mật Khẩu Quản Trị:</label>
           <input class="input-text" id="inp-admin-auth-pass" placeholder="admin123" type="password" value="admin123"/>
-          <small class="form-hint">Tài khoản mặc định: <code>admin</code>, mật khẩu: <code>admin123</code></small>
+          <small class="form-hint">Mặc định: <code>admin</code> / <code>admin123</code></small>
         </div>
         <button class="btn btn-primary btn-full btn-lg" id="btn-confirm-admin-role">
-          Đăng Nhập Quyền Quản Trị Viên
+          Đăng Nhập Quản Trị Viên
         </button>
       </div>
     </div>
