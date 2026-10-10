@@ -94,6 +94,29 @@ function initApp() {
   setupModals();
   setupAdminRules();
 
+  // Nút cấu hình máy chủ Backend cho Cloudflare Pages / Workers
+  const btnSetBackend = document.getElementById("btn-set-backend");
+  if (btnSetBackend) {
+    const currentBackend = localStorage.getItem("ARENA_API_URL") || window.location.origin;
+    if (localStorage.getItem("ARENA_API_URL")) {
+      btnSetBackend.textContent = "⚙️ Server: " + localStorage.getItem("ARENA_API_URL").replace(/^https?:\/\//, '').slice(0, 18) + "...";
+    }
+    btnSetBackend.addEventListener("click", () => {
+      const current = localStorage.getItem("ARENA_API_URL") || "";
+      const input = prompt("Nhập đường dẫn máy chủ Backend của bạn:\n(Ví dụ: link Cloudflare Tunnel https://xxx.trycloudflare.com hoặc link Render https://xxx.onrender.com)", current);
+      if (input !== null) {
+        const trimmed = input.trim().replace(/\/+$/, "");
+        if (trimmed) {
+          localStorage.setItem("ARENA_API_URL", trimmed);
+        } else {
+          localStorage.removeItem("ARENA_API_URL");
+        }
+        alert("Đã cập nhật máy chủ Backend! Đang tải lại trang...");
+        window.location.reload();
+      }
+    });
+  }
+
   // Tải danh sách giải đấu đầu tiên
   loadTournamentsList();
 

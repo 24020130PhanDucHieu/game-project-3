@@ -3,7 +3,7 @@
 // Hỗ trợ đa giải đấu, cây sơ đồ nhánh, màn hình nộp code riêng tư, trọng tài tự động
 // =============================================================================
 
-const API_BASE = window.location.origin;
+const API_BASE = localStorage.getItem("ARENA_API_URL") || window.location.origin;
 
 // Các nhãn hiển thị quân bài chuẩn Oẳn tù tì (Không dùng emoji)
 const PIECE_ICONS = {
@@ -93,6 +93,29 @@ function initApp() {
   setupStudioControls();
   setupModals();
   setupAdminRules();
+
+  // Nút cấu hình máy chủ Backend cho Cloudflare Pages / Workers
+  const btnSetBackend = document.getElementById("btn-set-backend");
+  if (btnSetBackend) {
+    const currentBackend = localStorage.getItem("ARENA_API_URL") || window.location.origin;
+    if (localStorage.getItem("ARENA_API_URL")) {
+      btnSetBackend.textContent = "⚙️ Server: " + localStorage.getItem("ARENA_API_URL").replace(/^https?:\/\//, '').slice(0, 18) + "...";
+    }
+    btnSetBackend.addEventListener("click", () => {
+      const current = localStorage.getItem("ARENA_API_URL") || "";
+      const input = prompt("Nhập đường dẫn máy chủ Backend của bạn:\n(Ví dụ: link Cloudflare Tunnel https://xxx.trycloudflare.com hoặc link Render https://xxx.onrender.com)", current);
+      if (input !== null) {
+        const trimmed = input.trim().replace(/\/+$/, "");
+        if (trimmed) {
+          localStorage.setItem("ARENA_API_URL", trimmed);
+        } else {
+          localStorage.removeItem("ARENA_API_URL");
+        }
+        alert("Đã cập nhật máy chủ Backend! Đang tải lại trang...");
+        window.location.reload();
+      }
+    });
+  }
 
   // Tải danh sách giải đấu đầu tiên
   loadTournamentsList();
