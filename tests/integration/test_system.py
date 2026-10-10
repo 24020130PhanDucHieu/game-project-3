@@ -11,9 +11,9 @@ import os
 sys.stdout.reconfigure(encoding='utf-8')
 
 # Đảm bảo import được app
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../bot-runner")))
 
-from app.database import db
+from app.repository.database import db
 from app.models.schemas import TournamentStage, BotLanguage
 from app.engine.rules import GameRulesEngine
 from app.matchmaker.batch_runner import MatchCoordinator

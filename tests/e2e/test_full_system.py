@@ -1,10 +1,11 @@
 import requests
 import json
 import sys
+import os
 
 sys.stdout.reconfigure(encoding='utf-8')
 
-BASE_URL = "http://127.0.0.1:8000"
+BASE_URL = os.environ.get("BASE_URL", "http://127.0.0.1:8080")
 
 def test_full_system():
     print("=== STARTING FULL END-TO-END TEST ===")
@@ -53,7 +54,7 @@ def test_full_system():
     res_sched = requests.post(f"{BASE_URL}/api/tournaments/{t_id}/auto-schedule")
     assert res_sched.status_code == 200, f"Schedule failed: {res_sched.text}"
     tourn_data = res_sched.json()["tournament"]
-    first_match_id = list(tourn_data["matches"].keys())[0]
+    first_match_id = next(m_id for m_id, m in tourn_data["matches"].items() if m.get("team_a") and m.get("team_b"))
     first_match = tourn_data["matches"][first_match_id]
     print(f"Scheduled bracket! Match 1 ({first_match['title']}): {first_match['team_a']['team_name']} vs {first_match['team_b']['team_name']}")
 

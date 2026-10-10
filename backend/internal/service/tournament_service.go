@@ -81,6 +81,7 @@ func (s *TournamentService) MutateTournament(tournamentID, action string, params
 
 	if mutated, ok := res["tournament"].(map[string]interface{}); ok {
 		s.repo.Save(tournamentID, mutated)
+		_ = s.repo.SaveToDisk()
 	}
 
 	return res, nil

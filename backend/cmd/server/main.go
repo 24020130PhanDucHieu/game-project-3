@@ -3,6 +3,9 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -45,8 +48,28 @@ func main() {
 	r.Use(middleware.LoggerMiddleware())
 	r.Use(middleware.CORSMiddleware(cfg.CORSOrigin))
 
-	// Observability Endpoints
+	findFrontendFile := func(subpath string) string {
+		candidates := []string{
+			filepath.Join("frontend", subpath),
+			filepath.Join("../frontend", subpath),
+			filepath.Join("../../frontend", subpath),
+		}
+		for _, cand := range candidates {
+			if _, err := os.Stat(cand); err == nil {
+				return cand
+			}
+		}
+		return ""
+	}
+
+	// Observability & Frontend Root
 	r.GET("/", func(c *gin.Context) {
+		if strings.Contains(c.GetHeader("Accept"), "text/html") || c.GetHeader("Accept") == "*/*" || c.GetHeader("Accept") == "" {
+			if htmlPath := findFrontendFile("index.html"); htmlPath != "" {
+				c.File(htmlPath)
+				return
+			}
+		}
 		c.JSON(http.StatusOK, gin.H{
 			"service":  "OTTV2 Freshman AI Arena Backend API",
 			"status":   "RUNNING",
@@ -88,6 +111,7 @@ func main() {
 		api.POST("/tournaments/:id/matches/:matchId/demo-fill", mHandler.DemoFill)
 		api.POST("/tournaments/:id/matches/:matchId/reset", mHandler.Reset)
 		api.GET("/tournaments/:id/matches/:matchId/submissions", mHandler.GetSubmissions)
+		api.GET("/tournaments/:id/matches/:matchId/replay/:roundNumber", mHandler.GetRoundReplay)
 		api.POST("/tournaments/:id/practice-match", mHandler.PracticeMatch)
 
 		// Global Match History, Ranking & Rules
@@ -100,14 +124,15 @@ func main() {
 	// Serve Frontend Static assets if present
 	r.NoRoute(func(c *gin.Context) {
 		if c.Request.Method == http.MethodGet {
-			// Try serving from frontend directory
-			filePath := "../../frontend" + c.Request.URL.Path
-			if c.Request.URL.Path == "/" {
-				c.File("../../frontend/index.html")
+			cleanPath := strings.TrimPrefix(filepath.Clean(c.Request.URL.Path), "/")
+			cleanPath = strings.TrimPrefix(cleanPath, "\\")
+			if cleanPath == "" || cleanPath == "." {
+				cleanPath = "index.html"
+			}
+			if target := findFrontendFile(cleanPath); target != "" {
+				c.File(target)
 				return
 			}
-			c.File(filePath)
-			return
 		}
 		c.JSON(http.StatusNotFound, gin.H{"detail": "Not found"})
 	})

@@ -3,13 +3,14 @@ import urllib.parse
 import json
 import time
 import sys
+import os
 
 try:
     sys.stdout.reconfigure(encoding='utf-8')
 except:
     pass
 
-BASE_URL = "http://127.0.0.1:8000"
+BASE_URL = os.environ.get("BASE_URL", "http://127.0.0.1:8080")
 
 def request(method, path, data=None):
     url = f"{BASE_URL}{path}"
@@ -32,11 +33,12 @@ def main():
     # 1. Fetch tournaments
     status, tournaments = request("GET", "/api/tournaments")
     assert status == 200, f"Failed GET /api/tournaments: {status}"
-    assert len(tournaments) > 0, "No tournaments found"
+    tourn_list = list(tournaments.values()) if isinstance(tournaments, dict) else tournaments
+    assert len(tourn_list) > 0, "No tournaments found"
     
     t = None
     t_detail = None
-    for item in tournaments:
+    for item in tourn_list:
         item_id = item.get("tournament_id") or item.get("id")
         status, detail = request("GET", f"/api/tournaments/{item_id}")
         if status == 200 and len(detail.get("teams", [])) > 0:
@@ -45,7 +47,7 @@ def main():
             break
             
     if not t:
-        t = tournaments[0]
+        t = tourn_list[0]
         item_id = t.get("tournament_id") or t.get("id")
         request("POST", f"/api/tournaments/{item_id}/teams/quick-fill")
         status, t_detail = request("GET", f"/api/tournaments/{item_id}")

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -67,6 +68,9 @@ func (r *JSONTournamentRepository) SaveToDisk() error {
 	r.mu.RUnlock()
 	if err != nil {
 		return err
+	}
+	if dir := filepath.Dir(r.dbPath); dir != "" && dir != "." {
+		_ = os.MkdirAll(dir, 0755)
 	}
 	return ioutil.WriteFile(r.dbPath, data, 0644)
 }

@@ -20,11 +20,12 @@ func LoadConfig() *Config {
 
 	dbPath := os.Getenv("DB_PATH")
 	if dbPath == "" {
-		// Checks database folder first, then local data folder
-		if _, err := os.Stat("../../database/tournaments_store.json"); err == nil {
-			dbPath = "../../database/tournaments_store.json"
+		if _, err := os.Stat("database/tournaments_store.json"); err == nil {
+			dbPath = "database/tournaments_store.json"
 		} else if _, err := os.Stat("../database/tournaments_store.json"); err == nil {
 			dbPath = "../database/tournaments_store.json"
+		} else if _, err := os.Stat("../../database/tournaments_store.json"); err == nil {
+			dbPath = "../../database/tournaments_store.json"
 		} else {
 			dbPath = "tournaments_store.json"
 		}

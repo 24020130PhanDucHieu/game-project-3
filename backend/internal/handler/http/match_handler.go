@@ -2,6 +2,7 @@ package http
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"project-tuan3/internal/service"
@@ -154,6 +155,44 @@ func (h *MatchHandler) GetSubmissions(c *gin.Context) {
 		}
 	}
 	c.JSON(http.StatusOK, []interface{}{})
+}
+
+func (h *MatchHandler) GetRoundReplay(c *gin.Context) {
+	id := c.Param("id")
+	matchID := c.Param("matchId")
+	roundStr := c.Param("roundNumber")
+	roundNum, err := strconv.Atoi(roundStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Mã hiệp không hợp lệ"})
+		return
+	}
+
+	t, err := h.service.GetTournamentByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"detail": err.Error()})
+		return
+	}
+
+	if matches, ok := t["matches"].(map[string]interface{}); ok {
+		if m, ok := matches[matchID].(map[string]interface{}); ok {
+			if rounds, ok := m["rounds_history"].([]interface{}); ok {
+				for _, rRaw := range rounds {
+					if r, ok := rRaw.(map[string]interface{}); ok {
+						if rn, ok := r["round_number"].(float64); ok && int(rn) == roundNum {
+							c.JSON(http.StatusOK, r)
+							return
+						}
+					}
+				}
+				if roundNum >= 1 && roundNum <= len(rounds) {
+					c.JSON(http.StatusOK, rounds[roundNum-1])
+					return
+				}
+			}
+		}
+	}
+
+	c.JSON(http.StatusNotFound, gin.H{"detail": "Không tìm thấy dữ liệu xem lại hiệp đấu"})
 }
 
 func (h *MatchHandler) PracticeMatch(c *gin.Context) {

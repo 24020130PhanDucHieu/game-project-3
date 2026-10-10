@@ -1,9 +1,10 @@
 import sys
+import os
 sys.stdout.reconfigure(encoding='utf-8')
 import requests
 import json
 
-base_url = "http://127.0.0.1:8000"
+base_url = os.environ.get("BASE_URL", "http://127.0.0.1:8080")
 
 # 1. Get tournaments
 r = requests.get(f"{base_url}/api/tournaments/list")
@@ -12,7 +13,15 @@ print("Tournaments count:", len(tourns))
 t_id = tourns[0]["tournament_id"]
 print("Using tournament ID:", t_id)
 
-m_id = "m_qf_1"
+t_detail = requests.get(f"{base_url}/api/tournaments/{t_id}").json()
+scheduled = [m for m in t_detail.get("matches", {}).values() if m.get("team_a") and m.get("team_b")]
+if not scheduled:
+    requests.post(f"{base_url}/api/tournaments/{t_id}/teams/quick-fill")
+    requests.post(f"{base_url}/api/tournaments/{t_id}/auto-schedule")
+    t_detail = requests.get(f"{base_url}/api/tournaments/{t_id}").json()
+    scheduled = [m for m in t_detail.get("matches", {}).values() if m.get("team_a") and m.get("team_b")]
+m_id = scheduled[0]["match_id"]
+print("Using match ID:", m_id)
 
 # 2. Reset match first to make sure it's at round 1
 requests.post(f"{base_url}/api/tournaments/{t_id}/matches/{m_id}/reset")

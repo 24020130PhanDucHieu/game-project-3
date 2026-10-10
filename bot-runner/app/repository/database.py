@@ -37,66 +37,16 @@ class Database:
         self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "data")
         os.makedirs(self.data_dir, exist_ok=True)
     def _get_serializable_data(self) -> dict:
-        pass
+        """Return serializable representation of tournament data."""
+        return {"tournaments": self.tournaments, "active_tournament_id": self.active_tournament_id}
 
     def save_tournaments_to_file(self):
         pass
 
     def load_tournaments_from_file(self) -> bool:
         return False
-        with self._lock:
-            data = self.storage.load()
-            if data:
-                tourns = data.get("tournaments", {})
-                if tourns:
-                    # Chuẩn hóa cấu trúc dữ liệu cho từng match (Migration an toàn)
-                    for t in tourns.values():
-                        for m in t.get("matches", {}).values():
-                            m.setdefault("round_status", "AWAITING_SUBMISSIONS")
-                            m.setdefault("all_teams_ready", False)
-                            m.setdefault("battle_running", False)
-                            m.setdefault("intermission_ends_at", None)
-                            m.setdefault("submissions_history", [])
-                            for side in ["team_a", "team_b"]:
-                                if m.get(side):
-                                    m[side].setdefault("code_valid", bool(m[side].get("code_submitted")))
-                                    m[side].setdefault("validation_error", None)
-                                    m[side].setdefault("active_submission_id", None)
-                    self.tournaments = tourns
-                    self.active_tournament_id = data.get("active_tournament_id", "tourn_k69_main")
-                    return True
-            return False
 
-    def get_all_tournaments(self) -> List[dict]:
-        with self._lock:
-            return [
-                {
-                    "tournament_id": t["tournament_id"],
-                    "name": t["name"],
-                    "num_teams": t["num_teams"],
-                    "champion": t.get("champion"),
-                    "status": t["status"],
-                    "created_at": t.get("created_at")
-                }
-                for t in self.tournaments.values()
-            ]
 
-    def get_tournament(self, tournament_id: str) -> Optional[dict]:
-        with self._lock:
-            return self.tournaments.get(tournament_id)
-
-    def get_all_tournaments_cached(self) -> Tuple[bytes, str]:
-        def compute():
-            return self.get_all_tournaments()
-        return fast_cache.get_or_compute("tournaments_list", compute, ttl=2.0)
-
-    def get_tournament_cached(self, tournament_id: str) -> Optional[Tuple[bytes, str]]:
-        with self._lock:
-            if tournament_id not in self.tournaments:
-                return None
-        def compute():
-            return self.get_tournament(tournament_id)
-        return fast_cache.get_or_compute(f"tournament_{tournament_id}", compute, ttl=2.0)
 
     def _seed_default_data(self):
         """Khởi tạo tài khoản mẫu, Bot của BTC và các Bot tuyển thủ K69 mẫu"""

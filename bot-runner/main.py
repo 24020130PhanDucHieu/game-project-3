@@ -40,6 +40,7 @@ def mutate_tournament(req: MutateRequest):
     if t_id and t:
         stateless_db.tournaments[t_id] = t
     
+    action_res = {}
     try:
         if action == "create-tournament":
             new_t = stateless_db.create_tournament(p.get("name"), p.get("num_teams", 8))
@@ -53,7 +54,7 @@ def mutate_tournament(req: MutateRequest):
         elif action == "remove-team":
             stateless_db.remove_team_from_tournament(t_id, p.get("student_id"))
         elif action == "play-round":
-            stateless_db.play_match_round(t_id, p.get("match_id"))
+            action_res = stateless_db.play_match_round(t_id, p.get("match_id"))
         elif action == "login":
             user = str(p.get("username") or p.get("role") or p.get("student_id") or "").strip()
             pwd = str(p.get("password") or "").strip()
@@ -83,13 +84,13 @@ def mutate_tournament(req: MutateRequest):
             side = p.get("side") or "team_a"
             code = p.get("code_content") or p.get("code") or ""
             lang = p.get("language") or "PYTHON"
-            stateless_db.update_match_code(t_id, p.get("match_id"), side, code, lang)
+            action_res = stateless_db.update_match_code(t_id, p.get("match_id"), side, code, lang)
         elif action == "demo-fill":
-            stateless_db.quick_fill_demo_bots(t_id, p.get("match_id"))
+            action_res = stateless_db.quick_fill_demo_bots(t_id, p.get("match_id"))
         elif action == "reset":
-            stateless_db.reset_match(t_id, p.get("match_id"))
+            action_res = stateless_db.reset_match(t_id, p.get("match_id"))
         elif action == "next-round":
-            stateless_db.advance_to_next_round(t_id, p.get("match_id"))
+            action_res = stateless_db.advance_to_next_round(t_id, p.get("match_id"))
         elif action == "practice-match":
             code = p.get("code_content") or ""
             lang = p.get("language") or "PYTHON"
@@ -99,8 +100,13 @@ def mutate_tournament(req: MutateRequest):
         else:
             raise HTTPException(status_code=400, detail="Unknown action")
             
-        # Return mutated tournament
-        return {"status": "SUCCESS", "tournament": stateless_db.tournaments[t_id]}
+        # Return mutated tournament merged with action result
+        resp = {"status": "SUCCESS", "tournament": stateless_db.tournaments[t_id]}
+        if isinstance(action_res, dict):
+            for k, v in action_res.items():
+                if k not in resp:
+                    resp[k] = v
+        return resp
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
