@@ -53,11 +53,27 @@ def mutate_tournament(req: MutateRequest):
         elif action == "play-round":
             stateless_db.play_match_round(t_id, p.get("match_id"))
         elif action == "login":
-            stateless_db.login_team_to_match(t_id, p.get("match_id"), p.get("student_id"), p.get("password"))
+            user = str(p.get("username") or p.get("role") or p.get("student_id") or "").strip()
+            pwd = str(p.get("password") or "").strip()
+            login_res = stateless_db.authenticate_match_login(t_id, p.get("match_id"), user, pwd, p.get("student_id"))
+            return {
+                "status": "SUCCESS",
+                "role": login_res.get("role"),
+                "side": login_res.get("side"),
+                "team": login_res.get("team"),
+                "message": login_res.get("message"),
+                "tournament": stateless_db.tournaments[t_id]
+            }
         elif action == "submit-draft":
-            stateless_db.save_match_submission_draft(t_id, p.get("match_id"), p.get("student_id"), p.get("language"), p.get("code_content"))
+            side = p.get("side") or "team_a"
+            code = p.get("code_content") or p.get("code") or ""
+            lang = p.get("language") or "PYTHON"
+            stateless_db.update_match_draft_code(t_id, p.get("match_id"), side, code, lang)
         elif action == "submit-code":
-            stateless_db.submit_match_code(t_id, p.get("match_id"), p.get("student_id"), p.get("language"), p.get("code_content"))
+            side = p.get("side") or "team_a"
+            code = p.get("code_content") or p.get("code") or ""
+            lang = p.get("language") or "PYTHON"
+            stateless_db.update_match_code(t_id, p.get("match_id"), side, code, lang)
         elif action == "next-round":
             stateless_db.advance_to_next_round(t_id, p.get("match_id"))
         else:
@@ -66,6 +82,10 @@ def mutate_tournament(req: MutateRequest):
         # Return mutated tournament
         return {"status": "SUCCESS", "tournament": stateless_db.tournaments[t_id]}
     except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=400, detail=str(e))
     finally:
         if t_id in stateless_db.tournaments:
