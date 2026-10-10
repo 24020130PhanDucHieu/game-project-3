@@ -73,15 +73,28 @@ func main() {
 		api.POST("/tournaments/:id/auto-schedule", tHandler.AutoSchedule)
 
 		// Teams
+		api.GET("/tournaments/:id/teams", teamHandler.GetTeams)
 		api.POST("/tournaments/:id/teams", teamHandler.AddTeam)
+		api.DELETE("/tournaments/:id/teams/:studentId", teamHandler.RemoveTeam)
 		api.POST("/tournaments/:id/teams/quick-fill", teamHandler.QuickFill)
 
 		// Matches & Submission Studio
 		api.POST("/tournaments/:id/matches/:matchId/login", mHandler.Login)
+		api.POST("/tournaments/:id/matches/:matchId/auth", mHandler.Auth)
 		api.POST("/tournaments/:id/matches/:matchId/draft-code", mHandler.SubmitDraftCode)
 		api.POST("/tournaments/:id/matches/:matchId/code", mHandler.SubmitCode)
 		api.POST("/tournaments/:id/matches/:matchId/play-round", mHandler.PlayRound)
 		api.POST("/tournaments/:id/matches/:matchId/next-round", mHandler.NextRound)
+		api.POST("/tournaments/:id/matches/:matchId/demo-fill", mHandler.DemoFill)
+		api.POST("/tournaments/:id/matches/:matchId/reset", mHandler.Reset)
+		api.GET("/tournaments/:id/matches/:matchId/submissions", mHandler.GetSubmissions)
+		api.POST("/tournaments/:id/practice-match", mHandler.PracticeMatch)
+
+		// Global Match History, Ranking & Rules
+		api.GET("/matches/history", mHandler.GetMatchHistory)
+		api.GET("/ranking", tHandler.GetRanking)
+		api.GET("/tournament/rule", tHandler.GetRule)
+		api.POST("/tournament/rule/set", tHandler.SetRule)
 	}
 
 	// Serve Frontend Static assets if present

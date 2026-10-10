@@ -92,3 +92,148 @@ func (h *MatchHandler) NextRound(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, res)
 }
+
+func (h *MatchHandler) Auth(c *gin.Context) {
+	id := c.Param("id")
+	matchID := c.Param("matchId")
+	var req map[string]interface{}
+	_ = c.ShouldBindJSON(&req)
+	if req == nil {
+		req = make(map[string]interface{})
+	}
+	req["match_id"] = matchID
+
+	res, err := h.service.MutateTournament(id, "auth", req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *MatchHandler) DemoFill(c *gin.Context) {
+	id := c.Param("id")
+	matchID := c.Param("matchId")
+
+	res, err := h.service.MutateTournament(id, "demo-fill", map[string]interface{}{"match_id": matchID})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *MatchHandler) Reset(c *gin.Context) {
+	id := c.Param("id")
+	matchID := c.Param("matchId")
+
+	res, err := h.service.MutateTournament(id, "reset", map[string]interface{}{"match_id": matchID})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *MatchHandler) GetSubmissions(c *gin.Context) {
+	id := c.Param("id")
+	matchID := c.Param("matchId")
+	t, err := h.service.GetTournamentByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"detail": err.Error()})
+		return
+	}
+	if matches, ok := t["matches"].(map[string]interface{}); ok {
+		if m, ok := matches[matchID].(map[string]interface{}); ok {
+			subs := m["submissions_history"]
+			if subs == nil {
+				subs = []interface{}{}
+			}
+			c.JSON(http.StatusOK, subs)
+			return
+		}
+	}
+	c.JSON(http.StatusOK, []interface{}{})
+}
+
+func (h *MatchHandler) PracticeMatch(c *gin.Context) {
+	id := c.Param("id")
+	var req map[string]interface{}
+	_ = c.ShouldBindJSON(&req)
+	if req == nil {
+		req = make(map[string]interface{})
+	}
+	res, err := h.service.MutateTournament(id, "practice-match", req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *MatchHandler) GetMatchHistory(c *gin.Context) {
+	allTournaments := h.service.GetAllTournaments()
+	var historyList []map[string]interface{}
+
+	for tID, tRaw := range allTournaments {
+		t, ok := tRaw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		matches, ok := t["matches"].(map[string]interface{})
+		if !ok {
+			continue
+		}
+		for mID, mRaw := range matches {
+			m, ok := mRaw.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			roundsHist, ok := m["rounds_history"].([]interface{})
+			if !ok || len(roundsHist) == 0 {
+				continue
+			}
+
+			var botNames []string
+			if teamA, ok := m["team_a"].(map[string]interface{}); ok {
+				if name, ok := teamA["team_name"].(string); ok {
+					botNames = append(botNames, name)
+				}
+			}
+			if teamB, ok := m["team_b"].(map[string]interface{}); ok {
+				if name, ok := teamB["team_name"].(string); ok {
+					botNames = append(botNames, name)
+				}
+			}
+			if len(botNames) < 2 {
+				botNames = []string{"Đội Đỏ", "Đội Xanh"}
+			}
+
+			timestamp := float64(0)
+			if lastRound, ok := roundsHist[len(roundsHist)-1].(map[string]interface{}); ok {
+				if ts, ok := lastRound["timestamp"].(float64); ok {
+					timestamp = ts
+				}
+			}
+
+			winnerName := "Hòa"
+			if wn, ok := m["winner_name"].(string); ok && wn != "" {
+				winnerName = wn
+			}
+
+			historyList = append(historyList, map[string]interface{}{
+				"match_id":     tID + "_" + mID,
+				"timestamp":    timestamp,
+				"stage":        m["round_name"],
+				"bot_names":    botNames,
+				"total_rounds": len(roundsHist),
+				"winner_name":  winnerName,
+			})
+		}
+	}
+
+	if historyList == nil {
+		historyList = []map[string]interface{}{}
+	}
+	c.JSON(http.StatusOK, historyList)
+}

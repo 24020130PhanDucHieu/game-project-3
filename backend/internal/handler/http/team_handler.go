@@ -40,3 +40,31 @@ func (h *TeamHandler) QuickFill(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, res)
 }
+
+func (h *TeamHandler) RemoveTeam(c *gin.Context) {
+	id := c.Param("id")
+	studentID := c.Param("studentId")
+	res, err := h.service.MutateTournament(id, "remove-team", map[string]interface{}{
+		"student_id": studentID,
+	})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *TeamHandler) GetTeams(c *gin.Context) {
+	id := c.Param("id")
+	t, err := h.service.GetTournamentByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"detail": err.Error()})
+		return
+	}
+	teams, ok := t["teams"]
+	if !ok || teams == nil {
+		c.JSON(http.StatusOK, []interface{}{})
+		return
+	}
+	c.JSON(http.StatusOK, teams)
+}

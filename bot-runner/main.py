@@ -50,6 +50,8 @@ def mutate_tournament(req: MutateRequest):
             stateless_db.quick_fill_demo_teams(t_id)
         elif action == "add-team":
             stateless_db.add_team_to_tournament(t_id, p.get("team_name"), p.get("student_id"), p.get("university"))
+        elif action == "remove-team":
+            stateless_db.remove_team_from_tournament(t_id, p.get("student_id"))
         elif action == "play-round":
             stateless_db.play_match_round(t_id, p.get("match_id"))
         elif action == "login":
@@ -64,6 +66,14 @@ def mutate_tournament(req: MutateRequest):
                 "message": login_res.get("message"),
                 "tournament": stateless_db.tournaments[t_id]
             }
+        elif action == "auth":
+            side = p.get("side") or "team_a"
+            auth_res = stateless_db.authenticate_match_team(t_id, p.get("match_id"), side, p.get("student_id"), p.get("password"))
+            return {
+                "status": "SUCCESS",
+                "result": auth_res,
+                "tournament": stateless_db.tournaments[t_id]
+            }
         elif action == "submit-draft":
             side = p.get("side") or "team_a"
             code = p.get("code_content") or p.get("code") or ""
@@ -74,8 +84,18 @@ def mutate_tournament(req: MutateRequest):
             code = p.get("code_content") or p.get("code") or ""
             lang = p.get("language") or "PYTHON"
             stateless_db.update_match_code(t_id, p.get("match_id"), side, code, lang)
+        elif action == "demo-fill":
+            stateless_db.quick_fill_demo_bots(t_id, p.get("match_id"))
+        elif action == "reset":
+            stateless_db.reset_match(t_id, p.get("match_id"))
         elif action == "next-round":
             stateless_db.advance_to_next_round(t_id, p.get("match_id"))
+        elif action == "practice-match":
+            code = p.get("code_content") or ""
+            lang = p.get("language") or "PYTHON"
+            side = p.get("side") or "team_a"
+            res = stateless_db.run_practice_match(code, lang, side)
+            return res
         else:
             raise HTTPException(status_code=400, detail="Unknown action")
             
