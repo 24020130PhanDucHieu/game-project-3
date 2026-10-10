@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: ottv2-arena-server
+    runtime: docker
+    dockerfilePath: ./deploy/Dockerfile
+    plan: free
+    region: singapore
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: PORT
+        value: 8080
+      - key: WORKER_URL
+        value: http://127.0.0.1:8001/mutate-tournament
+      - key: DB_PATH
+        value: database/tournaments_store.json

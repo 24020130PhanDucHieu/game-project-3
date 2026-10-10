@@ -1,0 +1,45 @@
+<div class="modal-overlay" id="modal-practice-arena" style="display: none;">
+<div class="modal-card modal-lg">
+<div class="modal-header">
+<div>
+<h3 class="modal-title">Bàn Đấu Thử Nghiệm Thuật Toán</h3>
+<span class="modal-subtitle">Đấu thử nghiệm 1 ván trực tiếp với Bot Mẫu của Hệ Thống</span>
+</div>
+<button class="btn-clean btn-modal-close" id="btn-close-practice-x" title="Thoát Chế Độ Thử Nghiệm (X)">✕</button>
+</div>
+<div class="modal-body">
+<!-- TOP STATUS CỦA TRẬN THỬ -->
+<div class="arena-top-bar" style="margin-bottom: 12px;">
+<div class="board-team-pill red">
+<span class="team-dot red"></span>
+<strong id="practice-user-label">Bot Của Bạn (Đỏ)</strong>
+<span class="board-piece-badge red" id="practice-count-user">9/9 quân</span>
+</div>
+<div class="arena-round-indicator">ĐẤU THỬ NGHIỆM</div>
+<div class="board-team-pill blue">
+<span class="board-piece-badge blue" id="practice-count-bench">9/9 quân</span>
+<strong>Bot Mẫu Cơ Bản (Xanh)</strong>
+<span class="team-dot blue"></span>
+</div>
+<button class="btn btn-sm btn-outline btn-exit-practice-inline" id="btn-practice-exit-inline" title="Thoát khỏi chế độ thử nghiệm">
+            ✕ Thoát Đấu Thử
+          </button>
+</div>
+<!-- BÀN CỜ 9x9 THỬ NGHIỆM -->
+<div class="board-wrapper" style="margin: 12px 0;">
+<div class="chessboard-9x9" id="practice-chessboard-9x9"></div>
+</div>
+<!-- BÌNH LUẬN & KẾT QUẢ ĐẤU THỬ -->
+<div class="live-commentary-ticker" id="practice-commentary-ticker" style="margin: 0 auto 12px;">
+          Đang khởi tạo trận đấu thử nghiệm...
+        </div>
+<div class="practice-result-banner" id="practice-result-banner" style="display: none;">
+<h4 id="practice-result-title">KẾT QUẢ ĐẤU THỬ</h4>
+<p id="practice-result-desc">Mô tả kết quả...</p>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-primary" id="btn-close-practice">✕ Thoát Đấu Thử &amp; Quay Lại</button>
+</div>
+</div>
+</div>

@@ -1,0 +1,63 @@
+<section class="tab-pane" id="admin-tab">
+<div class="content-header-row">
+<div>
+<h2 class="page-title">Ban Tổ Chức - Đổi Luật Đột Biến</h2>
+<p class="page-subtitle">Thao tác đổi luật giữa các vòng đấu để kiểm tra tính linh hoạt của thuật toán.</p>
+</div>
+</div>
+<div class="admin-grid-layout">
+<div class="content-card">
+<h3 class="panel-title">Kích Hoạt Luật Vòng Đấu</h3>
+<div class="rule-picker">
+<label class="rule-choice">
+<input checked="" name="admin_stage" type="radio" value="STAGE_1_STANDARD"/>
+<div>
+<strong>Vòng 1: Luật Chuẩn ICPC Cổ Điển</strong>
+<span>15 thẻ đều (5-5-5), 100 HP, sát thương 15 HP/lượt.</span>
+</div>
+</label>
+<label class="rule-choice">
+<input name="admin_stage" type="radio" value="STAGE_2_MUTATED"/>
+<div>
+<strong>Vòng 2: Kho Thẻ Lệch &amp; Hiệp Chẵn x2 Sát Thương</strong>
+<span>7 Búa, 3 Bao, 5 Kéo. Hiệp chẵn sát thương 30 HP.</span>
+</div>
+</label>
+<label class="rule-choice">
+<input name="admin_stage" type="radio" value="STAGE_3_REVERSE_FOG"/>
+<div>
+<strong>Vòng 3: Chiều Không Gian Đảo Ngược &amp; Sương Mù</strong>
+<span>Hiệp lẻ đảo tương khắc (Kéo &gt; Búa &gt; Bao &gt; Kéo). Ẩn số bài của đối thủ.</span>
+</div>
+</label>
+<label class="rule-choice">
+<input name="admin_stage" type="radio" value="STAGE_4_FINALS"/>
+<div>
+<strong>Vòng 4: Chung Kết Đỉnh Cao - Luật Động Server</strong>
+<span>Cấu hình ma trận động qua JSON. Bot tự thích nghi Zero-Shot.</span>
+</div>
+</label>
+</div>
+<button class="btn btn-primary btn-full" id="btn-apply-stage">Áp Dụng Luật Mới Toàn Sàn</button>
+</div>
+<div class="content-card">
+<h3 class="panel-title">Hạ Tầng Chịu Tải Đa Người Chơi</h3>
+<div class="metric-row">
+<span>Kiến Trúc Máy Chủ:</span>
+<strong>FastAPI Async FSM + Sandbox Concurrency</strong>
+</div>
+<div class="metric-row">
+<span>Bộ Nhớ Đệm Giải Đấu:</span>
+<strong>Thread-Safe Multi-Tournament Store</strong>
+</div>
+<div class="metric-row">
+<span>Băng Thông Cloudflare:</span>
+<strong class="text-success">Không Giới Hạn (0 Đồng)</strong>
+</div>
+<div class="metric-row">
+<span>Độ Trễ Khớp Lệnh Round:</span>
+<strong class="text-success">&lt; 15ms</strong>
+</div>
+</div>
+</div>
+</section>

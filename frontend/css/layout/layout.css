@@ -1,0 +1,8 @@
+/* LAYOUT STYLES */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* --- SIDEBAR DỌC BÊN TRÁI --- */

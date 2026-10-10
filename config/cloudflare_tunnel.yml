@@ -1,0 +1,25 @@
+# =============================================================================
+# CLOUDFLARE TUNNEL CONFIGURATION (cloudflared config.yml)
+# Tối ưu cho Đấu trường AI Bot Arena phục vụ hàng nghìn sinh viên
+# =============================================================================
+
+tunnel: <YOUR-CLOUDFLARE-TUNNEL-UUID>
+credentials-file: /etc/cloudflared/<YOUR-CLOUDFLARE-TUNNEL-UUID>.json
+
+# Cấu hình Ingress Rules: Chuyển tiếp lưu lượng an toàn từ Cloudflare Edge về Uvicorn
+ingress:
+  # 1. Định tuyến API & WebSocket cho Sàn đấu trực tiếp
+  - hostname: arena.yourdomain.com
+    service: http://127.0.0.1:8000
+    originRequest:
+      connectTimeout: 10s
+      noTLSVerify: true
+      tcpKeepAlive: 60s
+      httpHostHeader: arena.yourdomain.com
+
+  # 2. Quy tắc mặc định (Catch-all 404 cho domain khác)
+  - service: http_status:404
+
+# Tham số hiệu năng mạng Cloudflare Quic/HTTP2:
+warp-routing:
+  enabled: false

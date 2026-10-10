@@ -1,0 +1,40 @@
+<div class="modal-overlay" id="modal-match-login" style="display: none;">
+<div class="modal-card">
+<div class="modal-header">
+<div>
+<h3 class="modal-title" id="login-modal-match-title">Đăng Nhập Trận Đấu</h3>
+<span class="modal-subtitle">Nhập thông tin tài khoản để truy cập phòng thi đấu</span>
+</div>
+<button class="btn-clean btn-modal-close" id="btn-close-match-login-x">✕</button>
+</div>
+<div class="modal-body">
+<div class="unified-match-login-card">
+<div class="form-group">
+<label class="form-label" for="inp-match-login-user">Tài Khoản (MSSV / Tên Đội / Admin):</label>
+<input autocomplete="off" class="input-text" id="inp-match-login-user" placeholder="Nhập tài khoản của bạn (không điền sẵn)" type="text"/>
+</div>
+<div class="form-group">
+<label class="form-label" for="inp-match-login-pass">Mật Khẩu:</label>
+<input autocomplete="off" class="input-text" id="inp-match-login-pass" placeholder="Nhập mật khẩu" type="password"/>
+</div>
+<div class="match-login-guide">
+<div class="guide-item">
+<span class="guide-badge admin">BAN TỔ CHỨC</span>
+<span>Tài khoản: <code>admin</code> (mật khẩu: <code>admin123</code>)</span>
+</div>
+<div class="guide-item">
+<span class="guide-badge team">ĐỘI THI ĐẤU</span>
+<span id="login-guide-teams-info">Nhập MSSV hoặc Tên Đội thi đấu (mật khẩu: <code>12345</code>)</span>
+</div>
+</div>
+<div class="login-feedback-alert" id="login-feedback-alert" style="display: none;"></div>
+<button class="btn btn-primary btn-full btn-lg" id="btn-submit-unified-login">
+            Đăng Nhập Vào Ván Đấu
+          </button>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-outline" id="btn-close-match-login">Đóng</button>
+</div>
+</div>
+</div>

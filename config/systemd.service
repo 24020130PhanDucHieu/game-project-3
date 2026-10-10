@@ -1,0 +1,26 @@
+# =============================================================================
+# SYSTEMD SERVICE UNIT (ottv2-arena.service)
+# Quản lý tiến trình Uvicorn tự khởi động lại khi crash, tối ưu số worker
+# =============================================================================
+
+[Unit]
+Description=Freshman Bot Arena OTTV2 ICPC Enterprise Service
+After=network.target
+
+[Service]
+Type=simple
+User=arena
+Group=arena
+WorkingDirectory=/var/www/project-tuan3
+Environment="PATH=/var/www/project-tuan3/venv/bin"
+EnvironmentFile=/var/www/project-tuan3/config/.env
+ExecStart=/var/www/project-tuan3/venv/bin/uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --workers 4 --loop uvloop --http httptools
+
+# Chính sách giám sát và tự phục hồi
+Restart=always
+RestartSec=3s
+LimitNOFILE=65535
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,46 @@
+<div class="modal-overlay" id="modal-match-replay" style="display: none;">
+<div class="modal-card modal-lg">
+<div class="modal-header">
+<div>
+<h3 class="modal-title" id="replay-modal-title">Xem Lại Diễn Biến Trận Đấu (Replay)</h3>
+<span class="modal-subtitle" id="replay-modal-subtitle">Tái hiện lại toàn bộ nước đi bàn cờ 9x9 từ dữ liệu lịch sử đã lưu</span>
+</div>
+<button class="btn-clean btn-modal-close" id="btn-close-replay-x" title="Đóng Replay (X)">✕</button>
+</div>
+<div class="modal-body">
+<!-- TOP STATUS CỦA REPLAY -->
+<div class="arena-top-bar" style="margin-bottom: 12px;">
+<div class="board-team-pill red">
+<span class="team-dot red"></span>
+<strong id="replay-name-red">Đội Đỏ</strong>
+<span class="board-piece-badge red" id="replay-count-red">9/9 quân</span>
+</div>
+<div class="arena-round-indicator" id="replay-step-indicator">BƯỚC 0 / 0</div>
+<div class="board-team-pill blue">
+<span class="board-piece-badge blue" id="replay-count-blue">9/9 quân</span>
+<strong id="replay-name-blue">Đội Xanh</strong>
+<span class="team-dot blue"></span>
+</div>
+</div>
+<!-- BÀN CỜ 9x9 REPLAY -->
+<div class="board-wrapper" style="margin: 12px 0;">
+<div class="chessboard-9x9" id="replay-chessboard-9x9"></div>
+</div>
+<!-- BÌNH LUẬN NƯỚC ĐI TẠI THỜI ĐIỂM REPLAY -->
+<div class="live-commentary-ticker" id="replay-commentary-ticker" style="margin: 0 auto 12px;">
+          Đang khởi tạo trình phát lại...
+        </div>
+<!-- THANH ĐIỀU KHIỂN REPLAY CHUYÊN NGHIỆP -->
+<div class="replay-controls-toolbar">
+<button class="btn btn-sm btn-outline" id="btn-replay-prev">◀ Nước Trước</button>
+<button class="btn btn-sm btn-primary" id="btn-replay-play-pause">▶ Tự Động Chạy</button>
+<button class="btn btn-sm btn-outline" id="btn-replay-next">Nước Kế ▶</button>
+<input class="replay-slider" id="replay-step-slider" max="10" min="0" type="range" value="0"/>
+<span class="replay-step-label" id="replay-slider-label">Bước: 0 / 0</span>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-outline" id="btn-close-replay">Đóng Replay</button>
+</div>
+</div>
+</div>

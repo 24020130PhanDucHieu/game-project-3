@@ -1,0 +1,768 @@
+/* MODALS STYLES */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.15s ease;
+}
+
+.modal-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  position: relative;
+}
+
+.modal-card.modal-lg {
+  max-width: 880px;
+}
+
+.modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  background: var(--bg-card);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.modal-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.modal-footer {
+  padding: 14px 20px;
+  background: var(--bg-subtle);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* NÚT ĐÓNG MODAL 'X' RÕ RÀNG, CHUYÊN NGHIỆP */
+.btn-modal-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  font-size: 16px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+  padding: 0;
+}
+
+.btn-modal-close:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+  transform: scale(1.08);
+}
+
+.btn-exit-practice-inline {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-exit-practice-inline:hover {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+/* SO SÁNH CODE CHI TIẾT TRONG MODAL */
+.code-compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.code-box-header {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 10px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+.red-header { background: #fee2e2; color: #991b1b; }
+.blue-header { background: #dbeafe; color: #1e40af; }
+
+.code-view-box {
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 14px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.45;
+  height: 380px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* ==========================================================================
+   GIÁM SÁT MÃ NGUỒN REALTIME DÀNH CHO ADMIN
+   ========================================================================== */
+.admin-live-code-monitor {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 18px 22px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.monitor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.monitor-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
+
+.monitor-desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.monitor-badge {
+  font-size: 11px;
+  font-weight: 800;
+  background: #f3e8ff;
+  color: #7e22ce;
+  border: 1px solid #d8b4fe;
+  padding: 4px 10px;
+  border-radius: 16px;
+  text-transform: uppercase;
+}
+
+.monitor-code-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.monitor-code-col {
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.monitor-code-col.red-side {
+  border-top: 3px solid #ef4444;
+}
+.monitor-code-col.blue-side {
+  border-top: 3px solid #3b82f6;
+}
+
+.monitor-col-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.monitor-code-box {
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 12px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.45;
+  height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin: 0;
+}
+
+/* ==========================================================================
+   MODAL QUẢN LÝ ĐỘI THI ĐẤU & XẾP LỊCH (TEAM MANAGER)
+   ========================================================================== */
+.team-mgr-summary-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px 18px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.mgr-stat-item {
+  font-size: 13.5px;
+  color: var(--text-muted);
+}
+.mgr-stat-item strong {
+  color: var(--text-main);
+  font-weight: 800;
+  margin-left: 4px;
+}
+
+.mgr-status-badge {
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+.mgr-status-badge.ready {
+  background: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+}
+
+.team-mgr-add-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.form-section-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 10px;
+}
+
+.team-mgr-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.team-mgr-form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.team-mgr-list-card {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.btn-delete-team {
+  background: transparent;
+  color: #ef4444;
+  border: 1px solid #fca5a5;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-delete-team:hover {
+  background: #fef2f2;
+}
+
+/* ==========================================================================
+   MODAL ĐĂNG NHẬP TRẬN ĐẤU (UNIFIED 2-FIELD LOGIN)
+   ========================================================================== */
+.unified-match-login-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Chuẩn hóa Form Group & Form Label khắc phục triệt để lỗi lệch giao diện Modal */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  margin-bottom: 14px;
+  text-align: left;
+}
+
+.form-label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  text-align: left;
+}
+
+.input-text {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 14px;
+  background: #ffffff;
+  color: var(--text-main);
+  transition: all 0.2s ease;
+}
+
+.input-text:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.match-login-guide {
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.guide-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.guide-badge {
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.guide-badge.admin {
+  background: #f3e8ff;
+  color: #7e22ce;
+  border: 1px solid #d8b4fe;
+}
+.guide-badge.team {
+  background: #e0f2fe;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.login-feedback-alert {
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.login-feedback-alert.error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+.login-feedback-alert.success {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  color: #166534;
+}
+
+/* Mini Submission Status trên Fighter Card */
+.fighter-info-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.submission-mini-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 10px;
+  margin-top: 10px;
+  border-top: 1px dashed var(--border-color);
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.sub-indicator {
+  font-size: 10px;
+}
+.sub-indicator.sub-wait { color: #94a3b8; }
+.sub-indicator.sub-checking { color: #f59e0b; }
+.sub-indicator.sub-valid { color: #16a34a; }
+.sub-indicator.sub-invalid { color: #dc2626; }
+
+.auth-status-badge.badge-waiting { background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
+.auth-status-badge.badge-checking { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+.auth-status-badge.badge-valid { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+.auth-status-badge.badge-invalid { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+
+/* Trạng thái Bắt đầu trận đấu & Banner Ready của Trọng tài */
+.ready-banner-status {
+  margin-top: 6px;
+}
+
+.ready-banner-status h4 {
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.ready-banner-status.waiting h4 {
+  color: #64748b;
+}
+
+.ready-banner-status.all-ready h4 {
+  color: #1d4ed8;
+}
+
+.btn-referee-start {
+  background: #94a3b8;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 32px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  cursor: not-allowed;
+  transition: all 0.25s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-referee-start:not(:disabled) {
+  background: var(--primary);
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+}
+
+.btn-referee-start:not(:disabled):hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+}
+
+.btn-referee-start.running {
+  background: #f59e0b;
+  cursor: wait;
+}
+
+/* Banner nghỉ giải lao & đếm ngược 5 giây chuẩn xác */
+.round-intermission-banner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #ffffff;
+  border: 2px solid #3b82f6;
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin: 16px auto;
+  max-width: 650px;
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
+  animation: fadeIn 0.3s ease;
+}
+
+.intermission-body {
+  text-align: center;
+  width: 100%;
+}
+
+.intermission-top-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.intermission-badge {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+.intermission-countdown-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13.5px;
+  color: var(--text-main);
+  margin-top: 12px;
+}
+
+.countdown-spinner {
+  display: inline-block;
+  animation: spin 3s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Card 3 loại nhật ký (Move Log, Bot Log, System Log) */
+.arena-logs-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: var(--shadow-sm);
+  margin-top: 20px;
+  overflow: hidden;
+}
+
+.logs-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-color);
+  padding: 10px 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.logs-tabs-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.log-tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.log-tab-btn:hover {
+  background: #ffffff;
+  color: var(--text-main);
+}
+
+.log-tab-btn.active {
+  background: #ffffff;
+  border-color: var(--border-color);
+  color: var(--primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.logs-badge {
+  font-size: 11px;
+  font-weight: 800;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+
+.logs-card-body {
+  padding: 16px;
+}
+
+.log-pane {
+  display: none;
+}
+
+.log-pane.active {
+  display: block;
+}
+
+.log-stream-list {
+  max-height: 200px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 12px 16px;
+  border-radius: 8px;
+}
+
+.log-empty-msg {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.log-item-line {
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.log-item-line.clash {
+  color: #fca5a5;
+  font-weight: 700;
+}
+.log-item-line.bot-a {
+  color: #f87171;
+}
+.log-item-line.bot-b {
+  color: #60a5fa;
+}
+.log-item-line.system {
+  color: #a78bfa;
+}
+
+/* Kaggle Submissions Card */
+.kaggle-submissions-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: var(--shadow-sm);
+  margin-top: 20px;
+  padding: 16px 20px;
+}
+
+/* Replay Controls Toolbar */
+.replay-controls-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px;
+  background: var(--bg-subtle);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.replay-slider {
+  flex: 1;
+  max-width: 280px;
+  cursor: pointer;
+}
+
+.replay-step-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  min-width: 80px;
+}
+
+/* ==========================================================================
+   BÀN ĐẤU THỬ NGHIỆM VỚI BOT MẪU
+   ========================================================================== */
+.ide-btn-cluster {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.practice-result-banner {
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px 18px;
+  text-align: center;
+  margin-top: 10px;
+}
+.practice-result-banner.win {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+.practice-result-banner.win h4 {
+  color: #166534;
+}
+.practice-result-banner.loss {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+.practice-result-banner.loss h4 {
+  color: #991b1b;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (MEDIA QUERIES)
+   ========================================================================== */
+@media (max-width: 1024px) {
+  .match-fighters-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-grid-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-layout {
+    flex-direction: column;
+  }
+  .app-sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+  }
+  .app-main-content {
+    height: auto;
+    padding: 16px;
+  }
+  .code-compare-grid {
+    grid-template-columns: 1fr;
+  }
+}

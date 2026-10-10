@@ -1,0 +1,73 @@
+<div class="modal-overlay" id="modal-manage-teams" style="display: none;">
+<div class="modal-card modal-lg">
+<div class="modal-header">
+<div>
+<h3 class="modal-title">Danh Sách Đội Thi Đấu &amp; Xếp Lịch</h3>
+<span class="modal-subtitle" id="team-mgr-tourn-name">Giải Đấu Hiện Tại</span>
+</div>
+<button class="btn-clean btn-modal-close" id="btn-close-team-mgr-x">✕</button>
+</div>
+<div class="modal-body">
+<!-- THỐNG KÊ QUY MÔ & TRẠNG THÁI -->
+<div class="team-mgr-summary-bar">
+<div class="mgr-stat-item">
+<span>Quy mô yêu cầu:</span>
+<strong id="mgr-required-count">8 Đội</strong>
+</div>
+<div class="mgr-stat-item">
+<span>Đã ghi danh:</span>
+<strong id="mgr-current-count">0 Đội</strong>
+</div>
+<div class="mgr-status-badge" id="mgr-status-pill">Chưa Đủ Số Đội</div>
+</div>
+<!-- FORM THÊM ĐỘI MỚI -->
+<div class="team-mgr-add-card">
+<h4 class="form-section-title">Thêm Đội Thi Đấu Mới</h4>
+<div class="team-mgr-form-grid">
+<div class="form-group">
+<label class="form-label">Tên Đội:</label>
+<input class="input-text" id="mgr-inp-name" placeholder="Ví dụ: K69_MasterBot" type="text"/>
+</div>
+<div class="form-group">
+<label class="form-label">MSSV Đại Diện:</label>
+<input class="input-text" id="mgr-inp-sid" placeholder="Ví dụ: 24020199" type="text"/>
+</div>
+<div class="form-group">
+<label class="form-label">Đơn Vị / Trường:</label>
+<input class="input-text" id="mgr-inp-uni" placeholder="Ví dụ: ĐHQG Hà Nội" type="text" value="Khối Kỹ Thuật"/>
+</div>
+</div>
+<div class="team-mgr-form-actions">
+<button class="btn btn-outline" id="btn-mgr-quick-fill">Nạp Nhanh Đội Mẫu (Cho Đủ Số Lượng)</button>
+<button class="btn btn-primary" id="btn-mgr-add-team">+ Thêm Đội Vào Giải</button>
+</div>
+</div>
+<!-- DANH SÁCH CÁC ĐỘI ĐÃ ĐĂNG KÝ -->
+<div class="team-mgr-list-card">
+<h4 class="form-section-title">Danh Sách Tuyển Thủ Đã Ghi Danh</h4>
+<div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
+<table class="table-clean" id="table-mgr-teams">
+<thead>
+<tr>
+<th>Hạt Giống</th>
+<th>Tên Đội</th>
+<th>MSSV</th>
+<th>Đơn Vị</th>
+<th>Thao Tác</th>
+</tr>
+</thead>
+<tbody id="tbody-mgr-teams">
+<tr><td class="text-center text-muted" colspan="5">Chưa có đội nào đăng ký.</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div class="modal-footer">
+<button class="btn btn-outline" id="btn-close-team-mgr">Đóng</button>
+<button class="btn btn-success btn-lg" id="btn-mgr-auto-schedule">
+          Tự Sắp Xếp Lịch Đấu
+        </button>
+</div>
+</div>
+</div>

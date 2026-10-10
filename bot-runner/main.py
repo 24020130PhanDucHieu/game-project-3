@@ -1,0 +1,76 @@
+import json
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import Dict, Any, Optional
+
+from app.repository.database import Database
+
+app = FastAPI(title="Stateless Engine Worker")
+
+# Create a dummy database instance that doesn't use background threads or files
+class StatelessDatabase(Database):
+    def __init__(self):
+        # DO NOT call super().__init__() which spawns threads
+        self.users = {}
+        self.bots = {}
+        self.bot_versions = {}
+        self.matches = {}
+        self.solo_rooms = {}
+        self.tournaments = {}
+        self.active_tournament_id = None
+        self._seed_default_data()
+
+    def save_tournaments_to_file(self):
+        pass # NO-OP
+
+stateless_db = StatelessDatabase()
+
+class MutateRequest(BaseModel):
+    tournament: Optional[dict] = None
+    action: str
+    params: dict = {}
+
+@app.post("/mutate-tournament")
+def mutate_tournament(req: MutateRequest):
+    t = req.tournament
+    t_id = t["tournament_id"] if t else None
+    action = req.action
+    p = req.params
+
+    if t_id and t:
+        stateless_db.tournaments[t_id] = t
+    
+    try:
+        if action == "create-tournament":
+            new_t = stateless_db.create_tournament(p.get("name"), p.get("num_teams", 8))
+            return {"status": "SUCCESS", "tournament": new_t}
+        elif action == "auto-schedule":
+            stateless_db.auto_schedule_tournament(t_id)
+        elif action == "quick-fill":
+            stateless_db.quick_fill_demo_teams(t_id)
+        elif action == "add-team":
+            stateless_db.add_team_to_tournament(t_id, p.get("team_name"), p.get("student_id"), p.get("university"))
+        elif action == "play-round":
+            stateless_db.play_match_round(t_id, p.get("match_id"))
+        elif action == "login":
+            stateless_db.login_team_to_match(t_id, p.get("match_id"), p.get("student_id"), p.get("password"))
+        elif action == "submit-draft":
+            stateless_db.save_match_submission_draft(t_id, p.get("match_id"), p.get("student_id"), p.get("language"), p.get("code_content"))
+        elif action == "submit-code":
+            stateless_db.submit_match_code(t_id, p.get("match_id"), p.get("student_id"), p.get("language"), p.get("code_content"))
+        elif action == "next-round":
+            stateless_db.advance_to_next_round(t_id, p.get("match_id"))
+        else:
+            raise HTTPException(status_code=400, detail="Unknown action")
+            
+        # Return mutated tournament
+        return {"status": "SUCCESS", "tournament": stateless_db.tournaments[t_id]}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    finally:
+        if t_id in stateless_db.tournaments:
+            del stateless_db.tournaments[t_id]
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8001)
