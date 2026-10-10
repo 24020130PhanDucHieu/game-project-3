@@ -46,6 +46,14 @@ func main() {
 	r.Use(middleware.CORSMiddleware(cfg.CORSOrigin))
 
 	// Observability Endpoints
+	r.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"service":  "OTTV2 Freshman AI Arena Backend API",
+			"status":   "RUNNING",
+			"frontend": "https://game-project-3.phanhieu06hungyen.workers.dev",
+			"docs":     "/health",
+		})
+	})
 	r.GET("/health", observability.HealthHandler)
 	r.GET("/metrics", observability.MetricsHandler)
 
