@@ -2676,22 +2676,30 @@ body {
   border-color: #bbf7d0;
 }
 
+.user-role-pill.guest {
+  background: #f1f5f9;
+  color: #64748b;
+  border-color: #cbd5e1;
+}
+
+.btn-auth-action,
 .btn-switch-role {
   background: #ffffff;
   border: 1px solid var(--border-strong);
   color: var(--text-body);
   font-size: 11px;
   font-weight: 600;
-  padding: 2px 8px;
+  padding: 3px 9px;
   border-radius: 5px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
+.btn-auth-action:hover,
 .btn-switch-role:hover {
   background: var(--bg-hover);
-  color: var(--text-main);
-  border-color: var(--border-focus);
+  color: var(--primary);
+  border-color: var(--primary);
 }
 
 .user-name-text {
