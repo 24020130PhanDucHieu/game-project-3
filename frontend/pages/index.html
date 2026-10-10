@@ -1,127 +1,136 @@
 <!DOCTYPE html>
-
 <html lang="vi">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Freshman Bot Arena - Hệ Thống Giải Đấu OTTV2 ICPC K69</title>
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
-<link href="styles.css" rel="stylesheet"/>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>Freshman Bot Arena - Đấu Trường Lập Trình OTTV2 ICPC K69</title>
+  <link href="https://fonts.googleapis.com" rel="preconnect"/>
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+  <link href="styles.css" rel="stylesheet"/>
 </head>
 <body>
-<!-- TOAST & IN-APP NOTIFICATION CONTAINER (NO ALERT POPUPS) -->
-<div id="toast-container" class="toast-container"></div>
+  <!-- TOAST & IN-APP NOTIFICATION CONTAINER (NO ALERT POPUPS) -->
+  <div id="toast-container" class="toast-container"></div>
 
-<!-- BỐ CỤC TỔNG THỂ VỚI SIDEBAR DỌC CHUYÊN NGHIỆP -->
-<div class="app-layout">
-<!-- ================================================================= -->
-<!-- SIDEBAR DỌC BÊN TRÁI (VERTICAL NAVIGATION) -->
-<!-- ================================================================= -->
-<aside class="app-sidebar">
-<div class="sidebar-brand">
-<span class="brand-badge">ICPC K69</span>
-<div class="brand-text">
-<h1 class="brand-title">ARENA OTTV2</h1>
-<p class="brand-sub">Đấu Trường Lập Trình</p>
-</div>
-</div>
-<!-- DANH SÁCH TAB ĐIỀU HƯỚNG DỌC -->
-<nav class="sidebar-nav">
-<button class="nav-tab-btn active" data-tab="tournament-tab">
-<div class="nav-info">
-<span class="nav-label">Sơ Đồ Giải Đấu</span>
-<span class="nav-desc">Tạo giải, nộp code &amp; đấu 5 round</span>
-</div>
-</button>
-<button class="nav-tab-btn" data-tab="teams-tab">
-<div class="nav-info">
-<span class="nav-label">Xem Toàn Diện Đội</span>
-<span class="nav-desc">Danh sách tuyển thủ &amp; tiến trình</span>
-</div>
-</button>
-<button class="nav-tab-btn" data-tab="history-tab">
-<div class="nav-info">
-<span class="nav-label">Nhật Ký &amp; Lịch Sử</span>
-<span class="nav-desc">Chi tiết các hiệp đối đầu</span>
-</div>
-</button>
-<button class="nav-tab-btn" data-tab="ranking-tab">
-<div class="nav-info">
-<span class="nav-label">Bảng Xếp Hạng ELO</span>
-<span class="nav-desc">Thứ hạng toàn trường</span>
-</div>
-</button>
-<button class="nav-tab-btn admin-btn" data-tab="admin-tab">
-<div class="nav-info">
-<span class="nav-label">Ban Tổ Chức (Đổi Luật)</span>
-<span class="nav-desc">Kích hoạt luật đột biến</span>
-</div>
-</button>
-</nav>
-<!-- CHÂN TRANG SIDEBAR: TRẠNG THÁI HỆ THỐNG -->
-<div class="sidebar-footer">
-<div class="footer-status-card">
-<div class="status-row">
-<span class="status-indicator online"></span>
-<span class="status-text" id="sidebar-stage-text">Vòng 1: Luật Chuẩn</span>
-</div>
-<div class="cloud-status">Cloudflare Anycast Active</div>
-<button id="btn-set-backend" style="margin-top: 8px; width: 100%; font-size: 11px; padding: 6px; border-radius: 6px; background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; cursor: pointer; font-weight: 600; text-align: center;">⚙️ Cấu hình Máy Chủ Backend</button>
-</div>
-</div>
-</aside>
-<!-- ================================================================= -->
-<!-- KHUNG NỘI DUNG CHÍNH BÊN PHẢI (MAIN CONTENT) -->
-<!-- ================================================================= -->
-<main class="app-main-content">
-<!-- =============================================================== -->
-<!-- TAB 1: SƠ ĐỒ GIẢI ĐẤU (TOURNAMENT BRACKET & 5-ROUND MATCH ROOM) -->
-<!-- =============================================================== -->
-<div data-include="templates/tournament-tab.html"></div>
-<!-- =============================================================== -->
-<!-- TAB 2: XEM TOÀN DIỆN CÁC ĐỘI (TEAMS OVERVIEW & STATS) -->
-<!-- =============================================================== -->
-<div data-include="templates/teams-tab.html"></div>
-<!-- =============================================================== -->
-<!-- TAB 3: NHẬT KÝ & LỊCH SỬ TRẬN ĐẤU (MATCH LOGS) -->
-<!-- =============================================================== -->
-<div data-include="templates/history-tab.html"></div>
-<!-- =============================================================== -->
-<!-- TAB 4: BẢNG XẾP HẠNG ELO (LEADERBOARD) -->
-<!-- =============================================================== -->
-<div data-include="templates/ranking-tab.html"></div>
-<!-- =============================================================== -->
-<!-- TAB 5: BAN TỔ CHỨC (ĐỔI LUẬT) -->
-<!-- =============================================================== -->
-<div data-include="templates/admin-tab.html"></div>
-</main>
-</div>
-<!-- =================================================================== -->
-<!-- MODAL TẠO GIẢI ĐẤU MỚI (CREATE TOURNAMENT MODAL) -->
-<!-- =================================================================== -->
-<div data-include="templates/modal-create-tournament.html"></div>
-<!-- =================================================================== -->
-<!-- MODAL XEM MÃ NGUỒN CỦA ROUND (CODE VIEWER MODAL) -->
-<!-- =================================================================== -->
-<div data-include="templates/modal-view-code.html"></div>
-<!-- =================================================================== -->
-<!-- MODAL QUẢN LÝ ĐỘI THI ĐẤU & TỰ ĐỘNG XẾP LỊCH (TEAM MANAGER MODAL) -->
-<!-- =================================================================== -->
-<div data-include="templates/modal-manage-teams.html"></div>
-<!-- =================================================================== -->
-<!-- MODAL ĐĂNG NHẬP VÀO BẢNG ĐẤU: 2 TRƯỜNG DUY NHẤT (TÀI KHOẢN & MẬT KHẨU) -->
-<!-- =================================================================== -->
-<div data-include="templates/modal-match-login.html"></div>
-<!-- =================================================================== -->
-<!-- MODAL BÀN ĐẤU THỬ NGHIỆM VỚI BOT MẪU (PRACTICE TEST ARENA MODAL) -->
-<!-- =================================================================== -->
-<div data-include="templates/modal-practice-arena.html"></div>
-<!-- =================================================================== -->
-<!-- MODAL XEM LẠI DIỄN BIẾN TRẬN ĐẤU STEP-BY-STEP (MATCH REPLAY VIEWER) -->
-<!-- =================================================================== -->
-<div data-include="templates/modal-match-replay.html"></div>
-<script src="loader.js"></script>
+  <!-- BỐ CỤC TỔNG THỂ VỚI SIDEBAR DỌC CHUYÊN NGHIỆP -->
+  <div class="app-layout">
+    <!-- ================================================================= -->
+    <!-- SIDEBAR DỌC BÊN TRÁI (VERTICAL NAVIGATION) -->
+    <!-- ================================================================= -->
+    <aside class="app-sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-badge">ICPC K69</span>
+        <div class="brand-text">
+          <h1 class="brand-title">ARENA OTTV2</h1>
+          <p class="brand-sub">Đấu Trường Lập Trình</p>
+        </div>
+      </div>
+
+      <!-- KHỐI DANH TÍNH & VAI TRÒ NGƯỜI DÙNG (ROLE IDENTITY BAR) -->
+      <div class="sidebar-user-card" id="sidebar-user-card">
+        <div class="user-role-badge-row">
+          <span class="user-role-pill" id="user-role-pill">KHÁCH (GUEST)</span>
+          <button class="btn-switch-role" id="btn-open-role-modal" title="Đổi Vai Trò Hoặc Đăng Nhập">Đổi Vai Trò</button>
+        </div>
+        <div class="user-name-text" id="user-display-name">Khán Giả Công Khai</div>
+        <div class="user-sub-text" id="user-sub-detail">Chế độ xem trực tiếp không cần tài khoản</div>
+      </div>
+
+      <!-- DANH SÁCH 4 KHU VỰC ĐIỀU HƯỚNG CHÍNH (4 PRIMARY AREAS) -->
+      <nav class="sidebar-nav">
+        <button class="nav-tab-btn active" data-tab="public-arena-tab" id="nav-btn-public">
+          <div class="nav-info">
+            <span class="nav-label">1. Public Arena</span>
+            <span class="nav-desc">Sơ đồ, BXH ELO &amp; Lịch sử</span>
+          </div>
+        </button>
+        <button class="nav-tab-btn" data-tab="team-workspace-tab" id="nav-btn-team">
+          <div class="nav-info">
+            <span class="nav-label">2. Team Workspace</span>
+            <span class="nav-desc">Bot Studio, Đấu thử &amp; Nộp bài</span>
+          </div>
+        </button>
+        <button class="nav-tab-btn" data-tab="match-arena-tab" id="nav-btn-match">
+          <div class="nav-info">
+            <span class="nav-label">3. Match Arena</span>
+            <span class="nav-desc">Võ đài 9x9 Live &amp; Replay</span>
+          </div>
+        </button>
+        <button class="nav-tab-btn admin-btn" data-tab="admin-console-tab" id="nav-btn-admin">
+          <div class="nav-info">
+            <span class="nav-label">4. Admin Console</span>
+            <span class="nav-desc">Quản lý giải, Xếp lịch &amp; Đổi luật</span>
+          </div>
+        </button>
+      </nav>
+
+      <!-- CHÂN TRANG SIDEBAR: TRẠNG THÁI HỆ THỐNG -->
+      <div class="sidebar-footer">
+        <div class="footer-status-card">
+          <div class="status-row">
+            <span class="status-indicator online"></span>
+            <span class="status-text" id="sidebar-stage-text">Vòng 1: Luật Chuẩn</span>
+          </div>
+          <div class="cloud-status">Cloudflare Anycast Active</div>
+          <button id="btn-set-backend" class="btn-config-server">Cấu Hình Máy Chủ API</button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ================================================================= -->
+    <!-- KHUNG NỘI DUNG CHÍNH BÊN PHẢI (MAIN CONTENT: 4 PRIMARY AREAS) -->
+    <!-- ================================================================= -->
+    <main class="app-main-content">
+      <!-- 1. PUBLIC ARENA: TOURNAMENT BRACKET, TEAMS, RANKINGS, HISTORY -->
+      <div data-include="templates/public-arena-tab.html"></div>
+
+      <!-- 2. TEAM WORKSPACE: PRIVATE BOT STUDIO IDE, TRIAL RUNS, KAGGLE SUBMISSIONS -->
+      <div data-include="templates/team-workspace-tab.html"></div>
+
+      <!-- 3. MATCH ARENA: 9x9 TACTICAL BOARD, 5-ROUND PROGRESS, 3 LOG STREAMS, REPLAY -->
+      <div data-include="templates/match-arena-tab.html"></div>
+
+      <!-- 4. ADMIN CONSOLE: TOURNAMENT CRUD, AUTO-SCHEDULING, MUTATION RULES, LIVE CODE MONITOR -->
+      <div data-include="templates/admin-console-tab.html"></div>
+    </main>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- MODAL XÁC THỰC DANH TÍNH & ĐỔI VAI TRÒ (ROLE SWITCHER MODAL) -->
+  <!-- =================================================================== -->
+  <div data-include="templates/modal-auth-role.html"></div>
+
+  <!-- =================================================================== -->
+  <!-- MODAL TẠO GIẢI ĐẤU MỚI (CREATE TOURNAMENT MODAL) -->
+  <!-- =================================================================== -->
+  <div data-include="templates/modal-create-tournament.html"></div>
+
+  <!-- =================================================================== -->
+  <!-- MODAL XEM MÃ NGUỒN CỦA ROUND (CODE VIEWER MODAL) -->
+  <!-- =================================================================== -->
+  <div data-include="templates/modal-view-code.html"></div>
+
+  <!-- =================================================================== -->
+  <!-- MODAL QUẢN LÝ ĐỘI THI ĐẤU & TỰ ĐỘNG XẾP LỊCH (TEAM MANAGER MODAL) -->
+  <!-- =================================================================== -->
+  <div data-include="templates/modal-manage-teams.html"></div>
+
+  <!-- =================================================================== -->
+  <!-- MODAL ĐĂNG NHẬP VÀO BẢNG ĐẤU CŨ (BACKWARD COMPATIBILITY) -->
+  <!-- =================================================================== -->
+  <div data-include="templates/modal-match-login.html"></div>
+
+  <!-- =================================================================== -->
+  <!-- MODAL BÀN ĐẤU THỬ NGHIỆM VỚI BOT MẪU (PRACTICE TEST ARENA MODAL) -->
+  <!-- =================================================================== -->
+  <div data-include="templates/modal-practice-arena.html"></div>
+
+  <!-- =================================================================== -->
+  <!-- MODAL XEM LẠI DIỄN BIẾN TRẬN ĐẤU STEP-BY-STEP (MATCH REPLAY VIEWER) -->
+  <!-- =================================================================== -->
+  <div data-include="templates/modal-match-replay.html"></div>
+
+  <script src="loader.js"></script>
 </body>
 </html>

@@ -2624,3 +2624,351 @@ body {
   to { opacity: 0; transform: translateX(30px) scale(0.96); }
 }
 
+/* =============================================================================
+   4 PRIMARY AREAS & ROLE-BASED ACCESS CONTROL STYLES
+   ============================================================================= */
+
+/* --- SIDEBAR USER ROLE IDENTITY CARD --- */
+.sidebar-user-card {
+  margin: 12px 14px 6px;
+  padding: 10px 12px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+}
+
+.user-role-badge-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.user-role-pill {
+  display: inline-block;
+  padding: 2px 7px;
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1px solid var(--primary-border);
+  border-radius: 12px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.user-role-pill.role-admin {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+
+.user-role-pill.role-referee {
+  background: #fffbeb;
+  color: #d97706;
+  border-color: #fde68a;
+}
+
+.user-role-pill.role-team {
+  background: #f0fdf4;
+  color: #16a34a;
+  border-color: #bbf7d0;
+}
+
+.btn-switch-role {
+  background: #ffffff;
+  border: 1px solid var(--border-strong);
+  color: var(--text-body);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-switch-role:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
+  border-color: var(--border-focus);
+}
+
+.user-name-text {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-sub-text {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-config-server {
+  margin-top: 8px;
+  width: 100%;
+  font-size: 11px;
+  padding: 6px;
+  border-radius: 6px;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  cursor: pointer;
+  font-weight: 600;
+  text-align: center;
+  transition: background 0.15s;
+}
+
+.btn-config-server:hover {
+  background: #dbeafe;
+}
+
+/* --- PUBLIC ARENA SUB-NAVIGATION --- */
+.public-subnav-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-xs);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.subnav-pills {
+  display: flex;
+  gap: 8px;
+}
+
+.subnav-pill {
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.subnav-pill:hover {
+  background: var(--bg-subtle);
+  color: var(--text-main);
+}
+
+.subnav-pill.active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+.subnav-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* --- WORKSPACE GUEST BANNER --- */
+.workspace-guest-banner {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.guest-banner-icon {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.guest-banner-content {
+  flex: 1;
+}
+
+.guest-banner-content h4 {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #1e40af;
+  margin-bottom: 2px;
+}
+
+.guest-banner-content p {
+  font-size: 12.5px;
+  color: #3b82f6;
+  margin: 0;
+}
+
+/* --- TEAM WORKSPACE PROFILE CARD --- */
+.workspace-team-profile-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-xs);
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.profile-header-col {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.profile-avatar-pill {
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  background: var(--primary-light);
+  color: var(--primary);
+  font-weight: 800;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--primary-border);
+}
+
+.profile-meta-col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.profile-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.team-profile-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.profile-sub-desc {
+  font-size: 12.5px;
+  color: var(--text-muted);
+}
+
+.immutable-lock-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+.lock-icon {
+  font-size: 16px;
+}
+
+.lock-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.lock-text strong {
+  font-size: 11.5px;
+  color: var(--text-main);
+}
+
+.lock-text span {
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.ide-trial-cluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* --- ROLE SELECTOR MODAL PILLS --- */
+.role-selector-pills {
+  display: flex;
+  gap: 6px;
+  padding: 4px;
+  background: var(--bg-subtle);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.role-pill-btn {
+  flex: 1;
+  padding: 8px 0;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.15s ease;
+  text-align: center;
+}
+
+.role-pill-btn:hover {
+  color: var(--text-main);
+}
+
+.role-pill-btn.active {
+  background: #ffffff;
+  color: var(--primary);
+  box-shadow: var(--shadow-xs);
+}
+
+.role-intro-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.role-intro-icon {
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.role-intro-text strong {
+  display: block;
+  font-size: 13.5px;
+  color: var(--text-main);
+  margin-bottom: 2px;
+}
+
+.role-intro-text p {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+

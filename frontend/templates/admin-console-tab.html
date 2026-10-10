@@ -1,0 +1,131 @@
+<section class="tab-pane" id="admin-console-tab">
+  <!-- THÔNG BÁO NẾU CHƯA CÓ QUYỀN ADMIN -->
+  <div class="workspace-guest-banner" id="admin-guest-alert" style="display: none;">
+    <div class="guest-banner-icon">🛡️</div>
+    <div class="guest-banner-content">
+      <h4>Khu Vực Quản Trị Hệ Thống Dành Cho Ban Tổ Chức</h4>
+      <p>Bạn cần đăng nhập với tài khoản Quản trị viên (Admin) để cấu hình giải đấu, tự động xếp lịch, đổi luật đột biến và giám sát mã nguồn.</p>
+    </div>
+    <button class="btn btn-primary" id="btn-admin-guest-login">Đăng Nhập Quyền Admin</button>
+  </div>
+
+  <div class="admin-authenticated-zone" id="admin-authenticated-zone">
+    <div class="content-header-row">
+      <div>
+        <h2 class="page-title">Ban Tổ Chức — Bàn Điều Hành &amp; Quản Trị Hệ Thống</h2>
+        <p class="page-subtitle">Quản lý giải đấu, kiểm duyệt đội thi, tự động xếp nhánh, kích hoạt luật đột biến và giám sát hạ tầng.</p>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-outline" id="btn-admin-open-team-mgr">Quản Lý &amp; Duyệt Đội</button>
+        <button class="btn btn-primary" id="btn-admin-create-tourn">+ Tạo Giải Mới</button>
+      </div>
+    </div>
+
+    <div class="admin-grid-layout">
+      <!-- CỘT 1: THIẾT LẬP VÀ XẾP LỊCH ĐẤU -->
+      <div class="content-card">
+        <h3 class="panel-title">Tự Động Xếp Lịch (Single-Elimination Scheduler)</h3>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+          Tự động sinh toàn bộ cây sơ đồ nhánh đấu (Tứ Kết → Bán Kết → Chung Kết) từ danh sách 8 đội thi đấu đã ghi danh.
+        </p>
+        <div class="admin-scheduler-status-box" style="margin-bottom: 14px; padding: 10px; background: var(--bg-subtle); border-radius: 6px; font-size: 13px;">
+          <div>Trạng thái: <strong id="admin-sched-status">Đã ghi danh đủ số lượng đội</strong></div>
+          <div>Giải đấu hiện tại: <strong id="admin-sched-tourn-name">---</strong></div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-success btn-full" id="btn-admin-auto-schedule">
+            Tự Động Sắp Xếp Lịch Đấu Ngay
+          </button>
+          <button class="btn btn-outline" id="btn-admin-quick-fill-teams" title="Tự động điền 8 đội mẫu nếu chưa đủ">
+            Nạp Nhanh 8 Đội
+          </button>
+        </div>
+      </div>
+
+      <!-- CỘT 2: KÍCH HOẠT LUẬT VÒNG ĐẤU ĐỘT BIẾN -->
+      <div class="content-card">
+        <h3 class="panel-title">Kích Hoạt Luật Vòng Đấu Đột Biến</h3>
+        <div class="rule-picker">
+          <label class="rule-choice">
+            <input checked="" name="admin_stage" type="radio" value="STAGE_1_STANDARD"/>
+            <div>
+              <strong>Vòng 1: Luật Chuẩn ICPC Cổ Điển</strong>
+              <span>15 thẻ đều (5-5-5), 100 HP, sát thương 15 HP/lượt.</span>
+            </div>
+          </label>
+          <label class="rule-choice">
+            <input name="admin_stage" type="radio" value="STAGE_2_MUTATED"/>
+            <div>
+              <strong>Vòng 2: Kho Thẻ Lệch &amp; Hiệp Chẵn x2 Sát Thương</strong>
+              <span>7 Búa, 3 Bao, 5 Kéo. Hiệp chẵn sát thương 30 HP.</span>
+            </div>
+          </label>
+          <label class="rule-choice">
+            <input name="admin_stage" type="radio" value="STAGE_3_REVERSE_FOG"/>
+            <div>
+              <strong>Vòng 3: Chiều Không Gian Đảo Ngược &amp; Sương Mù</strong>
+              <span>Hiệp lẻ đảo tương khắc (Kéo &gt; Búa &gt; Bao &gt; Kéo). Ẩn số bài của đối thủ.</span>
+            </div>
+          </label>
+          <label class="rule-choice">
+            <input name="admin_stage" type="radio" value="STAGE_4_FINALS"/>
+            <div>
+              <strong>Vòng 4: Chung Kết Đỉnh Cao - Luật Động Server</strong>
+              <span>Cấu hình ma trận động qua JSON. Bot tự thích nghi Zero-Shot.</span>
+            </div>
+          </label>
+        </div>
+        <button class="btn btn-primary btn-full" id="btn-apply-stage" style="margin-top: 12px;">Áp Dụng Luật Mới Toàn Sàn</button>
+      </div>
+
+      <!-- CỘT 3: HẠ TẦNG VÀ HIỆU NĂNG HỆ THỐNG -->
+      <div class="content-card">
+        <h3 class="panel-title">Hạ Tầng Máy Chủ &amp; Độ Trễ Hệ Thống</h3>
+        <div class="metric-row">
+          <span>Kiến Trúc Game Engine:</span>
+          <strong>FastAPI Async FSM + Sandbox Concurrency</strong>
+        </div>
+        <div class="metric-row">
+          <span>API Gateway (Go):</span>
+          <strong>High-Performance Gin Standard Layout</strong>
+        </div>
+        <div class="metric-row">
+          <span>Bộ Nhớ Đệm Giải Đấu:</span>
+          <strong>Thread-Safe Multi-Tournament Store</strong>
+        </div>
+        <div class="metric-row">
+          <span>Mạng Phân Phối Toàn Cầu:</span>
+          <strong class="text-success">Cloudflare Anycast Active (0ms Overhead)</strong>
+        </div>
+        <div class="metric-row">
+          <span>Độ Trễ Khớp Lệnh Round:</span>
+          <strong class="text-success">&lt; 15ms</strong>
+        </div>
+      </div>
+
+      <!-- CỘT 4: GIÁM SÁT MÃ NGUỒN REALTIME -->
+      <div class="content-card">
+        <h3 class="panel-title">Giám Sát Mã Nguồn 2 Đội Realtime (Quyền Ban Tổ Chức)</h3>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px;">
+          Theo dõi thuật toán 2 đội đang soạn thảo trực tiếp trước khi bắt đầu hiệp đấu.
+        </p>
+        <div class="monitor-code-grid" id="admin-live-code-monitor">
+          <div class="monitor-code-col red-side">
+            <div class="monitor-col-head">
+              <strong id="monitor-team-a-name">Đội Đỏ</strong>
+              <span class="badge-tag" id="monitor-team-a-lang">PYTHON</span>
+            </div>
+            <pre class="monitor-code-box" id="monitor-code-a">Chưa nộp mã lệnh...</pre>
+          </div>
+          <div class="monitor-code-col blue-side">
+            <div class="monitor-col-head">
+              <strong id="monitor-team-b-name">Đội Xanh</strong>
+              <span class="badge-tag" id="monitor-team-b-lang">PYTHON</span>
+            </div>
+            <pre class="monitor-code-box" id="monitor-code-b">Chưa nộp mã lệnh...</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

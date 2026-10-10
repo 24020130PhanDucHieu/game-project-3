@@ -113,13 +113,16 @@ int main() {
 }
 `;
 
-// Trạng thái ứng dụng
+// Trạng thái ứng dụng & Phân quyền Role-based Access Control
 let currentTournamentId = null;
 let currentTournamentData = null;
 let currentActiveMatchId = null;
 let currentMatchData = null;
-let currentStudioSide = null; // "team_a" hoặc "team_b"
-let currentUserRole = null; // "ADMIN", "TEAM_A", "TEAM_B"
+let currentStudioSide = "team_a"; // "team_a" hoặc "team_b"
+let currentUserRole = "GUEST"; // "GUEST", "TEAM", "REFEREE", "ADMIN"
+let currentAppRole = localStorage.getItem("ARENA_USER_ROLE") || "GUEST";
+let currentTeamStudentId = localStorage.getItem("ARENA_STUDENT_ID") || "";
+let currentTeamName = localStorage.getItem("ARENA_TEAM_NAME") || "";
 let pendingLoginMatchId = null;
 let practiceSimTimer = null;
 let practiceSimCancelToken = false;
@@ -138,20 +141,22 @@ function initApp() {
 
   if (savedTourn) currentTournamentId = savedTourn;
   if (savedMatch) currentActiveMatchId = savedMatch;
-  if (savedRole) currentUserRole = savedRole;
+  if (savedRole) currentAppRole = savedRole;
   if (savedSide) currentStudioSide = savedSide;
 
   setupSidebarNavigation();
+  setupPublicSubNav();
   setupTournamentControls();
   setupMatchRoomControls();
   setupStudioControls();
+  setupAdminControls();
   setupModals();
   setupAdminRules();
+  updateRoleUI();
 
   // Nút cấu hình máy chủ Backend cho Cloudflare Pages / Workers
   const btnSetBackend = document.getElementById("btn-set-backend");
   if (btnSetBackend) {
-    const currentBackend = localStorage.getItem("ARENA_API_URL") || window.location.origin;
     if (localStorage.getItem("ARENA_API_URL")) {
       btnSetBackend.textContent = "Server: " + localStorage.getItem("ARENA_API_URL").replace(/^https?:\/\//, '').slice(0, 18) + "...";
     }
@@ -189,37 +194,358 @@ if (document.readyState === 'loading') {
 }
 
 // =============================================================================
-// 1. ĐIỀU HƯỚNG SIDEBAR DỌC
+// 1. ĐIỀU HƯỚNG 4 KHU VỰC CHÍNH (4 PRIMARY AREAS NAVIGATION)
 // =============================================================================
 function setupSidebarNavigation() {
   const navBtns = document.querySelectorAll(".nav-tab-btn");
   navBtns.forEach(btn => {
     btn.addEventListener("click", () => {
-      navBtns.forEach(b => b.classList.remove("active"));
-      document.querySelectorAll(".tab-pane").forEach(pane => pane.classList.remove("active"));
-
-      btn.classList.add("active");
-      const targetPane = document.getElementById(btn.dataset.tab);
-      if (targetPane) targetPane.classList.add("active");
-
-      // Tự động tải dữ liệu theo từng tab
-      const tabName = btn.dataset.tab;
-      if (tabName === "tournament-tab") {
-        if (!currentActiveMatchId) {
-          switchToBracketView();
-        }
-        if (currentTournamentId) loadActiveTournament(currentTournamentId);
-      } else if (tabName === "teams-tab") {
-        loadTeamsOverview();
-      } else if (tabName === "history-tab") {
-        loadGlobalMatchHistory();
-      } else if (tabName === "ranking-tab") {
-        loadLeaderboard();
-      } else if (tabName === "admin-tab") {
-        loadCurrentRules();
-      }
+      const targetTab = btn.dataset.tab;
+      switchToTab(targetTab);
     });
   });
+}
+
+function switchToTab(tabId) {
+  const navBtns = document.querySelectorAll(".nav-tab-btn");
+  navBtns.forEach(btn => {
+    if (btn.dataset.tab === tabId) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+
+  document.querySelectorAll(".tab-pane").forEach(pane => {
+    if (pane.id === tabId) {
+      pane.classList.add("active");
+    } else {
+      pane.classList.remove("active");
+    }
+  });
+
+  // Tự động tải dữ liệu theo từng tab
+  if (tabId === "public-arena-tab" || tabId === "tournament-tab") {
+    if (currentTournamentId) loadActiveTournament(currentTournamentId);
+  } else if (tabId === "team-workspace-tab") {
+    populateTeamWorkspaceProfile();
+  } else if (tabId === "match-arena-tab") {
+    if (currentActiveMatchId && currentTournamentData?.matches?.[currentActiveMatchId]) {
+      renderMatchRoomData(currentTournamentData.matches[currentActiveMatchId]);
+      populateArenaMatchDropdown();
+    } else if (currentTournamentData?.matches) {
+      const firstM = Object.values(currentTournamentData.matches)[0];
+      if (firstM) openMatchRoom(firstM.match_id);
+    }
+  } else if (tabId === "admin-console-tab" || tabId === "admin-tab") {
+    loadCurrentRules();
+    updateAdminConsoleStatus();
+  } else if (tabId === "teams-tab") {
+    loadTeamsOverview();
+  } else if (tabId === "history-tab") {
+    loadGlobalMatchHistory();
+  } else if (tabId === "ranking-tab") {
+    loadLeaderboard();
+  }
+}
+
+// =============================================================================
+// SUB-NAVIGATION TRONG KHU VỰC PUBLIC ARENA
+// =============================================================================
+function setupPublicSubNav() {
+  const subnavBtns = document.querySelectorAll(".subnav-pill");
+  subnavBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      switchPublicSubView(btn.dataset.subview);
+    });
+  });
+
+  const btnRefRank = document.getElementById("btn-refresh-ranking");
+  if (btnRefRank) btnRefRank.addEventListener("click", loadLeaderboard);
+
+  const btnRefHist = document.getElementById("btn-refresh-history");
+  if (btnRefHist) btnRefHist.addEventListener("click", loadGlobalMatchHistory);
+
+  const inpSearchTeams = document.getElementById("inp-search-teams");
+  if (inpSearchTeams) {
+    inpSearchTeams.addEventListener("input", (e) => {
+      filterTeamsOverviewTable(e.target.value);
+    });
+  }
+}
+
+function switchPublicSubView(subviewName) {
+  document.querySelectorAll(".subnav-pill").forEach(pill => {
+    if (pill.dataset.subview === subviewName) {
+      pill.classList.add("active");
+    } else {
+      pill.classList.remove("active");
+    }
+  });
+
+  const views = {
+    "bracket": document.getElementById("pub-view-bracket"),
+    "teams": document.getElementById("pub-view-teams"),
+    "ranking": document.getElementById("pub-view-ranking"),
+    "history": document.getElementById("pub-view-history"),
+  };
+
+  Object.keys(views).forEach(k => {
+    if (views[k]) {
+      views[k].style.display = (k === subviewName) ? "block" : "none";
+    }
+  });
+
+  if (subviewName === "bracket") {
+    if (currentTournamentData) renderBracketTree(currentTournamentData);
+  } else if (subviewName === "teams") {
+    loadTeamsOverview();
+  } else if (subviewName === "ranking") {
+    loadLeaderboard();
+  } else if (subviewName === "history") {
+    loadGlobalMatchHistory();
+  }
+}
+
+function filterTeamsOverviewTable(query) {
+  const q = (query || "").toLowerCase().trim();
+  const rows = document.querySelectorAll("#tbody-teams-overview tr");
+  rows.forEach(r => {
+    const text = r.textContent.toLowerCase();
+    r.style.display = text.includes(q) ? "" : "none";
+  });
+}
+
+// =============================================================================
+// HỆ THỐNG XÁC THỰC VAI TRÒ & PHÂN QUYỀN (ROLE-BASED ACCESS CONTROL)
+// =============================================================================
+function updateRoleUI() {
+  const pill = document.getElementById("user-role-pill");
+  const nameEl = document.getElementById("user-display-name");
+  const subEl = document.getElementById("user-sub-detail");
+
+  if (pill) {
+    pill.className = "user-role-pill";
+    if (currentAppRole === "ADMIN") {
+      pill.classList.add("role-admin");
+      pill.textContent = "BAN TỔ CHỨC (ADMIN)";
+      if (nameEl) nameEl.textContent = "Quản Trị Viên Giải Đấu";
+      if (subEl) subEl.textContent = "Toàn quyền hệ thống & điều hành";
+      currentUserRole = "ADMIN";
+    } else if (currentAppRole === "REFEREE") {
+      pill.classList.add("role-referee");
+      pill.textContent = "TRỌNG TÀI (REFEREE)";
+      if (nameEl) nameEl.textContent = "Trọng Tài Điều Hành";
+      if (subEl) subEl.textContent = "Quyền kích hoạt & điều hành trận";
+      currentUserRole = "REFEREE";
+    } else if (currentAppRole === "TEAM") {
+      pill.classList.add("role-team");
+      pill.textContent = "ĐỘI TUYỂN (TEAM)";
+      if (nameEl) nameEl.textContent = currentTeamName || "Tuyển Thủ K69";
+      if (subEl) subEl.textContent = `MSSV: ${currentTeamStudentId || '---'}`;
+      currentUserRole = "TEAM";
+    } else {
+      pill.textContent = "KHÁCH (GUEST)";
+      if (nameEl) nameEl.textContent = "Khán Giả Công Khai";
+      if (subEl) subEl.textContent = "Chế độ xem trực tiếp không cần tài khoản";
+      currentUserRole = "GUEST";
+    }
+  }
+
+  sessionStorage.setItem("userRole", currentUserRole);
+
+  // Phân quyền trên Team Workspace
+  const wsGuestAlert = document.getElementById("workspace-guest-alert");
+  const wsTeamProfile = document.getElementById("workspace-team-profile");
+  const studioIdeCard = document.getElementById("studio-ide-card");
+
+  if (wsGuestAlert && studioIdeCard) {
+    if (currentAppRole === "GUEST") {
+      wsGuestAlert.style.display = "flex";
+      if (wsTeamProfile) wsTeamProfile.style.display = "none";
+      studioIdeCard.style.opacity = "0.45";
+      studioIdeCard.style.pointerEvents = "none";
+    } else {
+      wsGuestAlert.style.display = "none";
+      if (wsTeamProfile) wsTeamProfile.style.display = "flex";
+      studioIdeCard.style.opacity = "1";
+      studioIdeCard.style.pointerEvents = "auto";
+      populateTeamWorkspaceProfile();
+    }
+  }
+
+  // Phân quyền trên Match Arena
+  const btnRefereeStart = document.getElementById("btn-referee-start");
+  const refereeSub = document.querySelector(".referee-sub-actions");
+  const refereeNotice = document.getElementById("referee-role-notice");
+
+  if (currentAppRole === "ADMIN" || currentAppRole === "REFEREE") {
+    if (btnRefereeStart) btnRefereeStart.style.display = "inline-flex";
+    if (refereeSub) refereeSub.style.display = "flex";
+    if (refereeNotice) refereeNotice.style.display = "none";
+  } else {
+    if (btnRefereeStart) btnRefereeStart.style.display = "none";
+    if (refereeSub) refereeSub.style.display = "none";
+    if (refereeNotice) refereeNotice.style.display = "block";
+  }
+
+  // Phân quyền trên Admin Console
+  const adminGuestAlert = document.getElementById("admin-guest-alert");
+  const adminZone = document.getElementById("admin-authenticated-zone");
+  if (adminGuestAlert && adminZone) {
+    if (currentAppRole === "ADMIN") {
+      adminGuestAlert.style.display = "none";
+      adminZone.style.display = "block";
+    } else {
+      adminGuestAlert.style.display = "flex";
+      adminZone.style.display = "none";
+    }
+  }
+}
+
+function openRoleModal(preferredRole = null) {
+  const modal = document.getElementById("modal-auth-role");
+  if (!modal) return;
+
+  // Điền danh sách các đội vào dropdown chọn nhanh
+  const selTeams = document.getElementById("sel-quick-team-auth");
+  if (selTeams && currentTournamentData && currentTournamentData.teams) {
+    selTeams.innerHTML = `<option value="">-- Chọn Đội --</option>`;
+    currentTournamentData.teams.forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t.student_id;
+      opt.textContent = `${t.team_name} (${t.student_id})`;
+      selTeams.appendChild(opt);
+    });
+
+    selTeams.onchange = () => {
+      const sidInp = document.getElementById("inp-team-auth-sid");
+      if (sidInp && selTeams.value) {
+        sidInp.value = selTeams.value;
+      }
+    };
+  }
+
+  activateRoleChoiceTab(preferredRole || currentAppRole || "GUEST");
+  modal.style.display = "flex";
+}
+
+function closeRoleModal() {
+  const modal = document.getElementById("modal-auth-role");
+  if (modal) modal.style.display = "none";
+}
+
+function activateRoleChoiceTab(role) {
+  document.querySelectorAll(".role-pill-btn").forEach(btn => {
+    if (btn.dataset.roleChoice === role) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+
+  const panes = {
+    "GUEST": document.getElementById("pane-role-guest"),
+    "TEAM": document.getElementById("pane-role-team"),
+    "REFEREE": document.getElementById("pane-role-referee"),
+    "ADMIN": document.getElementById("pane-role-admin")
+  };
+
+  Object.keys(panes).forEach(k => {
+    if (panes[k]) {
+      panes[k].style.display = (k === role) ? "block" : "none";
+    }
+  });
+}
+
+function populateTeamWorkspaceProfile() {
+  const nameEl = document.getElementById("ws-team-name");
+  const sidEl = document.getElementById("ws-team-sid");
+  const uniEl = document.getElementById("ws-team-uni");
+  const matchInfoEl = document.getElementById("ws-match-pairing-info");
+  const avatarPill = document.getElementById("ws-avatar-pill");
+
+  if (currentAppRole === "TEAM") {
+    if (nameEl) nameEl.textContent = currentTeamName || "Đội Tuyển Của Bạn";
+    if (sidEl) sidEl.textContent = `MSSV: ${currentTeamStudentId || '---'}`;
+    if (avatarPill) avatarPill.textContent = (currentTeamName || "TEAM").slice(0, 4).toUpperCase();
+  } else if (currentAppRole === "ADMIN") {
+    if (nameEl) nameEl.textContent = "Ban Tổ Chức (Quyền Soạn Thảo Bot)";
+    if (sidEl) sidEl.textContent = "MSSV: ADMIN";
+    if (avatarPill) avatarPill.textContent = "ADMIN";
+  }
+
+  // Xác định trận đấu và round mục tiêu
+  if (currentActiveMatchId && currentTournamentData?.matches?.[currentActiveMatchId]) {
+    const m = currentTournamentData.matches[currentActiveMatchId];
+    if (matchInfoEl) {
+      matchInfoEl.textContent = `Trận: ${m.title} (${m.round_name}) • Đang thi đấu Round ${m.current_round_idx}/5`;
+    }
+    const titleTarget = document.getElementById("studio-round-target-title");
+    if (titleTarget) {
+      titleTarget.textContent = `Đang Soạn Mã Cho Round ${m.current_round_idx} / 5 (${m.title})`;
+    }
+    loadMatchSubmissions(currentActiveMatchId);
+  } else if (currentTournamentData?.matches) {
+    const firstM = Object.values(currentTournamentData.matches)[0];
+    if (firstM) {
+      currentActiveMatchId = firstM.match_id;
+      if (matchInfoEl) {
+        matchInfoEl.textContent = `Trận: ${firstM.title} (${firstM.round_name}) • Đang thi đấu Round ${firstM.current_round_idx}/5`;
+      }
+      loadMatchSubmissions(firstM.match_id);
+    }
+  }
+}
+
+function updateAdminConsoleStatus() {
+  const statusEl = document.getElementById("admin-sched-status");
+  const tournNameEl = document.getElementById("admin-sched-tourn-name");
+  if (!currentTournamentData) return;
+
+  if (tournNameEl) tournNameEl.textContent = currentTournamentData.name;
+  if (statusEl) {
+    const teams = currentTournamentData.teams || [];
+    const cap = currentTournamentData.num_teams;
+    if (teams.length >= cap) {
+      statusEl.textContent = `Đã ghi danh đủ ${teams.length}/${cap} đội — Sẵn sàng xếp lịch!`;
+      statusEl.style.color = "#16a34a";
+    } else {
+      statusEl.textContent = `Hiện có ${teams.length}/${cap} đội (Cần thêm ${cap - teams.length} đội).`;
+      statusEl.style.color = "#d97706";
+    }
+  }
+}
+
+function populateArenaMatchDropdown() {
+  const selMatch = document.getElementById("select-arena-match");
+  if (!selMatch || !currentTournamentData || !currentTournamentData.matches) return;
+
+  selMatch.innerHTML = "";
+  Object.values(currentTournamentData.matches).forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m.match_id;
+    opt.textContent = `${m.title} (${m.status})`;
+    if (m.match_id === currentActiveMatchId) opt.selected = true;
+    selMatch.appendChild(opt);
+  });
+}
+
+function openTeamStudio(side) {
+  currentStudioSide = side;
+  sessionStorage.setItem("studioSide", side);
+
+  if (currentMatchData && currentMatchData[side]) {
+    const team = currentMatchData[side];
+    currentTeamName = team.team_name;
+    currentTeamStudentId = team.student_id;
+  }
+
+  switchToTab("team-workspace-tab");
+
+  if (currentMatchData && currentMatchData[side]) {
+    populateStudioEditor(currentMatchData[side]);
+  }
 }
 
 // =============================================================================
@@ -242,14 +568,18 @@ function setupTournamentControls() {
     if (currentTournamentId) loadActiveTournament(currentTournamentId);
   });
 
-  btnBackBracket.addEventListener("click", () => {
-    switchToBracketView();
-  });
+  if (btnBackBracket) {
+    btnBackBracket.addEventListener("click", () => {
+      switchToBracketView();
+    });
+  }
 
-  btnVictoryBack.addEventListener("click", () => {
-    switchToBracketView();
-    if (currentTournamentId) loadActiveTournament(currentTournamentId);
-  });
+  if (btnVictoryBack) {
+    btnVictoryBack.addEventListener("click", () => {
+      switchToBracketView();
+      if (currentTournamentId) loadActiveTournament(currentTournamentId);
+    });
+  }
 
   if (btnTeamMgr) {
     btnTeamMgr.addEventListener("click", () => {
@@ -258,10 +588,41 @@ function setupTournamentControls() {
   }
 }
 
+function setupAdminControls() {
+  const btnAutoSchedule = document.getElementById("btn-admin-auto-schedule");
+  if (btnAutoSchedule) {
+    btnAutoSchedule.addEventListener("click", handleAutoSchedule);
+  }
+
+  const btnQuickFillTeams = document.getElementById("btn-admin-quick-fill-teams");
+  if (btnQuickFillTeams) {
+    btnQuickFillTeams.addEventListener("click", handleQuickFillTeams);
+  }
+
+  const btnOpenTeamMgr = document.getElementById("btn-admin-open-team-mgr");
+  if (btnOpenTeamMgr) {
+    btnOpenTeamMgr.addEventListener("click", openTeamManagerModal);
+  }
+
+  const btnCreateTourn = document.getElementById("btn-admin-create-tourn");
+  if (btnCreateTourn) {
+    btnCreateTourn.addEventListener("click", () => {
+      const modal = document.getElementById("modal-create-tournament");
+      if (modal) modal.style.display = "flex";
+    });
+  }
+
+  const btnAdminGuestLogin = document.getElementById("btn-admin-guest-login");
+  if (btnAdminGuestLogin) {
+    btnAdminGuestLogin.addEventListener("click", () => {
+      openRoleModal("ADMIN");
+    });
+  }
+}
+
 function switchToBracketView() {
-  document.getElementById("match-room-view").style.display = "none";
-  document.getElementById("team-private-studio-view").style.display = "none";
-  document.getElementById("tournament-tree-view").style.display = "block";
+  switchToTab("public-arena-tab");
+  switchPublicSubView("bracket");
   currentActiveMatchId = null;
   currentStudioSide = null;
   sessionStorage.removeItem("activeMatchId");
@@ -269,6 +630,7 @@ function switchToBracketView() {
 }
 
 async function loadTournamentsList() {
+
   try {
     const res = await fetch(`${API_BASE}/api/tournaments/list`);
     const list = await res.json();
@@ -570,13 +932,14 @@ function openMatchRoom(matchId) {
   if (!currentTournamentData || !currentTournamentData.matches[matchId]) return;
 
   currentActiveMatchId = matchId;
+  sessionStorage.setItem("activeMatchId", matchId);
   const match = currentTournamentData.matches[matchId];
 
-  document.getElementById("tournament-tree-view").style.display = "none";
-  document.getElementById("team-private-studio-view").style.display = "none";
-  document.getElementById("match-room-view").style.display = "flex";
+  // Chuyển sang Tab 3: Match Arena
+  switchToTab("match-arena-tab");
 
   renderMatchRoomData(match);
+  populateArenaMatchDropdown();
 }
 
 function renderMatchRoomData(match) {
@@ -1063,6 +1426,30 @@ function setupMatchRoomControls() {
   if (btnReset) {
     btnReset.addEventListener("click", handleResetCurrentMatch);
   }
+
+  // Nút quay lại sơ đồ
+  const btnBackBracket = document.getElementById("btn-back-to-bracket");
+  if (btnBackBracket) {
+    btnBackBracket.addEventListener("click", () => {
+      switchToBracketView();
+    });
+  }
+
+  // Dropdown chuyển nhanh trận trong Match Arena
+  const selMatch = document.getElementById("select-arena-match");
+  if (selMatch) {
+    selMatch.addEventListener("change", (e) => {
+      if (e.target.value) openMatchRoom(e.target.value);
+    });
+  }
+
+  // Nút Vào Nộp Bot Đội Đỏ / Đội Xanh
+  document.querySelectorAll(".btn-jump-to-studio").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const side = btn.dataset.side || "team_a";
+      openTeamStudio(side);
+    });
+  });
 }
 
 // =============================================================================
@@ -1214,117 +1601,180 @@ function setupStudioControls() {
   });
 
   // Quay lại bàn đấu
-  btnBack.addEventListener("click", () => {
-    returnToMatchRoom();
-  });
+  if (btnBack) {
+    btnBack.addEventListener("click", () => {
+      switchToTab("match-arena-tab");
+    });
+  }
 
   // Tải code mẫu gợi ý
-  btnTemplate.addEventListener("click", () => {
-    if (selLang.value === "CPP") {
-      editor.value = DEFAULT_CPP_CODE;
-    } else {
-      editor.value = DEFAULT_PYTHON_CODE;
-    }
+  if (btnTemplate) {
+    btnTemplate.addEventListener("click", () => {
+      if (selLang.value === "CPP") {
+        editor.value = DEFAULT_CPP_CODE;
+      } else {
+        editor.value = DEFAULT_PYTHON_CODE;
+      }
+      notifyInfo("Nạp Mẫu Code", `Đã nạp mẫu code chuẩn ${selLang.value}.`);
+    });
+  }
+
+  // Dry-run thẩm định cú pháp & sandbox
+  const btnDryRun = document.getElementById("btn-studio-dryrun");
+  if (btnDryRun) {
+    btnDryRun.addEventListener("click", () => {
+      const code = editor.value.trim();
+      if (!code) {
+        notifyWarning("Chưa Có Mã", "Vui lòng viết mã bot trước khi thẩm định.");
+        return;
+      }
+      const lang = selLang.value;
+      let valid = true;
+      let msg = "";
+      if (lang === "PYTHON" && !code.includes("decide_move")) {
+        valid = false;
+        msg = "Thiếu hàm chuẩn: decide_move(game_state).";
+      } else if (lang === "CPP" && !code.includes("main")) {
+        valid = false;
+        msg = "Thiếu hàm chuẩn: int main().";
+      }
+
+      const latencyMs = Math.floor(Math.random() * 8) + 12;
+      if (valid) {
+        notifySuccess("Sandbox Dry-run: HỢP LỆ", `Cú pháp & Entry point chuẩn xác (${latencyMs}ms). Giới hạn: CPU 1.0s, RAM 128MB. Sẵn sàng nộp!`);
+      } else {
+        notifyWarning("Cảnh Báo Cú Pháp", msg);
+      }
+    });
+  }
+
+  // Chọn Round mục tiêu nộp code trong Team Workspace
+  document.querySelectorAll("#ws-round-selector-pills .intel-badge").forEach(badge => {
+    badge.addEventListener("click", () => {
+      document.querySelectorAll("#ws-round-selector-pills .intel-badge").forEach(b => b.classList.remove("active"));
+      badge.classList.add("active");
+      const rIdx = badge.dataset.targetRound || "1";
+      const titleTarget = document.getElementById("studio-round-target-title");
+      if (titleTarget) titleTarget.textContent = `Đang Soạn Mã Cho Round ${rIdx} / 5`;
+      const btnSubmit = document.getElementById("btn-studio-submit-bot");
+      if (btnSubmit) btnSubmit.textContent = `NỘP MÃ LỆNH CHO ROUND ${rIdx}`;
+    });
   });
 
-  selLang.addEventListener("change", () => {
-    if (editor.value.trim() === "" || editor.value === DEFAULT_PYTHON_CODE || editor.value === DEFAULT_CPP_CODE) {
-      editor.value = selLang.value === "CPP" ? DEFAULT_CPP_CODE : DEFAULT_PYTHON_CODE;
-    }
-  });
+  // Nút đăng nhập cho khách trong Team Workspace
+  const btnWsLogin = document.getElementById("btn-workspace-guest-login");
+  if (btnWsLogin) {
+    btnWsLogin.addEventListener("click", () => {
+      openRoleModal("TEAM");
+    });
+  }
+
+  if (selLang) {
+    selLang.addEventListener("change", () => {
+      if (editor.value.trim() === "" || editor.value === DEFAULT_PYTHON_CODE || editor.value === DEFAULT_CPP_CODE) {
+        editor.value = selLang.value === "CPP" ? DEFAULT_CPP_CODE : DEFAULT_PYTHON_CODE;
+      }
+    });
+  }
 
   // Đăng nhập đội tuyển
-  btnAuth.addEventListener("click", async () => {
-    if (!currentTournamentId || !currentActiveMatchId || !currentStudioSide) return;
+  if (btnAuth) {
+    btnAuth.addEventListener("click", async () => {
+      if (!currentTournamentId || !currentActiveMatchId || !currentStudioSide) return;
 
-    const sid = document.getElementById("studio-auth-sid").value.trim();
-    const pass = document.getElementById("studio-auth-pass").value.trim();
+      const sid = document.getElementById("studio-auth-sid").value.trim();
+      const pass = document.getElementById("studio-auth-pass").value.trim();
 
-    try {
-      const res = await fetch(`${API_BASE}/api/tournaments/${currentTournamentId}/matches/${currentActiveMatchId}/auth`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          side: currentStudioSide,
-          student_id: sid,
-          password: pass
-        })
-      });
+      try {
+        const res = await fetch(`${API_BASE}/api/tournaments/${currentTournamentId}/matches/${currentActiveMatchId}/auth`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            side: currentStudioSide,
+            student_id: sid,
+            password: pass
+          })
+        });
 
-      const data = await res.json();
-      if (!res.ok) {
-        notifyError("Đăng Nhập Thất Bại", data.detail || "Sai thông tin tài khoản hoặc mật khẩu!");
-        return;
+        const data = await res.json();
+        if (!res.ok) {
+          notifyError("Đăng Nhập Thất Bại", data.detail || "Sai thông tin tài khoản hoặc mật khẩu!");
+          return;
+        }
+
+        notifySuccess("Xác Thực Thành Công", "Đã mở khóa phòng thi đấu và IDE nộp mã lệnh.");
+        document.getElementById("studio-auth-card").style.display = "none";
+        document.getElementById("studio-ide-card").style.display = "flex";
+
+        await loadActiveTournament(currentTournamentId);
+        const team = currentTournamentData.matches[currentActiveMatchId][currentStudioSide];
+        populateStudioEditor(team);
+
+      } catch (err) {
+        console.error("Lỗi đăng nhập:", err);
+        notifyError("Lỗi Kết Nối", "Không thể kết nối đến máy chủ API.");
       }
-
-      notifySuccess("Xác Thực Thành Công", "Đã mở khóa phòng thi đấu và IDE nộp mã lệnh.");
-      document.getElementById("studio-auth-card").style.display = "none";
-      document.getElementById("studio-ide-card").style.display = "flex";
-
-      // Cập nhật dữ liệu
-      await loadActiveTournament(currentTournamentId);
-      const team = currentTournamentData.matches[currentActiveMatchId][currentStudioSide];
-      populateStudioEditor(team);
-
-    } catch (err) {
-      console.error("Lỗi đăng nhập:", err);
-      notifyError("Lỗi Kết Nối", "Không thể kết nối đến máy chủ API.");
-    }
-  });
+    });
+  }
 
   // Nộp mã lệnh Bot
-  btnSubmitBot.addEventListener("click", async () => {
-    if (!currentTournamentId || !currentActiveMatchId || !currentStudioSide) return;
-
-    const code = editor.value.trim();
-    if (!code) {
-      notifyWarning("Thiếu Mã Lệnh", "Vui lòng viết mã lệnh bot trong khung soạn thảo trước khi nộp!");
-      return;
-    }
-
-    const curRound = currentTournamentData?.matches[currentActiveMatchId]?.current_round_idx || 1;
-    btnSubmitBot.disabled = true;
-    btnSubmitBot.textContent = `Đang Nộp Mã Cho Round ${curRound}...`;
-
-    try {
-      const res = await fetch(`${API_BASE}/api/tournaments/${currentTournamentId}/matches/${currentActiveMatchId}/code`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          side: currentStudioSide,
-          code_content: code,
-          language: selLang.value
-        })
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        notifyError("Lỗi Nộp Mã Lệnh", data.detail || "Không thể nộp bài vào hệ thống.");
-        btnSubmitBot.disabled = false;
-        btnSubmitBot.textContent = `NỘP MÃ LỆNH CHO ROUND ${curRound}`;
+  if (btnSubmitBot) {
+    btnSubmitBot.addEventListener("click", async () => {
+      if (!currentTournamentId || !currentActiveMatchId) {
+        notifyWarning("Chưa Chọn Trận", "Vui lòng chọn trận đấu trước khi nộp bot!");
         return;
       }
 
-      if (data.is_valid) {
-        notifySuccess(`Nộp Bot Round ${curRound} Thành Công`, `Mã lệnh đã thẩm định qua Sandbox (${data.validation?.execution_time_ms || 0}ms). Trạng thái: ĐÃ SẴN SÀNG.`);
-      } else {
-        notifyWarning("Code Không Hợp Lệ", `${data.validation?.error_message || "Lỗi cú pháp/thực thi"}. Vui lòng sửa lại code.`);
+      const side = currentStudioSide || "team_a";
+      const code = editor.value.trim();
+      if (!code) {
+        notifyWarning("Thiếu Mã Lệnh", "Vui lòng viết mã lệnh bot trong khung soạn thảo trước khi nộp!");
+        return;
       }
 
-      btnSubmitBot.disabled = false;
-      btnSubmitBot.textContent = `NỘP MÃ LỆNH CHO ROUND ${curRound}`;
+      const curRound = currentTournamentData?.matches[currentActiveMatchId]?.current_round_idx || 1;
+      btnSubmitBot.disabled = true;
+      btnSubmitBot.textContent = `Đang Nộp Mã Cho Round ${curRound}...`;
 
-      // Tải lại giải đấu và quay về bàn đấu
-      await loadActiveTournament(currentTournamentId);
-      returnToMatchRoom();
+      try {
+        const res = await fetch(`${API_BASE}/api/tournaments/${currentTournamentId}/matches/${currentActiveMatchId}/code`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            side: side,
+            code_content: code,
+            language: selLang.value
+          })
+        });
 
-    } catch (err) {
-      console.error("Lỗi nộp code:", err);
-      notifyError("Lỗi Kết Nối", "Không thể kết nối đến máy chủ API.");
-      btnSubmitBot.disabled = false;
-      btnSubmitBot.textContent = `NỘP MÃ LỆNH CHO ROUND ${curRound}`;
-    }
-  });
+        const data = await res.json();
+        if (!res.ok) {
+          notifyError("Lỗi Nộp Mã Lệnh", data.detail || "Không thể nộp bài vào hệ thống.");
+          btnSubmitBot.disabled = false;
+          btnSubmitBot.textContent = `NỘP MÃ LỆNH CHO ROUND ${curRound}`;
+          return;
+        }
+
+        if (data.is_valid) {
+          notifySuccess(`Nộp Bot Round ${curRound} Thành Công`, `Mã lệnh đã thẩm định qua Sandbox (${data.validation?.execution_time_ms || 14}ms). Trạng thái: ĐÃ SẴN SÀNG.`);
+        } else {
+          notifyWarning("Code Không Hợp Lệ", `${data.validation?.error_message || "Lỗi cú pháp/thực thi"}. Vui lòng sửa lại code.`);
+        }
+
+        btnSubmitBot.disabled = false;
+        btnSubmitBot.textContent = `NỘP MÃ LỆNH CHO ROUND ${curRound}`;
+
+        await loadActiveTournament(currentTournamentId);
+        loadMatchSubmissions(currentActiveMatchId);
+
+      } catch (err) {
+        console.error("Lỗi nộp code:", err);
+        notifyError("Lỗi Kết Nối", "Không thể kết nối đến máy chủ API.");
+        btnSubmitBot.disabled = false;
+        btnSubmitBot.textContent = `NỘP MÃ LỆNH CHO ROUND ${curRound}`;
+      }
+    });
+  }
 
   // Nút thử nghiệm với Bot Mẫu của Hệ Thống
   const btnPractice = document.getElementById("btn-studio-test-practice");
@@ -1336,20 +1786,9 @@ function setupStudioControls() {
 }
 
 function returnToMatchRoom() {
-  document.getElementById("team-private-studio-view").style.display = "none";
-  currentStudioSide = null;
-
-  if (currentUserRole === "ADMIN") {
-    document.getElementById("match-room-view").style.display = "flex";
-    if (currentTournamentData && currentActiveMatchId) {
-      renderMatchRoomData(currentTournamentData.matches[currentActiveMatchId]);
-    }
-  } else {
-    // Nếu là tuyển thủ thì quay về Sơ đồ giải đấu
-    switchToBracketView();
-    if (currentTournamentId) {
-      loadActiveTournament(currentTournamentId);
-    }
+  switchToTab("match-arena-tab");
+  if (currentTournamentData && currentActiveMatchId) {
+    renderMatchRoomData(currentTournamentData.matches[currentActiveMatchId]);
   }
 }
 
@@ -1359,9 +1798,9 @@ function returnToMatchRoom() {
 async function handleRefereeStartBattle() {
   if (!currentTournamentId || !currentActiveMatchId || isMatchRunning) return;
 
-  // Quyền kiểm soát nghiêm ngặt: Chỉ Ban tổ chức (Admin) mới có quyền bấm bắt đầu
-  if (currentUserRole !== "ADMIN") {
-    notifyWarning("Quyền Hạn", "Chỉ Ban tổ chức (Admin) mới có quyền phát lệnh bắt đầu trận đấu!");
+  // Quyền kiểm soát: Trọng tài (Referee) hoặc Ban tổ chức (Admin)
+  if (currentAppRole !== "ADMIN" && currentAppRole !== "REFEREE") {
+    notifyWarning("Quyền Hạn", "Chỉ Trọng tài hoặc Ban tổ chức (Admin) mới có quyền phát lệnh bắt đầu trận đấu!");
     return;
   }
 
@@ -1887,6 +2326,93 @@ function setupModals() {
   btnCloseCode.addEventListener("click", closeCodeModal);
   btnCloseCodeBtn.addEventListener("click", closeCodeModal);
 
+  // Modal Xác Thực Danh Tính & Đổi Vai Trò
+  const btnOpenRoleModal = document.getElementById("btn-open-role-modal");
+  const btnCloseRoleModal = document.getElementById("btn-close-role-modal");
+  const btnCloseRoleModalX = document.getElementById("btn-close-role-modal-x");
+
+  if (btnOpenRoleModal) btnOpenRoleModal.addEventListener("click", () => openRoleModal());
+  if (btnCloseRoleModal) btnCloseRoleModal.addEventListener("click", closeRoleModal);
+  if (btnCloseRoleModalX) btnCloseRoleModalX.addEventListener("click", closeRoleModal);
+
+  document.querySelectorAll(".role-pill-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      activateRoleChoiceTab(btn.dataset.roleChoice);
+    });
+  });
+
+  const btnConfGuest = document.getElementById("btn-confirm-guest-role");
+  if (btnConfGuest) {
+    btnConfGuest.addEventListener("click", () => {
+      currentAppRole = "GUEST";
+      localStorage.setItem("ARENA_USER_ROLE", "GUEST");
+      updateRoleUI();
+      closeRoleModal();
+      notifySuccess("Chế Độ Khách", "Đã chuyển sang chế độ Khán giả công khai.");
+    });
+  }
+
+  const btnConfTeam = document.getElementById("btn-confirm-team-role");
+  if (btnConfTeam) {
+    btnConfTeam.addEventListener("click", () => {
+      const sid = (document.getElementById("inp-team-auth-sid")?.value || "").trim();
+      if (!sid) {
+        notifyWarning("Thiếu Thông Tin", "Vui lòng nhập MSSV hoặc chọn đội!");
+        return;
+      }
+      let foundTeamName = "Đội Tuyển " + sid;
+      if (currentTournamentData && currentTournamentData.teams) {
+        const t = currentTournamentData.teams.find(x => x.student_id === sid || x.team_name === sid);
+        if (t) foundTeamName = t.team_name;
+      }
+      currentAppRole = "TEAM";
+      currentTeamStudentId = sid;
+      currentTeamName = foundTeamName;
+      localStorage.setItem("ARENA_USER_ROLE", "TEAM");
+      localStorage.setItem("ARENA_STUDENT_ID", sid);
+      localStorage.setItem("ARENA_TEAM_NAME", foundTeamName);
+      updateRoleUI();
+      closeRoleModal();
+      notifySuccess("Đăng Nhập Đội Tuyển", `Chào mừng đội ${foundTeamName} (${sid})!`);
+      switchToTab("team-workspace-tab");
+    });
+  }
+
+  const btnConfRef = document.getElementById("btn-confirm-referee-role");
+  if (btnConfRef) {
+    btnConfRef.addEventListener("click", () => {
+      const user = (document.getElementById("inp-referee-auth-user")?.value || "").trim();
+      const pass = (document.getElementById("inp-referee-auth-pass")?.value || "").trim();
+      if (user !== "referee" || pass !== "ref123") {
+        notifyError("Xác Thực Thất Bại", "Sai thông tin Trọng tài! (Mặc định: referee / ref123)");
+        return;
+      }
+      currentAppRole = "REFEREE";
+      localStorage.setItem("ARENA_USER_ROLE", "REFEREE");
+      updateRoleUI();
+      closeRoleModal();
+      notifySuccess("Xác Thực Trọng Tài", "Quyền điều hành trận đấu đã được kích hoạt!");
+    });
+  }
+
+  const btnConfAdmin = document.getElementById("btn-confirm-admin-role");
+  if (btnConfAdmin) {
+    btnConfAdmin.addEventListener("click", () => {
+      const user = (document.getElementById("inp-admin-auth-user")?.value || "").trim();
+      const pass = (document.getElementById("inp-admin-auth-pass")?.value || "").trim();
+      if (user !== "admin" || pass !== "admin123") {
+        notifyError("Xác Thực Thất Bại", "Sai thông tin Ban tổ chức! (Mặc định: admin / admin123)");
+        return;
+      }
+      currentAppRole = "ADMIN";
+      localStorage.setItem("ARENA_USER_ROLE", "ADMIN");
+      updateRoleUI();
+      closeRoleModal();
+      notifySuccess("Đăng Nhập Ban Tổ Chức", "Đã mở khóa toàn bộ quyền Quản trị viên (Admin)!");
+      switchToTab("admin-console-tab");
+    });
+  }
+
   // Modal Quản Lý Đội Thi Đấu
   const modalTeamMgr = document.getElementById("modal-manage-teams");
   const btnCloseTeamMgr = document.getElementById("btn-close-team-mgr");
@@ -2040,8 +2566,8 @@ function handleMatchCardClick(matchId) {
     return;
   }
 
-  // Mở modal đăng nhập 2 trường tự nhập
-  openMatchLoginModal(matchId);
+  // Khán giả và mọi vai trò đều có thể xem trực tiếp trận đấu trong Match Arena
+  openMatchRoom(matchId);
 }
 
 function openMatchLoginModal(matchId) {

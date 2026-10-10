@@ -1,0 +1,224 @@
+<section class="tab-pane" id="match-arena-tab">
+  <!-- THANH ĐIỀU HƯỚNG TRẬN ĐẤU -->
+  <div class="match-room-nav">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <button class="btn btn-outline" id="btn-back-to-bracket">← Quay Lại Sơ Đồ</button>
+      <select class="input-text-sm" id="select-arena-match" style="max-width: 180px;" title="Chuyển nhanh sang trận khác trong giải"></select>
+    </div>
+    <div class="match-room-title-box">
+      <h2 id="match-room-title">TỨ KẾT 1</h2>
+      <span class="badge-tag highlight" id="match-room-stage-badge">Tranh vé vào Bán Kết • Bo5</span>
+    </div>
+    <div class="match-status-badge" id="match-room-status-badge">SẴN SÀNG</div>
+  </div>
+
+  <!-- TIẾN TRÌNH 5 ROUND ĐẤU (5-ROUND PROGRESS TRACKER) -->
+  <div class="round-tracker-card">
+    <div class="tracker-header">
+      <span class="tracker-title">Tiến Trình Trận Đấu (Tối Đa 5 Round - Bo5)</span>
+      <span class="tracker-score" id="match-score-summary">Tỉ số: 0 - 0</span>
+    </div>
+    <div class="round-step-pills" id="round-step-pills">
+      <div class="step-pill current" data-round="1">Round 1</div>
+      <div class="step-pill" data-round="2">Round 2</div>
+      <div class="step-pill" data-round="3">Round 3</div>
+      <div class="step-pill" data-round="4">Round 4</div>
+      <div class="step-pill" data-round="5">Round 5</div>
+    </div>
+  </div>
+
+  <!-- =============================================================== -->
+  <!-- BÀN CỜ CHIẾN THUẬT 9x9 (9x9 TACTICAL CHESSBOARD ARENA) -->
+  <!-- =============================================================== -->
+  <div class="visual-battle-arena-board" id="visual-battle-arena-board">
+    <div class="arena-top-bar">
+      <div class="board-team-pill red">
+        <span class="team-dot red"></span>
+        <strong id="arena-name-red">Đội Đỏ</strong>
+        <span class="board-piece-badge red" id="board-count-red">9/9 quân</span>
+      </div>
+      <div class="arena-round-indicator" id="arena-round-indicator">
+        ROUND 1 / 5
+      </div>
+      <div class="board-team-pill blue">
+        <span class="board-piece-badge blue" id="board-count-blue">9/9 quân</span>
+        <strong id="arena-name-blue">Đội Xanh</strong>
+        <span class="team-dot blue"></span>
+      </div>
+    </div>
+
+    <!-- BÀN CỜ 9x9 TRUNG TÂM -->
+    <div class="board-wrapper">
+      <div class="chessboard-9x9" id="chessboard-9x9">
+        <!-- 81 ô cờ (9x9) tự động render theo vị trí quân Đỏ và Xanh -->
+      </div>
+    </div>
+
+    <!-- DÒNG TƯỜNG THUẬT CHIẾN THUẬT & ĂN QUÂN REALTIME -->
+    <div class="board-bottom-status">
+      <div class="live-commentary-ticker" id="live-commentary-ticker">
+        Sẵn sàng cho hiệp đấu! Chờ Trọng tài khai hỏa trên bàn cờ 9x9...
+      </div>
+    </div>
+
+    <!-- BANNER KẾT THÚC ROUND & ĐỒNG HỒ ĐẾM NGƯỢC 5S CHUYỂN ROUND -->
+    <div class="round-intermission-banner" id="round-intermission-banner" style="display: none;">
+      <div class="intermission-body">
+        <div class="intermission-top-header">
+          <span class="intermission-badge" id="intermission-badge">HIỆP ĐẤU HOÀN TẤT</span>
+          <h4 id="intermission-title">ROUND 1 HOÀN TẤT</h4>
+        </div>
+        <p id="intermission-desc">
+          Kết quả chính thức đã được ghi nhận vào hệ thống.
+        </p>
+        <div class="intermission-countdown-box">
+          <span class="countdown-spinner">Đếm ngược:</span>
+          <span id="intermission-countdown-text">Bàn cờ sẽ tự động chuyển sang chuẩn bị Round tiếp theo sau <strong id="countdown-num">5</strong>s...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KHUNG 2 ĐỘI THI ĐẤU (BẢO MẬT MÃ LỆNH) -->
+  <div class="match-fighters-grid">
+    <!-- ĐỘI ĐỎ (TEAM A) -->
+    <div class="fighter-side-card red-side" id="card-team-a">
+      <div class="side-header">
+        <div class="fighter-avatar red-avatar">ĐỎ</div>
+        <div class="fighter-info-col">
+          <h3 class="fighter-name" id="team-a-name">Đội Đỏ</h3>
+          <p class="fighter-meta" id="team-a-meta">MSSV: --- • Chờ nộp bot</p>
+        </div>
+        <div class="auth-status-badge badge-waiting" id="team-a-auth-badge">Chờ Nộp Code</div>
+      </div>
+      <div class="fighter-stats-row">
+        <span>Số Round Thắng: <strong id="team-a-rounds-won">0</strong></span>
+        <span>Sinh mệnh (HP): <strong id="team-a-hp">100 HP</strong></span>
+      </div>
+      <div class="submission-mini-status" id="team-a-sub-status">
+        <span class="sub-indicator sub-wait" id="team-a-sub-indicator">●</span>
+        <span class="sub-text" id="team-a-sub-text">Chưa có bài nộp cho Round này</span>
+      </div>
+      <button class="btn btn-sm btn-outline btn-full btn-jump-to-studio" data-side="team_a" style="margin-top: 8px;">
+        Vào Nộp Bot Đội Đỏ (Team Workspace)
+      </button>
+    </div>
+
+    <!-- ĐỘI XANH (TEAM B) -->
+    <div class="fighter-side-card blue-side" id="card-team-b">
+      <div class="side-header">
+        <div class="fighter-avatar blue-avatar">XANH</div>
+        <div class="fighter-info-col">
+          <h3 class="fighter-name" id="team-b-name">Đội Xanh</h3>
+          <p class="fighter-meta" id="team-b-meta">MSSV: --- • Chờ nộp bot</p>
+        </div>
+        <div class="auth-status-badge badge-waiting" id="team-b-auth-badge">Chờ Nộp Code</div>
+      </div>
+      <div class="fighter-stats-row">
+        <span>Số Round Thắng: <strong id="team-b-rounds-won">0</strong></span>
+        <span>Sinh mệnh (HP): <strong id="team-b-hp">100 HP</strong></span>
+      </div>
+      <div class="submission-mini-status" id="team-b-sub-status">
+        <span class="sub-indicator sub-wait" id="team-b-sub-indicator">●</span>
+        <span class="sub-text" id="team-b-sub-text">Chưa có bài nộp cho Round này</span>
+      </div>
+      <button class="btn btn-sm btn-outline btn-full btn-jump-to-studio" data-side="team_b" style="margin-top: 8px;">
+        Vào Nộp Bot Đội Xanh (Team Workspace)
+      </button>
+    </div>
+  </div>
+
+  <!-- KHU VỰC ĐIỀU HÀNH TRẬN ĐẤU CỦA BAN TỔ CHỨC / TRỌNG TÀI -->
+  <div class="round-action-center">
+    <div class="referee-header-row">
+      <span class="referee-badge">TRỌNG TÀI GIẢI ĐẤU (ĐIỀU HÀNH ARENA)</span>
+      <div class="ready-check-cluster">
+        <span class="check-pill" id="pill-ready-a">Đội Đỏ: Chờ nộp bot</span>
+        <span class="check-pill" id="pill-ready-b">Đội Xanh: Chờ nộp bot</span>
+      </div>
+    </div>
+    <div class="current-round-banner" id="current-round-banner-box">
+      <span id="current-round-text">ROUND 1 / 5</span>
+      <div class="ready-banner-status" id="ready-banner-status">
+        <h4 id="arena-readiness-title">CHỜ 2 ĐỘI NỘP MÃ LỆNH</h4>
+        <p id="round-tip-text">Chờ cả 2 đội vào màn hình riêng nộp mã Bot hợp lệ cho round này, nút Bắt Đầu Trận Đấu sẽ tự động kích hoạt!</p>
+      </div>
+    </div>
+
+    <!-- NÚT BẮT ĐẦU TRẬN ĐẤU CHÍNH (ĐIỀU HÀNH DUY NHẤT CỦA TRỌNG TÀI / ADMIN) -->
+    <div class="referee-control-btns">
+      <button class="btn btn-lg btn-referee-start" disabled="" id="btn-referee-start">
+        BẮT ĐẦU TRẬN ĐẤU (ROUND 1)
+      </button>
+      <div class="referee-sub-actions">
+        <button class="btn btn-sm btn-outline" id="btn-quick-fill-demo">Nạp Sẵn Code Mẫu (Test Nhanh)</button>
+        <button class="btn btn-sm btn-outline" id="btn-reset-current-match">Đặt Lại Trận Đấu (Reset 0-0)</button>
+      </div>
+      <!-- THÔNG BÁO CHO KHÁN GIẢ NẾU KHÔNG CÓ QUYỀN ĐIỀU HÀNH -->
+      <div class="referee-role-notice" id="referee-role-notice" style="display: none; margin-top: 8px; font-size: 12px; color: var(--text-muted); text-align: center;">
+        ℹ️ Bạn đang xem ở chế độ Khán giả. Quyền kích hoạt trận đấu thuộc về Trọng tài hoặc Ban tổ chức.
+      </div>
+    </div>
+
+    <!-- BANNER THÔNG BÁO CHIẾN THẮNG TRẬN ĐẤU -->
+    <div class="match-victory-banner" id="match-victory-banner" style="display: none;">
+      <h3 id="victory-team-text">CHIẾN THẮNG TRẬN ĐẤU!</h3>
+      <p>Đội chiến thắng đã được hệ thống tự động đưa vào trận đấu vòng kế tiếp trên Sơ đồ giải đấu.</p>
+      <button class="btn btn-primary" id="btn-victory-back-tree">Xem Nhánh Đấu Đã Cập Nhật</button>
+    </div>
+  </div>
+
+  <!-- KHU VỰC NHẬT KÝ CHI TIẾT 3 LOẠI: MOVE LOG, BOT EXECUTION LOG, SYSTEM LOG -->
+  <div class="arena-logs-card" id="arena-logs-card">
+    <div class="logs-card-header">
+      <div class="logs-tabs-nav">
+        <button class="log-tab-btn active" data-log-tab="move-log-pane">Nước Đi (Move Log)</button>
+        <button class="log-tab-btn" data-log-tab="bot-log-pane">Thực Thi Bot (Bot Log)</button>
+        <button class="log-tab-btn" data-log-tab="system-log-pane">Hệ Thống (System Log)</button>
+      </div>
+      <span class="logs-badge">Live Monitor</span>
+    </div>
+    <div class="logs-card-body">
+      <div class="log-pane active" id="move-log-pane">
+        <div class="log-stream-list" id="move-log-list">
+          <div class="log-empty-msg">Chưa có nước đi nào. Chờ khai hỏa trận đấu...</div>
+        </div>
+      </div>
+      <div class="log-pane" id="bot-log-pane">
+        <div class="log-stream-list" id="bot-log-list">
+          <div class="log-empty-msg">Chưa có dữ liệu thực thi bot trong sandbox...</div>
+        </div>
+      </div>
+      <div class="log-pane" id="system-log-pane">
+        <div class="log-stream-list" id="system-log-list">
+          <div class="log-empty-msg">Hệ thống đang ở trạng thái chờ bài nộp...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LỊCH SỬ TỪNG ROUND & NÚT XEM LẠI REPLAY -->
+  <div class="round-history-table-card">
+    <div class="history-card-header">
+      <h3>Nhật Ký Từng Round &amp; Trình Chiếu Replay</h3>
+      <span class="history-sub">Lưu trữ từng hiệp đấu, nước đi và mã lệnh đã khóa. Bấm Xem Replay để chiếu lại step-by-step.</span>
+    </div>
+    <div class="table-responsive">
+      <table class="table-clean" id="table-round-history">
+        <thead>
+          <tr>
+            <th>Round</th>
+            <th>Nước Đội Đỏ</th>
+            <th>Nước Đội Xanh</th>
+            <th>Kết Quả Hiệp</th>
+            <th>Tường Thuật Chiến Thuật</th>
+            <th>Mã Lệnh Đã Dùng</th>
+          </tr>
+        </thead>
+        <tbody id="tbody-round-history">
+          <tr><td class="text-center text-muted" colspan="6">Chưa đấu round nào trong trận này.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
