@@ -5,11 +5,65 @@
 
 const API_BASE = localStorage.getItem("ARENA_API_URL") || (window.location.hostname.includes("workers.dev") || window.location.hostname.includes("pages.dev") ? "https://game-project-3.onrender.com" : (window.location.origin === "null" || window.location.protocol === "file:" ? "https://game-project-3.onrender.com" : window.location.origin));
 
+// =============================================================================
+// PRODUCTION-GRADE TOAST & IN-APP NOTIFICATION BANNER SYSTEM
+// =============================================================================
+function showToast(type, title, message = "", duration = 4000) {
+  let container = document.getElementById("toast-container");
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "toast-container";
+    container.className = "toast-container";
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement("div");
+  toast.className = `toast-item toast-${type}`;
+
+  const badgeText = type === "success" ? "THÀNH CÔNG" : (type === "error" ? "LỖI" : (type === "warning" ? "CẢNH BÁO" : "THÔNG BÁO"));
+
+  toast.innerHTML = `
+    <span class="toast-badge">${badgeText}</span>
+    <div class="toast-body">
+      <div class="toast-title">${escapeHtml(title)}</div>
+      ${message ? `<div class="toast-desc">${escapeHtml(message)}</div>` : ''}
+    </div>
+    <button class="toast-close" title="Đóng">&times;</button>
+  `;
+
+  const btnClose = toast.querySelector(".toast-close");
+  if (btnClose) {
+    btnClose.addEventListener("click", () => removeToast(toast));
+  }
+
+  container.appendChild(toast);
+
+  if (duration > 0) {
+    setTimeout(() => {
+      removeToast(toast);
+    }, duration);
+  }
+}
+
+function removeToast(toast) {
+  if (!toast || toast.classList.contains("toast-leave")) return;
+  toast.classList.add("toast-leave");
+  setTimeout(() => {
+    if (toast.parentNode) toast.parentNode.removeChild(toast);
+  }, 250);
+}
+
+function notifySuccess(title, message = "") { showToast("success", title, message); }
+function notifyError(title, message = "") { showToast("error", title, message); }
+function notifyWarning(title, message = "") { showToast("warning", title, message); }
+function notifyInfo(title, message = "") { showToast("info", title, message); }
+
+
 // Các nhãn hiển thị quân bài chuẩn Oẳn tù tì (Không dùng emoji)
 const PIECE_ICONS = {
-  "ROCK": "Búa",
-  "PAPER": "Bao",
-  "SCISSORS": "Kéo"
+  "ROCK": "BÚA",
+  "PAPER": "BAO",
+  "SCISSORS": "KÉO"
 };
 
 // Mẫu code mặc định chuẩn ICPC
@@ -99,7 +153,7 @@ function initApp() {
   if (btnSetBackend) {
     const currentBackend = localStorage.getItem("ARENA_API_URL") || window.location.origin;
     if (localStorage.getItem("ARENA_API_URL")) {
-      btnSetBackend.textContent = "⚙️ Server: " + localStorage.getItem("ARENA_API_URL").replace(/^https?:\/\//, '').slice(0, 18) + "...";
+      btnSetBackend.textContent = "Server: " + localStorage.getItem("ARENA_API_URL").replace(/^https?:\/\//, '').slice(0, 18) + "...";
     }
     btnSetBackend.addEventListener("click", () => {
       const current = localStorage.getItem("ARENA_API_URL") || "";
@@ -111,7 +165,7 @@ function initApp() {
         } else {
           localStorage.removeItem("ARENA_API_URL");
         }
-        alert("Đã cập nhật máy chủ Backend! Đang tải lại trang...");
+        notifySuccess("Cập Nhật Máy Chủ", "Đã lưu địa chỉ máy chủ API. Đang tải lại trang...");
         window.location.reload();
       }
     });
@@ -562,10 +616,10 @@ function renderMatchRoomData(match) {
 
   if (pillA) {
     if (readyA) {
-      pillA.textContent = `${teamA.team_name}: Code Hợp Lệ ✓`;
+      pillA.textContent = `${teamA.team_name}: Mã Hợp Lệ [OK]`;
       pillA.className = "check-pill ready";
     } else if (teamA && teamA.code_submitted) {
-      pillA.textContent = `${teamA.team_name}: Code Không Hợp Lệ ✗`;
+      pillA.textContent = `${teamA.team_name}: Mã Lỗi [FAIL]`;
       pillA.className = "check-pill wait";
     } else {
       pillA.textContent = `${teamA ? teamA.team_name : 'Đội Đỏ'}: Chờ nộp bot`;
@@ -575,10 +629,10 @@ function renderMatchRoomData(match) {
 
   if (pillB) {
     if (readyB) {
-      pillB.textContent = `${teamB.team_name}: Code Hợp Lệ ✓`;
+      pillB.textContent = `${teamB.team_name}: Mã Hợp Lệ [OK]`;
       pillB.className = "check-pill ready";
     } else if (teamB && teamB.code_submitted) {
-      pillB.textContent = `${teamB.team_name}: Code Không Hợp Lệ ✗`;
+      pillB.textContent = `${teamB.team_name}: Mã Lỗi [FAIL]`;
       pillB.className = "check-pill wait";
     } else {
       pillB.textContent = `${teamB ? teamB.team_name : 'Đội Xanh'}: Chờ nộp bot`;
@@ -687,10 +741,10 @@ function renderMatchRoomDataSilent(match) {
   const pillB = document.getElementById("pill-ready-b");
   if (pillA) {
     if (readyA) {
-      pillA.textContent = `${teamA.team_name}: Code Hợp Lệ ✓`;
+      pillA.textContent = `${teamA.team_name}: Mã Hợp Lệ [OK]`;
       pillA.className = "check-pill ready";
     } else if (teamA && teamA.code_submitted) {
-      pillA.textContent = `${teamA.team_name}: Code Không Hợp Lệ ✗`;
+      pillA.textContent = `${teamA.team_name}: Mã Lỗi [FAIL]`;
       pillA.className = "check-pill wait";
     } else {
       pillA.textContent = `${teamA ? teamA.team_name : 'Đội Đỏ'}: Chờ nộp bot`;
@@ -699,10 +753,10 @@ function renderMatchRoomDataSilent(match) {
   }
   if (pillB) {
     if (readyB) {
-      pillB.textContent = `${teamB.team_name}: Code Hợp Lệ ✓`;
+      pillB.textContent = `${teamB.team_name}: Mã Hợp Lệ [OK]`;
       pillB.className = "check-pill ready";
     } else if (teamB && teamB.code_submitted) {
-      pillB.textContent = `${teamB.team_name}: Code Không Hợp Lệ ✗`;
+      pillB.textContent = `${teamB.team_name}: Mã Lỗi [FAIL]`;
       pillB.className = "check-pill wait";
     } else {
       pillB.textContent = `${teamB ? teamB.team_name : 'Đội Xanh'}: Chờ nộp bot`;
@@ -824,7 +878,7 @@ function renderChessboard(redPieces, bluePieces, clashEvent = null) {
       if (cell) {
         const pieceEl = document.createElement("div");
         pieceEl.className = "board-piece piece-blue";
-        pieceEl.textContent = PIECE_ICONS[p.type] || "✊";
+        pieceEl.textContent = PIECE_ICONS[p.type] || "BÚA";
         pieceEl.title = `Quân Xanh: ${p.type} (${p.col}, ${p.row})`;
         cell.appendChild(pieceEl);
       }
@@ -841,7 +895,7 @@ function renderChessboard(redPieces, bluePieces, clashEvent = null) {
       if (cell) {
         const pieceEl = document.createElement("div");
         pieceEl.className = "board-piece piece-red";
-        pieceEl.textContent = PIECE_ICONS[p.type] || "✊";
+        pieceEl.textContent = PIECE_ICONS[p.type] || "BÚA";
         pieceEl.title = `Quân Đỏ: ${p.type} (${p.col}, ${p.row})`;
         cell.appendChild(pieceEl);
       }
@@ -972,12 +1026,12 @@ function renderFighterSide(side, team) {
   if (authBadge) {
     if (team.code_submitted) {
       if (team.code_valid) {
-        authBadge.textContent = "Code Hợp Lệ ✓";
+        authBadge.textContent = "Mã Hợp Lệ [OK]";
         authBadge.className = "auth-status-badge badge-valid";
         if (subIndicator) subIndicator.className = "sub-indicator sub-valid";
         if (subText) subText.textContent = `Mã lệnh hợp lệ (${team.active_submission_id || 'sub_ok'})`;
       } else {
-        authBadge.textContent = "Code Không Hợp Lệ ✗";
+        authBadge.textContent = "Mã Lỗi [FAIL]";
         authBadge.className = "auth-status-badge badge-invalid";
         if (subIndicator) subIndicator.className = "sub-indicator sub-invalid";
         if (subText) subText.textContent = `Lỗi: ${team.validation_error || 'Sandbox lỗi'}`;
@@ -1018,11 +1072,11 @@ function openPrivateStudio(side) {
   if (!currentTournamentData || !currentActiveMatchId) return;
 
   if (currentUserRole === "TEAM_A" && side !== "team_a") {
-    alert("Quyền hạn: Bạn đang đăng nhập với tư cách Đội Đỏ, không thể truy cập phòng nộp bot của Đội Xanh!");
+    notifyWarning("Quyền Hạn", "Bạn đang đăng nhập với tư cách Đội Đỏ, không thể truy cập phòng của Đội Xanh!");
     return;
   }
   if (currentUserRole === "TEAM_B" && side !== "team_b") {
-    alert("Quyền hạn: Bạn đang đăng nhập với tư cách Đội Xanh, không thể truy cập phòng nộp bot của Đội Đỏ!");
+    notifyWarning("Quyền Hạn", "Bạn đang đăng nhập với tư cách Đội Xanh, không thể truy cập phòng của Đội Đỏ!");
     return;
   }
 
@@ -1199,11 +1253,11 @@ function setupStudioControls() {
 
       const data = await res.json();
       if (!res.ok) {
-        alert(`Đăng nhập thất bại: ${data.detail || 'Sai MSSV hoặc mật khẩu!'}`);
+        notifyError("Đăng Nhập Thất Bại", data.detail || "Sai thông tin tài khoản hoặc mật khẩu!");
         return;
       }
 
-      alert("Xác thực thành công! Mở khóa IDE nộp mã lệnh.");
+      notifySuccess("Xác Thực Thành Công", "Đã mở khóa phòng thi đấu và IDE nộp mã lệnh.");
       document.getElementById("studio-auth-card").style.display = "none";
       document.getElementById("studio-ide-card").style.display = "flex";
 
@@ -1214,7 +1268,7 @@ function setupStudioControls() {
 
     } catch (err) {
       console.error("Lỗi đăng nhập:", err);
-      alert("Lỗi kết nối máy chủ.");
+      notifyError("Lỗi Kết Nối", "Không thể kết nối đến máy chủ API.");
     }
   });
 
@@ -1224,7 +1278,7 @@ function setupStudioControls() {
 
     const code = editor.value.trim();
     if (!code) {
-      alert("Vui lòng viết mã lệnh bot trước khi nộp!");
+      notifyWarning("Thiếu Mã Lệnh", "Vui lòng viết mã lệnh bot trong khung soạn thảo trước khi nộp!");
       return;
     }
 
@@ -1245,16 +1299,16 @@ function setupStudioControls() {
 
       const data = await res.json();
       if (!res.ok) {
-        alert(`Lỗi nộp mã lệnh: ${data.detail || 'Không thể nộp'}`);
+        notifyError("Lỗi Nộp Mã Lệnh", data.detail || "Không thể nộp bài vào hệ thống.");
         btnSubmitBot.disabled = false;
         btnSubmitBot.textContent = `NỘP MÃ LỆNH CHO ROUND ${curRound}`;
         return;
       }
 
       if (data.is_valid) {
-        alert(`Nộp Bot thành công cho Round ${curRound}!\n✓ Mã lệnh đã vượt qua kiểm tra Sandbox (${data.validation?.execution_time_ms || 0}ms).\nTrạng thái đội: ĐÃ SẴN SÀNG.`);
+        notifySuccess(`Nộp Bot Round ${curRound} Thành Công`, `Mã lệnh đã thẩm định qua Sandbox (${data.validation?.execution_time_ms || 0}ms). Trạng thái: ĐÃ SẴN SÀNG.`);
       } else {
-        alert(`Cảnh báo: Đã tiếp nhận bài nộp nhưng CODE KHÔNG HỢP LỆ:\n${data.validation?.error_message || 'Lỗi cú pháp/thực thi'}\nĐội chưa đủ điều kiện sẵn sàng! Vui lòng sửa lại code.`);
+        notifyWarning("Code Không Hợp Lệ", `${data.validation?.error_message || "Lỗi cú pháp/thực thi"}. Vui lòng sửa lại code.`);
       }
 
       btnSubmitBot.disabled = false;
@@ -1266,7 +1320,7 @@ function setupStudioControls() {
 
     } catch (err) {
       console.error("Lỗi nộp code:", err);
-      alert("Lỗi kết nối máy chủ.");
+      notifyError("Lỗi Kết Nối", "Không thể kết nối đến máy chủ API.");
       btnSubmitBot.disabled = false;
       btnSubmitBot.textContent = `NỘP MÃ LỆNH CHO ROUND ${curRound}`;
     }
@@ -1307,7 +1361,7 @@ async function handleRefereeStartBattle() {
 
   // Quyền kiểm soát nghiêm ngặt: Chỉ Ban tổ chức (Admin) mới có quyền bấm bắt đầu
   if (currentUserRole !== "ADMIN") {
-    alert("Chỉ Ban tổ chức (Admin) mới có quyền phát lệnh bắt đầu trận đấu!");
+    notifyWarning("Quyền Hạn", "Chỉ Ban tổ chức (Admin) mới có quyền phát lệnh bắt đầu trận đấu!");
     return;
   }
 
@@ -1318,7 +1372,7 @@ async function handleRefereeStartBattle() {
   const readyA = match.team_a && match.team_a.code_valid;
   const readyB = match.team_b && match.team_b.code_valid;
   if (!match.all_teams_ready && !(readyA && readyB)) {
-    alert("Chưa đủ điều kiện bắt đầu! Cả hai đội phải nộp mã lệnh hợp lệ trước khi Ban tổ chức khai hỏa.");
+    notifyWarning("Chưa Đủ Điều Kiện", "Cả hai đội phải nộp mã lệnh hợp lệ trước khi khai hỏa.");
     return;
   }
 
@@ -1340,7 +1394,7 @@ async function handleRefereeStartBattle() {
 
     const data = await res.json();
     if (!res.ok) {
-      alert(`Lỗi thi đấu: ${data.detail || 'Không thể chạy round'}`);
+      notifyError("Lỗi Thi Đấu", data.detail || "Không thể khởi chạy hiệp đấu.");
       if (btn) {
         btn.disabled = false;
         btn.classList.remove("running");
@@ -1423,7 +1477,7 @@ async function handleRefereeStartBattle() {
 
   } catch (err) {
     console.error("Lỗi chạy hiệp đấu:", err);
-    alert("Có lỗi trong quá trình thi đấu.");
+    notifyError("Lỗi Hệ Thống", "Có lỗi trong quá trình thi đấu.");
   } finally {
     isMatchRunning = false;
     if (btn) btn.classList.remove("running");
@@ -1439,11 +1493,11 @@ async function handleQuickFillDemo() {
     });
     const data = await res.json();
     if (!res.ok) {
-      alert(`Lỗi: ${data.detail || 'Không thể nạp'}`);
+      notifyError("Lỗi Thao Tác", data.detail || "Không thể nạp.");
       return;
     }
 
-    alert(data.message);
+    notifyInfo("Thông Báo", data.message || "");
     await loadActiveTournament(currentTournamentId);
 
   } catch (err) {
@@ -1462,11 +1516,11 @@ async function handleResetCurrentMatch() {
     });
     const data = await res.json();
     if (!res.ok) {
-      alert(`Lỗi: ${data.detail || 'Không thể đặt lại'}`);
+      notifyError("Lỗi Thao Tác", data.detail || "Không thể đặt lại.");
       return;
     }
 
-    alert(data.message);
+    notifyInfo("Thông Báo", data.message || "");
     await loadActiveTournament(currentTournamentId);
 
   } catch (err) {
@@ -1485,8 +1539,8 @@ function renderRoundHistoryTable(historyList) {
   historyList.forEach(r => {
     const tr = document.createElement("tr");
 
-    const moveAIcon = PIECE_ICONS[r.team_a_move] || "✊";
-    const moveBIcon = PIECE_ICONS[r.team_b_move] || "✊";
+    const moveAIcon = PIECE_ICONS[r.team_a_move] || "BÚA";
+    const moveBIcon = PIECE_ICONS[r.team_b_move] || "BÚA";
 
     let winText = "Hòa";
     if (r.winner === "team_a") winText = `<span class="text-danger" style="font-weight:700">Đội Đỏ Thắng</span>`;
@@ -1588,10 +1642,10 @@ async function loadMatchSubmissions(matchId) {
       const timeStr = `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
       const sideText = s.side === "team_a" ? `<span class="text-danger" style="font-weight:700">Đội Đỏ (${escapeHtml(s.team_name)})</span>` : `<span class="text-primary" style="font-weight:700">Đội Xanh (${escapeHtml(s.team_name)})</span>`;
       const validText = s.is_valid
-        ? `<span class="badge-tag" style="background:#dcfce7; color:#15803d; border:1px solid #86efac;">Hợp Lệ ✓ (${s.execution_time_ms || 0}ms)</span>`
-        : `<span class="badge-tag" style="background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;" title="${escapeHtml(s.error_message || '')}">Không Hợp Lệ ✗</span>`;
+        ? `<span class="badge-tag" style="background:#dcfce7; color:#15803d; border:1px solid #86efac;">Hợp Lệ [OK] (${s.execution_time_ms || 0}ms)</span>`
+        : `<span class="badge-tag" style="background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;" title="${escapeHtml(s.error_message || '')}">Không Hợp Lệ [FAIL]</span>`;
       const lockedText = s.is_locked
-        ? `<span style="color:#d97706; font-weight:700;">Đã Khóa 🔒</span>`
+        ? `<span style="color:#d97706; font-weight:700;">Đã Khóa [LOCKED]</span>`
         : `<span style="color:#16a34a; font-weight:600;">Sẵn Sàng</span>`;
 
       tr.innerHTML = `
@@ -1617,7 +1671,7 @@ function openReplayModal(matchId, roundNum) {
 
   const roundRec = match.rounds_history.find(r => r.round_number === roundNum);
   if (!roundRec || !roundRec.board_steps || roundRec.board_steps.length === 0) {
-    alert(`Không tìm thấy dữ liệu diễn biến bàn cờ cho Round ${roundNum}!`);
+    notifyWarning("Không Tìm Thấy Replay", `Không có dữ liệu diễn biến bàn cờ cho Round ${roundNum}!`);
     return;
   }
 
@@ -1690,7 +1744,7 @@ function renderReplayStep(stepIdx) {
       if (cell) {
         const pieceEl = document.createElement("div");
         pieceEl.className = "board-piece piece-blue";
-        pieceEl.textContent = PIECE_ICONS[p.type] || "✊";
+        pieceEl.textContent = PIECE_ICONS[p.type] || "BÚA";
         cell.appendChild(pieceEl);
       }
     });
@@ -1705,7 +1759,7 @@ function renderReplayStep(stepIdx) {
       if (cell) {
         const pieceEl = document.createElement("div");
         pieceEl.className = "board-piece piece-red";
-        pieceEl.textContent = PIECE_ICONS[p.type] || "✊";
+        pieceEl.textContent = PIECE_ICONS[p.type] || "BÚA";
         cell.appendChild(pieceEl);
       }
     });
@@ -1779,12 +1833,12 @@ function setupModals() {
     const numTeams = teamsInp ? parseInt(teamsInp.value, 10) : 8;
 
     if (!name) {
-      alert("Vui lòng nhập tên giải đấu!");
+      notifyWarning("Thiếu Tên Giải Đấu", "Vui lòng nhập tên giải đấu!");
       return;
     }
 
     if (isNaN(numTeams) || numTeams < 4 || (numTeams & (numTeams - 1)) !== 0) {
-      alert("Số lượng đội tham gia phải là một số lũy thừa của 2 và tối thiểu 4 đội (ví dụ: 4, 8, 16, 32...) để tạo nhánh đấu loại trực tiếp hợp lệ!");
+      notifyWarning("Quy Mô Không Hợp Lệ", "Số lượng đội phải là lũy thừa của 2 (4, 8, 16, 32...) để tạo nhánh đấu loại trực tiếp!");
       return;
     }
 
@@ -1800,13 +1854,13 @@ function setupModals() {
 
       const data = await res.json();
       if (!res.ok) {
-        alert(`Lỗi tạo giải: ${data.detail || 'Không thể tạo'}`);
+        notifyError("Lỗi Tạo Giải Đấu", data.detail || "Không thể tạo giải đấu mới.");
         btnSubmitCreate.disabled = false;
         btnSubmitCreate.textContent = "Khởi Tạo Giải Đấu";
         return;
       }
 
-      alert(data.message || "Khởi tạo giải đấu thành công!");
+      notifySuccess("Khởi Tạo Giải Đấu", data.message || "Khởi tạo giải đấu thành công!");
       closeModal();
       btnSubmitCreate.disabled = false;
       btnSubmitCreate.textContent = "Khởi Tạo Giải Đấu";
@@ -1818,7 +1872,7 @@ function setupModals() {
 
     } catch (err) {
       console.error("Lỗi tạo giải đấu:", err);
-      alert("Lỗi kết nối máy chủ.");
+      notifyError("Lỗi Kết Nối", "Không thể kết nối đến máy chủ API.");
       btnSubmitCreate.disabled = false;
       btnSubmitCreate.textContent = "Khởi Tạo Giải Đấu";
     }
@@ -1930,7 +1984,7 @@ function setupModals() {
         replayPlayInterval = null;
         btnReplayPlayPause.textContent = "▶ Tự Động Chạy";
       } else {
-        btnReplayPlayPause.textContent = "❚❚ Tạm Dừng";
+        btnReplayPlayPause.textContent = "Tạm Dừng";
         if (currentReplayRecord && currentReplayStepIdx >= currentReplayRecord.board_steps.length - 1) {
           renderReplayStep(0);
         }
@@ -2296,7 +2350,7 @@ async function handleAddTeamSubmit() {
   const uni = uniInp ? uniInp.value.trim() : "";
 
   if (!name || !sid) {
-    alert("Vui lòng nhập Tên Đội và Mã Số Sinh Viên (MSSV)!");
+    notifyWarning("Thiếu Thông Tin", "Vui lòng nhập Tên Đội và Mã Số Sinh Viên (MSSV)!");
     return;
   }
 
@@ -2319,7 +2373,7 @@ async function handleAddTeamSubmit() {
 
     const data = await res.json();
     if (!res.ok) {
-      alert(`Không thể thêm đội: ${data.detail || 'Lỗi thêm đội'}`);
+      notifyError("Không Thể Thêm Đội", data.detail || "Lỗi thêm đội.");
       if (btn) {
         btn.disabled = false;
         btn.textContent = "+ Thêm Đội Vào Giải";
@@ -2336,13 +2390,13 @@ async function handleAddTeamSubmit() {
       btn.textContent = "+ Thêm Đội Vào Giải";
     }
 
-    alert(data.message || `Đã thêm thành công đội ${name}!`);
+    notifySuccess("Thêm Đội Thành Công", data.message || `Đã thêm thành công đội ${name}!`);
     await loadActiveTournament(currentTournamentId);
     renderTeamManagerTable();
 
   } catch (err) {
     console.error("Lỗi thêm đội:", err);
-    alert("Lỗi kết nối máy chủ.");
+    notifyError("Lỗi Kết Nối", "Không thể kết nối đến máy chủ API.");
     if (btn) {
       btn.disabled = false;
       btn.textContent = "+ Thêm Đội Vào Giải";
@@ -2360,7 +2414,7 @@ async function handleDeleteTeam(studentId) {
     });
     const data = await res.json();
     if (!res.ok) {
-      alert(`Lỗi xóa đội: ${data.detail || 'Không thể xóa'}`);
+      notifyError("Lỗi Xóa Đội", data.detail || "Không thể xóa đội khỏi giải.");
       return;
     }
 
@@ -2369,7 +2423,7 @@ async function handleDeleteTeam(studentId) {
 
   } catch (err) {
     console.error("Lỗi xóa đội:", err);
-    alert("Lỗi kết nối máy chủ.");
+    notifyError("Lỗi Kết Nối", "Không thể kết nối đến máy chủ API.");
   }
 }
 
@@ -2388,7 +2442,7 @@ async function handleQuickFillTeams() {
     });
     const data = await res.json();
     if (!res.ok) {
-      alert(`Lỗi nạp đội: ${data.detail || 'Không thể nạp'}`);
+      notifyError("Lỗi Nạp Đội Mẫu", data.detail || "Không thể nạp danh sách mẫu.");
       if (btn) {
         btn.disabled = false;
         btn.textContent = "Nạp Nhanh Đội Mẫu (Cho Đủ Số Lượng)";
@@ -2401,13 +2455,13 @@ async function handleQuickFillTeams() {
       btn.textContent = "Nạp Nhanh Đội Mẫu (Cho Đủ Số Lượng)";
     }
 
-    alert(data.message || "Đã nạp nhanh đủ danh sách đội mẫu!");
+    notifySuccess("Nạp Đội Mẫu Thành Công", data.message || "Đã nạp nhanh đủ danh sách đội mẫu!");
     await loadActiveTournament(currentTournamentId);
     renderTeamManagerTable();
 
   } catch (err) {
     console.error("Lỗi nạp nhanh đội:", err);
-    alert("Lỗi kết nối máy chủ.");
+    notifyError("Lỗi Kết Nối", "Không thể kết nối đến máy chủ API.");
     if (btn) {
       btn.disabled = false;
       btn.textContent = "Nạp Nhanh Đội Mẫu (Cho Đủ Số Lượng)";
@@ -2422,7 +2476,7 @@ async function handleAutoSchedule() {
   const required = currentTournamentData.num_teams;
 
   if (teams.length !== required) {
-    alert(`Giải đấu yêu cầu chính xác ${required} đội!\nHiện tại danh sách mới có ${teams.length} đội.\nVui lòng thêm đủ đúng ${required} đội (không thừa, không thiếu) trước khi bấm tự sắp xếp lịch đấu!`);
+    notifyWarning("Chưa Đủ Số Lượng Đội", `Giải đấu yêu cầu đúng ${required} đội (hiện có ${teams.length} đội). Vui lòng thêm đủ trước khi xếp lịch!`);
     return;
   }
 
@@ -2436,7 +2490,7 @@ async function handleAutoSchedule() {
     });
     const data = await res.json();
     if (!res.ok) {
-      alert(`Lỗi xếp lịch: ${data.detail || 'Không thể xếp lịch'}`);
+      notifyError("Lỗi Xếp Lịch", data.detail || "Không thể xếp lịch thi đấu.");
       btn.disabled = false;
       btn.textContent = "Tự Sắp Xếp Lịch Đấu";
       return;
@@ -2445,7 +2499,7 @@ async function handleAutoSchedule() {
     btn.disabled = false;
     btn.textContent = "Tự Sắp Xếp Lịch Đấu";
 
-    alert("Đã tự động sắp xếp các đội vào các cặp đấu trên Sơ đồ giải đấu thành công!");
+    notifySuccess("Xếp Lịch Hoàn Tất", "Đã phân nhánh các đội vào sơ đồ giải đấu.");
     const modalMgr = document.getElementById("modal-manage-teams");
     if (modalMgr) modalMgr.style.display = "none";
 
@@ -2454,7 +2508,7 @@ async function handleAutoSchedule() {
 
   } catch (err) {
     console.error("Lỗi tự sắp xếp lịch:", err);
-    alert("Lỗi kết nối máy chủ.");
+    notifyError("Lỗi Kết Nối", "Không thể kết nối đến máy chủ API.");
     btn.disabled = false;
     btn.textContent = "Tự Sắp Xếp Lịch Đấu";
   }
@@ -2471,7 +2525,7 @@ async function handlePracticeMatch() {
   const code = editor.value.trim();
 
   if (!code) {
-    alert("Vui lòng viết mã bot trong khung soạn thảo trước khi thử nghiệm!");
+    notifyWarning("Thiếu Mã Lệnh", "Vui lòng viết mã bot trong khung soạn thảo trước khi thử nghiệm!");
     return;
   }
 
@@ -2492,7 +2546,7 @@ async function handlePracticeMatch() {
 
     const data = await res.json();
     if (!res.ok) {
-      alert(`Lỗi thử nghiệm: ${data.detail || 'Không thể mô phỏng trận đấu'}`);
+      notifyError("Lỗi Thử Nghiệm", data.detail || "Không thể mô phỏng trận đấu.");
       btnPractice.disabled = false;
       btnPractice.textContent = "Thử Nghiệm Với Bot Mẫu";
       return;
@@ -2506,7 +2560,7 @@ async function handlePracticeMatch() {
 
   } catch (err) {
     console.error("Lỗi thử nghiệm:", err);
-    alert("Lỗi kết nối máy chủ.");
+    notifyError("Lỗi Kết Nối", "Không thể kết nối đến máy chủ API.");
     btnPractice.disabled = false;
     btnPractice.textContent = "Thử Nghiệm Với Bot Mẫu";
   }
@@ -2836,7 +2890,7 @@ function setupAdminRules() {
         method: "POST"
       });
       const data = await res.json();
-      alert(`Đã đổi luật thành công sang: ${data.stage}`);
+      notifySuccess("Đổi Luật Thành Công", `Đã áp dụng luật thi đấu: ${data.stage}`);
 
       const stageText = document.getElementById("sidebar-stage-text");
       if (stageText) {
@@ -2848,7 +2902,7 @@ function setupAdminRules() {
 
     } catch (err) {
       console.error("Lỗi đổi luật:", err);
-      alert("Không thể kết nối đến máy chủ.");
+      notifyError("Lỗi Kết Nối", "Không thể kết nối đến máy chủ API.");
     } finally {
       btnApply.disabled = false;
       btnApply.textContent = "Áp Dụng Luật Mới Toàn Sàn";

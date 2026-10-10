@@ -5,9 +5,9 @@
 export const API_BASE = localStorage.getItem("ARENA_API_URL") || (window.location.hostname.includes("workers.dev") || window.location.hostname.includes("pages.dev") ? "https://game-project-3.onrender.com" : (window.location.origin === "null" || window.location.protocol === "file:" ? "https://game-project-3.onrender.com" : window.location.origin));
 
 export const PIECE_ICONS = {
-  "ROCK": "Búa",
-  "PAPER": "Bao",
-  "SCISSORS": "Kéo"
+  "ROCK": "BÚA",
+  "PAPER": "BAO",
+  "SCISSORS": "KÉO"
 };
 
 export const DEFAULT_PYTHON_CODE = `# -*- coding: utf-8 -*-
