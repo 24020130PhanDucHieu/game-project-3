@@ -627,7 +627,7 @@ class Database:
                     "battle_running": False,
                     "intermission_ends_at": None,
                     "current_round_idx": 1,
-                    "max_rounds": 5,
+                    "max_rounds": 6,
                     "rounds_history": [],
                     "submissions_history": [],
                     "winner": None,
@@ -1304,19 +1304,21 @@ def decide_move(game_state):
         if not match:
             raise ValueError("Không tìm thấy trận đấu.")
         subs = match.get("submissions_history", [])
-        if role.upper() == "ADMIN":
+        if role.upper() in ["ADMIN", "REFEREE"]:
             return subs
         
-        # Lọc cho tuyển thủ (Chỉ xem được bài nộp của đội mình)
+        # Lọc cho tuyển thủ (Xem bài nộp của đội mình hoặc tất cả bài nộp trong trận)
         filtered = []
         for s in subs:
             if role.upper() == "TEAM_A" and s.get("side") == "team_a":
                 filtered.append(s)
             elif role.upper() == "TEAM_B" and s.get("side") == "team_b":
                 filtered.append(s)
-            elif student_id and s.get("student_id") == student_id:
+            elif student_id and str(s.get("student_id", "")).strip().lower() == str(student_id).strip().lower():
                 filtered.append(s)
-        return filtered
+            elif not student_id or role.upper() in ["TEAM", "GUEST"]:
+                filtered.append(s)
+        return filtered if filtered else subs
 
     def get_round_replay(self, tournament_id: str, match_id: str, round_idx: int) -> dict:
         tourn = self.tournaments.get(tournament_id)
@@ -1858,7 +1860,7 @@ def decide_move(game_state):
         match["battle_running"] = False
 
         is_completed = False
-        if team_a["rounds_won"] >= 3 or team_b["rounds_won"] >= 3 or r_num >= match["max_rounds"]:
+        if team_a["rounds_won"] >= 4 or team_b["rounds_won"] >= 4 or r_num >= match["max_rounds"]:
             is_completed = True
             match["status"] = "COMPLETED"
             match["round_status"] = "COMPLETED"

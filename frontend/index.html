@@ -313,7 +313,7 @@
 
               <!-- TỶ SỐ TRẬN NỔI BẬT -->
               <div class="match-score-display" id="dash-match-score">2 - 1</div>
-              <div class="match-meta-subtitle" id="dash-match-meta">Vòng 1 · Thể thức Bo5</div>
+              <div class="match-meta-subtitle" id="dash-match-meta">Vòng 1 · Thể thức Bo6</div>
 
               <!-- NÚT HÀNH ĐỘNG: XEM BÀN ĐẤU & THAM GIA / NỘP BÀI -->
               <div class="match-highlight-actions">
@@ -432,7 +432,7 @@
               <div class="meta-line">
                 <span>Giải: <strong id="bracket-tourn-name-display">Giải Đấu Tân Sinh Viên K69</strong></span>
               </div>
-              <div class="meta-subline" id="bracket-tourn-format-display">Thể thức: Tứ Kết → Chung Kết (Bo5)</div>
+              <div class="meta-subline" id="bracket-tourn-format-display">Thể thức: Tứ Kết → Chung Kết (Bo6)</div>
             </div>
           </div>
         </div>
@@ -526,7 +526,7 @@
             </button>
             <div class="match-room-titles" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
               <h2 class="room-title" id="match-room-title">Trận 1 - Tứ Kết</h2>
-              <span class="room-badge-stage" id="match-room-stage-badge">Bo5 (5 Round)</span>
+              <span class="room-badge-stage" id="match-room-stage-badge">Bo6 (6 Round)</span>
               <select id="arena-match-selector" class="input-text-sm" style="max-width: 220px; font-weight: 500; font-size: 12px; height: 32px; border-radius: 6px; cursor: pointer;">
                 <option value="">-- Chọn Trận Đấu --</option>
               </select>
@@ -535,16 +535,6 @@
 
           <div class="match-room-header-right">
             <span class="status-pill-green" id="match-room-status-badge">Đang diễn ra</span>
-            <!-- NÚT THAM GIA TRẬN ĐẤU (KIỂM TRA ĐĂNG NHẬP, KHÔNG TỰ ĐỘNG CHẠY TRẬN) -->
-            <button class="btn btn-primary" id="btn-match-join-action">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="m14.5 17.5 3 3 3-3-3-3z"/>
-                <path d="m6.5 9.5-3-3 3-3 3 3z"/>
-                <path d="M8 8 16 16"/>
-                <path d="m16 8-8 8"/>
-              </svg>
-              <span id="btn-match-join-text">Tham gia trận đấu</span>
-            </button>
             <!-- NÚT QUẢN TRỊ VIÊN BẮT ĐẦU HIỆP (CHỈ ADMIN THẤY) -->
             <button class="btn btn-green admin-only" id="btn-arena-start-match" style="display: none;">
               ▶ Bắt Đầu Hiệp
@@ -577,14 +567,15 @@
           <!-- KHỐI TỶ SỐ TRUNG TÂM -->
           <div class="match-center-score-cluster">
             <div class="center-score-number" id="match-score-summary">2 - 1</div>
-            <div class="center-round-step" id="arena-round-indicator">ROUND 1 / 5</div>
-            <!-- BỘ BƯỚC ROUND 1-5 -->
+            <div class="center-round-step" id="arena-round-indicator">ROUND 1 / 6</div>
+            <!-- BỘ BƯỚC ROUND 1-6 -->
             <div class="round-step-pills-row" id="round-step-pills">
               <div class="step-pill current" data-round="1">Round 1</div>
               <div class="step-pill" data-round="2">Round 2</div>
               <div class="step-pill" data-round="3">Round 3</div>
               <div class="step-pill" data-round="4">Round 4</div>
               <div class="step-pill" data-round="5">Round 5</div>
+              <div class="step-pill" data-round="6">Round 6</div>
             </div>
           </div>
 
@@ -703,10 +694,11 @@
                         <th>Thời gian</th>
                         <th>Round</th>
                         <th>Trạng thái Sandbox</th>
+                        <th>Hành động</th>
                       </tr>
                     </thead>
                     <tbody id="tbody-kaggle-submissions">
-                      <tr><td colspan="4" class="text-center text-muted">Chưa có bài nộp nào.</td></tr>
+                      <tr><td colspan="5" class="text-center text-muted">Chưa có bài nộp nào.</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -716,14 +708,14 @@
 
           <!-- CỘT PHẢI 2: BÀN ĐẤU THỜI GIAN THỰC GIỮA 2 ĐỘI - DÀNH RIÊNG CHO QUẢN TRỊ VIÊN (ADMIN) -->
           <div class="arena-admin-realtime-column" id="arena-admin-realtime-col" style="display: none;">
-            <div class="content-card board-card" style="border: 2px solid #3b82f6; background: #0f172a;">
-              <div class="board-top-status-bar">
-                <span class="board-title-label" style="color: #60a5fa; font-weight: 800;">⚡ BÀN ĐẤU THỜI GIAN THỰC (REALTIME DUEL)</span>
+            <div class="content-card board-card" style="border: 1px solid rgba(59, 130, 246, 0.3); background: #0b1329; border-radius: 12px;">
+              <div class="board-top-status-bar" style="border-bottom: 1px solid #1e293b; padding-bottom: 8px;">
+                <span class="board-title-label" style="color: #60a5fa; font-weight: 700; font-size: 13px; letter-spacing: 0.5px;">BÀN ĐẤU THỜI GIAN THỰC (REALTIME DUEL)</span>
                 <span class="status-pill-green" id="realtime-battle-status-badge">Sẵn sàng khai hỏa</span>
               </div>
 
               <!-- KHUNG CHỨA BÀN CỜ 9×9 REALTIME -->
-              <div class="board-wrapper">
+              <div class="board-wrapper" style="margin-top: 10px;">
                 <div class="chessboard-9x9" id="realtime-chessboard-9x9">
                   <!-- Render 81 ô cờ realtime -->
                 </div>
@@ -731,14 +723,13 @@
 
               <!-- DÒNG BÌNH LUẬN REALTIME -->
               <div class="live-commentary-ticker" id="realtime-commentary-ticker" style="margin-top: 10px; background: rgba(30, 41, 59, 0.95); color: #38bdf8; font-weight: 600;">
-                Nhấn "▶ Bắt Đầu Hiệp" để kích hoạt mô phỏng trực tiếp giữa hai đội...
+                Nhấn Bắt Đầu Hiệp để kích hoạt mô phỏng trực tiếp giữa hai đội...
               </div>
 
               <!-- BẢNG NHẬT KÝ NƯỚC ĐI REALTIME -->
               <div style="margin-top: 12px; background: #020617; border-radius: 8px; border: 1px solid #1e293b; padding: 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
-                  <strong style="font-size: 13px; color: #f8fafc; display: flex; align-items: center; gap: 6px;">
-                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></span>
+                  <strong style="font-size: 13px; color: #f8fafc; font-weight: 700;">
                     Nhật Ký Nước Đi Hai Đội (Live Action Log)
                   </strong>
                   <span id="realtime-step-count" style="font-size: 11px; color: #94a3b8; font-family: monospace;">Chưa diễn ra</span>
@@ -1182,7 +1173,7 @@
 
         <div class="form-info-tip" style="margin-top: 14px;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-          <span>Quy tắc: Hệ thống tự động chia cặp đấu loại trực tiếp (Bo5). Chỉ Ban Tổ Chức (Admin) mới có quyền tạo giải.</span>
+          <span>Quy tắc: Hệ thống tự động chia cặp đấu loại trực tiếp (Bo6). Chỉ Ban Tổ Chức (Admin) mới có quyền tạo giải.</span>
         </div>
       </div>
       <div class="modal-footer">
@@ -1237,6 +1228,6 @@
   </div>
 
   <!-- SCRIPT ENGINE -->
-  <script src="app.js?v=2.2"></script>
+  <script src="app.js?v=2.3"></script>
 </body>
 </html>
