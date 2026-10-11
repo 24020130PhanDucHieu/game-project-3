@@ -972,8 +972,10 @@ class Database:
         team_slot["draft_updated_at"] = time.time()
         return {"status": "SUCCESS", "message": "Đã cập nhật mã soạn thảo nháp", "side": side}
 
-    def run_practice_match(self, code_content: str, language: str = "PYTHON", side: str = "team_a") -> dict:
-        benchmark_code = """# -*- coding: utf-8 -*-
+    def run_practice_match(self, code_content: str, language: str = "PYTHON", side: str = "team_a", boss: str = "RANDOM") -> dict:
+        boss = (boss or "RANDOM").upper()
+        if boss == "AGGRESSIVE":
+            benchmark_code = """# -*- coding: utf-8 -*-
 import random
 def decide_move(game_state):
     turn = game_state.get("turn_number", 1)
@@ -981,10 +983,38 @@ def decide_move(game_state):
     available = [c for c, count in cards.items() if count > 0]
     if not available:
         return "ROCK"
-    pattern = ["ROCK", "SCISSORS", "PAPER"]
-    move = pattern[(turn - 1) % len(pattern)]
-    return move if move in available else random.choice(available)
+    pref = "ROCK" if turn <= 3 else ("SCISSORS" if turn <= 6 else "PAPER")
+    return pref if pref in available else random.choice(available)
 """
+            boss_name = "Boss 2: Aggressive Bot (Hiếu chiến)"
+        elif boss == "ADAPTIVE":
+            benchmark_code = """# -*- coding: utf-8 -*-
+import random
+def decide_move(game_state):
+    cards = game_state.get("remaining_cards", {})
+    available = [c for c, count in cards.items() if count > 0]
+    if not available:
+        return "ROCK"
+    history = game_state.get("history", [])
+    counter_map = {"ROCK": "PAPER", "PAPER": "SCISSORS", "SCISSORS": "ROCK"}
+    if history:
+        last = history[-1]
+        opp = last.get("opponent_move") or last.get("their_move")
+        if opp in counter_map and counter_map[opp] in available:
+            return counter_map[opp]
+    return random.choice(available)
+"""
+            boss_name = "Boss 3: Adaptive Counter (Phản đòn)"
+        else:
+            benchmark_code = """# -*- coding: utf-8 -*-
+import random
+def decide_move(game_state):
+    cards = game_state.get("remaining_cards", {})
+    available = [c for c, count in cards.items() if count > 0]
+    return random.choice(available) if available else "ROCK"
+"""
+            boss_name = "Boss 1: Random Bot (Ngẫu nhiên)"
+
         code_a = code_content if side == "team_a" else benchmark_code
         code_b = benchmark_code if side == "team_a" else code_content
         lang_a = language if side == "team_a" else "PYTHON"
@@ -1009,7 +1039,7 @@ def decide_move(game_state):
             "simulation": sim_res,
             "user_result": user_result,
             "user_side": side,
-            "benchmark_name": "Bot Mẫu Cơ Bản Hệ Thống"
+            "benchmark_name": boss_name
         }
 
     def get_tournament(self, tournament_id: str) -> Optional[dict]:
@@ -1330,28 +1360,8 @@ def decide_move(game_state):
         red_target = [8, 0]
         blue_target = [0, 8]
 
-        state_a = {"my_hp": 100, "remaining_cards": {"ROCK": 3, "PAPER": 3, "SCISSORS": 3}, "turn_number": round_num}
-        state_b = {"my_hp": 100, "remaining_cards": {"ROCK": 3, "PAPER": 3, "SCISSORS": 3}, "turn_number": round_num}
-
-        pref_move_a = "ROCK"
-        pref_move_b = "ROCK"
-        try:
-            if team_a_lang == "CPP":
-                exe_p, _ = BotRunner.compile_cpp_code(team_a_code)
-                if exe_p: pref_move_a, _ = BotRunner.run_cpp_binary(exe_p, state_a)
-            else:
-                pref_move_a, _ = BotRunner.run_python_code(team_a_code, state_a)
-        except Exception:
-            pref_move_a = "ROCK"
-
-        try:
-            if team_b_lang == "CPP":
-                exe_p, _ = BotRunner.compile_cpp_code(team_b_code)
-                if exe_p: pref_move_b, _ = BotRunner.run_cpp_binary(exe_p, state_b)
-            else:
-                pref_move_b, _ = BotRunner.run_python_code(team_b_code, state_b)
-        except Exception:
-            pref_move_b = "ROCK"
+        history_a = []
+        history_b = []
 
         steps = []
         steps.append({
@@ -1360,7 +1370,7 @@ def decide_move(game_state):
             "red_pieces": copy.deepcopy(red_pieces),
             "blue_pieces": copy.deepcopy(blue_pieces),
             "clash_event": None,
-            "log": f"Khởi tạo bàn cờ 9x9. Đội Đỏ ưu tiên [{pref_move_a}], Đội Xanh ưu tiên [{pref_move_b}].",
+            "log": "Khởi tạo bàn cờ 9x9. Chuẩn bị xuất quân cho cả hai đội!",
             "red_alive": 9,
             "blue_alive": 9
         })
@@ -1371,44 +1381,100 @@ def decide_move(game_state):
 
         for t in range(1, max_turns + 1):
             clash_event = None
-            log_step = f"Lượt {t}: 2 bên dàn trận tiến công trên bàn cờ 9x9."
-
             alive_r = [p for p in red_pieces if p["alive"]]
             alive_b = [p for p in blue_pieces if p["alive"]]
             if not alive_r or not alive_b:
                 break
 
+            # Gọi thuật toán quyết định nước đi của 2 bên cho lượt t
+            types_r = [p["type"] for p in alive_r]
+            types_b = [p["type"] for p in alive_b]
+            cards_r = {"ROCK": types_r.count("ROCK"), "PAPER": types_r.count("PAPER"), "SCISSORS": types_r.count("SCISSORS")}
+            cards_b = {"ROCK": types_b.count("ROCK"), "PAPER": types_b.count("PAPER"), "SCISSORS": types_b.count("SCISSORS")}
+            
+            state_a = {
+                "my_hp": 100,
+                "remaining_cards": cards_r,
+                "turn_number": t,
+                "history": copy.deepcopy(history_a)
+            }
+            state_b = {
+                "my_hp": 100,
+                "remaining_cards": cards_b,
+                "turn_number": t,
+                "history": copy.deepcopy(history_b)
+            }
+
+            turn_move_a = "ROCK"
+            turn_move_b = "ROCK"
+            try:
+                if team_a_lang == "CPP":
+                    exe_p, _ = BotRunner.compile_cpp_code(team_a_code)
+                    if exe_p: turn_move_a, _ = BotRunner.run_cpp_binary(exe_p, state_a)
+                else:
+                    turn_move_a, _ = BotRunner.run_python_code(team_a_code, state_a)
+            except Exception:
+                turn_move_a = [c for c, n in cards_r.items() if n > 0][0] if any(cards_r.values()) else "ROCK"
+
+            try:
+                if team_b_lang == "CPP":
+                    exe_p, _ = BotRunner.compile_cpp_code(team_b_code)
+                    if exe_p: turn_move_b, _ = BotRunner.run_cpp_binary(exe_p, state_b)
+                else:
+                    turn_move_b, _ = BotRunner.run_python_code(team_b_code, state_b)
+            except Exception:
+                turn_move_b = [c for c, n in cards_b.items() if n > 0][0] if any(cards_b.values()) else "ROCK"
+
+            if turn_move_a not in ["ROCK", "PAPER", "SCISSORS"]:
+                turn_move_a = "ROCK"
+            if turn_move_b not in ["ROCK", "PAPER", "SCISSORS"]:
+                turn_move_b = "ROCK"
+
+            history_a.append({"turn": t, "my_move": turn_move_a, "opponent_move": turn_move_b, "their_move": turn_move_b})
+            history_b.append({"turn": t, "my_move": turn_move_b, "opponent_move": turn_move_a, "their_move": turn_move_a})
+
+            icon_a = {"ROCK": "✊ Búa", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(turn_move_a, turn_move_a)
+            icon_b = {"ROCK": "✊ Búa", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(turn_move_b, turn_move_b)
+            log_step = f"Lượt {t}: Đỏ ra lệnh [{icon_a}] • Xanh ra lệnh [{icon_b}]."
+
             # 1. Đội ĐỎ di chuyển / tấn công
-            # Tìm xem có quân Đỏ nào có thể ăn ngay 1 quân Xanh ở ô kế bên không (Ưu tiên đấm ăn kéo, kéo ăn bao, bao ăn đấm)
             best_red_capture = None
             for pr in alive_r:
-                for pb in alive_b:
-                    if abs(pr["col"] - pb["col"]) <= 1 and abs(pr["row"] - pb["row"]) <= 1:
-                        if GameRulesEngine.check_clash(pr["type"], pb["type"]) == 1:
-                            best_red_capture = (pr, pb)
-                            break
-                if best_red_capture:
-                    break
+                if pr["type"] == turn_move_a:
+                    for pb in alive_b:
+                        if abs(pr["col"] - pb["col"]) <= 1 and abs(pr["row"] - pb["row"]) <= 1:
+                            if GameRulesEngine.check_clash(pr["type"], pb["type"]) == 1:
+                                best_red_capture = (pr, pb)
+                                break
+                if best_red_capture: break
+
+            if not best_red_capture:
+                for pr in alive_r:
+                    for pb in alive_b:
+                        if abs(pr["col"] - pb["col"]) <= 1 and abs(pr["row"] - pb["row"]) <= 1:
+                            if GameRulesEngine.check_clash(pr["type"], pb["type"]) == 1:
+                                best_red_capture = (pr, pb)
+                                break
+                    if best_red_capture: break
 
             if best_red_capture:
                 pr, pb = best_red_capture
                 pb["alive"] = False
                 pr["col"] = pb["col"]
                 pr["row"] = pb["row"]
-                icon_r = {"ROCK": "✊ Đấm", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(pr["type"], pr["type"])
-                icon_b = {"ROCK": "✊ Đấm", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(pb["type"], pb["type"])
+                icon_r = {"ROCK": "✊ Búa", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(pr["type"], pr["type"])
+                icon_b_loss = {"ROCK": "✊ Búa", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(pb["type"], pb["type"])
                 clash_event = {
                     "type": "CLASH",
                     "col": pr["col"], "row": pr["row"],
                     "winner": "red",
                     "winner_type": pr["type"], "loser_type": pb["type"],
-                    "log": f"Lượt {t}: Quân Đỏ ({icon_r}) phục kích ĂN GỌN Quân Xanh ({icon_b}) tại ô [{pr['col']},{pr['row']}]!"
+                    "log": f"Lượt {t}: Quân Đỏ ({icon_r}) đụng độ và ĂN GỌN Quân Xanh ({icon_b_loss}) tại ô [{pr['col']},{pr['row']}]!"
                 }
                 log_step = clash_event["log"]
             else:
-                # Không có cơ hội ăn ngay, chọn quân Đỏ tiến về phía trước và mục tiêu [8, 0]
                 candidates = sorted(alive_r, key=lambda p: (
-                    0 if p["type"] == pref_move_a else 1,
+                    0 if p["type"] == turn_move_a else 1,
                     abs(p["col"] - red_target[0]) + abs(p["row"] - red_target[1])
                 ))
                 p_red = None
@@ -1504,34 +1570,44 @@ def decide_move(game_state):
             # 2. Đội XANH di chuyển / tấn công
             best_blue_capture = None
             alive_r = [p for p in red_pieces if p["alive"]]
+            # Ưu tiên quân Xanh có cùng hệ turn_move_b ăn trước
             for pb in alive_b:
-                for pr in alive_r:
-                    if abs(pb["col"] - pr["col"]) <= 1 and abs(pb["row"] - pr["row"]) <= 1:
-                        if GameRulesEngine.check_clash(pb["type"], pr["type"]) == 1:
-                            best_blue_capture = (pb, pr)
-                            break
-                if best_blue_capture:
-                    break
+                if pb["type"] == turn_move_b:
+                    for pr in alive_r:
+                        if abs(pb["col"] - pr["col"]) <= 1 and abs(pb["row"] - pr["row"]) <= 1:
+                            if GameRulesEngine.check_clash(pb["type"], pr["type"]) == 1:
+                                best_blue_capture = (pb, pr)
+                                break
+                if best_blue_capture: break
+
+            if not best_blue_capture:
+                for pb in alive_b:
+                    for pr in alive_r:
+                        if abs(pb["col"] - pr["col"]) <= 1 and abs(pb["row"] - pr["row"]) <= 1:
+                            if GameRulesEngine.check_clash(pb["type"], pr["type"]) == 1:
+                                best_blue_capture = (pb, pr)
+                                break
+                    if best_blue_capture: break
 
             if best_blue_capture:
                 pb, pr = best_blue_capture
                 pr["alive"] = False
                 pb["col"] = pr["col"]
                 pb["row"] = pr["row"]
-                icon_b = {"ROCK": "✊ Đấm", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(pb["type"], pb["type"])
-                icon_r = {"ROCK": "✊ Đấm", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(pr["type"], pr["type"])
+                icon_b = {"ROCK": "✊ Búa", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(pb["type"], pb["type"])
+                icon_r_loss = {"ROCK": "✊ Búa", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(pr["type"], pr["type"])
                 clash_event = {
                     "type": "CLASH",
                     "col": pb["col"], "row": pb["row"],
                     "winner": "blue",
                     "winner_type": pb["type"], "loser_type": pr["type"],
-                    "log": f"Lượt {t}: Quân Xanh ({icon_b}) phản kích ĂN GỌN Quân Đỏ ({icon_r}) tại ô [{pb['col']},{pb['row']}]!"
+                    "log": f"Lượt {t}: Quân Xanh ({icon_b}) phản kích ĂN GỌN Quân Đỏ ({icon_r_loss}) tại ô [{pb['col']},{pb['row']}]!"
                 }
                 log_step = clash_event["log"]
             else:
                 # Chọn quân Xanh tiến về phía trước và mục tiêu [0, 8]
                 candidates = sorted(alive_b, key=lambda p: (
-                    0 if p["type"] == pref_move_b else 1,
+                    0 if p["type"] == turn_move_b else 1,
                     abs(p["col"] - blue_target[0]) + abs(p["row"] - blue_target[1])
                 ))
                 p_blue = None
@@ -1649,8 +1725,8 @@ def decide_move(game_state):
             "board_steps": steps,
             "final_red_alive": final_r,
             "final_blue_alive": final_b,
-            "pref_move_a": pref_move_a,
-            "pref_move_b": pref_move_b
+            "pref_move_a": history_a[0]["my_move"] if history_a else "ROCK",
+            "pref_move_b": history_b[0]["my_move"] if history_b else "ROCK"
         }
 
     def play_match_round(self, tournament_id: str, match_id: str) -> dict:

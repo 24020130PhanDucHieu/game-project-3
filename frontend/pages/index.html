@@ -524,9 +524,12 @@
             <button class="btn btn-outline btn-sm" id="btn-match-back-bracket">
               &larr; Quay lại bảng đấu
             </button>
-            <div class="match-room-titles">
+            <div class="match-room-titles" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
               <h2 class="room-title" id="match-room-title">Trận 1 - Tứ Kết</h2>
               <span class="room-badge-stage" id="match-room-stage-badge">Bo5 (5 Round)</span>
+              <select id="arena-match-selector" class="input-text-sm" style="max-width: 220px; font-weight: 500; font-size: 12px; height: 32px; border-radius: 6px; cursor: pointer;">
+                <option value="">-- Chọn Trận Đấu --</option>
+              </select>
             </div>
           </div>
 
@@ -612,7 +615,7 @@
           <div class="arena-board-column">
             <div class="content-card board-card">
               <div class="board-top-status-bar">
-                <span class="board-title-label">BÀN ĐẤU CHIẾN THUẬT 9×9</span>
+                <span class="board-title-label" id="board-card-title-label">BÀN ĐẤU CHIẾN THUẬT 9×9</span>
                 <span class="board-legend-label">Búa ăn Kéo • Kéo ăn Bao • Bao ăn Búa</span>
               </div>
 
@@ -638,8 +641,8 @@
             </div>
           </div>
 
-          <!-- CỘT PHẢI: PHÒNG NỘP CODE CHO ĐỘI (BOT SUBMISSION STUDIO) -->
-          <div class="arena-studio-column">
+          <!-- CỘT PHẢI 1: PHÒNG NỘP CODE CHO ĐỘI (BOT SUBMISSION STUDIO) - DÀNH CHO THÍ SINH -->
+          <div class="arena-studio-column" id="arena-studio-col">
             <div class="content-card studio-card">
               <div class="studio-card-header">
                 <div>
@@ -706,6 +709,42 @@
                       <tr><td colspan="4" class="text-center text-muted">Chưa có bài nộp nào.</td></tr>
                     </tbody>
                   </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CỘT PHẢI 2: BÀN ĐẤU THỜI GIAN THỰC GIỮA 2 ĐỘI - DÀNH RIÊNG CHO QUẢN TRỊ VIÊN (ADMIN) -->
+          <div class="arena-admin-realtime-column" id="arena-admin-realtime-col" style="display: none;">
+            <div class="content-card board-card" style="border: 2px solid #3b82f6; background: #0f172a;">
+              <div class="board-top-status-bar">
+                <span class="board-title-label" style="color: #60a5fa; font-weight: 800;">⚡ BÀN ĐẤU THỜI GIAN THỰC (REALTIME DUEL)</span>
+                <span class="status-pill-green" id="realtime-battle-status-badge">Sẵn sàng khai hỏa</span>
+              </div>
+
+              <!-- KHUNG CHỨA BÀN CỜ 9×9 REALTIME -->
+              <div class="board-wrapper">
+                <div class="chessboard-9x9" id="realtime-chessboard-9x9">
+                  <!-- Render 81 ô cờ realtime -->
+                </div>
+              </div>
+
+              <!-- DÒNG BÌNH LUẬN REALTIME -->
+              <div class="live-commentary-ticker" id="realtime-commentary-ticker" style="margin-top: 10px; background: rgba(30, 41, 59, 0.95); color: #38bdf8; font-weight: 600;">
+                Nhấn "▶ Bắt Đầu Hiệp" để kích hoạt mô phỏng trực tiếp giữa hai đội...
+              </div>
+
+              <!-- BẢNG NHẬT KÝ NƯỚC ĐI REALTIME -->
+              <div style="margin-top: 12px; background: #020617; border-radius: 8px; border: 1px solid #1e293b; padding: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
+                  <strong style="font-size: 13px; color: #f8fafc; display: flex; align-items: center; gap: 6px;">
+                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></span>
+                    Nhật Ký Nước Đi Hai Đội (Live Action Log)
+                  </strong>
+                  <span id="realtime-step-count" style="font-size: 11px; color: #94a3b8; font-family: monospace;">Chưa diễn ra</span>
+                </div>
+                <div class="realtime-moves-log" id="realtime-moves-log" style="height: 150px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.7; color: #cbd5e1; padding-right: 4px;">
+                  <div class="text-muted" style="padding: 10px 0; text-align: center;">Đang chờ Quản Trị Viên phát lệnh bắt đầu hiệp đấu...</div>
                 </div>
               </div>
             </div>

@@ -18,6 +18,7 @@ class PracticeMatchRequest(BaseModel):
     code_content: str
     language: str = "PYTHON"
     side: str = "team_a"
+    boss: str = "RANDOM"
 
 class ConnectionManager:
     def __init__(self):
@@ -50,7 +51,7 @@ ws_manager = ConnectionManager()
 @router.post("/api/tournaments/{tournament_id}/practice-match")
 def practice_match_endpoint(tournament_id: str, req: PracticeMatchRequest):
     try:
-        res = db.run_practice_match(req.code_content, req.language, req.side)
+        res = db.run_practice_match(req.code_content, req.language, req.side, req.boss)
         return res
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -95,7 +95,8 @@ def mutate_tournament(req: MutateRequest):
             code = p.get("code_content") or ""
             lang = p.get("language") or "PYTHON"
             side = p.get("side") or "team_a"
-            res = stateless_db.run_practice_match(code, lang, side)
+            boss = p.get("boss") or "RANDOM"
+            res = stateless_db.run_practice_match(code, lang, side, boss)
             return res
         else:
             raise HTTPException(status_code=400, detail="Unknown action")
