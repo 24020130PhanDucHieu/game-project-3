@@ -630,12 +630,13 @@ function setupLoginPageHandlers() {
 }
 
 async function handleLoginPageSubmit() {
-  if (!currentTournamentId || !pendingLoginMatchId) {
+  const username = document.getElementById("inp-login-user")?.value.trim() || "";
+  const password = document.getElementById("inp-login-pass")?.value.trim() || "";
+  const isAdminLogin = username.toLowerCase() === "admin";
+  if (!isAdminLogin && (!currentTournamentId || !pendingLoginMatchId)) {
     notifyWarning("Chưa chọn trận", "Hãy mở một trận đấu để đăng nhập.");
     return;
   }
-  const username = document.getElementById("inp-login-user")?.value.trim() || "";
-  const password = document.getElementById("inp-login-pass")?.value.trim() || "";
   const error = document.getElementById("login-error-msg");
   const button = document.getElementById("btn-login-submit");
   if (!username || !password) {
@@ -644,7 +645,10 @@ async function handleLoginPageSubmit() {
   }
   if (button) { button.disabled = true; button.textContent = "Đang xác thực..."; }
   try {
-    const response = await fetch(`${API_BASE}/api/tournaments/${currentTournamentId}/matches/${pendingLoginMatchId}/login`, {
+    const loginURL = isAdminLogin
+      ? `${API_BASE}/api/admin/login`
+      : `${API_BASE}/api/tournaments/${currentTournamentId}/matches/${pendingLoginMatchId}/login`;
+    const response = await fetch(loginURL, {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password })
     });
@@ -654,15 +658,21 @@ async function handleLoginPageSubmit() {
     currentUserRole = data.role;
     currentAppRole = data.role === "ADMIN" ? "ADMIN" : "TEAM";
     currentStudioSide = data.side || null;
-    currentTeamName = data.team?.team_name || username;
-    currentTeamStudentId = data.team?.student_id || username;
+    currentTeamName = isAdminLogin ? "Ban Tổ Chức" : (data.team?.team_name || username);
+    currentTeamStudentId = isAdminLogin ? "ADMIN" : (data.team?.student_id || username);
     sessionStorage.setItem("userRole", data.role);
-    sessionStorage.setItem("activeMatchId", pendingLoginMatchId);
     sessionStorage.setItem("ARENA_USER_ROLE", currentAppRole);
     sessionStorage.setItem("ARENA_STUDENT_ID", currentTeamStudentId);
     sessionStorage.setItem("ARENA_TEAM_NAME", currentTeamName);
     updateRoleUI();
     hideLoginPage();
+    if (isAdminLogin) {
+      sessionStorage.removeItem("activeMatchId");
+      pendingLoginMatchId = null;
+      switchToTab("tab-admin-console");
+      return;
+    }
+    sessionStorage.setItem("activeMatchId", pendingLoginMatchId);
     openMatchRoom(pendingLoginMatchId);
     pendingLoginMatchId = null;
   } catch (err) {
@@ -4293,10 +4303,8 @@ function setupModals() {
   const btnOpenRoleModal = document.getElementById("btn-open-role-modal");
   const btnCloseRoleModal = document.getElementById("btn-close-role-modal");
   const btnCloseRoleModalX = document.getElementById("btn-close-role-modal-x");
-  const btnUserAuthAction = document.getElementById("btn-user-auth-action");
 
   if (btnOpenRoleModal) btnOpenRoleModal.addEventListener("click", openAdminLoginModal);
-  if (btnUserAuthAction) btnUserAuthAction.addEventListener("click", openAdminLoginModal);
   if (btnCloseRoleModal) btnCloseRoleModal.addEventListener("click", closeRoleModal);
   if (btnCloseRoleModalX) btnCloseRoleModalX.addEventListener("click", closeRoleModal);
 
