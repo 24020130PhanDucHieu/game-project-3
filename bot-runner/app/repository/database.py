@@ -719,6 +719,41 @@ class Database:
             "capacity": num_teams
         }
 
+    def rotate_team_access_code(self, tournament_id: str, student_id: str) -> dict:
+        tourn = self.tournaments.get(tournament_id)
+        if not tourn:
+            raise ValueError("Không tìm thấy giải đấu.")
+
+        requested_id = str(student_id or "").strip().casefold()
+        if not requested_id:
+            raise ValueError("MSSV/SBD không được để trống.")
+
+        team = next(
+            (item for item in tourn.get("teams", [])
+             if str(item.get("student_id", "")).strip().casefold() == requested_id),
+            None,
+        )
+        if not team:
+            raise ValueError("Không tìm thấy đội trong giải đấu.")
+
+        access_code = secrets.token_urlsafe(24)
+        credential_hash = hashlib.sha256(access_code.encode()).hexdigest()
+        team["credential_hash"] = credential_hash
+        # Matches keep team snapshots, and login validates against those snapshots.
+        # Rotate every copy so the new code works in all rounds and the old code stops.
+        for match in (tourn.get("matches") or {}).values():
+            for side in ("team_a", "team_b"):
+                match_team = match.get(side)
+                if (match_team and
+                        str(match_team.get("student_id", "")).strip().casefold() == requested_id):
+                    match_team["credential_hash"] = credential_hash
+        self.save_tournaments_to_file()
+        return {
+            "student_id": team["student_id"],
+            "team_name": team.get("team_name", ""),
+            "team_access_code": access_code,
+        }
+
     def remove_team_from_tournament(self, tournament_id: str, student_id: str) -> dict:
         tourn = self.tournaments.get(tournament_id)
         if not tourn:

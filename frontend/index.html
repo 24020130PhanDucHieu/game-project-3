@@ -636,12 +636,24 @@
 
         <div class="content-card">
           <div class="card-head-compact">
-            <h3 class="panel-title">Cấu hình giải đấu</h3>
-            <span class="badge-tag highlight" id="admin-sched-status">Sẵn sàng điều hành</span>
+            <h3 class="panel-title">Tài khoản và mật khẩu đội thi</h3>
+            <span class="badge-tag highlight" id="admin-credentials-status">Đang tải đội...</span>
           </div>
-          <div style="display: flex; gap: 12px; margin-top: 16px;">
-            <button class="btn btn-outline" id="btn-admin-manage-teams">Quản Lý Tuyển Thủ &amp; Đội</button>
-            <button class="btn btn-primary" id="btn-admin-auto-schedule">Tự Sắp Xếp Nhánh Đấu</button>
+          <p class="page-subtitle" style="margin-top: 10px;">Tên đăng nhập là MSSV/SBD. Mật khẩu mới chỉ hiện trong phiên hiện tại sau khi thêm đội hoặc cấp lại mã. Mã cũ không thể xem lại.</p>
+          <div class="table-responsive" style="margin-top: 16px;">
+            <table class="table-clean ranking-full-table" id="table-team-credentials">
+              <thead>
+                <tr>
+                  <th>ĐỘI</th>
+                  <th>MSSV / TÊN ĐĂNG NHẬP</th>
+                  <th>MẬT KHẨU MỚI (CHỈ PHIÊN NÀY)</th>
+                  <th>THAO TÁC</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-team-credentials">
+                <tr><td colspan="4" class="text-center text-muted">Đang tải danh sách đội...</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </section>

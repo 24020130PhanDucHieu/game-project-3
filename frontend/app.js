@@ -183,6 +183,7 @@ let currentTeamStudentId = "";
 let currentTeamName = "";
 let pendingLoginMatchId = null;
 let adminLoginMode = false;
+const teamAccessCodesInSession = new Map();
 let practiceSimTimer = null;
 let practiceSimCancelToken = false;
 let allTeamsCache = [];
@@ -569,6 +570,8 @@ function switchToTab(tabId, { skipMatchOpen = false } = {}) {
         if (best) openMatchRoom(best.match_id);
       });
     }
+  } else if (tabId === "tab-admin-console") {
+    renderTeamCredentialsTable();
   }
 }
 
@@ -1575,16 +1578,6 @@ function setupTournamentControls() {
 }
 
 function setupAdminControls() {
-  const btnAutoSchedule = document.getElementById("btn-admin-auto-schedule");
-  if (btnAutoSchedule) {
-    btnAutoSchedule.addEventListener("click", handleAutoSchedule);
-  }
-
-  const btnQuickFillTeams = document.getElementById("btn-admin-quick-fill-teams");
-  if (btnQuickFillTeams) {
-    btnQuickFillTeams.addEventListener("click", handleQuickFillTeams);
-  }
-
   const btnOpenTeamMgr = document.getElementById("btn-admin-open-team-mgr");
   if (btnOpenTeamMgr) {
     btnOpenTeamMgr.addEventListener("click", openTeamManagerModal);
@@ -1603,6 +1596,64 @@ function setupAdminControls() {
     btnAdminGuestLogin.addEventListener("click", () => {
       openRoleModal("ADMIN");
     });
+  }
+}
+
+function teamAccessCodeKey(studentId) {
+  return `${currentTournamentId || ""}:${String(studentId || "").trim().toLowerCase()}`;
+}
+
+function renderTeamCredentialsTable() {
+  const body = document.getElementById("tbody-team-credentials");
+  const status = document.getElementById("admin-credentials-status");
+  if (!body) return;
+
+  const teams = currentTournamentData?.teams || [];
+  if (status) status.textContent = `${teams.length} đội trong giải đang chọn`;
+  if (teams.length === 0) {
+    body.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Giải này chưa có đội nào.</td></tr>';
+    return;
+  }
+
+  body.innerHTML = teams.map((team) => {
+    const studentId = String(team.student_id || "");
+    const code = teamAccessCodesInSession.get(teamAccessCodeKey(studentId));
+    const passwordCell = code
+      ? `<code>${escapeHtml(code)}</code>`
+      : '<span class="text-muted">Ẩn vì chỉ lưu bản mã hóa; cấp lại để hiện mã mới</span>';
+    return `<tr>
+      <td><strong>${escapeHtml(team.team_name || "Đội chưa đặt tên")}</strong></td>
+      <td>${escapeHtml(studentId || "—")}</td>
+      <td>${passwordCell}</td>
+      <td><button class="btn btn-outline btn-sm btn-rotate-team-code" data-student-id="${escapeHtml(studentId)}">Cấp lại mã</button></td>
+    </tr>`;
+  }).join("");
+
+  body.querySelectorAll(".btn-rotate-team-code").forEach((button) => {
+    button.addEventListener("click", () => handleRotateTeamAccessCode(button.dataset.studentId));
+  });
+}
+
+async function handleRotateTeamAccessCode(studentId) {
+  if (currentAppRole !== "ADMIN" || !currentTournamentId || !studentId) return;
+  const team = currentTournamentData?.teams?.find((item) => String(item.student_id) === String(studentId));
+  if (!team) return;
+  if (!confirm(`Cấp mã mới cho đội ${team.team_name} (${studentId})? Mã hiện tại của đội sẽ không còn đăng nhập được.`)) return;
+
+  try {
+    const response = await fetch(
+      `${API_BASE}/api/tournaments/${encodeURIComponent(currentTournamentId)}/teams/${encodeURIComponent(studentId)}/access-code`,
+      { method: "POST" }
+    );
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Không thể cấp lại mã truy cập.");
+    if (!data.team_access_code) throw new Error("Máy chủ không trả mã truy cập mới.");
+
+    teamAccessCodesInSession.set(teamAccessCodeKey(studentId), data.team_access_code);
+    renderTeamCredentialsTable();
+    notifySuccess("Đã cấp mã mới", `Đã cập nhật mã đăng nhập cho ${team.team_name}. Hãy gửi mã mới riêng cho đội.`);
+  } catch (error) {
+    notifyError("Không thể cấp mã", error.message || "Không thể kết nối đến máy chủ.");
   }
 }
 
@@ -1654,6 +1705,7 @@ async function loadActiveTournament(tournamentId) {
     if (!res.ok) throw new Error("Không thể tải thông tin giải đấu");
     const data = await res.json();
     currentTournamentData = data;
+    if (currentAppRole === "ADMIN") renderTeamCredentialsTable();
 
     // Cập nhật thống kê giải đấu trên thanh điều hành
     const teamCountEl = document.getElementById("tourn-teams-count");
@@ -1713,6 +1765,7 @@ async function loadActiveTournamentSilent(tournamentId) {
     if (!res.ok) return;
     const data = await res.json();
     currentTournamentData = data;
+    if (currentAppRole === "ADMIN") renderTeamCredentialsTable();
 
     const teamCountEl = document.getElementById("tourn-teams-count");
     if (teamCountEl) teamCountEl.textContent = `${data.num_teams} Đội`;
@@ -4832,6 +4885,10 @@ async function handleAddTeamSubmit() {
       return;
     }
 
+    if (data.team_access_code) {
+      teamAccessCodesInSession.set(teamAccessCodeKey(sid), data.team_access_code);
+    }
+
     if (nameInp) nameInp.value = "";
     if (sidInp) sidInp.value = "";
     if (uniInp) uniInp.value = "Khối Kỹ Thuật";
@@ -4841,7 +4898,9 @@ async function handleAddTeamSubmit() {
       btn.textContent = "+ Thêm Đội";
     }
 
-    notifySuccess("Team added", `${data.message || name}. Access code: ${data.team_access_code || "not returned"}. Save it; it is shown once.`);
+    notifySuccess("Đã thêm đội", data.team_access_code
+      ? `${data.message || name}. Mã truy cập mới được hiển thị trong bảng tài khoản đội thi của phiên này.`
+      : (data.message || name));
     await loadActiveTournament(currentTournamentId);
     renderTeamManagerTable();
 
@@ -4862,6 +4921,8 @@ async function handleDeleteTeam(studentId) {
     return;
   }
   if (!confirm(`Bạn có chắc muốn xóa đội có MSSV '${studentId}' khỏi giải đấu?`)) return;
+
+  teamAccessCodesInSession.delete(teamAccessCodeKey(studentId));
 
   try {
     const res = await fetch(`${API_BASE}/api/tournaments/${currentTournamentId}/teams/${studentId}`, {

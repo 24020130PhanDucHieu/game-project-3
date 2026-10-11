@@ -61,6 +61,8 @@ def mutate_tournament(req: MutateRequest):
             stateless_db.quick_fill_demo_teams(t_id)
         elif action == "add-team":
             action_res = stateless_db.add_team_to_tournament(t_id, p.get("team_name"), p.get("student_id"), p.get("university"))
+        elif action == "rotate-team-credential":
+            action_res = stateless_db.rotate_team_access_code(t_id, p.get("student_id"))
         elif action == "remove-team":
             stateless_db.remove_team_from_tournament(t_id, p.get("student_id"))
         elif action == "play-round":

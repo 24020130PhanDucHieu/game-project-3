@@ -138,6 +138,7 @@ func main() {
 		// Teams
 		api.GET("/tournaments/:id/teams", optionalSession(sessions), teamHandler.GetTeams)
 		api.POST("/tournaments/:id/teams", adminOnly, teamHandler.AddTeam)
+		api.POST("/tournaments/:id/teams/:studentId/access-code", adminOnly, teamHandler.RotateCredential)
 		api.DELETE("/tournaments/:id/teams/:studentId", adminOnly, teamHandler.RemoveTeam)
 		api.POST("/tournaments/:id/teams/quick-fill", adminOnly, teamHandler.QuickFill)
 

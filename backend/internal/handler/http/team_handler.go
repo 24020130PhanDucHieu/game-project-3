@@ -31,6 +31,22 @@ func (h *TeamHandler) AddTeam(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
+func (h *TeamHandler) RotateCredential(c *gin.Context) {
+	id := c.Param("id")
+	studentID := c.Param("studentId")
+	res, err := h.service.MutateTournament(id, "rotate-team-credential", map[string]interface{}{
+		"student_id": studentID,
+	})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+		return
+	}
+	// The service already persisted the worker's tournament snapshot. Never
+	// include that snapshot in this response because it contains credential hashes.
+	delete(res, "tournament")
+	c.JSON(http.StatusOK, res)
+}
+
 func (h *TeamHandler) QuickFill(c *gin.Context) {
 	id := c.Param("id")
 	res, err := h.service.MutateTournament(id, "quick-fill", map[string]interface{}{})
