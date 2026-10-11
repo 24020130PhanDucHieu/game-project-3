@@ -13,4 +13,8 @@ services:
       - key: WORKER_URL
         value: http://127.0.0.1:8001/mutate-tournament
       - key: DB_PATH
-        value: database/tournaments_store.json
+        value: /var/lib/arena/tournaments_store.json
+      - key: DATABASE_URL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false

@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"project-tuan3/internal/adapter"
 	"project-tuan3/internal/model"
@@ -12,13 +13,28 @@ import (
 type TournamentService struct {
 	repo    repository.TournamentRepository
 	adapter adapter.BotRunnerAdapter
+	locksMu sync.Mutex
+	locks   map[string]*sync.Mutex
 }
 
 func NewTournamentService(repo repository.TournamentRepository, adapter adapter.BotRunnerAdapter) *TournamentService {
 	return &TournamentService{
 		repo:    repo,
 		adapter: adapter,
+		locks:   make(map[string]*sync.Mutex),
 	}
+}
+
+func (s *TournamentService) lockTournament(id string) func() {
+	s.locksMu.Lock()
+	lock := s.locks[id]
+	if lock == nil {
+		lock = &sync.Mutex{}
+		s.locks[id] = lock
+	}
+	s.locksMu.Unlock()
+	lock.Lock()
+	return lock.Unlock
 }
 
 func (s *TournamentService) GetAllTournaments() map[string]interface{} {
@@ -62,13 +78,19 @@ func (s *TournamentService) CreateTournament(name string, numTeams int) (map[str
 		return nil, errors.New("giải đấu thiếu tournament_id")
 	}
 
-	s.repo.Save(tID, newTournament)
-	_ = s.repo.SaveToDisk()
+	if err := s.repo.Save(tID, newTournament); err != nil {
+		return nil, err
+	}
+	if err := s.repo.SaveToDisk(); err != nil {
+		return nil, err
+	}
 
 	return res, nil
 }
 
 func (s *TournamentService) MutateTournament(tournamentID, action string, params map[string]interface{}) (map[string]interface{}, error) {
+	unlock := s.lockTournament(tournamentID)
+	defer unlock()
 	current, found := s.repo.GetByID(tournamentID)
 	if !found {
 		return nil, fmt.Errorf("không tìm thấy giải đấu có ID: %s", tournamentID)
@@ -80,8 +102,12 @@ func (s *TournamentService) MutateTournament(tournamentID, action string, params
 	}
 
 	if mutated, ok := res["tournament"].(map[string]interface{}); ok {
-		s.repo.Save(tournamentID, mutated)
-		_ = s.repo.SaveToDisk()
+		if err := s.repo.Save(tournamentID, mutated); err != nil {
+			return nil, err
+		}
+		if err := s.repo.SaveToDisk(); err != nil {
+			return nil, err
+		}
 	}
 
 	return res, nil

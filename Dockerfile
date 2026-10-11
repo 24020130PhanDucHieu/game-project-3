@@ -34,13 +34,19 @@ COPY database/ ./database/
 COPY frontend/ ./frontend/
 COPY --from=go-builder /app/server ./server
 
+RUN useradd --system --uid 10001 --create-home arena \
+    && mkdir -p /var/lib/arena \
+    && chown -R arena:arena /app /var/lib/arena
+
 # Tạo script khởi động song song cả 2 dịch vụ
-RUN printf '#!/bin/sh\npython bot-runner/main.py &\n./server\n' > start.sh && chmod +x start.sh
+RUN printf '#!/bin/sh\nset -e\nenv -i PATH="$PATH" PYTHONIOENCODING=utf-8 ENVIRONMENT=production python bot-runner/main.py &\nfor attempt in 1 2 3 4 5 6 7 8 9 10; do curl -fsS http://127.0.0.1:8001/health >/dev/null && exec ./server; sleep 1; done\nexit 1\n' > start.sh && chmod +x start.sh
 
 ENV PORT=8080 \
     ENVIRONMENT=production \
     WORKER_URL=http://127.0.0.1:8001/mutate-tournament \
-    DB_PATH=database/tournaments_store.json
+    DB_PATH=/var/lib/arena/tournaments_store.json
+
+USER arena
 
 EXPOSE 8080
 

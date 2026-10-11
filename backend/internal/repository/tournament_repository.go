@@ -2,11 +2,9 @@ package repository
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
-	"time"
 
 	"project-tuan3/internal/model"
 )
@@ -15,15 +13,16 @@ type TournamentRepository interface {
 	GetAll() map[string]interface{}
 	GetList() []model.TournamentSummary
 	GetByID(id string) (map[string]interface{}, bool)
-	Save(id string, tournament map[string]interface{})
+	Save(id string, tournament map[string]interface{}) error
 	Delete(id string)
 	SaveToDisk() error
 }
 
 type JSONTournamentRepository struct {
-	mu     sync.RWMutex
-	dbPath string
-	store  map[string]interface{}
+	mu        sync.RWMutex
+	persistMu sync.Mutex
+	dbPath    string
+	store     map[string]interface{}
 }
 
 func NewJSONTournamentRepository(dbPath string) *JSONTournamentRepository {
@@ -34,15 +33,12 @@ func NewJSONTournamentRepository(dbPath string) *JSONTournamentRepository {
 	repo.store["tournaments"] = make(map[string]interface{})
 	repo.loadFromDisk()
 
-	// Periodic disk flush every 5 seconds
-	go repo.periodicFlush()
-
 	return repo
 }
 
 func (r *JSONTournamentRepository) loadFromDisk() {
 	if _, err := os.Stat(r.dbPath); err == nil {
-		data, err := ioutil.ReadFile(r.dbPath)
+		data, err := os.ReadFile(r.dbPath)
 		if err == nil {
 			var loaded map[string]interface{}
 			if err := json.Unmarshal(data, &loaded); err == nil {
@@ -54,25 +50,39 @@ func (r *JSONTournamentRepository) loadFromDisk() {
 	}
 }
 
-func (r *JSONTournamentRepository) periodicFlush() {
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-	for range ticker.C {
-		_ = r.SaveToDisk()
-	}
-}
-
 func (r *JSONTournamentRepository) SaveToDisk() error {
+	r.persistMu.Lock()
+	defer r.persistMu.Unlock()
 	r.mu.RLock()
 	data, err := json.MarshalIndent(r.store, "", "  ")
 	r.mu.RUnlock()
 	if err != nil {
 		return err
 	}
-	if dir := filepath.Dir(r.dbPath); dir != "" && dir != "." {
-		_ = os.MkdirAll(dir, 0755)
+	dir := filepath.Dir(r.dbPath)
+	if dir != "" && dir != "." {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return err
+		}
 	}
-	return ioutil.WriteFile(r.dbPath, data, 0644)
+	tmp, err := os.CreateTemp(dir, ".tournaments-*.tmp")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	defer os.Remove(tmpName)
+	if _, err = tmp.Write(data); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err = tmp.Sync(); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err = tmp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmpName, r.dbPath)
 }
 
 func (r *JSONTournamentRepository) GetAll() map[string]interface{} {
@@ -82,10 +92,14 @@ func (r *JSONTournamentRepository) GetAll() map[string]interface{} {
 	if !ok {
 		return make(map[string]interface{})
 	}
-	// Shallow copy to prevent race conditions
+	// Deep copies prevent callers from mutating repository state after a read.
 	copyMap := make(map[string]interface{}, len(tournaments))
 	for k, v := range tournaments {
-		copyMap[k] = v
+		if tMap, ok := v.(map[string]interface{}); ok {
+			copyMap[k] = cloneTournament(tMap)
+		} else {
+			copyMap[k] = v
+		}
 	}
 	return copyMap
 }
@@ -129,12 +143,12 @@ func (r *JSONTournamentRepository) GetByID(id string) (map[string]interface{}, b
 		return nil, false
 	}
 	if tMap, ok := val.(map[string]interface{}); ok {
-		return tMap, true
+		return cloneTournament(tMap), true
 	}
 	return nil, false
 }
 
-func (r *JSONTournamentRepository) Save(id string, tournament map[string]interface{}) {
+func (r *JSONTournamentRepository) Save(id string, tournament map[string]interface{}) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	tournaments, ok := r.store["tournaments"].(map[string]interface{})
@@ -142,7 +156,20 @@ func (r *JSONTournamentRepository) Save(id string, tournament map[string]interfa
 		tournaments = make(map[string]interface{})
 		r.store["tournaments"] = tournaments
 	}
-	tournaments[id] = tournament
+	tournaments[id] = cloneTournament(tournament)
+	return nil
+}
+
+func cloneTournament(tournament map[string]interface{}) map[string]interface{} {
+	data, err := json.Marshal(tournament)
+	if err != nil {
+		return tournament
+	}
+	var cloned map[string]interface{}
+	if err := json.Unmarshal(data, &cloned); err != nil {
+		return tournament
+	}
+	return cloned
 }
 
 func (r *JSONTournamentRepository) Delete(id string) {

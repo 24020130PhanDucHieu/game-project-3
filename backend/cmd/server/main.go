@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"project-tuan3/internal/adapter"
+	"project-tuan3/internal/auth"
 	"project-tuan3/internal/config"
 	httpHandler "project-tuan3/internal/handler/http"
 	wsHandler "project-tuan3/internal/handler/websocket"
@@ -32,6 +33,9 @@ func main() {
 		log.Println("[Database] Phát hiện cấu hình DATABASE_URL, đang kết nối Neon PostgreSQL...")
 		pgRepo, err := repository.NewPostgresTournamentRepository(cfg.DatabaseURL)
 		if err != nil {
+			if cfg.Environment == "production" {
+				log.Fatalf("Production database is unavailable: %v", err)
+			}
 			log.Printf("[Database Cảnh Báo] Lỗi kết nối PostgreSQL (%v), tự động chuyển về JSON store", err)
 			tournamentRepo = repository.NewJSONTournamentRepository(cfg.DBPath)
 		} else {
@@ -39,6 +43,9 @@ func main() {
 			tournamentRepo = pgRepo
 		}
 	} else {
+		if cfg.Environment == "production" {
+			log.Fatal("DATABASE_URL is required in production; refusing ephemeral JSON storage")
+		}
 		log.Println("[Database] Sử dụng JSON repository (Local/Fallback storage)")
 		tournamentRepo = repository.NewJSONTournamentRepository(cfg.DBPath)
 	}
@@ -51,7 +58,8 @@ func main() {
 	// 3. HTTP Handlers
 	tHandler := httpHandler.NewTournamentHandler(tournamentService)
 	teamHandler := httpHandler.NewTeamHandler(tournamentService)
-	mHandler := httpHandler.NewMatchHandler(tournamentService)
+	sessions := auth.NewManager()
+	mHandler := httpHandler.NewMatchHandler(tournamentService, sessions)
 
 	// 4. WebSocket Hub for Live Stream
 	wsHub := wsHandler.NewHub()
@@ -61,13 +69,27 @@ func main() {
 	r := gin.New()
 	r.Use(middleware.RecoveryMiddleware())
 	r.Use(middleware.LoggerMiddleware())
+	r.Use(middleware.RateLimitMiddleware())
 	r.Use(middleware.CORSMiddleware(cfg.CORSOrigin))
+	r.Use(func(c *gin.Context) {
+		c.Next()
+		parts := strings.Split(strings.Trim(c.Request.URL.Path, "/"), "/")
+		if len(parts) == 6 && parts[0] == "api" && parts[1] == "tournaments" && parts[3] == "matches" && c.Writer.Status() < http.StatusBadRequest {
+			wsHub.BroadcastMatchJSON(parts[4], gin.H{
+				"type": "MATCH_UPDATED", "tournament_id": parts[2], "match_id": parts[4], "action": parts[5],
+			})
+		}
+	})
 
 	findFrontendFile := func(subpath string) string {
+		cleanSubpath := filepath.Clean(subpath)
+		if cleanSubpath == ".." || strings.HasPrefix(cleanSubpath, ".."+string(filepath.Separator)) || filepath.IsAbs(cleanSubpath) {
+			return ""
+		}
 		candidates := []string{
-			filepath.Join("frontend", subpath),
-			filepath.Join("../frontend", subpath),
-			filepath.Join("../../frontend", subpath),
+			filepath.Join("frontend", cleanSubpath),
+			filepath.Join("../frontend", cleanSubpath),
+			filepath.Join("../../frontend", cleanSubpath),
 		}
 		for _, cand := range candidates {
 			if _, err := os.Stat(cand); err == nil {
@@ -97,35 +119,39 @@ func main() {
 
 	// WebSocket Endpoint
 	r.GET("/ws/matches/:matchId", func(c *gin.Context) {
-		wsHandler.ServeWS(wsHub, c)
+		wsHandler.ServeWS(wsHub, c, cfg.CORSOrigin)
 	})
 
 	// API Routes Group
 	api := r.Group("/api")
 	{
+		adminOnly := requireSession(sessions, true, false)
+		matchSession := requireSession(sessions, false, true)
+		matchAdmin := requireSession(sessions, true, true)
 		// Tournaments
 		api.GET("/tournaments", tHandler.GetAll)
 		api.GET("/tournaments/list", tHandler.GetList)
-		api.GET("/tournaments/:id", tHandler.GetByID)
-		api.POST("/tournaments/create", tHandler.Create)
-		api.POST("/tournaments/:id/auto-schedule", tHandler.AutoSchedule)
+		api.GET("/tournaments/:id", optionalSession(sessions), tHandler.GetByID)
+		api.POST("/tournaments/create", adminOnly, tHandler.Create)
+		api.POST("/tournaments/:id/auto-schedule", adminOnly, tHandler.AutoSchedule)
 
 		// Teams
-		api.GET("/tournaments/:id/teams", teamHandler.GetTeams)
-		api.POST("/tournaments/:id/teams", teamHandler.AddTeam)
-		api.DELETE("/tournaments/:id/teams/:studentId", teamHandler.RemoveTeam)
-		api.POST("/tournaments/:id/teams/quick-fill", teamHandler.QuickFill)
+		api.GET("/tournaments/:id/teams", optionalSession(sessions), teamHandler.GetTeams)
+		api.POST("/tournaments/:id/teams", adminOnly, teamHandler.AddTeam)
+		api.DELETE("/tournaments/:id/teams/:studentId", adminOnly, teamHandler.RemoveTeam)
+		api.POST("/tournaments/:id/teams/quick-fill", adminOnly, teamHandler.QuickFill)
 
 		// Matches & Submission Studio
+		api.POST("/admin/login", mHandler.AdminLogin)
 		api.POST("/tournaments/:id/matches/:matchId/login", mHandler.Login)
 		api.POST("/tournaments/:id/matches/:matchId/auth", mHandler.Auth)
-		api.POST("/tournaments/:id/matches/:matchId/draft-code", mHandler.SubmitDraftCode)
-		api.POST("/tournaments/:id/matches/:matchId/code", mHandler.SubmitCode)
-		api.POST("/tournaments/:id/matches/:matchId/play-round", mHandler.PlayRound)
-		api.POST("/tournaments/:id/matches/:matchId/next-round", mHandler.NextRound)
-		api.POST("/tournaments/:id/matches/:matchId/demo-fill", mHandler.DemoFill)
-		api.POST("/tournaments/:id/matches/:matchId/reset", mHandler.Reset)
-		api.GET("/tournaments/:id/matches/:matchId/submissions", mHandler.GetSubmissions)
+		api.POST("/tournaments/:id/matches/:matchId/draft-code", matchSession, mHandler.SubmitDraftCode)
+		api.POST("/tournaments/:id/matches/:matchId/code", matchSession, mHandler.SubmitCode)
+		api.POST("/tournaments/:id/matches/:matchId/play-round", matchAdmin, mHandler.PlayRound)
+		api.POST("/tournaments/:id/matches/:matchId/next-round", matchAdmin, mHandler.NextRound)
+		api.POST("/tournaments/:id/matches/:matchId/demo-fill", matchAdmin, mHandler.DemoFill)
+		api.POST("/tournaments/:id/matches/:matchId/reset", matchAdmin, mHandler.Reset)
+		api.GET("/tournaments/:id/matches/:matchId/submissions", matchSession, mHandler.GetSubmissions)
 		api.GET("/tournaments/:id/matches/:matchId/replay/:roundNumber", mHandler.GetRoundReplay)
 		api.POST("/tournaments/:id/practice-match", mHandler.PracticeMatch)
 
@@ -133,7 +159,7 @@ func main() {
 		api.GET("/matches/history", mHandler.GetMatchHistory)
 		api.GET("/ranking", tHandler.GetRanking)
 		api.GET("/tournament/rule", tHandler.GetRule)
-		api.POST("/tournament/rule/set", tHandler.SetRule)
+		api.POST("/tournament/rule/set", adminOnly, tHandler.SetRule)
 	}
 
 	// Serve Frontend Static assets if present
@@ -161,5 +187,38 @@ func main() {
 
 	if err := r.Run(":" + cfg.Port); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
+	}
+}
+
+func optionalSession(manager *auth.Manager) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := strings.TrimSpace(strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer "))
+		if token == "" {
+			token = c.Query("token")
+		}
+		if session, ok := manager.Get(token); ok {
+			c.Set("session", session)
+		}
+		c.Next()
+	}
+}
+
+func requireSession(manager *auth.Manager, adminOnly, matchScoped bool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token := strings.TrimSpace(strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer "))
+		if token == "" {
+			token = c.Query("token")
+		}
+		session, ok := manager.Get(token)
+		if !ok || (adminOnly && session.Role != "ADMIN") || (session.Role != "ADMIN" && session.TournamentID != c.Param("id")) {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"detail": "A valid tournament session is required"})
+			return
+		}
+		if matchScoped && session.Role != "ADMIN" && session.MatchID != c.Param("matchId") {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"detail": "This session cannot access the requested match"})
+			return
+		}
+		c.Set("session", session)
+		c.Next()
 	}
 }

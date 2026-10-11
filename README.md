@@ -1,108 +1,53 @@
-# 🎮 Freshman Bot Arena - Hệ Thống Giải Đấu OTTV2 ICPC K69
+# Freshman Bot Arena
 
-Hệ thống Đấu trường Lập trình Đối kháng Trí tuệ Nhân tạo dành cho **Tân sinh viên năm nhất K69** thi đấu tựa game Oẳn Tù Tì V2 (**OTTV2**) theo phong cách thi đấu thuật toán **ICPC**.
+Nền tảng tổ chức giải đấu bot Oẳn Tù Tì V2. Bản đang chạy sử dụng giao diện tĩnh (`frontend/index.html`, `frontend/app.js`, `frontend/styles.css`), Go API gateway và Python worker cho logic giải đấu.
 
----
+## Chạy local
 
-## 🏛️ Cấu Trúc Dự Án (Clean Architecture)
+Mở hai terminal:
 
-Dự án được chuẩn hóa theo đúng cấu trúc tiêu chuẩn phân tách rõ rệt giữa Tầng Điều phối (Go Backend API Gateway), Tầng Thực thi & Sandbox (Python Bot Runner Worker), và Tầng Giao diện Web (Modular Frontend):
-
-```text
-project-tuan3/
-├── backend/
-│   ├── go.mod
-│   ├── go.sum
-│   ├── cmd/
-│   │   └── server/
-│   │       └── main.go
-│   ├── internal/
-│   │   ├── config/
-│   │   ├── handler/
-│   │   │   ├── http/
-│   │   │   └── websocket/
-│   │   ├── middleware/
-│   │   ├── service/
-│   │   ├── repository/
-│   │   ├── model/
-│   │   ├── dto/
-│   │   ├── adapter/
-│   │   └── observability/
-│   └── migrations/
-├── frontend/
-│   ├── pages/
-│   ├── templates/
-│   ├── css/
-│   │   ├── base/
-│   │   ├── layout/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   └── themes/
-│   ├── js/
-│   │   ├── core/
-│   │   ├── api/
-│   │   ├── auth/
-│   │   ├── tournaments/
-│   │   ├── matches/
-│   │   ├── arena/
-│   │   ├── websocket/
-│   │   └── components/
-│   └── assets/
-├── bot-runner/
-├── database/
-├── config/
-├── deploy/
-├── scripts/
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   ├── e2e/
-│   ├── load/
-│   └── security/
-├── docs/
-├── .gitignore
-├── .dockerignore
-├── Makefile
-└── README.md
+```powershell
+cd bot-runner
+python main.py
 ```
 
----
-
-## 🚀 Hướng Dẫn Vận Hành
-
-### 1. Khởi chạy Bot Runner (Python Engine Worker)
-```bash
-make run-runner
-# Hoặc: cd bot-runner && python main.py
+```powershell
+cd backend
+go run ./cmd/server
 ```
-> Lắng nghe tại: `http://127.0.0.1:8001`
 
-### 2. Khởi chạy Backend (Go API Gateway & Static Server)
-```bash
-make run-backend
-# Hoặc: cd backend && go run cmd/server/main.go
+Mở `http://localhost:8080`. Khi phát triển local, backend dùng JSON store nếu chưa cấu hình `DATABASE_URL`. Khi deploy production, backend yêu cầu PostgreSQL qua `DATABASE_URL` để tránh mất dữ liệu khi container khởi động lại.
+
+## Đăng nhập và vận hành giải
+
+- Đặt `ADMIN_PASSWORD` trong môi trường backend để bật đăng nhập Ban Tổ Chức. Không dùng mật khẩu mẫu trong mã nguồn.
+- Khi đăng ký đội, hệ thống tạo mã truy cập ngẫu nhiên và chỉ trả mã một lần trong phản hồi thêm đội. Ban Tổ Chức cần gửi mã đó riêng cho đại diện đội.
+- Phiên đăng nhập có thời hạn; đăng nhập lại nếu phiên hết hạn hoặc máy chủ khởi động lại.
+- API công khai không trả credential hash hoặc mã nguồn đội khác. WebSocket gửi thông báo cập nhật theo trận để giao diện tải lại trạng thái mới.
+- `CORS_ORIGIN` nhận danh sách origin cách nhau bằng dấu phẩy. Hãy đặt đúng domain frontend khi triển khai.
+
+## Kiểm thử
+
+```powershell
+cd backend
+go test ./...
+cd ..
+python -m unittest discover -s tests/unit -p "test_*.py"
+python tests/security/test_sandbox_security.py
+cd bot-runner
+python -m py_compile main.py app/repository/database.py app/sandbox/runner.py
 ```
-> Lắng nghe tại: `http://127.0.0.1:8080` (Tự động phục vụ API Gateway & Web Frontend)
 
-### 3. Mở Đường Hầm Cloudflare Tunnel (Zero-Cost Public URL)
-Mở cổng an toàn ra toàn cầu mà không cần IP tĩnh hay mở port modem:
-```bash
-make tunnel
-# Hoặc: python scripts/start_cloudflare_tunnel.py 8080
-# Hoặc chạy: .\cloudflared.exe tunnel --url http://127.0.0.1:8080
+## Đóng gói và triển khai
+
+`deploy/render.yaml` mô tả dịch vụ Render. Cần cấu hình `DATABASE_URL` và `ADMIN_PASSWORD` trong Render trước khi deploy; các biến này không được lưu trong repository. Có thể build container bằng:
+
+```powershell
+docker build -t ottv2-arena -f deploy/Dockerfile .
 ```
-Terminal sẽ hiển thị đường link công khai có định dạng:
-`https://<unique-id>.trycloudflare.com`
 
----
+Đẩy source lên GitHub chỉ cập nhật repository. Muốn phát hành dịch vụ, cần kết nối repository với Render và cấu hình secrets/database ở trên.
 
-## 🧪 Kiểm Thử Hệ Thống (Automated Test Suite)
+## Ghi chú sandbox
 
-Chạy tất cả các bài kiểm thử:
-```bash
-make test
-```
-Hoặc chạy từng bộ riêng biệt:
-- **Kiểm thử đơn vị luật & FSM:** `make test-unit`
-- **Kiểm thử bảo mật cô lập Sandbox:** `make test-security`
-- **Kiểm thử chịu tải hàng loạt:** `make test-load`
+Bot Python chạy trong subprocess có timeout và giới hạn tài nguyên. Native C++ bị tắt ở production vì container hiện tại chưa cung cấp runtime cô lập riêng cho từng lần chạy. Có thể bật C++ trong môi trường local phục vụ phát triển; trước khi dùng C++ trong giải công khai, cần triển khai sandbox native riêng.

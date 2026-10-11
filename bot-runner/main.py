@@ -7,6 +7,10 @@ from app.repository.database import Database
 
 app = FastAPI(title="Stateless Engine Worker")
 
+@app.get("/health")
+def worker_health():
+    return {"status": "healthy"}
+
 # Create a dummy database instance that doesn't use background threads or files
 class StatelessDatabase(Database):
     def __init__(self):
@@ -23,8 +27,6 @@ class StatelessDatabase(Database):
     def save_tournaments_to_file(self):
         pass # NO-OP
 
-stateless_db = StatelessDatabase()
-
 class MutateRequest(BaseModel):
     tournament: Optional[dict] = None
     action: str
@@ -32,6 +34,8 @@ class MutateRequest(BaseModel):
 
 @app.post("/mutate-tournament")
 def mutate_tournament(req: MutateRequest):
+    # The gateway owns persistence. Never share mutable tournament state across requests.
+    stateless_db = StatelessDatabase()
     t = req.tournament
     t_id = t["tournament_id"] if t else None
     action = req.action
@@ -47,10 +51,16 @@ def mutate_tournament(req: MutateRequest):
             return {"status": "SUCCESS", "tournament": new_t}
         elif action == "auto-schedule":
             stateless_db.auto_schedule_tournament(t_id)
+        elif action == "set-rule":
+            stage_name = p.get("stage_name")
+            allowed_stages = {"STAGE_1_STANDARD", "STAGE_2_MUTATED", "STAGE_3_REVERSE_FOG", "STAGE_4_FINALS"}
+            if stage_name not in allowed_stages:
+                raise ValueError("Invalid tournament rule.")
+            stateless_db.tournaments[t_id]["stage_rule"] = stage_name
         elif action == "quick-fill":
             stateless_db.quick_fill_demo_teams(t_id)
         elif action == "add-team":
-            stateless_db.add_team_to_tournament(t_id, p.get("team_name"), p.get("student_id"), p.get("university"))
+            action_res = stateless_db.add_team_to_tournament(t_id, p.get("team_name"), p.get("student_id"), p.get("university"))
         elif action == "remove-team":
             stateless_db.remove_team_from_tournament(t_id, p.get("student_id"))
         elif action == "play-round":

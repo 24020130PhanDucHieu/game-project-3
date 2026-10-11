@@ -1,11 +1,13 @@
 package http
 
 import (
+	"encoding/json"
 	"math"
 	"net/http"
 	"sort"
 
 	"github.com/gin-gonic/gin"
+	"project-tuan3/internal/auth"
 	"project-tuan3/internal/service"
 )
 
@@ -19,7 +21,15 @@ func NewTournamentHandler(service *service.TournamentService) *TournamentHandler
 
 func (h *TournamentHandler) GetAll(c *gin.Context) {
 	tournaments := h.service.GetAllTournaments()
-	c.JSON(http.StatusOK, tournaments)
+	public := make(map[string]interface{}, len(tournaments))
+	for id, raw := range tournaments {
+		if tournament, ok := raw.(map[string]interface{}); ok {
+			public[id] = redactTournament(tournament, auth.Session{})
+		} else {
+			public[id] = raw
+		}
+	}
+	c.JSON(http.StatusOK, public)
 }
 
 func (h *TournamentHandler) GetList(c *gin.Context) {
@@ -34,7 +44,94 @@ func (h *TournamentHandler) GetByID(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"detail": err.Error()})
 		return
 	}
-	c.JSON(http.StatusOK, t)
+	session := requestSession(c)
+	if session.Role != "ADMIN" && session.TournamentID != id {
+		session = auth.Session{}
+	}
+	c.JSON(http.StatusOK, redactTournament(t, session))
+}
+
+func requestSession(c *gin.Context) auth.Session {
+	value, ok := c.Get("session")
+	if !ok {
+		return auth.Session{}
+	}
+	session, _ := value.(auth.Session)
+	return session
+}
+
+// Public match data must never expose credentials or executable source. A team
+// session can see only its own current and draft code; officials can see both.
+func redactTournament(value map[string]interface{}, session auth.Session) map[string]interface{} {
+	copyTournament := cloneJSONMap(value)
+	if teams, ok := copyTournament["teams"].([]interface{}); ok {
+		for _, raw := range teams {
+			if team, ok := raw.(map[string]interface{}); ok {
+				delete(team, "credential_hash")
+				delete(team, "code_content")
+			}
+		}
+	}
+	matches, ok := copyTournament["matches"].(map[string]interface{})
+	if !ok {
+		return copyTournament
+	}
+	for matchID, raw := range matches {
+		match, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		for _, side := range []string{"team_a", "team_b"} {
+			team, ok := match[side].(map[string]interface{})
+			if !ok {
+				continue
+			}
+			delete(team, "credential_hash")
+			isTeamSession := session.Role == "TEAM" || session.Role == "TEAM_A" || session.Role == "TEAM_B"
+			if session.Role != "ADMIN" && (!isTeamSession || session.MatchID != matchID || session.Side != side) {
+				delete(team, "current_code")
+				delete(team, "draft_code")
+			}
+		}
+		if rounds, ok := match["rounds_history"].([]interface{}); ok && session.Role != "ADMIN" {
+			for _, roundRaw := range rounds {
+				if round, ok := roundRaw.(map[string]interface{}); ok {
+					delete(round, "team_a_code")
+					delete(round, "team_b_code")
+				}
+			}
+		}
+		if submissions, ok := match["submissions_history"].([]interface{}); ok && session.Role != "ADMIN" {
+			visible := make([]interface{}, 0, len(submissions))
+			if session.Role == "TEAM" || session.Role == "TEAM_A" || session.Role == "TEAM_B" {
+				for _, rawSubmission := range submissions {
+					if submission, ok := rawSubmission.(map[string]interface{}); ok && submission["side"] == session.Side {
+						visible = append(visible, submission)
+					}
+				}
+			}
+			match["submissions_history"] = visible
+		}
+	}
+	return copyTournament
+}
+
+func cloneJSONMap(value map[string]interface{}) map[string]interface{} {
+	encoded, err := json.Marshal(value)
+	if err != nil {
+		return value
+	}
+	var cloned map[string]interface{}
+	if json.Unmarshal(encoded, &cloned) != nil {
+		return value
+	}
+	return cloned
+}
+
+func redactMatch(value map[string]interface{}, matchID string, session auth.Session) map[string]interface{} {
+	wrapped := map[string]interface{}{"matches": map[string]interface{}{matchID: value}}
+	cleaned := redactTournament(wrapped, session)
+	return cleaned["matches"].(map[string]interface{})[matchID].(map[string]interface{})
 }
 
 func (h *TournamentHandler) Create(c *gin.Context) {
@@ -72,8 +169,6 @@ func (h *TournamentHandler) AutoSchedule(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, res)
 }
-
-var currentStageRule = "STAGE_1_STANDARD"
 
 func (h *TournamentHandler) GetRanking(c *gin.Context) {
 	allTournaments := h.service.GetAllTournaments()
@@ -220,18 +315,35 @@ func (h *TournamentHandler) GetRanking(c *gin.Context) {
 }
 
 func (h *TournamentHandler) GetRule(c *gin.Context) {
+	tournamentID := c.Query("tournament_id")
+	t, err := h.service.GetTournamentByID(tournamentID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"detail": err.Error()})
+		return
+	}
+	stage, _ := t["stage_rule"].(string)
+	if stage == "" {
+		stage = "STAGE_1_STANDARD"
+	}
 	c.JSON(http.StatusOK, gin.H{
-		"stage": currentStageRule,
+		"stage": stage,
 	})
 }
 
 func (h *TournamentHandler) SetRule(c *gin.Context) {
+	tournamentID := c.Query("tournament_id")
 	stageName := c.Query("stage_name")
-	if stageName != "" {
-		currentStageRule = stageName
+	if tournamentID == "" || stageName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "tournament_id and stage_name are required"})
+		return
+	}
+	res, err := h.service.MutateTournament(tournamentID, "set-rule", map[string]interface{}{"stage_name": stageName})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"status": "SUCCESS",
-		"stage":  currentStageRule,
+		"stage":  res["tournament"].(map[string]interface{})["stage_rule"],
 	})
 }

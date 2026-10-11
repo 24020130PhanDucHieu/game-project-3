@@ -12,6 +12,11 @@ import tempfile
 import json
 import random
 import time
+import ast
+try:
+    import resource
+except ImportError:
+    resource = None
 from typing import Dict, Any, Optional, Tuple
 
 # --- BOSS BOTS CỦA BAN TỔ CHỨC ---
@@ -49,7 +54,7 @@ class BTCBossBots:
         most_common = max(set(opp_moves), key=opp_moves.count)
         counter_map = {"ROCK": "PAPER", "SCISSORS": "ROCK", "PAPER": "SCISSORS"}
         desired = counter_map.get(most_common, "ROCK")
-        
+
         return desired if desired in available else random.choice(available)
 
     @staticmethod
@@ -103,29 +108,76 @@ class ValidationResult(dict):
         yield self.get("error_message")
 
 SAFE_MODULES = {"random", "math", "collections", "itertools", "re", "json", "heapq", "functools", "typing"}
+MAX_CODE_BYTES = 65536
 
-def safe_import_func(name, globals=None, locals=None, fromlist=(), level=0):
-    if name in SAFE_MODULES:
-        return __import__(name, globals, locals, fromlist, level)
-    raise ImportError(f"Import module '{name}' bị cấm trong môi trường thi đấu bảo mật của sàn đấu.")
+def _limit_child_resources():
+    if resource is None:
+        return
+    resource.setrlimit(resource.RLIMIT_CPU, (1, 2))
+    resource.setrlimit(resource.RLIMIT_AS, (160 * 1024 * 1024, 160 * 1024 * 1024))
+    resource.setrlimit(resource.RLIMIT_FSIZE, (1024 * 1024, 1024 * 1024))
+    resource.setrlimit(resource.RLIMIT_NOFILE, (32, 32))
 
-def make_safe_sandbox_globals():
-    import random, math
-    return {
-        "__builtins__": {
-            "range": range, "len": len, "min": min, "max": max,
-            "abs": abs, "sum": sum, "int": int, "float": float,
-            "str": str, "bool": bool, "list": list, "dict": dict,
-            "set": set, "tuple": tuple, "print": lambda *args: None,
-            "sorted": sorted, "reversed": reversed, "enumerate": enumerate,
-            "zip": zip, "any": any, "all": all, "map": map, "filter": filter,
-            "isinstance": isinstance, "type": type,
-            "__import__": safe_import_func,
-            "random": random, "math": math
-        },
-        "random": random,
-        "math": math
-    }
+def _validate_python_ast(code_str: str) -> Optional[str]:
+    if len(code_str.encode("utf-8")) > MAX_CODE_BYTES:
+        return "Mã nguồn vượt quá giới hạn 64 KB."
+    try:
+        tree = ast.parse(code_str)
+    except SyntaxError as exc:
+        return f"Lỗi cú pháp Python: dòng {exc.lineno}: {exc.msg}"
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and node.attr.startswith("_"):
+            return "Không cho phép truy cập thuộc tính nội bộ của Python."
+        if isinstance(node, ast.Name) and node.id.startswith("_"):
+            return "Không cho phép sử dụng tên nội bộ của Python."
+        if isinstance(node, (ast.Global, ast.Nonlocal)):
+            return "Không cho phép thay đổi biến toàn cục trong sandbox."
+    return None
+
+def _execute_python_isolated(code_str: str, game_state: dict, timeout: float) -> Tuple[Optional[str], Optional[str]]:
+    validation_error = _validate_python_ast(code_str)
+    if validation_error:
+        return None, validation_error
+    child = r'''import json, sys, random, math, builtins
+payload = json.loads(sys.stdin.read())
+safe_modules = {"random", "math", "collections", "itertools", "re", "json", "heapq", "functools", "typing"}
+def safe_import(name, globals=None, locals=None, fromlist=(), level=0):
+    if name.split(".")[0] not in safe_modules: raise ImportError("Import module bị cấm")
+    return builtins.__import__(name, globals, locals, fromlist, level)
+safe_builtins = {"range":range,"len":len,"min":min,"max":max,"abs":abs,"sum":sum,"int":int,"float":float,"str":str,"bool":bool,"list":list,"dict":dict,"set":set,"tuple":tuple,"print":lambda *a:None,"sorted":sorted,"reversed":reversed,"enumerate":enumerate,"zip":zip,"any":any,"all":all,"map":map,"filter":filter,"isinstance":isinstance,"type":type,"__import__":safe_import}
+scope = {"__builtins__":safe_builtins,"random":random,"math":math}
+try:
+    exec(compile(payload["code"], "<bot>", "exec"), scope, scope)
+    fn = scope.get("decide_move")
+    if not callable(fn): raise ValueError("Thiếu hàm decide_move(game_state).")
+    result = fn(payload["state"])
+    if not isinstance(result, str) or result.upper() not in ("ROCK","PAPER","SCISSORS"): raise ValueError("Nước đi không hợp lệ.")
+    print(json.dumps({"move":result.upper()}))
+except BaseException as exc:
+    print(json.dumps({"error":str(exc)}))
+'''
+    try:
+        child_env = {
+            key: value for key, value in os.environ.items()
+            if key.upper() not in {"ADMIN_PASSWORD", "DATABASE_URL", "POSTGRES_URL", "NEON_DATABASE_URL", "SECRET_KEY"}
+        }
+        child_env["PYTHONIOENCODING"] = "utf-8"
+        completed = subprocess.run(
+            [sys.executable, "-I", "-S", "-c", child],
+            input=json.dumps({"code": code_str, "state": game_state}),
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace",
+            timeout=max(0.05, timeout), close_fds=True,
+            cwd=tempfile.gettempdir(), env=child_env,
+            preexec_fn=_limit_child_resources if os.name == "posix" else None
+        )
+        output = json.loads(completed.stdout.splitlines()[-1]) if completed.stdout.strip() else {}
+        if "move" in output:
+            return output["move"], None
+        return None, output.get("error") or completed.stderr[-2000:] or "Bot không trả về nước đi."
+    except subprocess.TimeoutExpired:
+        return None, f"Time Limit Exceeded ({timeout:.2f}s)."
+    except Exception as exc:
+        return None, f"Lỗi sandbox: {exc}"
 
 # --- BỘ ĐIỀU PHỐI SANDBOX ---
 class BotRunner:
@@ -150,36 +202,12 @@ class BotRunner:
         }
 
         if lang == "PYTHON":
-            try:
-                # 1. Kiểm tra cú pháp (Syntax Check)
-                compiled = compile(code_str, "<validate_bot>", "exec")
-            except SyntaxError as e:
-                return ValidationResult(False, f"Lỗi cú pháp Python (Syntax Error): dòng {e.lineno}: {e.msg}")
-            except Exception as e:
-                return ValidationResult(False, f"Lỗi cú pháp: {str(e)}")
-
-            # 2. Kiểm thử thực thi với dummy_state
-            safe_globals = make_safe_sandbox_globals()
-            local_scope = {}
-            try:
-                exec(compiled, safe_globals, local_scope)
-                if "decide_move" not in local_scope or not callable(local_scope["decide_move"]):
-                    return ValidationResult(False, "Thiếu định nghĩa hàm bắt buộc: 'def decide_move(game_state):'")
-
-                t0 = time.time()
-                res = local_scope["decide_move"](dummy_state)
-                t_elapsed = time.time() - t0
-
-                if t_elapsed > 0.5:
-                    return ValidationResult(False, f"Hàm chạy quá thời gian thử nghiệm cho phép ({t_elapsed:.3f}s > 0.5s).")
-
-                if not isinstance(res, str) or res.upper() not in ["ROCK", "PAPER", "SCISSORS"]:
-                    return ValidationResult(False, f"Hàm trả về giá trị không hợp lệ: '{res}'. Phải là 'ROCK', 'PAPER' hoặc 'SCISSORS'.")
-
-                return ValidationResult(True, None, test_move=res.upper(), execution_time_ms=round(t_elapsed * 1000, 2))
-            except Exception as e:
-                return ValidationResult(False, f"Lỗi khi chạy thử hàm decide_move: {str(e)}")
-
+            started = time.monotonic()
+            move, error = _execute_python_isolated(code_str, dummy_state, timeout=0.5)
+            elapsed_ms = round((time.monotonic() - started) * 1000, 2)
+            if error:
+                return ValidationResult(False, error)
+            return ValidationResult(True, None, test_move=move, execution_time_ms=elapsed_ms)
         elif lang == "CPP":
             exe_path, err = BotRunner.compile_cpp_code(code_str)
             if err:
@@ -204,42 +232,11 @@ class BotRunner:
 
     @staticmethod
     def run_python_code(code_str: str, game_state: dict, timeout: float = 1.0) -> Tuple[str, Optional[str]]:
-        """
-        Thực thi code Python an toàn.
-        Trả về: (nước_đi_chọn, thông_báo_lỗi_nếu_có)
-        """
         cards = game_state.get("remaining_cards", {})
         available = [k for k, v in cards.items() if v > 0]
         fallback_move = available[0] if available else "ROCK"
-
-        # Định nghĩa môi trường chạy cô lập
-        safe_globals = make_safe_sandbox_globals()
-        local_scope = {}
-
-        try:
-            # Biên dịch mã nguồn
-            compiled_code = compile(code_str, "<student_bot>", "exec")
-            exec(compiled_code, safe_globals, local_scope)
-
-            if "decide_move" not in local_scope:
-                return fallback_move, "Không tìm thấy hàm 'decide_move(game_state)' trong mã nguồn."
-
-            # Thực thi hàm
-            start_t = time.time()
-            chosen = local_scope["decide_move"](game_state)
-            elapsed = time.time() - start_t
-
-            if elapsed > timeout:
-                return fallback_move, f"Time Limit Exceeded ({elapsed:.3f}s > {timeout}s)"
-
-            if isinstance(chosen, str) and chosen.upper() in ["ROCK", "PAPER", "SCISSORS"]:
-                return chosen.upper(), None
-            else:
-                return fallback_move, f"Giá trị trả về không hợp lệ: '{chosen}'"
-
-        except Exception as e:
-            return fallback_move, f"Runtime Error: {str(e)}"
-
+        chosen, error = _execute_python_isolated(code_str, game_state, timeout=timeout)
+        return (chosen, None) if chosen else (fallback_move, f"Runtime Error: {error}")
     @staticmethod
     def compile_cpp_code(cpp_code_str: str) -> Tuple[Optional[str], Optional[str]]:
         """
@@ -247,6 +244,10 @@ class BotRunner:
         Trả về: (đường_dẫn_file_exe_nếu_thành_công, lỗi_biên_dịch_nếu_có)
         """
         temp_dir = tempfile.gettempdir()
+        if os.getenv("ENVIRONMENT", "").lower() == "production":
+            return None, "Native C++ execution is disabled in production until an OS-isolated runner is configured."
+        if len(cpp_code_str.encode("utf-8")) > MAX_CODE_BYTES:
+            return None, "C++ source exceeds the 64 KB limit."
         file_id = f"bot_{int(time.time()*1000)}_{random.randint(100, 999)}"
         src_path = os.path.join(temp_dir, f"{file_id}.cpp")
         exe_path = os.path.join(temp_dir, f"{file_id}.exe")
@@ -289,6 +290,9 @@ class BotRunner:
         cards = game_state.get("remaining_cards", {})
         available = [k for k, v in cards.items() if v > 0]
         fallback_move = available[0] if available else "ROCK"
+
+        if os.getenv("ENVIRONMENT", "").lower() == "production":
+            return fallback_move, "Native C++ execution is disabled in production."
 
         if not os.path.exists(exe_path):
             return fallback_move, "Không tìm thấy tệp nhị phân thực thi C++."

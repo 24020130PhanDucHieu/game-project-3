@@ -336,14 +336,6 @@ body {
   border-radius: 0 4px 4px 0;
 }
 
-.nav-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: inherit;
-}
-
 .nav-label {
   flex: 1;
 }
@@ -518,13 +510,6 @@ body {
   gap: 14px;
 }
 
-.stat-card-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
 .stat-dot-green {
   width: 10px;
   height: 10px;
@@ -629,7 +614,7 @@ body {
   margin-bottom: 16px;
 }
 
-.card-title-icon-group {
+.card-title-group {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -684,11 +669,6 @@ body {
 .team-pill-box.blue {
   background: var(--blue-team-light);
   color: var(--blue-team);
-}
-
-.team-trophy-icon {
-  display: flex;
-  align-items: center;
 }
 
 .vs-circle-pill {
@@ -782,32 +762,6 @@ body {
   gap: 10px;
 }
 
-.bot-avatar-circle {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.bot-avatar-circle.color-red { background: #ef4444; }
-.bot-avatar-circle.color-blue { background: #3b82f6; }
-.bot-avatar-circle.color-green { background: #10b981; }
-.bot-avatar-circle.color-yellow { background: #f59e0b; }
-.bot-avatar-circle.color-purple { background: #8b5cf6; }
-.bot-avatar-circle.color-orange { background: #f97316; }
-.bot-avatar-circle.color-pink { background: #ec4899; }
-.bot-avatar-circle.color-cyan { background: #06b6d4; }
-
-.rank-medal-icon {
-  display: inline-flex;
-  align-items: center;
-  margin-right: 6px;
-  vertical-align: middle;
-}
-
 .rank-num-bold {
   font-weight: 600;
   color: var(--text-heading);
@@ -843,10 +797,6 @@ body {
   display: flex;
   align-items: flex-start;
   gap: 14px;
-}
-
-.bracket-title-icon {
-  margin-top: 3px;
 }
 
 .bracket-header-right {
@@ -917,7 +867,7 @@ body {
 }
 
 .bracket-match-node.my-team-match::after {
-  content: "★ Trận của bạn";
+  content: "Trận của bạn";
   position: absolute;
   top: -9px;
   right: 12px;
@@ -949,7 +899,7 @@ body {
   margin-bottom: 22px;
 }
 
-.btn-icon-subtle {
+.btn-subtle {
   background: transparent;
   border: none;
   cursor: pointer;
@@ -1030,15 +980,6 @@ body {
   gap: 8px;
 }
 
-.node-team-avatar {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .node-team-name {
   font-size: 13px;
   font-weight: 600;
@@ -1074,20 +1015,6 @@ body {
   align-items: center;
   gap: 10px;
   margin-top: 24px;
-}
-
-.info-alert-icon-circle {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: #3b82f6;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
 }
 
 .info-alert-text {
@@ -1227,13 +1154,6 @@ body {
 .login-input-group:focus-within {
   border-color: var(--primary-blue);
   box-shadow: 0 0 0 3px rgba(26, 107, 240, 0.1);
-}
-
-.input-icon-left {
-  display: flex;
-  align-items: center;
-  margin-right: 12px;
-  flex-shrink: 0;
 }
 
 .login-input-field {
@@ -1970,22 +1890,10 @@ body {
   border: 1px solid #e2e8f0;
 }
 
-.modal-title-with-icon {
+.modal-title-group {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.modal-icon-badge {
-  font-size: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  background: #eff6ff;
-  border: 1px solid #dbeafe;
-  border-radius: 12px;
 }
 
 .form-group-modern {
@@ -2205,28 +2113,6 @@ body {
 }
 
 /* MÀU SẮC AVATAR CÁC ĐỘI THEO ẢNH 4 */
-.node-team-avatar {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.node-team-avatar.color-red { background: #ef4444; }
-.node-team-avatar.color-blue { background: #2563eb; }
-.node-team-avatar.color-green { background: #10b981; }
-.node-team-avatar.color-yellow { background: #f59e0b; }
-.node-team-avatar.color-purple { background: #8b5cf6; }
-.node-team-avatar.color-orange { background: #f97316; }
-.node-team-avatar.color-pink { background: #ec4899; }
-.node-team-avatar.color-cyan { background: #06b6d4; }
-.node-team-avatar.color-emerald { background: #059669; }
-.node-team-avatar.color-indigo { background: #4f46e5; }
-.node-team-avatar.color-amber { background: #d97706; }
-.node-team-avatar.color-rose { background: #e11d48; }
-
 /* MODAL QUẢN LÝ ĐỘI TUYỂN HIỆN ĐẠI */
 .modal-team-mgr-card {
   max-width: 680px;
@@ -2264,5 +2150,3 @@ body {
   background: #ef4444;
   color: #ffffff;
 }
-
-

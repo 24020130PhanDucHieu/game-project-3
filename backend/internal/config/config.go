@@ -47,12 +47,15 @@ func LoadConfig() *Config {
 
 	env := os.Getenv("ENV")
 	if env == "" {
+		env = os.Getenv("ENVIRONMENT")
+	}
+	if env == "" {
 		env = "development"
 	}
 
 	corsOrigin := os.Getenv("CORS_ORIGIN")
 	if corsOrigin == "" {
-		corsOrigin = "*"
+		corsOrigin = "https://game-project-3.onrender.com,https://game-project-3.pages.dev,https://game-project-3.phanhieu06hungyen.workers.dev,http://localhost:8080,http://127.0.0.1:8080"
 	}
 
 	return &Config{

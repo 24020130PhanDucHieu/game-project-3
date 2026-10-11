@@ -90,22 +90,49 @@ func (r *PostgresTournamentRepository) warmupCache() error {
 }
 
 func (r *PostgresTournamentRepository) GetAll() map[string]interface{} {
+	rows, err := r.db.Query("SELECT id, data FROM tournaments")
+	if err != nil {
+		return r.cachedSnapshot()
+	}
+	defer rows.Close()
+	result := make(map[string]interface{})
+	cacheSnapshot := make(map[string]map[string]interface{})
+	for rows.Next() {
+		var id string
+		var raw []byte
+		var tournament map[string]interface{}
+		if rows.Scan(&id, &raw) == nil && json.Unmarshal(raw, &tournament) == nil {
+			result[id] = tournament
+			cacheSnapshot[id] = tournament
+		}
+	}
+	if rows.Err() != nil {
+		return r.cachedSnapshot()
+	}
+	r.mu.Lock()
+	r.cache = cacheSnapshot
+	r.mu.Unlock()
+	return result
+}
+
+func (r *PostgresTournamentRepository) cachedSnapshot() map[string]interface{} {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-
 	result := make(map[string]interface{}, len(r.cache))
-	for k, v := range r.cache {
-		result[k] = v
+	for id, tournament := range r.cache {
+		result[id] = cloneTournament(tournament)
 	}
 	return result
 }
 
 func (r *PostgresTournamentRepository) GetList() []model.TournamentSummary {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
+	tournaments := r.GetAll()
 	var list []model.TournamentSummary
-	for _, t := range r.cache {
+	for _, raw := range tournaments {
+		t, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
 		id, _ := t["tournament_id"].(string)
 		name, _ := t["name"].(string)
 		numTeams := 0
@@ -124,13 +151,6 @@ func (r *PostgresTournamentRepository) GetList() []model.TournamentSummary {
 }
 
 func (r *PostgresTournamentRepository) GetByID(id string) (map[string]interface{}, bool) {
-	r.mu.RLock()
-	cached, ok := r.cache[id]
-	r.mu.RUnlock()
-	if ok && cached != nil {
-		return cached, true
-	}
-
 	// Fallback đọc trực tiếp từ DB nếu cache miss
 	var rawData []byte
 	err := r.db.QueryRow("SELECT data FROM tournaments WHERE id = $1", id).Scan(&rawData)
@@ -147,59 +167,42 @@ func (r *PostgresTournamentRepository) GetByID(id string) (map[string]interface{
 	r.cache[id] = t
 	r.mu.Unlock()
 
-	return t, true
+	return cloneTournament(t), true
 }
 
-func (r *PostgresTournamentRepository) Save(id string, tournament map[string]interface{}) {
+func (r *PostgresTournamentRepository) Save(id string, tournament map[string]interface{}) error {
+	name, _ := tournament["name"].(string)
+	status, _ := tournament["status"].(string)
+	champion, _ := tournament["champion"].(string)
+	numTeams := 8
+	if nt, ok := tournament["num_teams"].(float64); ok {
+		numTeams = int(nt)
+	} else if nt, ok := tournament["num_teams"].(int); ok {
+		numTeams = nt
+	}
+	raw, err := json.Marshal(tournament)
+	if err != nil {
+		return fmt.Errorf("marshal tournament %s: %w", id, err)
+	}
+	query := `INSERT INTO tournaments (id, name, num_teams, status, champion, data, updated_at)
+	VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
+	ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, num_teams=EXCLUDED.num_teams,
+	status=EXCLUDED.status, champion=EXCLUDED.champion, data=EXCLUDED.data, updated_at=CURRENT_TIMESTAMP;`
+	if _, err := r.db.Exec(query, id, name, numTeams, status, champion, raw); err != nil {
+		return fmt.Errorf("save tournament %s: %w", id, err)
+	}
 	r.mu.Lock()
-	r.cache[id] = tournament
+	r.cache[id] = cloneTournament(tournament)
 	r.mu.Unlock()
-
-	// Async lưu vào Postgres để tăng tốc độ phản hồi API cho người dùng
-	go func(tid string, tData map[string]interface{}) {
-		name, _ := tData["name"].(string)
-		status, _ := tData["status"].(string)
-		champion, _ := tData["champion"].(string)
-		numTeams := 8
-		if nt, ok := tData["num_teams"].(float64); ok {
-			numTeams = int(nt)
-		} else if nt, ok := tData["num_teams"].(int); ok {
-			numTeams = nt
-		}
-
-		raw, err := json.Marshal(tData)
-		if err != nil {
-			log.Printf("[Postgres Error] Marshal tournament %s thất bại: %v", tid, err)
-			return
-		}
-
-		query := `
-		INSERT INTO tournaments (id, name, num_teams, status, champion, data, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
-		ON CONFLICT (id) DO UPDATE SET
-			name = EXCLUDED.name,
-			num_teams = EXCLUDED.num_teams,
-			status = EXCLUDED.status,
-			champion = EXCLUDED.champion,
-			data = EXCLUDED.data,
-			updated_at = CURRENT_TIMESTAMP;
-		`
-		if _, err := r.db.Exec(query, tid, name, numTeams, status, champion, raw); err != nil {
-			log.Printf("[Postgres Error] Ghi tournament %s vào DB thất bại: %v", tid, err)
-		}
-	}(id, tournament)
+	return nil
 }
 
 func (r *PostgresTournamentRepository) Delete(id string) {
 	r.mu.Lock()
 	delete(r.cache, id)
 	r.mu.Unlock()
-
-	go func(tid string) {
-		_, _ = r.db.Exec("DELETE FROM tournaments WHERE id = $1", tid)
-	}(id)
+	_, _ = r.db.Exec("DELETE FROM tournaments WHERE id = $1", id)
 }
-
 func (r *PostgresTournamentRepository) SaveToDisk() error {
 	// Không cần thiết với Postgres
 	return nil

@@ -1,28 +1,97 @@
 package http
 
 import (
+	"crypto/subtle"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
+	"project-tuan3/internal/auth"
 	"project-tuan3/internal/service"
 )
 
 type MatchHandler struct {
-	service *service.TournamentService
+	service  *service.TournamentService
+	sessions *auth.Manager
 }
 
-func NewMatchHandler(service *service.TournamentService) *MatchHandler {
-	return &MatchHandler{service: service}
+func NewMatchHandler(service *service.TournamentService, sessions *auth.Manager) *MatchHandler {
+	return &MatchHandler{service: service, sessions: sessions}
+}
+
+func (h *MatchHandler) AdminLogin(c *gin.Context) {
+	var req map[string]interface{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Invalid login request"})
+		return
+	}
+	username, _ := req["username"].(string)
+	password, _ := req["password"].(string)
+	if username != "" && !isAdminUsername(username) {
+		c.JSON(http.StatusUnauthorized, gin.H{"detail": "Invalid organizer credentials"})
+		return
+	}
+	configured := os.Getenv("ADMIN_PASSWORD")
+	if configured == "" || subtle.ConstantTimeCompare([]byte(password), []byte(configured)) != 1 {
+		c.JSON(http.StatusUnauthorized, gin.H{"detail": "Invalid organizer credentials"})
+		return
+	}
+	token, err := h.sessions.Create(auth.Session{Role: "ADMIN"})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"detail": "Could not create session"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "role": "ADMIN", "session_token": token})
+}
+
+func isAdminUsername(username string) bool {
+	switch strings.ToLower(strings.TrimSpace(username)) {
+	case "admin", "bquantri", "btc", "trongtai", "referee":
+		return true
+	default:
+		return false
+	}
+}
+
+func (h *MatchHandler) issueSession(tournamentID, matchID, role, side, studentID string, result map[string]interface{}) {
+	token, err := h.sessions.Create(auth.Session{TournamentID: tournamentID, MatchID: matchID, Role: role, Side: side, StudentID: studentID})
+	if err == nil {
+		result["session_token"] = token
+	}
 }
 
 func (h *MatchHandler) Login(c *gin.Context) {
 	id := c.Param("id")
 	matchID := c.Param("matchId")
 	var req map[string]interface{}
-	_ = c.ShouldBindJSON(&req)
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Invalid login request"})
+		return
+	}
 	if req == nil {
 		req = make(map[string]interface{})
+	}
+	username, _ := req["username"].(string)
+	if username == "" {
+		username, _ = req["student_id"].(string)
+	}
+	if isAdminUsername(username) {
+		password, _ := req["password"].(string)
+		configured := os.Getenv("ADMIN_PASSWORD")
+		if configured == "" || subtle.ConstantTimeCompare([]byte(password), []byte(configured)) != 1 {
+			c.JSON(http.StatusUnauthorized, gin.H{"detail": "Invalid organizer credentials"})
+			return
+		}
+		result := map[string]interface{}{"status": "SUCCESS", "role": "ADMIN", "message": "Organizer login successful"}
+		h.issueSession(id, matchID, "ADMIN", "", "", result)
+		if result["session_token"] == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"detail": "Could not create session"})
+			return
+		}
+		c.JSON(http.StatusOK, result)
+		return
 	}
 	req["match_id"] = matchID
 
@@ -30,6 +99,21 @@ func (h *MatchHandler) Login(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
 		return
+	}
+	role, _ := res["role"].(string)
+	side, _ := res["side"].(string)
+	studentID, _ := req["student_id"].(string)
+	if team, ok := res["team"].(map[string]interface{}); ok {
+		delete(team, "credential_hash")
+		studentID, _ = team["student_id"].(string)
+	}
+	h.issueSession(id, matchID, role, side, studentID, res)
+	if res["session_token"] == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"detail": "Could not create session"})
+		return
+	}
+	if tournament, ok := res["tournament"].(map[string]interface{}); ok && role != "ADMIN" {
+		res["tournament"] = redactTournament(tournament, auth.Session{Role: "TEAM", Side: side, TournamentID: id, MatchID: matchID})
 	}
 	c.JSON(http.StatusOK, res)
 }
@@ -42,12 +126,23 @@ func (h *MatchHandler) SubmitDraftCode(c *gin.Context) {
 	if req == nil {
 		req = make(map[string]interface{})
 	}
+	if session, ok := sessionFromContext(c); ok && session.Role != "ADMIN" {
+		req["side"] = session.Side
+	}
 	req["match_id"] = matchID
 
 	res, err := h.service.MutateTournament(id, "submit-draft", req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
 		return
+	}
+	if session, ok := sessionFromContext(c); ok && session.Role != "ADMIN" {
+		if match, ok := res["match"].(map[string]interface{}); ok {
+			res["match"] = redactMatch(match, matchID, session)
+		}
+		if team, ok := res["team"].(map[string]interface{}); ok {
+			delete(team, "credential_hash")
+		}
 	}
 	c.JSON(http.StatusOK, res)
 }
@@ -60,12 +155,23 @@ func (h *MatchHandler) SubmitCode(c *gin.Context) {
 	if req == nil {
 		req = make(map[string]interface{})
 	}
+	if session, ok := sessionFromContext(c); ok && session.Role != "ADMIN" {
+		req["side"] = session.Side
+	}
 	req["match_id"] = matchID
 
 	res, err := h.service.MutateTournament(id, "submit-code", req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
 		return
+	}
+	if session, ok := sessionFromContext(c); ok && session.Role != "ADMIN" {
+		if match, ok := res["match"].(map[string]interface{}); ok {
+			res["match"] = redactMatch(match, matchID, session)
+		}
+		if team, ok := res["team"].(map[string]interface{}); ok {
+			delete(team, "credential_hash")
+		}
 	}
 	c.JSON(http.StatusOK, res)
 }
@@ -109,6 +215,21 @@ func (h *MatchHandler) Auth(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
 		return
 	}
+	side, _ := req["side"].(string)
+	studentID, _ := req["student_id"].(string)
+	h.issueSession(id, matchID, "TEAM", side, studentID, res)
+	if res["session_token"] == nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"detail": "Could not create session"})
+		return
+	}
+	if tournament, ok := res["tournament"].(map[string]interface{}); ok {
+		res["tournament"] = redactTournament(tournament, auth.Session{Role: "TEAM", Side: side, TournamentID: id, MatchID: matchID})
+	}
+	if result, ok := res["result"].(map[string]interface{}); ok {
+		if team, ok := result["team"].(map[string]interface{}); ok {
+			delete(team, "credential_hash")
+		}
+	}
 	c.JSON(http.StatusOK, res)
 }
 
@@ -150,6 +271,17 @@ func (h *MatchHandler) GetSubmissions(c *gin.Context) {
 			if subs == nil {
 				subs = []interface{}{}
 			}
+			if session, ok := sessionFromContext(c); ok && session.Role != "ADMIN" {
+				filtered := make([]interface{}, 0)
+				if items, ok := subs.([]interface{}); ok {
+					for _, item := range items {
+						if sub, ok := item.(map[string]interface{}); ok && sub["side"] == session.Side {
+							filtered = append(filtered, sub)
+						}
+					}
+				}
+				subs = filtered
+			}
 			c.JSON(http.StatusOK, subs)
 			return
 		}
@@ -179,13 +311,13 @@ func (h *MatchHandler) GetRoundReplay(c *gin.Context) {
 				for _, rRaw := range rounds {
 					if r, ok := rRaw.(map[string]interface{}); ok {
 						if rn, ok := r["round_number"].(float64); ok && int(rn) == roundNum {
-							c.JSON(http.StatusOK, r)
+							c.JSON(http.StatusOK, hideOpponentCode(r, c))
 							return
 						}
 					}
 				}
 				if roundNum >= 1 && roundNum <= len(rounds) {
-					c.JSON(http.StatusOK, rounds[roundNum-1])
+					c.JSON(http.StatusOK, hideOpponentCode(rounds[roundNum-1], c))
 					return
 				}
 			}
@@ -193,6 +325,33 @@ func (h *MatchHandler) GetRoundReplay(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusNotFound, gin.H{"detail": "Không tìm thấy dữ liệu xem lại hiệp đấu"})
+}
+
+func hideOpponentCode(value interface{}, c *gin.Context) interface{} {
+	session, ok := sessionFromContext(c)
+	if ok && session.Role == "ADMIN" {
+		return value
+	}
+	record, ok := value.(map[string]interface{})
+	if !ok {
+		return value
+	}
+	copyRecord := make(map[string]interface{}, len(record))
+	for key, val := range record {
+		if key != "team_a_code" && key != "team_b_code" {
+			copyRecord[key] = val
+		}
+	}
+	return copyRecord
+}
+
+func sessionFromContext(c *gin.Context) (auth.Session, bool) {
+	value, ok := c.Get("session")
+	if !ok {
+		return auth.Session{}, false
+	}
+	session, ok := value.(auth.Session)
+	return session, ok
 }
 
 func (h *MatchHandler) PracticeMatch(c *gin.Context) {

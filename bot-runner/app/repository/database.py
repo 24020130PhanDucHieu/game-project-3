@@ -12,6 +12,9 @@ import time
 import copy
 import os
 import json
+import hashlib
+import hmac
+import secrets
 from app.models.schemas import (
     UserResponse, BotProfileResponse, BotVersionInfo, MatchHistory, TournamentStage, BotLanguage
 )
@@ -559,6 +562,7 @@ class Database:
         return {
             "bot_id": t_data.get("bot_id", f"bot_{t_data['student_id']}"),
             "student_id": t_data["student_id"],
+            "credential_hash": t_data.get("credential_hash", ""),
             "team_name": t_data["team_name"],
             "university": t_data.get("university", "Khối Kỹ Thuật"),
             "authenticated": False,
@@ -666,6 +670,7 @@ class Database:
             "matches": matches,
             "champion": None,
             "status": "CONFIGURING",
+            "stage_rule": "STAGE_1_STANDARD",
             "created_at": time.time()
         }
         self.tournaments[t_id] = tourn_obj
@@ -691,10 +696,12 @@ class Database:
         if any(t["team_name"].strip().lower() == team_name.strip().lower() for t in teams):
             raise ValueError(f"Tên đội '{team_name.strip()}' đã tồn tại trong giải đấu này!")
             
+        access_code = secrets.token_urlsafe(24)
         new_team = {
             "seed": len(teams) + 1,
             "bot_id": f"bot_{student_id.strip()}",
             "student_id": student_id.strip(),
+            "credential_hash": hashlib.sha256(access_code.encode()).hexdigest(),
             "team_name": team_name.strip(),
             "university": university.strip() or "Khối Kỹ Thuật",
             "code_content": "def decide_move(game_state):\n    return 'ROCK'",
@@ -706,6 +713,7 @@ class Database:
         return {
             "status": "SUCCESS",
             "message": f"Đã thêm đội '{team_name.strip()}' (MSSV: {student_id.strip()}) thành công!",
+            "team_access_code": access_code,
             "teams": teams,
             "total": len(teams),
             "capacity": num_teams
@@ -897,7 +905,8 @@ class Database:
 
         # 1. Kiểm tra tài khoản Admin / Ban Tổ Chức
         if u_clean in ["admin", "bquantri", "btc", "trongtai", "referee"]:
-            if p_clean in ["admin123", "admin", "admin@2026"]:
+            admin_password = os.getenv("ADMIN_PASSWORD", "")
+            if admin_password and hmac.compare_digest(p_clean, admin_password):
                 return {
                     "status": "SUCCESS",
                     "role": "ADMIN",
@@ -910,16 +919,16 @@ class Database:
         team_a = match.get("team_a")
         team_b = match.get("team_b")
 
-        # 2. Kiểm tra tài khoản Đội Đỏ (theo MSSV hoặc tên đội hoặc 'team_a')
+        # Teams authenticate with their registered student ID and one-time-issued access code.
         match_team_a = False
         if team_a:
             sid_a = team_a.get("student_id", "").strip().lower()
-            name_a = team_a.get("team_name", "").strip().lower()
-            if u_clean in [sid_a, name_a, "team_a", "doido", "doi_do", "do"]:
+            if u_clean == sid_a:
                 match_team_a = True
 
         if match_team_a:
-            if p_clean in ["12345", "123", "admin123"]:
+            supplied_hash = hashlib.sha256(p_clean.encode()).hexdigest()
+            if team_a.get("credential_hash") and hmac.compare_digest(supplied_hash, team_a["credential_hash"]):
                 team_a["authenticated"] = True
                 self.save_tournaments_to_file()
                 return {
@@ -932,16 +941,16 @@ class Database:
             else:
                 raise ValueError("Mật khẩu Đội Đỏ không chính xác!")
 
-        # 3. Kiểm tra tài khoản Đội Xanh (theo MSSV hoặc tên đội hoặc 'team_b')
+        # Authenticate the second side with the same credential check.
         match_team_b = False
         if team_b:
             sid_b = team_b.get("student_id", "").strip().lower()
-            name_b = team_b.get("team_name", "").strip().lower()
-            if u_clean in [sid_b, name_b, "team_b", "doixanh", "doi_xanh", "xanh"]:
+            if u_clean == sid_b:
                 match_team_b = True
 
         if match_team_b:
-            if p_clean in ["12345", "123", "admin123"]:
+            supplied_hash = hashlib.sha256(p_clean.encode()).hexdigest()
+            if team_b.get("credential_hash") and hmac.compare_digest(supplied_hash, team_b["credential_hash"]):
                 team_b["authenticated"] = True
                 self.save_tournaments_to_file()
                 return {
@@ -967,6 +976,8 @@ class Database:
         team_slot = match.get(side)
         if not team_slot:
             raise ValueError(f"Phe {side} chưa có đội.")
+        if not team_slot.get("authenticated"):
+            raise ValueError("Team login is required before saving a draft.")
         team_slot["draft_code"] = code
         team_slot["draft_lang"] = language
         team_slot["draft_updated_at"] = time.time()
@@ -1071,7 +1082,10 @@ def decide_move(game_state):
         if not team_slot:
             raise ValueError(f"Phe {side} chưa có đội tham gia.")
 
-        if student_id.strip().upper() == team_slot["student_id"].strip().upper() or password in ["123", "admin"]:
+        supplied_hash = hashlib.sha256(password.strip().encode()).hexdigest()
+        if (student_id.strip().upper() == team_slot["student_id"].strip().upper()
+                and team_slot.get("credential_hash")
+                and hmac.compare_digest(supplied_hash, team_slot["credential_hash"])):
             team_slot["authenticated"] = True
             return {"status": "SUCCESS", "message": f"Xác thực đội {team_slot['team_name']} thành công!", "team": team_slot}
         else:
@@ -1090,6 +1104,8 @@ def decide_move(game_state):
             raise ValueError(f"Phe {side} chưa có đội.")
 
         # Bước kiểm tra và cô lập code bot (Syntax & Dry-run sandbox validation)
+        if not team_slot.get("authenticated"):
+            raise ValueError("Team login is required before submitting code.")
         val_res = BotRunner.validate_bot_code(code, language)
 
         # Tạo submission ID và bản ghi lịch sử bài nộp chuẩn Kaggle
@@ -1342,11 +1358,16 @@ def decide_move(game_state):
         raise ValueError(f"Không tìm thấy dữ liệu replay cho Round {round_idx}")
 
     @staticmethod
-    def simulate_9x9_board_match(team_a_code: str, team_b_code: str, team_a_lang: str = "PYTHON", team_b_lang: str = "PYTHON", round_num: int = 1) -> dict:
+    def simulate_9x9_board_match(team_a_code: str, team_b_code: str, team_a_lang: str = "PYTHON", team_b_lang: str = "PYTHON", round_num: int = 1, stage_rule: str = "STAGE_1_STANDARD") -> dict:
         from app.sandbox.runner import BotRunner
         from app.engine.rules import GameRulesEngine
 
-        types_pattern = ["ROCK", "PAPER", "SCISSORS", "ROCK", "PAPER", "SCISSORS", "ROCK", "PAPER", "SCISSORS"]
+        if stage_rule == "STAGE_2_MUTATED":
+            types_pattern = ["ROCK"] * 5 + ["PAPER"] * 2 + ["SCISSORS"] * 2
+        elif stage_rule == "STAGE_4_FINALS":
+            types_pattern = ["ROCK"] * 2 + ["PAPER"] * 4 + ["SCISSORS"] * 3
+        else:
+            types_pattern = ["ROCK", "PAPER", "SCISSORS", "ROCK", "PAPER", "SCISSORS", "ROCK", "PAPER", "SCISSORS"]
         # Khởi tạo 9 quân Đỏ ở hàng 7 (cols 0..8)
         red_pieces = [
             {"id": f"r_{i}", "col": i, "row": 7, "type": types_pattern[i], "alive": True}
@@ -1380,6 +1401,8 @@ def decide_move(game_state):
         winner_side = None
         win_reason = ""
         max_turns = 16
+        cpp_exe_a = BotRunner.compile_cpp_code(team_a_code)[0] if team_a_lang == "CPP" else None
+        cpp_exe_b = BotRunner.compile_cpp_code(team_b_code)[0] if team_b_lang == "CPP" else None
 
         for t in range(1, max_turns + 1):
             clash_event = None
@@ -1406,13 +1429,19 @@ def decide_move(game_state):
                 "turn_number": t,
                 "history": copy.deepcopy(history_b)
             }
+            fog_of_war = stage_rule in ("STAGE_3_REVERSE_FOG", "STAGE_4_FINALS")
+            if fog_of_war:
+                for state in (state_a, state_b):
+                    for prior_turn in state["history"]:
+                        prior_turn.pop("opponent_move", None)
+                        prior_turn.pop("their_move", None)
+            reverse_rule = (stage_rule == "STAGE_3_REVERSE_FOG" and t % 2 == 1) or (stage_rule == "STAGE_4_FINALS" and t % 3 == 0)
 
             turn_move_a = "ROCK"
             turn_move_b = "ROCK"
             try:
                 if team_a_lang == "CPP":
-                    exe_p, _ = BotRunner.compile_cpp_code(team_a_code)
-                    if exe_p: turn_move_a, _ = BotRunner.run_cpp_binary(exe_p, state_a)
+                    if cpp_exe_a: turn_move_a, _ = BotRunner.run_cpp_binary(cpp_exe_a, state_a)
                 else:
                     turn_move_a, _ = BotRunner.run_python_code(team_a_code, state_a)
             except Exception:
@@ -1420,8 +1449,7 @@ def decide_move(game_state):
 
             try:
                 if team_b_lang == "CPP":
-                    exe_p, _ = BotRunner.compile_cpp_code(team_b_code)
-                    if exe_p: turn_move_b, _ = BotRunner.run_cpp_binary(exe_p, state_b)
+                    if cpp_exe_b: turn_move_b, _ = BotRunner.run_cpp_binary(cpp_exe_b, state_b)
                 else:
                     turn_move_b, _ = BotRunner.run_python_code(team_b_code, state_b)
             except Exception:
@@ -1445,7 +1473,7 @@ def decide_move(game_state):
                 if pr["type"] == turn_move_a:
                     for pb in alive_b:
                         if abs(pr["col"] - pb["col"]) <= 1 and abs(pr["row"] - pb["row"]) <= 1:
-                            if GameRulesEngine.check_clash(pr["type"], pb["type"]) == 1:
+                            if GameRulesEngine.check_clash(pr["type"], pb["type"], is_reverse=reverse_rule) == 1:
                                 best_red_capture = (pr, pb)
                                 break
                 if best_red_capture: break
@@ -1454,7 +1482,7 @@ def decide_move(game_state):
                 for pr in alive_r:
                     for pb in alive_b:
                         if abs(pr["col"] - pb["col"]) <= 1 and abs(pr["row"] - pb["row"]) <= 1:
-                            if GameRulesEngine.check_clash(pr["type"], pb["type"]) == 1:
+                            if GameRulesEngine.check_clash(pr["type"], pb["type"], is_reverse=reverse_rule) == 1:
                                 best_red_capture = (pr, pb)
                                 break
                     if best_red_capture: break
@@ -1721,6 +1749,11 @@ def decide_move(game_state):
                 winner_side = "draw"
                 win_reason = f"HÒA CỜ! Cả hai bên đều còn {final_r} quân trên bàn đấu."
 
+        for exe_path in (cpp_exe_a, cpp_exe_b):
+            if exe_path and os.path.exists(exe_path):
+                try: os.remove(exe_path)
+                except OSError: pass
+
         return {
             "winner_side": winner_side,
             "win_reason": win_reason,
@@ -1773,12 +1806,14 @@ def decide_move(game_state):
             team_b.get("current_code", ""),
             team_a.get("current_lang", "PYTHON"),
             team_b.get("current_lang", "PYTHON"),
-            r_num
+            r_num,
+            tourn.get("stage_rule", "STAGE_1_STANDARD")
         )
 
         winner_side = sim_res["winner_side"]
         win_reason = sim_res["win_reason"]
-        damage = 15
+        stage_rule = tourn.get("stage_rule", "STAGE_1_STANDARD")
+        damage = 30 if stage_rule == "STAGE_2_MUTATED" and r_num % 2 == 0 else (20 if stage_rule == "STAGE_4_FINALS" else 15)
 
         if winner_side == "team_a":
             team_a["rounds_won"] += 1

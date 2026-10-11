@@ -66,5 +66,13 @@ func (h *TeamHandler) GetTeams(c *gin.Context) {
 		c.JSON(http.StatusOK, []interface{}{})
 		return
 	}
+	if items, ok := teams.([]interface{}); ok {
+		for _, raw := range items {
+			if team, ok := raw.(map[string]interface{}); ok {
+				delete(team, "credential_hash")
+				delete(team, "code_content")
+			}
+		}
+	}
 	c.JSON(http.StatusOK, teams)
 }
