@@ -7,6 +7,7 @@ import (
 type Config struct {
 	Port        string
 	DBPath      string
+	DatabaseURL string
 	WorkerURL   string
 	Environment string
 	CORSOrigin  string
@@ -16,6 +17,14 @@ func LoadConfig() *Config {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
+	}
+
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		databaseURL = os.Getenv("POSTGRES_URL")
+	}
+	if databaseURL == "" {
+		databaseURL = os.Getenv("NEON_DATABASE_URL")
 	}
 
 	dbPath := os.Getenv("DB_PATH")
@@ -49,6 +58,7 @@ func LoadConfig() *Config {
 	return &Config{
 		Port:        port,
 		DBPath:      dbPath,
+		DatabaseURL: databaseURL,
 		WorkerURL:   workerURL,
 		Environment: env,
 		CORSOrigin:  corsOrigin,

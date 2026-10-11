@@ -133,15 +133,33 @@ let isMatchRunning = false;
 // KHỞI ĐỘNG ỨNG DỤNG KHI TẢI TRANG
 // =============================================================================
 function initApp() {
-  // Khôi phục phiên làm việc trước đó nếu có reload tab
-  const savedTourn = sessionStorage.getItem("activeTournamentId");
-  const savedMatch = sessionStorage.getItem("activeMatchId");
-  const savedRole = sessionStorage.getItem("userRole");
-  const savedSide = sessionStorage.getItem("studioSide");
+  // 1. Khôi phục trạng thái Đăng nhập & Vai trò (Bảo toàn 100% khi nhấn F5 reload)
+  const storedRole = localStorage.getItem("ARENA_USER_ROLE") || sessionStorage.getItem("userRole") || "GUEST";
+  currentAppRole = (storedRole === "TEAM_A" || storedRole === "TEAM_B" || storedRole === "TEAM") ? "TEAM" : (storedRole === "ADMIN" ? "ADMIN" : "GUEST");
+  currentUserRole = currentAppRole;
+  currentTeamStudentId = localStorage.getItem("ARENA_STUDENT_ID") || sessionStorage.getItem("ARENA_STUDENT_ID") || "";
+  currentTeamName = localStorage.getItem("ARENA_TEAM_NAME") || sessionStorage.getItem("ARENA_TEAM_NAME") || "";
+
+  // Đồng bộ lại cả localStorage & sessionStorage
+  localStorage.setItem("ARENA_USER_ROLE", currentAppRole);
+  sessionStorage.setItem("userRole", currentAppRole);
+  if (currentTeamStudentId) {
+    localStorage.setItem("ARENA_STUDENT_ID", currentTeamStudentId);
+    sessionStorage.setItem("ARENA_STUDENT_ID", currentTeamStudentId);
+  }
+  if (currentTeamName) {
+    localStorage.setItem("ARENA_TEAM_NAME", currentTeamName);
+    sessionStorage.setItem("ARENA_TEAM_NAME", currentTeamName);
+  }
+
+  // Khôi phục giải đấu và trận đấu đang chọn
+  const savedTourn = sessionStorage.getItem("activeTournamentId") || localStorage.getItem("activeTournamentId");
+  const savedMatch = sessionStorage.getItem("activeMatchId") || localStorage.getItem("activeMatchId");
+  const savedSide = sessionStorage.getItem("studioSide") || localStorage.getItem("studioSide");
+  const savedTab = sessionStorage.getItem("activeTabId") || localStorage.getItem("activeTabId");
 
   if (savedTourn) currentTournamentId = savedTourn;
   if (savedMatch) currentActiveMatchId = savedMatch;
-  if (savedRole) currentAppRole = savedRole;
   if (savedSide) currentStudioSide = savedSide;
 
   setupSidebarNavigation();
@@ -153,6 +171,11 @@ function initApp() {
   setupModals();
   setupAdminRules();
   updateRoleUI();
+
+  // Khôi phục tab trước khi reload nếu có
+  if (savedTab && savedTab !== "tab-overview") {
+    switchToTab(savedTab);
+  }
 
   // Nút cấu hình máy chủ Backend (chuyển vào Admin Console)
   const btnSetBackend = document.getElementById("btn-set-backend");
@@ -194,13 +217,42 @@ function initApp() {
   // Tải danh sách giải đấu đầu tiên
   loadTournamentsList();
 
-  // Tự động đồng bộ thời gian thực giữa các tab mỗi 1 giây (hỗ trợ Live Feed và Tỷ số)
+  // Tự động đồng bộ thời gian thực mỗi 5 giây (Tối ưu hóa băng thông & kết nối)
   setInterval(() => {
-    if (currentTournamentId && !isMatchRunning) {
+    if (currentTournamentId && !isMatchRunning && document.visibilityState === "visible") {
       loadActiveTournamentSilent(currentTournamentId);
     }
-  }, 1000);
+  }, 5000);
 }
+
+// Helper chọn nhanh số lượng đội & preview thể thức trong Modal Tạo Giải Đấu
+window.selectTournSizePreset = function(size) {
+  const inp = document.getElementById("inp-new-tourn-teams");
+  if (inp) inp.value = size;
+  document.querySelectorAll(".preset-pill-btn").forEach(btn => {
+    btn.classList.toggle("active", parseInt(btn.textContent, 10) === size);
+  });
+  window.updateTournSizePreview(size);
+};
+
+window.updateTournSizePreview = function(val) {
+  const num = parseInt(val, 10);
+  const textEl = document.getElementById("tourn-format-preview-text");
+  if (!textEl) return;
+  if (num === 4) {
+    textEl.textContent = "Bán Kết (2 trận) → Chung Kết (1 trận) • 2 Vòng";
+  } else if (num === 8) {
+    textEl.textContent = "Tứ Kết (4 trận) → Bán Kết (2 trận) → Chung Kết (1 trận) • 3 Vòng";
+  } else if (num === 16) {
+    textEl.textContent = "Vòng 1/8 (8 trận) → Tứ Kết (4 trận) → Bán Kết (2 trận) → Chung Kết (1 trận) • 4 Vòng";
+  } else if (num === 32) {
+    textEl.textContent = "Vòng 1/16 (16 trận) → Vòng 1/8 (8 trận) → Tứ Kết (4 trận) → Bán Kết (2 trận) → Chung Kết (1 trận) • 5 Vòng";
+  } else if (num > 0 && (num & (num - 1)) === 0) {
+    textEl.textContent = `Vòng 1 (${num/2} trận) → ... → Bán Kết → Chung Kết • ${Math.round(Math.log2(num))} Vòng`;
+  } else {
+    textEl.textContent = "Quy tắc: Số đội phải là lũy thừa của 2 (4, 8, 16, 32...) để phân nhánh loại trực tiếp";
+  }
+};
 
 if (document.readyState === 'loading') {
   document.addEventListener("DOMContentLoaded", initApp);
@@ -306,6 +358,10 @@ function switchToTab(tabId) {
       pane.classList.remove("active");
     }
   });
+
+  // Lưu trạng thái tab đang xem để F5 không bị reset về trang chủ
+  localStorage.setItem("activeTabId", tabId);
+  sessionStorage.setItem("activeTabId", tabId);
 
   // Tự động tải dữ liệu theo từng tab
   if (tabId === "tab-overview") {
@@ -1613,55 +1669,87 @@ async function loadActiveTournamentSilent(tournamentId) {
 }
 
 // =============================================================================
-// 3. VẼ CÂY SƠ ĐỒ GIẢI ĐẤU ĐA TẦNG (GENERIC N-TEAM BRACKET TREE)
+// 3. VẼ CÂY SƠ ĐỒ GIẢI ĐẤU ĐA TẦNG (GENERIC 4-32 TEAM BRACKET TREE THEO ẢNH 4)
 // =============================================================================
+const TEAM_COLOR_PALETTES = [
+  "color-red", "color-blue", "color-green", "color-yellow",
+  "color-purple", "color-orange", "color-pink", "color-cyan",
+  "color-emerald", "color-indigo", "color-amber", "color-rose"
+];
+
+const DEFAULT_32_BOT_NAMES = [
+  "RedBot", "BlueBot", "GreenBot", "YellowBot",
+  "PurpleBot", "OrangeBot", "PinkBot", "CyanBot",
+  "RubyBot", "SapphireBot", "EmeraldBot", "AmberBot",
+  "VioletBot", "TopazBot", "DiamondBot", "SilverBot",
+  "AlphaBot", "BetaBot", "GammaBot", "DeltaBot",
+  "OmegaBot", "SigmaBot", "ThetaBot", "ZetaBot",
+  "PhoenixBot", "DragonBot", "TigerBot", "FalconBot",
+  "ViperBot", "TitanBot", "HydraBot", "GhostBot"
+];
+
+function getDynamicTeamColor(teamName, defaultIndex) {
+  if (!teamName) return TEAM_COLOR_PALETTES[defaultIndex % TEAM_COLOR_PALETTES.length];
+  const lower = teamName.toLowerCase();
+  if (lower.includes("red") || lower.includes("đỏ")) return "color-red";
+  if (lower.includes("blue") || lower.includes("xanh dương")) return "color-blue";
+  if (lower.includes("green") || lower.includes("xanh lá")) return "color-green";
+  if (lower.includes("yellow") || lower.includes("vàng")) return "color-yellow";
+  if (lower.includes("purple") || lower.includes("tím")) return "color-purple";
+  if (lower.includes("orange") || lower.includes("cam")) return "color-orange";
+  if (lower.includes("pink") || lower.includes("hồng")) return "color-pink";
+  if (lower.includes("cyan") || lower.includes("lam")) return "color-cyan";
+  let hash = 0;
+  for (let i = 0; i < teamName.length; i++) hash = (hash << 5) - hash + teamName.charCodeAt(i);
+  return TEAM_COLOR_PALETTES[Math.abs(hash) % TEAM_COLOR_PALETTES.length];
+}
+
 function renderBracketTree(tourn) {
   const canvas = document.getElementById("bracket-tree-canvas");
   if (!canvas) return;
 
+  const numTeams = tourn?.num_teams || 8;
+  const k = Math.max(1, Math.round(Math.log2(numTeams))); // e.g. 5 for 32, 4 for 16, 3 for 8, 2 for 4
+
+  // Lấy tên vòng theo khoảng cách tới chung kết
+  const getRoundTitle = (distanceToFinal) => {
+    if (distanceToFinal === 0) return "Chung kết";
+    if (distanceToFinal === 1) return "Bán Kết";
+    if (distanceToFinal === 2) return "Tứ kết";
+    if (distanceToFinal === 3) return "Vòng 1/8";
+    if (distanceToFinal === 4) return "Vòng 1/16";
+    return `Vòng 1/${Math.pow(2, distanceToFinal)}`;
+  };
+
+  const firstRoundTitle = getRoundTitle(k - 1);
+
+  // Cập nhật tiêu đề và thể thức trên header trang & card
   const tournTitleEl = document.getElementById("bracket-tourn-name-display");
-  if (tournTitleEl && tourn) {
-    tournTitleEl.textContent = tourn.name || "Giải Đấu Tân Sinh Viên K69";
+  if (tournTitleEl) {
+    tournTitleEl.textContent = tourn?.name || "Giải Đấu Tân Sinh Viên K69";
+  }
+
+  const formatEl = document.getElementById("bracket-tourn-format-display");
+  if (formatEl) {
+    formatEl.textContent = `Thể thức: ${firstRoundTitle} → Chung Kết (Bo5)`;
+  }
+
+  const roundTitleCard = document.getElementById("bracket-card-round-title");
+  if (roundTitleCard) {
+    roundTitleCard.textContent = firstRoundTitle;
   }
 
   const matches = tourn?.matches || {};
+  const teamsList = tourn?.teams || [];
 
-  // Cấu trúc 3 cột theo chuẩn Mockup 2
-  const qfMatches = [
-    { id: "m_lvl1_1", title: "Trận 1", team_a: "RedBot", score_a: 2, color_a: "color-red", team_b: "BlueBot", score_b: 1, color_b: "color-blue", match_ref: matches["m_lvl1_1"] || matches["m_qf_1"] },
-    { id: "m_lvl1_2", title: "Trận 2", team_a: "GreenBot", score_a: 2, color_a: "color-green", team_b: "YellowBot", score_b: 0, color_b: "color-yellow", match_ref: matches["m_lvl1_2"] || matches["m_qf_2"] },
-    { id: "m_lvl1_3", title: "Trận 3", team_a: "PurpleBot", score_a: 1, color_a: "color-purple", team_b: "OrangeBot", score_b: 2, color_b: "color-orange", match_ref: matches["m_lvl1_3"] || matches["m_qf_3"] },
-    { id: "m_lvl1_4", title: "Trận 4", team_a: "PinkBot", score_a: 0, color_a: "color-pink", team_b: "CyanBot", score_b: 2, color_b: "color-cyan", match_ref: matches["m_lvl1_4"] || matches["m_qf_4"] }
-  ];
-
-  const sfMatches = [
-    { id: "m_lvl2_1", title: "Trận 1", team_a: "RedBot", score_a: 2, color_a: "color-red", team_b: "GreenBot", score_b: 1, color_b: "color-green", match_ref: matches["m_lvl2_1"] || matches["m_sf_1"] },
-    { id: "m_lvl2_2", title: "Trận 2", team_a: "OrangeBot", score_a: 0, color_a: "color-orange", team_b: "CyanBot", score_b: 2, color_b: "color-cyan", match_ref: matches["m_lvl2_2"] || matches["m_sf_2"] }
-  ];
-
-  const gfMatch = {
-    id: "m_gf", title: "Trận 1", isFinal: true, team_a: "RedBot", score_a: "-", color_a: "color-red", team_b: "CyanBot", score_b: "-", color_b: "color-cyan", match_ref: matches["m_gf"]
-  };
-
-  // Nạp dữ liệu thật nếu có trong tournament
-  [...qfMatches, ...sfMatches, gfMatch].forEach(item => {
-    if (item.match_ref) {
-      const m = item.match_ref;
-      if (m.team_a) item.team_a = m.team_a.team_name;
-      if (m.team_b) item.team_b = m.team_b.team_name;
-      if (typeof m.score_a === "number") item.score_a = m.score_a;
-      if (typeof m.score_b === "number") item.score_b = m.score_b;
-    }
-  });
-
-  const isTeamMatch = (item) => {
+  const isTeamMatch = (matchRef, nameA, nameB) => {
     if (currentAppRole !== "TEAM") return false;
-    if (item.match_ref && isTeamInMatch(item.match_ref, currentTeamStudentId, currentTeamName)) return true;
-    return isTeamInMatch({ team_a: item.team_a, team_b: item.team_b }, currentTeamStudentId, currentTeamName);
+    if (matchRef && isTeamInMatch(matchRef, currentTeamStudentId, currentTeamName)) return true;
+    return isTeamInMatch({ team_a: { team_name: nameA }, team_b: { team_name: nameB } }, currentTeamStudentId, currentTeamName);
   };
 
-  const renderNodeHtml = (m) => {
-    const isMyMatch = isTeamMatch(m);
+  const renderNodeHtml = (nodeData) => {
+    const isMyMatch = isTeamMatch(nodeData.matchRef, nodeData.team_a, nodeData.team_b);
     const isOtherMatch = (currentAppRole === "TEAM" && !isMyMatch);
     let nodeClass = "bracket-match-node";
     if (isMyMatch) nodeClass += " my-team-match";
@@ -1674,60 +1762,154 @@ function renderBracketTree(tourn) {
           : "Bấm để xem và nộp bài cho trận đấu");
 
     return `
-    <div class="${nodeClass}" data-match-id="${m.id}" title="${nodeTitle}">
-      <div class="node-title-row">
-        <span>${m.title}</span>
-        ${isMyMatch ? '<span class="badge-my-match" style="background:#2563eb;color:#ffffff;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:6px;">★ Trận của bạn</span>' : ''}
-        ${m.isFinal ? '<span class="final-trophy-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="#2563eb"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 15.9V19H7v2h10v-2h-4v-3.1a5.01 5.01 0 0 0 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2z"/></svg></span>' : ''}
-      </div>
-      <div class="node-team-row">
-        <div class="node-team-info">
-          <span class="node-team-avatar ${m.color_a}">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          </span>
-          <span class="node-team-name">${escapeHtml(m.team_a)}</span>
+      <div class="${nodeClass}" data-match-id="${nodeData.id}" title="${nodeTitle}">
+        <div class="node-title-row">
+          <span>${nodeData.title}</span>
+          ${isMyMatch ? '<span class="badge-my-match" style="background:#2563eb;color:#ffffff;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:6px;">★ Trận của bạn</span>' : ''}
+          ${nodeData.isFinal ? '<span class="final-trophy-icon" title="Chung kết tranh Cúp vô địch"><svg width="16" height="16" viewBox="0 0 24 24" fill="#2563eb"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 15.9V19H7v2h10v-2h-4v-3.1a5.01 5.01 0 0 0 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2z"/></svg></span>' : ''}
         </div>
-        <span class="node-score">${m.score_a}</span>
-      </div>
-      <div class="node-team-row">
-        <div class="node-team-info">
-          <span class="node-team-avatar ${m.color_b}">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          </span>
-          <span class="node-team-name">${escapeHtml(m.team_b)}</span>
+        <div class="node-team-row">
+          <div class="node-team-info">
+            <span class="node-team-avatar ${nodeData.color_a}">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+            <span class="node-team-name">${escapeHtml(nodeData.team_a)}</span>
+          </div>
+          <span class="node-score">${nodeData.score_a}</span>
         </div>
-        <span class="node-score">${m.score_b}</span>
+        <div class="node-team-row">
+          <div class="node-team-info">
+            <span class="node-team-avatar ${nodeData.color_b}">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </span>
+            <span class="node-team-name">${escapeHtml(nodeData.team_b)}</span>
+          </div>
+          <span class="node-score">${nodeData.score_b}</span>
+        </div>
       </div>
-    </div>
-  `;
+    `;
   };
 
+  let columnsHtml = "";
+
+  for (let lvl = 1; lvl <= k; lvl++) {
+    const dist = k - lvl;
+    const colTitle = getRoundTitle(dist);
+    const numMatchesInCol = Math.pow(2, dist);
+    const isFinalRound = (lvl === k);
+
+    let roundMatchesData = [];
+    for (let i = 0; i < numMatchesInCol; i++) {
+      const isGf = isFinalRound;
+      const mId = isGf ? "m_gf" : `m_lvl${lvl}_${i + 1}`;
+      
+      // Fallback aliases cho các phiên bản cũ
+      let refMatch = matches[mId];
+      if (!refMatch) {
+        if (dist === 2) refMatch = matches[`m_qf_${i + 1}`];
+        else if (dist === 1) refMatch = matches[`m_sf_${i + 1}`];
+        else if (isGf) refMatch = matches["m_gf"];
+      }
+
+      let teamAName = refMatch?.team_a?.team_name || refMatch?.team_a?.student_id;
+      let teamBName = refMatch?.team_b?.team_name || refMatch?.team_b?.student_id;
+      let scoreA = "-";
+      let scoreB = "-";
+
+      if (refMatch) {
+        if (typeof refMatch.score_a === "number") scoreA = refMatch.score_a;
+        if (typeof refMatch.score_b === "number") scoreB = refMatch.score_b;
+      }
+
+      // Nạp tên mặc định từ danh sách đăng ký hoặc demo bots nếu chưa gán
+      if (lvl === 1) {
+        if (!teamAName) {
+          teamAName = teamsList[2 * i]?.team_name || DEFAULT_32_BOT_NAMES[2 * i] || `Đội ${2 * i + 1}`;
+        }
+        if (!teamBName) {
+          teamBName = teamsList[2 * i + 1]?.team_name || DEFAULT_32_BOT_NAMES[2 * i + 1] || `Đội ${2 * i + 2}`;
+        }
+      } else {
+        if (!teamAName) teamAName = isGf ? "RedBot" : (i === 0 ? "RedBot" : "OrangeBot");
+        if (!teamBName) teamBName = isGf ? "CyanBot" : (i === 0 ? "GreenBot" : "CyanBot");
+      }
+
+      // Giữ điểm demo chuẩn 2-1, 2-0 như trong ảnh mẫu nếu đang xem giải mẫu
+      if (scoreA === "-" && scoreB === "-" && (!tourn?.status || tourn?.status === "CONFIGURING" || tourn?.status === "WAITING")) {
+        if (lvl === 1 && numTeams === 8) {
+          const sampleScores = [[2, 1], [2, 0], [1, 2], [0, 2]];
+          if (sampleScores[i]) {
+            scoreA = sampleScores[i][0];
+            scoreB = sampleScores[i][1];
+          }
+        } else if (lvl === 2 && numTeams === 8) {
+          const sampleScores = [[2, 1], [0, 2]];
+          if (sampleScores[i]) {
+            scoreA = sampleScores[i][0];
+            scoreB = sampleScores[i][1];
+          }
+        }
+      }
+
+      const colorA = getDynamicTeamColor(teamAName, (lvl === 1 ? 2 * i : 0));
+      const colorB = getDynamicTeamColor(teamBName, (lvl === 1 ? 2 * i + 1 : 1));
+
+      roundMatchesData.push({
+        id: mId,
+        title: `Trận ${i + 1}`,
+        isFinal: isGf,
+        team_a: teamAName,
+        team_b: teamBName,
+        score_a: scoreA,
+        score_b: scoreB,
+        color_a: colorA,
+        color_b: colorB,
+        matchRef: refMatch
+      });
+    }
+
+    // Ghép cặp và đường nhánh kết nối (Connector branches)
+    let matchesContentHtml = "";
+    if (isFinalRound) {
+      matchesContentHtml = `
+        <div class="bracket-match-pair final-pair">
+          ${renderNodeHtml(roundMatchesData[0])}
+        </div>
+      `;
+    } else {
+      const numPairs = numMatchesInCol / 2;
+      for (let p = 0; p < numPairs; p++) {
+        const m1 = roundMatchesData[2 * p];
+        const m2 = roundMatchesData[2 * p + 1];
+        matchesContentHtml += `
+          <div class="bracket-match-pair">
+            ${renderNodeHtml(m1)}
+            ${renderNodeHtml(m2)}
+            <div class="bracket-connector-branch">
+              <svg class="bracket-connector-svg" width="56" height="100%" viewBox="0 0 56 100" preserveAspectRatio="none">
+                <path d="M 0,25 H 22 V 75 H 0 M 22,50 H 56" stroke="#93c5fd" stroke-width="1.8" fill="none" stroke-linejoin="round" />
+              </svg>
+              <span class="connector-status-badge">Đang diễn ra</span>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    columnsHtml += `
+      <div class="bracket-column-dynamic">
+        <div class="bracket-col-header-dynamic">${colTitle}</div>
+        <div class="bracket-column-matches-flex">
+          ${matchesContentHtml}
+        </div>
+      </div>
+    `;
+  }
+
   canvas.innerHTML = `
-    <!-- CỘT 1: TỨ KẾT -->
-    <div class="bracket-column">
-      <div class="bracket-col-header">Tứ kết</div>
-      <div class="bracket-matches-col">
-        ${renderNodeHtml(qfMatches[0])}
-        ${renderNodeHtml(qfMatches[1])}
-        ${renderNodeHtml(qfMatches[2])}
-        ${renderNodeHtml(qfMatches[3])}
-      </div>
-    </div>
-
-    <!-- CỘT 2: BÁN KẾT -->
-    <div class="bracket-column">
-      <div class="bracket-col-header">Bán Kết</div>
-      <div class="bracket-matches-col">
-        ${renderNodeHtml(sfMatches[0])}
-        ${renderNodeHtml(sfMatches[1])}
-      </div>
-    </div>
-
-    <!-- CỘT 3: CHUNG KẾT -->
-    <div class="bracket-column">
-      <div class="bracket-col-header">Chung kết</div>
-      <div class="bracket-matches-col" style="justify-content: center;">
-        ${renderNodeHtml(gfMatch)}
+    <div class="bracket-tree-scroll-container">
+      <div class="bracket-columns-flex">
+        ${columnsHtml}
       </div>
     </div>
   `;
@@ -1759,6 +1941,7 @@ function renderBracketTree(tourn) {
     });
   });
 }
+
 
 
 function createBracketColumn(title, matchArr) {

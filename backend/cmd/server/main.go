@@ -26,8 +26,23 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// 1. Data Repository & External Adapters
-	tournamentRepo := repository.NewJSONTournamentRepository(cfg.DBPath)
+	// 1. Data Repository & External Adapters (Tự động hỗ trợ Neon PostgreSQL trên Render hoặc JSON cục bộ)
+	var tournamentRepo repository.TournamentRepository
+	if cfg.DatabaseURL != "" {
+		log.Println("[Database] Phát hiện cấu hình DATABASE_URL, đang kết nối Neon PostgreSQL...")
+		pgRepo, err := repository.NewPostgresTournamentRepository(cfg.DatabaseURL)
+		if err != nil {
+			log.Printf("[Database Cảnh Báo] Lỗi kết nối PostgreSQL (%v), tự động chuyển về JSON store", err)
+			tournamentRepo = repository.NewJSONTournamentRepository(cfg.DBPath)
+		} else {
+			log.Println("[Database] Kết nối thành công Neon PostgreSQL Database (Hiệu năng cao + In-memory Cache)!")
+			tournamentRepo = pgRepo
+		}
+	} else {
+		log.Println("[Database] Sử dụng JSON repository (Local/Fallback storage)")
+		tournamentRepo = repository.NewJSONTournamentRepository(cfg.DBPath)
+	}
+
 	botRunnerAdapter := adapter.NewHTTPBotRunnerAdapter(cfg.WorkerURL)
 
 	// 2. Service Layer

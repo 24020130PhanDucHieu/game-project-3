@@ -396,7 +396,7 @@
                 <line x1="12" y1="5" x2="12" y2="19"/>
                 <line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
-              <span>+ Tạo giải đấu</span>
+              <span>Tạo giải đấu</span>
             </button>
 
             <!-- DROPDOWN CÁC GIẢI ĐẤU CHO PHÉP CHỌN GIẢI ĐẤU ĐỂ XEM SƠ ĐỒ -->
@@ -436,7 +436,7 @@
                 <path d="M9 5h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9"/>
                 <path d="M14 12h1"/>
               </svg>
-              <h3 class="panel-title">Tứ kết</h3>
+              <h3 class="panel-title" id="bracket-card-round-title">Tứ kết</h3>
             </div>
             <button class="btn-icon-subtle" id="btn-bracket-menu-opts">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2">
@@ -1062,20 +1062,49 @@
 
   <!-- MODAL TẠO GIẢI ĐẤU (DÀNH CHO ADMIN) -->
   <div class="modal-overlay" id="modal-create-tournament" style="display: none;" onclick="if(event.target === this) closeCreateTournModal()">
-    <div class="modal-card">
+    <div class="modal-card modal-tourn-create-card">
       <div class="modal-header">
-        <h3 class="modal-title">Tạo Giải Đấu Lập Trình Mới</h3>
+        <div class="modal-title-with-icon">
+          <span class="modal-icon-badge">🏆</span>
+          <div>
+            <h3 class="modal-title">Tạo Giải Đấu Lập Trình Mới</h3>
+            <span class="modal-subtitle">Thiết lập quy mô bảng đấu loại trực tiếp tự động</span>
+          </div>
+        </div>
         <button class="btn-clean btn-modal-close" id="btn-close-create-tourn-x" onclick="closeCreateTournModal()">✕</button>
       </div>
       <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Tên Giải Đấu:</label>
-          <input class="input-text" id="inp-new-tourn-name" placeholder="Ví dụ: Cúp Vô Địch Tân Sinh Viên K69..." type="text" value="Giải Đấu ICPC K69 Mùa 2"/>
+        <div class="form-group-modern">
+          <label class="form-label-modern" for="inp-new-tourn-name">
+            <span>Tên Giải Đấu</span>
+            <span class="badge-req">Bắt buộc</span>
+          </label>
+          <input class="input-modern" id="inp-new-tourn-name" placeholder="Ví dụ: Cúp Vô Địch Tân Sinh Viên K69..." type="text" value="Giải Đấu ICPC K69 Mùa 2"/>
         </div>
-        <div class="form-group">
-          <label class="form-label">Số Lượng Đội Tham Gia:</label>
-          <input class="input-text" id="inp-new-tourn-teams" min="4" placeholder="Nhập số đội: 4, 8, 16, 32..." step="1" type="number" value="8"/>
-          <small class="form-hint">Quy tắc bắt buộc: Số lượng đội phải là lũy thừa của 2 (ví dụ: 4, 8, 16, 32...) và tối thiểu 4 đội để tạo nhánh đấu loại trực tiếp.</small>
+
+        <div class="form-group-modern" style="margin-top: 14px;">
+          <label class="form-label-modern" for="inp-new-tourn-teams">
+            <span>Số Lượng Đội Tham Gia</span>
+            <span class="badge-req">Lũy thừa của 2</span>
+          </label>
+          <!-- Nút chọn nhanh quy mô giải -->
+          <div class="tourn-size-presets">
+            <button type="button" class="preset-pill-btn" onclick="selectTournSizePreset(4)">4 Đội</button>
+            <button type="button" class="preset-pill-btn active" onclick="selectTournSizePreset(8)">8 Đội</button>
+            <button type="button" class="preset-pill-btn" onclick="selectTournSizePreset(16)">16 Đội</button>
+            <button type="button" class="preset-pill-btn" onclick="selectTournSizePreset(32)">32 Đội</button>
+          </div>
+          <input class="input-modern" id="inp-new-tourn-teams" min="4" max="64" placeholder="Nhập số đội: 4, 8, 16, 32..." step="1" type="number" value="8" oninput="updateTournSizePreview(this.value)"/>
+          
+          <div class="tourn-format-preview-card" id="tourn-format-preview">
+            <span class="preview-tag">Sơ đồ nhánh:</span>
+            <span id="tourn-format-preview-text">Tứ Kết (4 trận) → Bán Kết (2 trận) → Chung Kết (1 trận)</span>
+          </div>
+        </div>
+
+        <div class="form-info-tip" style="margin-top: 14px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span>Quy tắc: Hệ thống tự động chia cặp đấu loại trực tiếp (Bo5). Chỉ Ban Tổ Chức (Admin) mới có quyền tạo giải.</span>
         </div>
       </div>
       <div class="modal-footer">
