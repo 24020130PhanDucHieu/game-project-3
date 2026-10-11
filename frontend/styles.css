@@ -852,21 +852,41 @@ body {
 .bracket-header-right {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
-.round-dropdown-pill {
-  background: var(--primary-blue-light);
-  color: var(--primary-blue);
-  border: 1px solid var(--primary-blue-border);
-  border-radius: 18px;
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  display: inline-flex;
+.tourn-selector-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1.5px solid var(--border-card);
+  border-radius: 8px;
+  padding: 5px 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.tourn-sel-label {
+  display: flex;
   align-items: center;
   gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.select-tourn-bracket {
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-blue);
   cursor: pointer;
+  outline: none;
+  padding: 2px 0;
+  max-width: 250px;
 }
 
 .bracket-tournament-meta {
@@ -889,34 +909,28 @@ body {
   margin-top: 1px;
 }
 
-/* BỘ LỌC CÁC VÒNG ĐẤU (PILL BUTTONS) */
-.bracket-filter-pills-row {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+/* ĐÁNH DẤU TRẬN ĐẤU CỦA ĐỘI BẠN */
+.bracket-match-node.my-team-match {
+  border-color: #2563eb !important;
+  background: #f0f7ff !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.15) !important;
 }
 
-.bracket-pill {
-  background: #ffffff;
-  color: var(--text-body);
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
-  padding: 8px 20px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.bracket-pill:hover {
-  background: var(--bg-hover);
-}
-
-.bracket-pill.active {
-  background: var(--primary-blue);
+.bracket-match-node.my-team-match::after {
+  content: "★ Trận của bạn";
+  position: absolute;
+  top: -9px;
+  right: 12px;
+  background: #2563eb;
   color: #ffffff;
-  border-color: var(--primary-blue);
-  font-weight: 600;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 10px;
+}
+
+.bracket-match-node.other-team-match {
+  opacity: 0.9;
 }
 
 /* THẺ TRẮNG CHỨA CÂY NHÁNH ĐẤU */
