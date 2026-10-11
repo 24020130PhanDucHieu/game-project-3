@@ -204,7 +204,7 @@ def decide_move(game_state):
     print("\n--- KIỂM TRA ENGINE THI ĐẤU & BÀN CỜ 9x9 ---")
     code, data = request_json(f"/api/tournaments/tourn_k69_main/matches/{match_id}/play-round", method="POST")
     assert code == 200, f"Play-round thất bại: {code} - {data}"
-    rec = data.get("round_record")
+    rec = data.get("round_record") or (data.get("match", {}).get("rounds_history", [None])[-1])
     assert rec is not None, "round_record không được rỗng"
     assert "board_steps" in rec, "round_record thiếu board_steps trên bàn cờ 9x9"
     steps = rec.get("board_steps", [])

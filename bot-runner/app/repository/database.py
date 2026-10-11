@@ -796,14 +796,73 @@ class Database:
         }
 
     def auto_schedule_tournament(self, tournament_id: str) -> dict:
+        import random
         tourn = self.tournaments.get(tournament_id)
         if not tourn:
             raise ValueError("Không tìm thấy giải đấu.")
         num_teams = tourn["num_teams"]
         teams = tourn.get("teams", [])
-        if len(teams) != num_teams:
-            raise ValueError(f"Giải đấu yêu cầu chính xác {num_teams} đội (hiện có {len(teams)} đội). Vui lòng bổ sung đúng {num_teams} đội trước khi xếp lịch!")
         
+        # Nếu chưa đủ số đội theo thể thức giải, tự động bổ sung đội mẫu để đủ điều kiện bốc thăm
+        if len(teams) < num_teams:
+            demo_pool = [
+                ("K69_AlphaBot", "24020001", "ĐHQG Hà Nội"),
+                ("BK_DragonBot", "24020002", "ĐH Bách Khoa"),
+                ("UET_ThunderBot", "24020003", "Trường ĐH Công Nghệ"),
+                ("PTIT_CyberBot", "24020004", "Học Viện BCVT"),
+                ("NEU_EconBot", "24020005", "ĐH Kinh Tế QD"),
+                ("HCMUT_Vanguard", "24020006", "ĐH Bách Khoa HCM"),
+                ("UIT_ShadowBot", "24020007", "ĐH CNTT HCM"),
+                ("FPT_PhoenixBot", "24020008", "ĐH FPT Hà Nội"),
+                ("VNU_TitanBot", "24020009", "ĐHQG Hà Nội"),
+                ("HUST_IronBot", "24020010", "ĐH Bách Khoa"),
+                ("K69_NovaBot", "24020011", "Trường ĐH Công Nghệ"),
+                ("HNUE_SolarBot", "24020012", "ĐH Sư Phạm"),
+                ("UTC_RailBot", "24020013", "ĐH Giao Thông"),
+                ("TLU_WaterBot", "24020014", "ĐH Thủy Lợi"),
+                ("HAU_ArchBot", "24020015", "ĐH Kiến Trúc"),
+                ("VNUA_AgriBot", "24020016", "Học Viện Nông Nghiệp"),
+                ("FTU_Pegasus", "24021810", "ĐH Ngoại Thương"),
+                ("HU_Falcon", "24021920", "ĐH Huế"),
+                ("QNU_Wave", "24022030", "ĐH Quy Nhơn"),
+                ("DLU_Pine", "24022140", "ĐH Đà Lạt"),
+                ("TNUS_Star", "24022250", "ĐH Thái Nguyên"),
+                ("VGU_Eagle", "24022360", "ĐH Việt Đức"),
+                ("BUV_Lion", "24022470", "British University VN"),
+                ("RMIT_Apex", "24022580", "RMIT University"),
+                ("VinUni_Apex", "24022690", "VinUniversity"),
+                ("Phenikaa_Tech", "24022710", "ĐH Phenikaa"),
+                ("HOU_Horizon", "24022820", "ĐH Mở Hà Nội"),
+                ("HUP_Pharma", "24022930", "ĐH Dược Hà Nội"),
+                ("HNUE_Compass", "24023040", "ĐH Sư Phạm Hà Nội"),
+                ("GDU_Vortex", "24023150", "ĐH Gia Định"),
+                ("K69_Legends", "24023260", "CLB ICPC K69"),
+                ("AIO_MatrixBot", "24023370", "Viện CNTT")
+            ]
+            existing_sids = {str(t.get("student_id", "")).strip().lower() for t in teams}
+            for name, sid, uni in demo_pool:
+                if len(teams) >= num_teams:
+                    break
+                if sid.lower() not in existing_sids:
+                    teams.append({
+                        "seed": len(teams) + 1,
+                        "bot_id": f"bot_{sid}",
+                        "student_id": sid,
+                        "team_name": name,
+                        "university": uni,
+                        "code_content": "def decide_move(game_state):\n    return 'ROCK'",
+                        "language": BotLanguage.PYTHON,
+                        "elo": 1200
+                    })
+                    existing_sids.add(sid.lower())
+
+        # Bốc thăm sắp xếp ngẫu nhiên các đội vào sơ đồ thi đấu
+        teams_to_schedule = list(teams[:num_teams])
+        random.shuffle(teams_to_schedule)
+        for idx, t in enumerate(teams_to_schedule):
+            t["seed"] = idx + 1
+        tourn["teams"] = teams_to_schedule
+
         # Reset toàn bộ các trận đấu trong nhánh
         tourn["matches"] = Database.build_bracket_matches(num_teams)
         tourn["champion"] = None
@@ -813,8 +872,8 @@ class Database:
         num_lvl1_matches = num_teams // 2
         for i in range(num_lvl1_matches):
             m_id = "m_gf" if num_teams == 2 else f"m_lvl1_{i+1}"
-            tourn["matches"][m_id]["team_a"] = Database.make_team_slot(teams[2*i])
-            tourn["matches"][m_id]["team_b"] = Database.make_team_slot(teams[2*i + 1])
+            tourn["matches"][m_id]["team_a"] = Database.make_team_slot(teams_to_schedule[2*i])
+            tourn["matches"][m_id]["team_b"] = Database.make_team_slot(teams_to_schedule[2*i + 1])
             tourn["matches"][m_id]["status"] = "READY"
             
         self.save_tournaments_to_file()

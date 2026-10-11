@@ -399,6 +399,17 @@
               <span>Tạo giải đấu</span>
             </button>
 
+            <!-- NÚT THÊM & QUẢN LÝ ĐỘI TUYỂN (CHỈ ADMIN MỚI TẠO/SỬA ĐƯỢC) -->
+            <button class="btn btn-outline btn-sm" id="btn-open-team-mgr-bracket" title="Chỉ Ban Tổ Chức (Admin) mới có quyền thêm, xóa và sắp xếp các đội thi đấu">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              <span>Thêm & Quản lý đội</span>
+            </button>
+
             <!-- DROPDOWN CÁC GIẢI ĐẤU CHO PHÉP CHỌN GIẢI ĐẤU ĐỂ XEM SƠ ĐỒ -->
             <div class="tourn-selector-group">
               <label class="tourn-sel-label" for="select-active-tournament">
@@ -425,7 +436,7 @@
           </div>
         </div>
 
-        <!-- THẺ TRẮNG CHỨA CÂY NHÁNH ĐẤU 3 CỘT (BRACKET CARD) -->
+        <!-- THẺ TRẮNG CHỨA CÂY NHÁNH ĐẤU (BRACKET CARD) -->
         <div class="bracket-main-card">
           <div class="bracket-card-top-bar">
             <div class="card-title-icon-group">
@@ -447,8 +458,8 @@
             </button>
           </div>
 
-          <!-- BỐ CỤC 3 CỘT: TỨ KẾT -> BÁN KẾT -> CHUNG KẾT -->
-          <div class="bracket-columns-wrapper" id="bracket-tree-canvas">
+          <!-- BỐ CỤC KHUNG CHỨA CÂY NHÁNH ĐẤU -->
+          <div class="bracket-tree-canvas-wrapper" id="bracket-tree-canvas">
             <!-- Render cây nhánh đấu hoàn chỉnh bằng Javascript -->
           </div>
 
@@ -665,12 +676,12 @@
                   </select>
                   <button class="btn btn-sm btn-outline" id="btn-studio-test-practice">Chạy thử với Boss</button>
                 </div>
-                <button class="btn btn-green btn-submit-code" id="btn-studio-submit-bot">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <button class="btn btn-green btn-submit-code" id="btn-studio-submit-bot" title="Nộp thuật toán bot cho round đấu hiện tại">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <line x1="22" y1="2" x2="11" y2="13"/>
                     <polygon points="22 2 15 22 11 13 2 9 22 2"/>
                   </svg>
-                  <span>Nộp mã lệnh cho Round</span>
+                  <span id="btn-submit-bot-text">Nộp mã lệnh</span>
                 </button>
               </div>
 
@@ -981,49 +992,76 @@
   <!-- =================================================================== -->
   <!-- CÁC MODAL HỆ THỐNG: QUẢN LÝ ĐỘI, XEM MÃ NGUỒN, REPLAY, PRACTICE -->
   <!-- =================================================================== -->
-  <!-- MODAL QUẢN LÝ ĐỘI -->
-  <div class="modal-overlay" id="modal-manage-teams" style="display: none;">
-    <div class="modal-card modal-lg">
+  <!-- MODAL QUẢN LÝ ĐỘI TUYỂN (TEAM MANAGEMENT & RANDOM SEEDING) -->
+  <div class="modal-overlay" id="modal-manage-teams" style="display: none;" onclick="if(event.target === this) closeTeamManagerModal()">
+    <div class="modal-card modal-team-mgr-card">
       <div class="modal-header">
-        <div>
-          <h3 class="modal-title">Quản Lý Tuyển Thủ &amp; Đội Thi Đấu</h3>
-          <span class="modal-subtitle">Ghi danh đội thi đấu vào giải (Tối đa 8 đội)</span>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 36px; height: 36px; border-radius: 10px; background: #eff6ff; display: flex; align-items: center; justify-content: center; color: #2563eb; flex-shrink: 0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <div>
+            <h3 class="modal-title" style="margin: 0; font-size: 16px; font-weight: 700;">Quản Lý Tuyển Thủ &amp; Đội Thi Đấu</h3>
+            <span class="modal-subtitle" style="font-size: 12px; color: #64748b;">Thêm, xóa thành viên và bốc thăm ngẫu nhiên vào sơ đồ nhánh</span>
+          </div>
         </div>
-        <button class="btn-clean btn-modal-close" id="btn-close-team-mgr-x">✕</button>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="badge-tag highlight" id="mgr-teams-count-badge" style="font-size: 11px; padding: 4px 8px; border-radius: 8px;">0 / 8 Đội</span>
+          <button class="btn-clean btn-modal-close" id="btn-close-team-mgr-x" onclick="closeTeamManagerModal()">✕</button>
+        </div>
       </div>
-      <div class="modal-body">
-        <div class="team-mgr-form-grid">
-          <div class="form-group">
-            <label class="form-label">Tên Đội:</label>
-            <input class="input-text" id="mgr-inp-name" placeholder="Ví dụ: K69_AlphaBot" type="text"/>
+      <div class="modal-body" style="padding: 16px 20px;">
+        <!-- FORM THÊM ĐỘI MỚI -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;">
+          <div style="font-size: 12px; font-weight: 700; color: #1e293b; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+            <span>Ghi danh đội tuyển mới:</span>
           </div>
-          <div class="form-group">
-            <label class="form-label">MSSV Đại Diện:</label>
-            <input class="input-text" id="mgr-inp-sid" placeholder="Ví dụ: 24020001" type="text"/>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Đơn Vị:</label>
-            <input class="input-text" id="mgr-inp-uni" placeholder="Ví dụ: ĐHQG Hà Nội" type="text" value="Khối Kỹ Thuật"/>
+          <div style="display: grid; grid-template-columns: 1.2fr 1fr 1fr auto; gap: 8px; align-items: center;">
+            <input class="input-modern" id="mgr-inp-name" placeholder="Tên Đội (ví dụ: K69_AlphaBot)" type="text" style="font-size: 12.5px; padding: 7px 10px;"/>
+            <input class="input-modern" id="mgr-inp-sid" placeholder="MSSV (ví dụ: 24020001)" type="text" style="font-size: 12.5px; padding: 7px 10px;"/>
+            <input class="input-modern" id="mgr-inp-uni" placeholder="Đơn vị (ví dụ: ĐHQG Hà Nội)" type="text" value="Khối Kỹ Thuật" style="font-size: 12.5px; padding: 7px 10px;"/>
+            <button class="btn btn-primary" id="btn-mgr-add-team" style="padding: 7px 14px; font-size: 12.5px; font-weight: 600; white-space: nowrap;">+ Thêm Đội</button>
           </div>
         </div>
-        <div class="team-mgr-actions" style="margin-top: 10px; display: flex; gap: 8px;">
-          <button class="btn btn-outline" id="btn-mgr-quick-fill">Nạp Nhanh Đội Mẫu</button>
-          <button class="btn btn-primary" id="btn-mgr-add-team">+ Thêm Đội</button>
+
+        <!-- THANH CÔNG CỤ THAO TÁC NHANH -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+          <div style="font-size: 12.5px; font-weight: 700; color: #0f172a;">Danh sách đội đã tham gia giải:</div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn btn-outline btn-sm" id="btn-mgr-quick-fill" title="Điền nhanh các đội mẫu để kiểm thử giải đấu" style="font-size: 11.5px; padding: 5px 10px;">
+              ⚡ Nạp Nhanh Đội Mẫu
+            </button>
+            <button class="btn btn-primary btn-sm" id="btn-mgr-auto-schedule" title="Tự động bốc thăm ngẫu nhiên các đội vào nhánh đấu của giải" style="font-size: 11.5px; padding: 5px 12px; background: #16a34a; border-color: #16a34a;">
+              🎲 Bốc Thăm &amp; Chia Nhánh Ngẫu Nhiên
+            </button>
+          </div>
         </div>
-        <div class="table-responsive" style="margin-top: 16px; max-height: 200px; overflow-y: auto;">
-          <table class="table-clean" id="table-mgr-teams">
-            <thead>
-              <tr><th>Hạt Giống</th><th>Tên Đội</th><th>MSSV</th><th>Đơn Vị</th><th>Thao Tác</th></tr>
+
+        <!-- BẢNG DANH SÁCH CÁC ĐỘI -->
+        <div class="table-responsive" style="max-height: 240px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 10px;">
+          <table class="table-clean" id="table-mgr-teams" style="width: 100%; margin: 0;">
+            <thead style="background: #f8fafc; position: sticky; top: 0; z-index: 1;">
+              <tr>
+                <th style="padding: 8px 10px; font-size: 11.5px;">Hạt Giống</th>
+                <th style="padding: 8px 10px; font-size: 11.5px;">Tên Đội</th>
+                <th style="padding: 8px 10px; font-size: 11.5px;">MSSV / SBD</th>
+                <th style="padding: 8px 10px; font-size: 11.5px;">Đơn Vị</th>
+                <th style="padding: 8px 10px; font-size: 11.5px; text-align: center;">Thao Tác</th>
+              </tr>
             </thead>
             <tbody id="tbody-mgr-teams">
-              <tr><td colspan="5" class="text-center text-muted">Chưa có đội nào.</td></tr>
+              <tr><td colspan="5" class="text-center text-muted" style="padding: 20px;">Chưa có đội nào tham gia giải này.</td></tr>
             </tbody>
           </table>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" id="btn-close-team-mgr">Đóng</button>
-        <button class="btn btn-success" id="btn-mgr-auto-schedule">Tự Sắp Xếp Lịch Đấu</button>
+      <div class="modal-footer" style="padding: 12px 20px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn btn-outline" id="btn-close-team-mgr" onclick="closeTeamManagerModal()">Đóng</button>
       </div>
     </div>
   </div>
