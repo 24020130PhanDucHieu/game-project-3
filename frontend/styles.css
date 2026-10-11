@@ -1,52 +1,50 @@
 /* ==========================================================================
-   FRESHMAN BOT ARENA - CLEAN MODERN WHITE THEME (VERTICAL SIDEBAR LAYOUT)
-   Đấu Trường Lập Trình Oẳn Tù Tì V2 - Giao Diện Trắng Chuyên Nghiệp ICPC K69
+   FRESHMAN BOT ARENA – OTTV2 ICPC K69
+   OFFICIAL DESIGN SYSTEM & PIXEL-PERFECT MOCKUP REPLICATION
    ========================================================================== */
 
 :root {
+  /* Bảng màu chính thức từ ảnh mẫu */
   --bg-page: #f8fafc;
   --bg-card: #ffffff;
-  --bg-subtle: #f1f5f9;
-  --bg-hover: #e2e8f0;
+  --bg-subtle: #f8fafc;
+  --bg-hover: #f1f5f9;
 
-  --border-color: #e2e8f0;
-  --border-strong: #cbd5e1;
-  --border-focus: #2563eb;
+  --border-card: #eef2f6;
+  --border-light: #e2e8f0;
+  --border-divider: #f1f5f9;
 
-  --text-main: #0f172a;
+  --text-heading: #0f172a;
   --text-body: #334155;
   --text-muted: #64748b;
   --text-light: #94a3b8;
 
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-light: #eff6ff;
-  --primary-border: #bfdbfe;
+  --primary-blue: #1a6bf0;
+  --primary-blue-hover: #1558ca;
+  --primary-blue-light: #eff6ff;
+  --primary-blue-border: #dbeafe;
+
+  --green-status: #16a34a;
+  --green-status-light: #e8f8f0;
+  --green-status-border: #bbf7d0;
 
   --red-team: #dc2626;
   --red-team-light: #fef2f2;
-  --red-team-border: #fecaca;
+  --red-team-border: #fee2e2;
 
   --blue-team: #2563eb;
   --blue-team-light: #eff6ff;
-  --blue-team-border: #bfdbfe;
-
-  --success: #16a34a;
-  --success-light: #f0fdf4;
-  --success-border: #bbf7d0;
-
-  --warning: #d97706;
-  --warning-light: #fffbeb;
-  --warning-border: #fde68a;
+  --blue-team-border: #dbeafe;
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', Consolas, monospace;
 
-  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
-  --sidebar-width: 270px;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-floating: 0 10px 30px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-primary-btn: 0 2px 6px rgba(26, 107, 240, 0.2);
+
+  --sidebar-width: 250px;
 }
 
 * {
@@ -59,14 +57,15 @@ body {
   background-color: var(--bg-page);
   color: var(--text-body);
   font-family: var(--font-sans);
-  font-size: 14.5px;
+  font-size: 14px;
   line-height: 1.5;
   min-height: 100vh;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* ==========================================================================
-   BỐ CỤC CHUNG: SIDEBAR DỌC + MAIN CONTENT
+   BỐ CỤC TỔNG THỂ (DESKTOP LAYOUT VỚI SIDEBAR DỌC)
    ========================================================================== */
 .app-layout {
   display: flex;
@@ -74,11 +73,13 @@ body {
   width: 100%;
 }
 
-/* --- SIDEBAR DỌC BÊN TRÁI --- */
+/* ==========================================================================
+   1. SIDEBAR DỌC BÊN TRÁI (BÁM SÁT MOCKUP 1, 2, 3)
+   ========================================================================== */
 .app-sidebar {
   width: var(--sidebar-width);
   background: var(--bg-card);
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-card);
   display: flex;
   flex-direction: column;
   position: sticky;
@@ -86,170 +87,308 @@ body {
   height: 100vh;
   flex-shrink: 0;
   z-index: 100;
-  box-shadow: var(--shadow-xs);
 }
 
+/* BRAND HEADER */
 .sidebar-brand {
-  padding: 22px 20px;
+  padding: 22px 20px 16px 20px;
   display: flex;
   align-items: center;
   gap: 12px;
-  border-bottom: 1px solid var(--border-color);
 }
 
 .brand-badge {
-  background: var(--primary);
-  color: #fff;
-  font-weight: 800;
-  font-size: 13px;
-  padding: 6px 9px;
+  background: var(--primary-blue);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 700;
   border-radius: 6px;
-  letter-spacing: 0.5px;
+  padding: 5px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.2px;
+}
+
+.brand-badge-sm {
+  background: var(--primary-blue);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 4px 10px;
+  display: inline-flex;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
 }
 
 .brand-title {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 800;
-  color: var(--text-main);
-  letter-spacing: -0.3px;
+  color: var(--text-heading);
+  letter-spacing: -0.2px;
   line-height: 1.2;
 }
 
 .brand-sub {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--text-muted);
-  font-weight: 500;
+  font-weight: 400;
 }
 
-/* DANH SÁCH TAB DỌC */
-.sidebar-nav {
-  padding: 16px 12px;
+/* KHỐI DANH TÍNH / THẺ NGƯỜI DÙNG (USER PROFILE CARD) */
+.sidebar-user-card {
+  margin: 10px 14px 14px 14px;
+  background: #ffffff;
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+/* Chế độ Khách (Guest) */
+.user-card-guest {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  flex: 1;
-  overflow-y: auto;
+  gap: 10px;
 }
 
-.nav-tab-btn {
+.guest-card-top {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 14px;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  color: var(--text-body);
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.15s ease;
-  width: 100%;
+  gap: 10px;
 }
 
-.nav-tab-btn:hover {
-  background: var(--bg-subtle);
-  color: var(--text-main);
-}
-
-.nav-tab-btn.active {
-  background: var(--primary-light);
-  border-color: var(--primary-border);
-  color: var(--primary);
-}
-
-.nav-icon {
-  font-size: 20px;
+.guest-avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 
-.nav-info {
+.guest-meta {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
-.nav-label {
-  font-size: 14px;
+.guest-name {
+  font-size: 13px;
   font-weight: 700;
-  line-height: 1.25;
+  color: var(--text-heading);
+  line-height: 1.2;
 }
 
-.nav-desc {
-  font-size: 11.5px;
+.guest-desc {
+  font-size: 10.5px;
   color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.3;
   margin-top: 2px;
 }
 
-.nav-tab-btn.active .nav-desc {
-  color: #3b82f6;
+.btn-sidebar-login {
+  width: 100%;
+  background: var(--primary-blue);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  box-shadow: var(--shadow-primary-btn);
 }
 
-.nav-tab-btn.admin-btn {
-  margin-top: auto;
-  border-top: 1px dashed var(--border-color);
-  padding-top: 14px;
-}
-.nav-tab-btn.admin-btn.active {
-  background: var(--warning-light);
-  border-color: var(--warning-border);
-  color: var(--warning);
+.btn-sidebar-login:hover {
+  background: var(--primary-blue-hover);
 }
 
-/* SIDEBAR FOOTER */
-.sidebar-footer {
-  padding: 16px;
-  border-top: 1px solid var(--border-color);
-  background: var(--bg-subtle);
+/* Chế độ Đã Đăng Nhập (Authenticated Team / Admin) */
+.user-card-authenticated {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-.footer-status-card {
+.auth-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-blue-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.auth-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-heading);
+  line-height: 1.2;
+}
+
+.auth-sid {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.auth-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 4px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.user-role-pill {
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--primary-blue-light);
+  color: var(--primary-blue);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.btn-logout-link {
+  background: transparent;
+  border: none;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.btn-logout-link:hover {
+  color: var(--red-team);
+  text-decoration: underline;
+}
+
+/* 5 MENU ĐIỀU HƯỚNG DỌC (SIDEBAR NAV) */
+.sidebar-nav {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  padding: 0 12px;
+  flex: 1;
 }
 
-.status-row {
+.nav-tab-btn {
+  height: 42px;
+  border: none;
+  background: transparent;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-body);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+  text-align: left;
+  position: relative;
+}
+
+.nav-tab-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-heading);
+}
+
+.nav-tab-btn.active {
+  background: var(--primary-blue-light);
+  color: var(--primary-blue);
+  font-weight: 600;
+}
+
+.nav-tab-btn.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3.5px;
+  background: var(--primary-blue);
+  border-radius: 0 4px 4px 0;
+}
+
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.nav-label {
+  flex: 1;
+}
+
+/* CHÂN TRANG SIDEBAR: TRẠNG THÁI */
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-divider);
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.status-indicator {
-  width: 8px;
-  height: 8px;
+.footer-status-dot {
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-}
-.status-indicator.online {
-  background: var(--success);
-  box-shadow: 0 0 0 2px var(--success-border);
-}
-
-.status-text {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text-main);
+  background: var(--green-status);
+  box-shadow: 0 0 6px rgba(22, 163, 74, 0.6);
+  flex-shrink: 0;
 }
 
-.cloud-status {
-  font-size: 11px;
-  color: var(--text-muted);
+.footer-status-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-heading);
 }
 
-/* --- KHUNG NỘI DUNG CHÍNH (MAIN CONTENT) --- */
+/* ==========================================================================
+   2. MAIN CONTENT AREA (KHUNG NỘI DUNG CHÍNH)
+   ========================================================================== */
 .app-main-content {
   flex: 1;
+  background: var(--bg-page);
+  padding: 28px 36px 40px 36px;
   min-width: 0;
-  padding: 24px 32px;
   overflow-y: auto;
-  height: 100vh;
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .tab-pane {
   display: none;
-  animation: fadeIn 0.2s ease-in-out;
+  animation: fadeIn 0.15s ease-out;
 }
 
 .tab-pane.active {
@@ -257,3310 +396,1511 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(3px); }
+  from { opacity: 0; transform: translateY(2px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* TIÊU ĐỀ NỘI DUNG */
+/* TIÊU ĐỀ TRANG CHUNG */
 .content-header-row {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 22px;
-  gap: 16px;
-  flex-wrap: wrap;
+  margin-bottom: 20px;
 }
 
 .page-title {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 800;
-  color: var(--text-main);
-  letter-spacing: -0.4px;
+  color: var(--text-heading);
+  letter-spacing: -0.3px;
+  line-height: 1.25;
 }
 
 .page-subtitle {
-  font-size: 13.5px;
+  font-size: 13px;
   color: var(--text-muted);
-  margin-top: 3px;
+  margin-top: 4px;
+}
+
+.status-pill-green {
+  background: var(--green-status-light);
+  color: var(--green-status);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green-status);
+}
+
+/* THẺ TRẮNG TIÊU CHUẨN (CONTENT CARD) */
+.content-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 16px;
+  padding: 22px 24px;
+  box-shadow: var(--shadow-card);
 }
 
 /* ==========================================================================
-   BUTTONS & COMMON FORM CONTROLS
+   3. TRANG 1: TỔNG QUAN (MOCKUP 1 REPLICATION)
    ========================================================================== */
+.tournament-hero-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 16px;
+  padding: 24px 28px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 22px;
+}
+
+.hero-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.hero-title-cluster {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hero-tourn-name {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-heading);
+  letter-spacing: -0.2px;
+}
+
+.hero-it-badge {
+  background: var(--primary-blue-light);
+  color: var(--primary-blue);
+  border: 1px solid var(--primary-blue-border);
+  border-radius: 16px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hero-tourn-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+.hero-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.hero-stat-card {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-divider);
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.stat-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.stat-dot-green {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--green-status);
+}
+
+.stat-card-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.stat-value {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text-heading);
+  margin-top: 1px;
+}
+
+.text-green {
+  color: var(--green-status);
+}
+
+.hero-actions-row {
+  display: flex;
+  gap: 12px;
+}
+
+/* CÁC NÚT BẤM TIÊU CHUẨN */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 9px 16px;
-  font-size: 13.5px;
+  gap: 8px;
+  padding: 10px 22px;
+  font-size: 13px;
   font-weight: 600;
-  font-family: var(--font-sans);
-  border-radius: 6px;
-  border: 1px solid transparent;
+  border-radius: 9px;
   cursor: pointer;
   transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.btn-primary {
-  background: var(--primary);
-  color: #fff;
-  border-color: var(--primary);
-}
-.btn-primary:hover {
-  background: var(--primary-hover);
-  border-color: var(--primary-hover);
-}
-
-.btn-outline {
-  background: var(--bg-card);
-  color: var(--text-body);
-  border-color: var(--border-strong);
-}
-.btn-outline:hover {
-  background: var(--bg-subtle);
-  color: var(--text-main);
-  border-color: var(--text-muted);
-}
-
-.btn-success {
-  background: var(--success);
-  color: #fff;
-  border-color: var(--success);
-}
-.btn-success:hover {
-  background: #15803d;
-  border-color: #15803d;
+  border: none;
+  text-decoration: none;
 }
 
 .btn-sm {
-  padding: 6px 12px;
-  font-size: 12.5px;
+  padding: 7px 14px;
+  font-size: 12px;
+  border-radius: 7px;
 }
 
-.btn-lg {
-  padding: 13px 24px;
-  font-size: 15px;
-  font-weight: 700;
+.btn-primary {
+  background: var(--primary-blue);
+  color: #ffffff;
+  box-shadow: var(--shadow-primary-btn);
+}
+
+.btn-primary:hover {
+  background: var(--primary-blue-hover);
+}
+
+.btn-outline {
+  background: #ffffff;
+  color: var(--primary-blue);
+  border: 1.5px solid var(--primary-blue);
+}
+
+.btn-outline:hover {
+  background: var(--primary-blue-light);
+}
+
+.btn-green {
+  background: var(--green-status);
+  color: #ffffff;
+}
+
+.btn-green:hover {
+  background: #15803d;
 }
 
 .btn-clean {
   background: transparent;
   border: none;
-  font-size: 18px;
-  cursor: pointer;
-  color: var(--text-muted);
-  padding: 4px;
-  line-height: 1;
-}
-.btn-clean:hover {
-  color: var(--text-main);
-}
-
-.btn-full {
-  width: 100%;
-}
-
-.input-text, .tourn-dropdown, select.input-text {
-  padding: 9px 12px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-strong);
-  border-radius: 6px;
-  font-size: 14px;
-  color: var(--text-main);
-  font-family: var(--font-sans);
-  outline: none;
-  transition: border-color 0.15s ease;
-}
-
-.input-text:focus, .tourn-dropdown:focus {
-  border-color: var(--border-focus);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-.input-text-sm {
-  padding: 6px 10px;
-  font-size: 13px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-strong);
-  border-radius: 5px;
-  outline: none;
-  color: var(--text-main);
-}
-.input-text-sm:focus {
-  border-color: var(--border-focus);
-}
-
-/* ==========================================================================
-   TAB 1: TOURNAMENT CONTROL BAR & TREE CANVAS
-   ========================================================================== */
-.tournament-control-bar {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 14px 20px;
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-  box-shadow: var(--shadow-sm);
-}
-
-.tourn-selector-cluster {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.control-label {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--text-main);
-  white-space: nowrap;
-}
-
-.tourn-dropdown {
-  min-width: 240px;
-  font-weight: 600;
-}
-
-.tourn-stats-cluster {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.stat-badge {
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 12.5px;
-  color: var(--text-body);
-  display: flex;
-  gap: 5px;
-}
-.stat-badge strong {
-  color: var(--text-main);
-}
-
-.stat-badge.highlight {
-  background: var(--warning-light);
-  border-color: var(--warning-border);
-  color: #92400e;
-}
-.stat-badge.highlight strong {
-  color: #b45309;
-}
-
-/* TREE BRACKET NOTICE */
-.tree-header-notice {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-  color: #166534;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 13.5px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-.notice-icon {
-  font-size: 16px;
-}
-
-/* LƯỚI CÂY SƠ ĐỒ PHÂN NHÁNH (BRACKET TREE) */
-.bracket-tree-canvas {
-  display: flex;
-  gap: 24px;
-  overflow-x: auto;
-  padding-bottom: 20px;
-  align-items: stretch;
-}
-
-.bracket-column {
-  min-width: 280px;
-  max-width: 310px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.bracket-column-title {
-  font-size: 14px;
-  font-weight: 800;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  letter-spacing: 0.5px;
-  text-align: center;
-  padding: 8px;
-  margin-bottom: 14px;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-}
-
-.bracket-matches-list {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  flex: 1;
-  gap: 20px;
-}
-
-/* THẺ TRẬN ĐẤU TRÊN SƠ ĐỒ */
-.bracket-match-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.2s ease;
-  overflow: hidden;
-  cursor: pointer;
-  position: relative;
-}
-
-.bracket-match-card:hover {
-  border-color: var(--primary);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
-}
-
-.bracket-match-card.is-active {
-  border-color: var(--primary);
-  outline: 2px solid var(--primary-border);
-}
-
-.bracket-match-card.is-completed {
-  border-color: #cbd5e1;
-}
-
-.bracket-card-header {
-  padding: 8px 12px;
-  background: var(--bg-subtle);
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-}
-
-.bracket-match-title {
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.bracket-match-status {
-  font-size: 10.5px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
-  text-transform: uppercase;
-}
-.status-ready { background: #dbeafe; color: #1e40af; }
-.status-inprogress { background: #fef3c7; color: #92400e; }
-.status-completed { background: #dcfce7; color: #166534; }
-.status-waiting { background: #f1f5f9; color: #64748b; }
-
-.bracket-card-body {
-  padding: 8px 0;
-}
-
-.bracket-team-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 14px;
-  border-bottom: 1px solid #f1f5f9;
-  transition: background 0.15s ease;
-}
-.bracket-team-row:last-child {
-  border-bottom: none;
-}
-
-.bracket-team-row.winner {
-  background: #f0fdf4;
-  font-weight: 700;
-  color: var(--success);
-}
-
-.team-row-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  overflow: hidden;
-}
-
-.team-pill-indicator {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.team-pill-indicator.red { background: var(--red-team); }
-.team-pill-indicator.blue { background: var(--blue-team); }
-.team-pill-indicator.empty { background: var(--border-strong); }
-
-.bracket-team-name {
-  font-size: 13.5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--text-main);
-}
-.bracket-team-name.empty {
-  color: var(--text-light);
-  font-style: italic;
-}
-
-.bracket-team-score {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-.bracket-team-row.winner .bracket-team-score {
-  color: var(--success);
-}
-
-.bracket-card-footer {
-  padding: 6px 12px;
-  background: #fafafa;
-  border-top: 1px solid var(--border-color);
-  text-align: center;
-}
-
-.btn-open-match {
-  width: 100%;
-  padding: 5px 10px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: var(--primary);
-  background: #fff;
-  border: 1px solid var(--primary-border);
-  border-radius: 4px;
   cursor: pointer;
 }
-.btn-open-match:hover {
-  background: var(--primary-light);
-}
 
-/* CỘT QUÁN QUÂN ĐẶC BIỆT */
-.champion-column-card {
-  background: linear-gradient(180deg, #fffbeb 0%, #ffffff 100%);
-  border: 2px dashed #f59e0b;
-  border-radius: 12px;
-  padding: 24px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 220px;
-}
-.champ-icon {
-  font-size: 44px;
-  margin-bottom: 8px;
-}
-.champ-title {
-  font-size: 15px;
-  font-weight: 800;
-  color: #b45309;
-  text-transform: uppercase;
-}
-.champ-name {
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--text-main);
-  margin-top: 6px;
-}
-
-/* ==========================================================================
-   VIEW B: PHÒNG THI ĐẤU 5 ROUND (5-ROUND MATCH ROOM)
-   ========================================================================== */
-.match-room-container {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  animation: fadeIn 0.25s ease-in-out;
-}
-
-.match-room-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--bg-card);
-  padding: 16px 20px;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  box-shadow: var(--shadow-sm);
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.match-room-title-box {
-  text-align: center;
-}
-.match-room-title-box h2 {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--text-main);
-}
-.badge-tag {
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--primary);
-  background: var(--primary-light);
-  padding: 2px 8px;
-  border-radius: 4px;
-  margin-top: 2px;
-}
-
-.match-status-badge {
-  font-size: 13px;
-  font-weight: 700;
-  padding: 6px 14px;
-  border-radius: 20px;
-  background: #dbeafe;
-  color: #1d4ed8;
-  text-transform: uppercase;
-}
-
-/* TIẾN TRÌNH 5 ROUND ĐẤU */
-.round-tracker-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 16px 20px;
-  box-shadow: var(--shadow-sm);
-}
-
-.tracker-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.tracker-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.tracker-score {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--primary);
-  background: var(--primary-light);
-  padding: 4px 12px;
-  border-radius: 6px;
-}
-
-.round-step-pills {
-  display: flex;
-  gap: 10px;
-}
-
-.step-pill {
-  flex: 1;
-  text-align: center;
-  padding: 10px 8px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 700;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  color: var(--text-muted);
-  transition: all 0.2s ease;
-}
-
-.step-pill.done {
-  background: #f0fdf4;
-  border-color: #86efac;
-  color: #166534;
-}
-
-.step-pill.current {
-  background: var(--primary-light);
-  border-color: var(--primary);
-  color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-}
-
-/* ==========================================================================
-   BÀN ĐẤU VÕ ĐÀI TRỰC QUAN (LIVE BATTLE ARENA BOARD)
-   ========================================================================== */
-/* ==========================================================================
-   BÀN CỜ CHIẾN THUẬT 9x9 (9x9 TACTICAL CHESSBOARD ARENA - LIGHT THEME)
-   ========================================================================== */
-.visual-battle-arena-board {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 14px;
-  padding: 20px 24px;
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  position: relative;
-  overflow: hidden;
-  align-items: center;
-}
-
-.arena-top-bar {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 14px;
-  border-bottom: 1px solid #f1f5f9;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.board-team-pill {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  font-weight: 700;
-  padding: 6px 14px;
-  border-radius: 8px;
-}
-.board-team-pill.red {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #dc2626;
-}
-.board-team-pill.blue {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  color: #2563eb;
-}
-
-.team-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  display: inline-block;
-}
-.team-dot.red {
-  background: #dc2626;
-}
-.team-dot.blue {
-  background: #2563eb;
-}
-
-.board-piece-badge {
-  font-size: 11.5px;
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 6px;
-}
-.board-piece-badge.red {
-  background: #ffffff;
-  color: #dc2626;
-  border: 1px solid #fca5a5;
-}
-.board-piece-badge.blue {
-  background: #ffffff;
-  color: #2563eb;
-  border: 1px solid #93c5fd;
-}
-
-.arena-round-indicator {
-  font-size: 13.5px;
-  font-weight: 800;
-  color: var(--text-main);
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  padding: 6px 18px;
-  border-radius: 20px;
-  letter-spacing: 0.5px;
-}
-
-/* KHUNG CHỨA BÀN CỜ 9x9 (CHESSBOARD FRAME) */
-.board-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 16px;
-  background: #f8fafc;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-}
-
-.chessboard-9x9 {
-  display: grid;
-  grid-template-columns: repeat(9, 48px);
-  grid-template-rows: repeat(9, 48px);
-  gap: 3px;
-  justify-content: center;
-  background: transparent;
-  user-select: none;
-}
-
-.board-cell {
-  width: 48px;
-  height: 48px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  transition: all 0.2s ease;
-}
-
-/* Ô CỜ XEN KẼ (CHESSBOARD CHECKERED TONE) */
-.board-cell.cell-alt {
-  background: #f1f5f9;
-}
-
-/* Ô CỨ ĐIỂM ĐÍCH (GOAL BASES) */
-.board-cell.cell-target-red {
-  border: 2px dashed #ef4444 !important;
-  background: #fef2f2 !important;
-  box-shadow: inset 0 0 6px rgba(239, 68, 68, 0.15);
-}
-.board-cell.cell-target-red::after {
-  content: "ĐÍCH";
-  position: absolute;
-  top: 2px;
-  right: 3px;
-  font-size: 8.5px;
-  font-weight: 800;
-  color: #ef4444;
-  opacity: 0.7;
-  pointer-events: none;
-}
-
-.board-cell.cell-target-blue {
-  border: 2px dashed #3b82f6 !important;
-  background: #eff6ff !important;
-  box-shadow: inset 0 0 6px rgba(59, 130, 246, 0.15);
-}
-.board-cell.cell-target-blue::after {
-  content: "ĐÍCH";
-  position: absolute;
-  bottom: 2px;
-  left: 3px;
-  font-size: 8.5px;
-  font-weight: 800;
-  color: #3b82f6;
-  opacity: 0.7;
-  pointer-events: none;
-}
-
-/* Ô VA CHẠM / ĂN QUÂN (CLASH FLASH) */
-.board-cell.cell-clash {
-  animation: cellClashPulse 0.6s ease;
-}
-
-@keyframes cellClashPulse {
-  0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.8); }
-  50% { box-shadow: 0 0 14px 4px rgba(234, 179, 8, 0.8); background: #fef08a !important; }
-  100% { box-shadow: 0 0 0 0 transparent; }
-}
-
-/* QUÂN CỜ TRÒN (ROUND TOKEN PIECES) */
-.board-piece {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: -0.2px;
-  text-transform: uppercase;
-  cursor: default;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
-  position: relative;
-  z-index: 2;
-}
-
-/* QUÂN ĐỘI XANH (BLUE PIECES) */
-.board-piece.piece-blue {
-  background: #eff6ff;
-  border: 2px solid #3b82f6;
-  color: #1d4ed8;
-  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
-}
-
-/* QUÂN ĐỘI ĐỎ (RED PIECES) */
-.board-piece.piece-red {
-  background: #fef2f2;
-  border: 2px solid #ef4444;
-  color: #dc2626;
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
-}
-
-.board-piece.piece-eliminated {
-  transform: scale(0);
-  opacity: 0;
-}
-
-/* TƯỜNG THUẬT TRẬN ĐẤU */
-.board-bottom-status {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-}
-
-.live-commentary-ticker {
-  background: #f8fafc;
-  color: #1e293b;
-  padding: 11px 20px;
-  border-radius: 8px;
-  font-size: 13.5px;
-  font-weight: 600;
-  text-align: center;
-  width: 100%;
-  max-width: 560px;
-  line-height: 1.5;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid #e2e8f0;
-  border-left: 4px solid var(--primary);
-  transition: all 0.3s ease;
-}
-
-@media (max-width: 600px) {
-  .chessboard-9x9 {
-    grid-template-columns: repeat(9, 34px);
-    grid-template-rows: repeat(9, 34px);
-    gap: 2px;
-  }
-  .board-cell {
-    width: 34px;
-    height: 34px;
-  }
-  .board-piece {
-    width: 28px;
-    height: 28px;
-    font-size: 14px;
-  }
-}
-
-/* BANNER NGHỈ GIẢI LAO & CẢI TIẾN CHIẾN THUẬT CHO ROUND TIẾP THEO */
-.round-intermission-banner {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-top: 4px solid #4f46e5;
-  border-radius: 12px;
-  padding: 18px 22px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
-  animation: fadeIn 0.3s ease;
-  width: 100%;
-  max-width: 640px;
-}
-
-.intermission-body {
-  flex: 1;
-}
-
-.intermission-top-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 6px;
-}
-
-.intermission-badge {
-  background: #eef2ff;
-  color: #4338ca;
-  border: 1px solid #c7d2fe;
-  padding: 3px 8px;
-  border-radius: 16px;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-}
-
-.intermission-body h4 {
-  font-size: 15px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0;
-}
-
-.intermission-body p {
-  font-size: 13px;
-  color: #475569;
-  margin-bottom: 14px;
-  line-height: 1.5;
-}
-
-.intermission-quick-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.btn-intermission-red {
-  background: #ef4444;
-  color: #ffffff;
-  font-weight: 700;
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s ease;
-}
-.btn-intermission-red:hover {
-  background: #dc2626;
-  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3);
-}
-
-.btn-intermission-blue {
-  background: #2563eb;
-  color: #ffffff;
-  font-weight: 700;
-  padding: 8px 16px;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s ease;
-}
-.btn-intermission-blue:hover {
-  background: #1d4ed8;
-  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
-}
-
-/* BẢNG TÌNH BÁO CHIẾN THUẬT TRONG MÀN HÌNH RIÊNG (STUDIO INTEL CARD) */
-.studio-intel-card {
-  background: #f0fdf4;
-  border: 1px solid #86efac;
-  border-radius: 8px;
-  padding: 12px 16px;
-}
-
-.intel-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.intel-icon {
-  font-size: 16px;
-}
-
-.intel-title {
-  font-size: 13.5px;
-  font-weight: 800;
-  color: #166534;
-}
-
-.intel-history-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.intel-chip {
-  font-size: 12.5px;
-  padding: 4px 10px;
-  background: #ffffff;
-  border: 1px solid #bbf7d0;
-  border-radius: 6px;
-  color: #14532d;
-  font-weight: 600;
-}
-
-/* KHUNG 2 ĐỘI THI ĐẤU (RED SIDE VS BLUE SIDE) */
-.match-fighters-grid {
+/* PHẦN DƯỚI TỔNG QUAN: 2 CỘT */
+.overview-lower-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
-}
-
-.fighter-side-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 20px;
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.fighter-side-card.red-side {
-  border-top: 4px solid var(--red-team);
-}
-.fighter-side-card.blue-side {
-  border-top: 4px solid var(--blue-team);
-}
-
-.side-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.fighter-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 13px;
-  color: #fff;
-  flex-shrink: 0;
-}
-.red-avatar { background: var(--red-team); }
-.blue-avatar { background: var(--blue-team); }
-
-.fighter-name {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--text-main);
-}
-
-.fighter-meta {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-
-.auth-status-badge {
-  margin-left: auto;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 4px 8px;
-  border-radius: 4px;
-  background: #fee2e2;
-  color: #991b1b;
-}
-.auth-status-badge.authenticated {
-  background: #dcfce7;
-  color: #166534;
-}
-
-/* KHU VỰC THÔNG BÁO BẢO MẬT & NỘP CODE TRÊN MÀN HÌNH RIÊNG */
-.private-submission-prompt {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background: var(--bg-subtle);
-  border: 1px dashed var(--border-strong);
-  border-radius: 8px;
-  padding: 16px;
-}
-
-.secret-shield-notice {
-  font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.4;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.fighter-stats-row {
-  display: flex;
-  justify-content: space-between;
-  padding-top: 12px;
-  border-top: 1px solid var(--border-color);
-  font-size: 13px;
-  color: var(--text-muted);
-}
-.fighter-stats-row strong {
-  color: var(--text-main);
-}
-
-/* KHU VỰC ĐIỀU HÀNH TRỌNG TÀI / BAN TỔ CHỨC */
-.round-action-center {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 24px;
-  text-align: center;
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-}
-
-.referee-header-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border-color);
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.referee-badge {
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--warning);
-  background: var(--warning-light);
-  border: 1px solid var(--warning-border);
-  padding: 4px 10px;
-  border-radius: 20px;
-  letter-spacing: 0.5px;
-}
-
-.ready-check-cluster {
-  display: flex;
-  gap: 8px;
-}
-
-.check-pill {
-  font-size: 12px;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 6px;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  color: var(--text-muted);
-}
-.check-pill.ready {
-  background: #f0fdf4;
-  border-color: #86efac;
-  color: #166534;
-}
-.check-pill.wait {
-  background: #fef2f2;
-  border-color: #fecaca;
-  color: #991b1b;
-}
-
-.referee-control-btns {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-}
-
-.referee-sub-actions {
-  display: flex;
-  gap: 10px;
-}
-
-/* ==========================================================================
-   VIEW C: PHÒNG NỘP BOT BẢO MẬT (PRIVATE BOT SUBMISSION STUDIO)
-   ========================================================================== */
-.private-studio-container {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  animation: fadeIn 0.25s ease-in-out;
-}
-
-.studio-header-nav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--bg-card);
-  padding: 16px 20px;
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  box-shadow: var(--shadow-sm);
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.studio-title-box {
-  text-align: center;
-}
-.studio-title-box h2 {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--text-main);
-}
-
-.studio-shield-badge {
-  font-size: 12px;
-  font-weight: 700;
-  padding: 6px 12px;
-  border-radius: 20px;
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
-}
-
-.studio-auth-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 40px 24px;
-  display: flex;
-  justify-content: center;
-  box-shadow: var(--shadow-sm);
-}
-
-.auth-card-inner {
-  max-width: 440px;
-  width: 100%;
-  text-align: center;
-}
-
-.auth-badge-round {
-  display: inline-block;
-  background: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
-  font-size: 11.5px;
-  font-weight: 800;
-  padding: 4px 12px;
-  border-radius: 16px;
-  margin-bottom: 12px;
-  letter-spacing: 0.5px;
-}
-
-.auth-card-inner h3 {
-  font-size: 19px;
-  font-weight: 800;
-  color: var(--text-main);
-  margin-bottom: 6px;
-}
-
-.auth-card-inner p {
-  font-size: 13.5px;
-  color: var(--text-muted);
-  margin-bottom: 22px;
-  line-height: 1.45;
-}
-
-.auth-inputs-vertical {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  text-align: left;
-}
-
-.studio-ide-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.ide-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.ide-lang-selector {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.ide-status-tag {
-  font-size: 12.5px;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 6px;
-  background: var(--bg-subtle);
-  color: var(--text-muted);
-}
-.ide-status-tag.submitted {
-  background: #f0fdf4;
-  border: 1px solid #86efac;
-  color: #166534;
-}
-
-.studio-code-editor {
-  width: 100%;
-  height: 380px;
-  font-family: var(--font-mono);
-  font-size: 13.5px;
-  line-height: 1.5;
-  padding: 16px;
-  background: #0f172a;
-  color: #f8fafc;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  outline: none;
-  resize: vertical;
-}
-.studio-code-editor:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
-}
-
-.ide-bottom-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border-color);
-}
-
-.ide-hint-text {
-  font-size: 13px;
-  color: var(--text-muted);
-  max-width: 500px;
-}
-
-.current-round-banner span {
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--primary);
-  letter-spacing: 0.5px;
-}
-
-.current-round-banner p {
-  font-size: 13.5px;
-  color: var(--text-muted);
-  margin-top: 4px;
-}
-
-/* VA CHẠM CỦA ROUND (ROUND CLASH RESULT) */
-.round-clash-result {
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 16px 24px;
-  width: 100%;
-  max-width: 600px;
-}
-
-.clash-icons-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 24px;
-  margin-bottom: 10px;
-}
-
-.clash-hand {
-  font-size: 48px;
-  transition: transform 0.2s ease;
-}
-
-.clash-vs-badge {
-  font-size: 14px;
-  font-weight: 900;
-  color: var(--text-muted);
-  background: #e2e8f0;
-  padding: 4px 10px;
-  border-radius: 4px;
-}
-
-.clash-log-msg {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-main);
-  line-height: 1.4;
-}
-
-/* BANNER CHIẾN THẮNG TRẬN */
-.match-victory-banner {
-  background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 100%);
-  border: 2px solid #86efac;
-  border-radius: 10px;
-  padding: 24px;
-  width: 100%;
-  max-width: 650px;
-}
-
-.trophy-big {
-  font-size: 48px;
-  margin-bottom: 8px;
-}
-
-.match-victory-banner h3 {
-  font-size: 18px;
-  font-weight: 800;
-  color: #15803d;
-}
-
-.match-victory-banner p {
-  font-size: 13.5px;
-  color: var(--text-muted);
-  margin: 6px 0 16px 0;
-}
-
-/* ==========================================================================
-   BẢNG DỮ LIỆU CHUẨN (CLEAN TABLE COMPONENT)
-   ========================================================================== */
-.table-card-container, .round-history-table-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-}
-
-.history-card-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-card);
-}
-.history-card-header h3 {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-main);
-}
-.history-sub {
-  font-size: 12.5px;
-  color: var(--text-muted);
-}
-
-.table-responsive {
-  overflow-x: auto;
-}
-
-.table-clean {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13.5px;
-  text-align: left;
-}
-
-.table-clean th {
-  background: #f8fafc;
-  color: var(--text-muted);
-  font-weight: 700;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.table-clean td {
-  padding: 12px 16px;
-  border-bottom: 1px solid #f1f5f9;
-  color: var(--text-body);
-}
-
-.table-clean tbody tr:hover {
-  background: #f8fafc;
-}
-
-.table-clean tr:last-child td {
-  border-bottom: none;
-}
-
-.text-center { text-align: center; }
-.text-muted { color: var(--text-muted); }
-.text-success { color: var(--success); }
-
-/* ==========================================================================
-   TAB 5: ADMIN BAN TỔ CHỨC GRID
-   ========================================================================== */
-.admin-grid-layout {
-  display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
-  gap: 20px;
-}
-
-.content-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  padding: 22px;
-  box-shadow: var(--shadow-sm);
-}
-
-.panel-title {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--text-main);
-  margin-bottom: 16px;
-}
-
-.rule-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.rule-choice {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px 14px;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.rule-choice:hover {
-  background: #e2e8f0;
-}
-
-.rule-choice input[type="radio"] {
-  margin-top: 4px;
-}
-
-.rule-choice strong {
-  display: block;
-  font-size: 13.5px;
-  color: var(--text-main);
-}
-
-.rule-choice span {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.metric-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid #f1f5f9;
-  font-size: 13.5px;
-}
-.metric-row:last-child {
-  border-bottom: none;
-}
-
-/* ==========================================================================
-   MODALS (POPUP DIALOGS)
-   ========================================================================== */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(2px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-  animation: fadeIn 0.15s ease;
-}
-
-.modal-card {
-  background: var(--bg-card);
-  border-radius: 12px;
-  width: 100%;
-  max-width: 520px;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  box-shadow: var(--shadow-lg);
-  border: 1px solid var(--border-color);
-  overflow: hidden;
-  position: relative;
-}
-
-.modal-card.modal-lg {
-  max-width: 880px;
-}
-
-.modal-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-shrink: 0;
-  background: var(--bg-card);
-  position: sticky;
-  top: 0;
-  z-index: 20;
-}
-
-.modal-title {
-  font-size: 16px;
-  font-weight: 800;
-  color: var(--text-main);
-}
-
-.modal-body {
-  padding: 20px;
-  overflow-y: auto;
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-.modal-footer {
-  padding: 14px 20px;
-  background: var(--bg-subtle);
-  border-top: 1px solid var(--border-color);
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-/* NÚT ĐÓNG MODAL 'X' RÕ RÀNG, CHUYÊN NGHIỆP */
-.btn-modal-close {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  color: #475569;
-  font-size: 16px;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  line-height: 1;
-  padding: 0;
-}
-
-.btn-modal-close:hover {
-  background: #fee2e2;
-  border-color: #fca5a5;
-  color: #dc2626;
-  transform: scale(1.08);
-}
-
-.btn-exit-practice-inline {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #dc2626;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-exit-practice-inline:hover {
-  background: #dc2626;
-  color: #ffffff;
-}
-
-/* SO SÁNH CODE CHI TIẾT TRONG MODAL */
-.code-compare-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.code-box-header {
-  font-size: 13px;
-  font-weight: 700;
-  padding: 6px 10px;
-  border-radius: 4px;
-  margin-bottom: 8px;
-}
-.red-header { background: #fee2e2; color: #991b1b; }
-.blue-header { background: #dbeafe; color: #1e40af; }
-
-.code-view-box {
-  background: #0f172a;
-  color: #f8fafc;
-  padding: 14px;
-  border-radius: 6px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1.45;
-  height: 380px;
-  overflow: auto;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-/* ==========================================================================
-   GIÁM SÁT MÃ NGUỒN REALTIME DÀNH CHO ADMIN
-   ========================================================================== */
-.admin-live-code-monitor {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 18px 22px;
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.monitor-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.monitor-title {
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--text-main);
-  margin-bottom: 2px;
-}
-
-.monitor-desc {
-  font-size: 12.5px;
-  color: var(--text-muted);
-}
-
-.monitor-badge {
-  font-size: 11px;
-  font-weight: 800;
-  background: #f3e8ff;
-  color: #7e22ce;
-  border: 1px solid #d8b4fe;
-  padding: 4px 10px;
-  border-radius: 16px;
-  text-transform: uppercase;
-}
-
-.monitor-code-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.monitor-code-col {
-  background: #f8fafc;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.monitor-code-col.red-side {
-  border-top: 3px solid #ef4444;
-}
-.monitor-code-col.blue-side {
-  border-top: 3px solid #3b82f6;
-}
-
-.monitor-col-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.monitor-code-box {
-  background: #0f172a;
-  color: #f8fafc;
-  padding: 12px;
-  border-radius: 6px;
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  line-height: 1.45;
-  height: 220px;
-  overflow: auto;
-  white-space: pre-wrap;
-  word-break: break-all;
-  margin: 0;
-}
-
-/* ==========================================================================
-   MODAL QUẢN LÝ ĐỘI THI ĐẤU & XẾP LỊCH (TEAM MANAGER)
-   ========================================================================== */
-.team-mgr-summary-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: #f8fafc;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 12px 18px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.mgr-stat-item {
-  font-size: 13.5px;
-  color: var(--text-muted);
-}
-.mgr-stat-item strong {
-  color: var(--text-main);
-  font-weight: 800;
-  margin-left: 4px;
-}
-
-.mgr-status-badge {
-  font-size: 11.5px;
-  font-weight: 800;
-  padding: 3px 10px;
-  border-radius: 12px;
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-}
-.mgr-status-badge.ready {
-  background: #f0fdf4;
-  color: #166534;
-  border-color: #bbf7d0;
-}
-
-.team-mgr-add-card {
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 14px 16px;
-  margin-bottom: 16px;
-}
-
-.form-section-title {
-  font-size: 13.5px;
-  font-weight: 800;
-  color: var(--text-main);
-  margin-bottom: 10px;
-}
-
-.team-mgr-form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
-}
-
-.team-mgr-form-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 12px;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.team-mgr-list-card {
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 14px 16px;
-}
-
-.btn-delete-team {
-  background: transparent;
-  color: #ef4444;
-  border: 1px solid #fca5a5;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-size: 11.5px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.btn-delete-team:hover {
-  background: #fef2f2;
-}
-
-/* ==========================================================================
-   MODAL ĐĂNG NHẬP TRẬN ĐẤU (UNIFIED 2-FIELD LOGIN)
-   ========================================================================== */
-.unified-match-login-card {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-/* Chuẩn hóa Form Group & Form Label khắc phục triệt để lỗi lệch giao diện Modal */
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-  margin-bottom: 14px;
-  text-align: left;
-}
-
-.form-label {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--text-main);
-  text-align: left;
-}
-
-.input-text {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 10px 14px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 14px;
-  background: #ffffff;
-  color: var(--text-main);
-  transition: all 0.2s ease;
-}
-
-.input-text:focus {
-  outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-}
-
-.match-login-guide {
-  background: #f8fafc;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 12.5px;
-  color: var(--text-muted);
-}
-
-.guide-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.guide-badge {
-  font-size: 10.5px;
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.guide-badge.admin {
-  background: #f3e8ff;
-  color: #7e22ce;
-  border: 1px solid #d8b4fe;
-}
-.guide-badge.team {
-  background: #e0f2fe;
-  color: #0369a1;
-  border: 1px solid #bae6fd;
-}
-
-.login-feedback-alert {
-  padding: 10px 14px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.4;
-}
-.login-feedback-alert.error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  color: #991b1b;
-}
-.login-feedback-alert.success {
-  background: #f0fdf4;
-  border: 1px solid #86efac;
-  color: #166534;
-}
-
-/* Mini Submission Status trên Fighter Card */
-.fighter-info-col {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.submission-mini-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-top: 10px;
-  margin-top: 10px;
-  border-top: 1px dashed var(--border-color);
-  font-size: 12.5px;
-  color: var(--text-muted);
-}
-
-.sub-indicator {
-  font-size: 10px;
-}
-.sub-indicator.sub-wait { color: #94a3b8; }
-.sub-indicator.sub-checking { color: #f59e0b; }
-.sub-indicator.sub-valid { color: #16a34a; }
-.sub-indicator.sub-invalid { color: #dc2626; }
-
-.auth-status-badge.badge-waiting { background: #f1f5f9; color: #64748b; border: 1px solid #cbd5e1; }
-.auth-status-badge.badge-checking { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
-.auth-status-badge.badge-valid { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
-.auth-status-badge.badge-invalid { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
-
-/* Trạng thái Bắt đầu trận đấu & Banner Ready của Trọng tài */
-.ready-banner-status {
-  margin-top: 6px;
-}
-
-.ready-banner-status h4 {
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  margin-bottom: 4px;
-}
-
-.ready-banner-status.waiting h4 {
-  color: #64748b;
-}
-
-.ready-banner-status.all-ready h4 {
-  color: #1d4ed8;
-}
-
-.btn-referee-start {
-  background: #94a3b8;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  padding: 14px 32px;
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  cursor: not-allowed;
-  transition: all 0.25s ease;
-  box-shadow: var(--shadow-sm);
-}
-
-.btn-referee-start:not(:disabled) {
-  background: var(--primary);
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
-}
-
-.btn-referee-start:not(:disabled):hover {
-  background: var(--primary-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
-}
-
-.btn-referee-start.running {
-  background: #f59e0b;
-  cursor: wait;
-}
-
-/* Banner nghỉ giải lao & đếm ngược 5 giây chuẩn xác */
-.round-intermission-banner {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #ffffff;
-  border: 2px solid #3b82f6;
-  border-radius: 12px;
-  padding: 20px 24px;
-  margin: 16px auto;
-  max-width: 650px;
-  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
-  animation: fadeIn 0.3s ease;
-}
-
-.intermission-body {
-  text-align: center;
-  width: 100%;
-}
-
-.intermission-top-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.intermission-badge {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 3px 10px;
-  border-radius: 12px;
-}
-
-.intermission-countdown-box {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: #f8fafc;
-  border: 1px solid var(--border-color);
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 13.5px;
-  color: var(--text-main);
-  margin-top: 12px;
-}
-
-.countdown-spinner {
-  display: inline-block;
-  animation: spin 3s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* Card 3 loại nhật ký (Move Log, Bot Log, System Log) */
-.arena-logs-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  box-shadow: var(--shadow-sm);
-  margin-top: 20px;
-  overflow: hidden;
-}
-
-.logs-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--bg-subtle);
-  border-bottom: 1px solid var(--border-color);
-  padding: 10px 16px;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.logs-tabs-nav {
-  display: flex;
-  gap: 8px;
-}
-
-.log-tab-btn {
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.log-tab-btn:hover {
-  background: #ffffff;
-  color: var(--text-main);
-}
-
-.log-tab-btn.active {
-  background: #ffffff;
-  border-color: var(--border-color);
-  color: var(--primary);
-  box-shadow: var(--shadow-sm);
-}
-
-.logs-badge {
-  font-size: 11px;
-  font-weight: 800;
-  background: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
-  padding: 3px 8px;
-  border-radius: 12px;
-}
-
-.logs-card-body {
-  padding: 16px;
-}
-
-.log-pane {
-  display: none;
-}
-
-.log-pane.active {
-  display: block;
-}
-
-.log-stream-list {
-  max-height: 200px;
-  overflow-y: auto;
-  font-family: var(--font-mono);
-  font-size: 12.5px;
-  line-height: 1.6;
-  background: #0f172a;
-  color: #f8fafc;
-  padding: 12px 16px;
-  border-radius: 8px;
-}
-
-.log-empty-msg {
-  color: #94a3b8;
-  font-style: italic;
-}
-
-.log-item-line {
-  padding: 4px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-.log-item-line.clash {
-  color: #fca5a5;
-  font-weight: 700;
-}
-.log-item-line.bot-a {
-  color: #f87171;
-}
-.log-item-line.bot-b {
-  color: #60a5fa;
-}
-.log-item-line.system {
-  color: #a78bfa;
-}
-
-/* Kaggle Submissions Card */
-.kaggle-submissions-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  box-shadow: var(--shadow-sm);
-  margin-top: 20px;
-  padding: 16px 20px;
-}
-
-/* Replay Controls Toolbar */
-.replay-controls-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 12px;
-  background: var(--bg-subtle);
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-}
-
-.replay-slider {
-  flex: 1;
-  max-width: 280px;
-  cursor: pointer;
-}
-
-.replay-step-label {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text-main);
-  min-width: 80px;
-}
-
-/* ==========================================================================
-   BÀN ĐẤU THỬ NGHIỆM VỚI BOT MẪU
-   ========================================================================== */
-.ide-btn-cluster {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.practice-result-banner {
-  background: #f8fafc;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 12px 18px;
-  text-align: center;
-  margin-top: 10px;
-}
-.practice-result-banner.win {
-  background: #f0fdf4;
-  border-color: #86efac;
-}
-.practice-result-banner.win h4 {
-  color: #166534;
-}
-.practice-result-banner.loss {
-  background: #fef2f2;
-  border-color: #fca5a5;
-}
-.practice-result-banner.loss h4 {
-  color: #991b1b;
-}
-
-/* ==========================================================================
-   RESPONSIVE DESIGN (MEDIA QUERIES)
-   ========================================================================== */
-@media (max-width: 1024px) {
-  .match-fighters-grid {
-    grid-template-columns: 1fr;
-  }
-  .admin-grid-layout {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  .app-layout {
-    flex-direction: column;
-  }
-  .app-sidebar {
-    width: 100%;
-    height: auto;
-    position: static;
-  }
-  .app-main-content {
-    height: auto;
-    padding: 16px;
-  }
-  .code-compare-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ==========================================================================
-   TOAST & IN-APP NOTIFICATION BANNER (PRODUCTION GRADE SYSTEM)
-   ========================================================================== */
-.toast-container {
-  position: fixed;
-  top: 24px;
-  right: 24px;
-  z-index: 999999;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-width: 440px;
-  width: calc(100% - 48px);
-  pointer-events: none;
-}
-
-.toast-item {
-  pointer-events: auto;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 13px 16px;
-  border-radius: 8px;
-  background: #ffffff;
-  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
-  border: 1px solid #e2e8f0;
-  animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  transition: all 0.25s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.toast-item.toast-leave {
-  animation: toastSlideOut 0.25s cubic-bezier(0.7, 0, 0.84, 0) forwards;
-}
-
-.toast-item.toast-success {
-  border-left: 4px solid #16a34a;
-  background: linear-gradient(to right, #f0fdf4, #ffffff 30%);
-}
-.toast-item.toast-error {
-  border-left: 4px solid #dc2626;
-  background: linear-gradient(to right, #fef2f2, #ffffff 30%);
-}
-.toast-item.toast-warning {
-  border-left: 4px solid #d97706;
-  background: linear-gradient(to right, #fffbeb, #ffffff 30%);
-}
-.toast-item.toast-info {
-  border-left: 4px solid #2563eb;
-  background: linear-gradient(to right, #eff6ff, #ffffff 30%);
-}
-
-.toast-badge {
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  font-weight: 700;
-  padding: 3px 6px;
-  border-radius: 4px;
-  text-transform: uppercase;
-  flex-shrink: 0;
-  letter-spacing: 0.5px;
-  margin-top: 1px;
-}
-.toast-success .toast-badge { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-.toast-error .toast-badge { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
-.toast-warning .toast-badge { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
-.toast-info .toast-badge { background: #dbeafe; color: #1d4ed8; border: 1px solid #bfdbfe; }
-
-.toast-body {
-  flex: 1;
-}
-.toast-title {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: #0f172a;
-  line-height: 1.35;
-  margin-bottom: 3px;
-}
-.toast-desc {
-  font-size: 12.5px;
-  color: #475569;
-  line-height: 1.45;
-  white-space: pre-line;
-}
-.toast-close {
-  background: none;
-  border: none;
-  color: #94a3b8;
-  font-size: 18px;
-  cursor: pointer;
-  padding: 0 4px;
-  line-height: 1;
-  transition: color 0.15s;
-}
-.toast-close:hover {
-  color: #0f172a;
-}
-
-@keyframes toastSlideIn {
-  from { opacity: 0; transform: translateX(30px) scale(0.96); }
-  to { opacity: 1; transform: translateX(0) scale(1); }
-}
-@keyframes toastSlideOut {
-  from { opacity: 1; transform: translateX(0) scale(1); }
-  to { opacity: 0; transform: translateX(30px) scale(0.96); }
-}
-
-/* =============================================================================
-   4 PRIMARY AREAS & ROLE-BASED ACCESS CONTROL STYLES
-   ============================================================================= */
-
-/* --- STRICT ROLE-BASED NAVIGATION ACCESS --- */
-.nav-tab-btn.auth-required {
-  display: none !important;
-}
-.nav-tab-btn.admin-only {
-  display: none !important;
-}
-
-body.role-team .nav-tab-btn.auth-required,
-body.role-admin .nav-tab-btn.auth-required {
-  display: flex !important;
-}
-
-body.role-admin .nav-tab-btn.admin-only {
-  display: flex !important;
-}
-
-/* --- SIDEBAR USER ROLE IDENTITY CARD (REDESIGNED & PROMINENT) --- */
-.sidebar-user-card {
-  margin: 12px 12px 8px;
-  padding: 0;
-  background: transparent;
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-}
-
-/* GUEST CARD VIEW */
-.user-card-guest {
-  padding: 14px 14px 12px;
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-  border: 1.5px solid #cbd5e1;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
-  display: flex;
-  flex-direction: column;
-  transition: all 0.2s ease;
-}
-
-.user-card-guest:hover {
-  border-color: #93c5fd;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
-}
-
-.guest-card-header {
-  margin-bottom: 6px;
-}
-
-.guest-title {
-  font-size: 14.5px;
-  font-weight: 800;
-  color: #1e293b;
-  letter-spacing: -0.2px;
-}
-
-.guest-desc {
-  font-size: 11.5px;
-  line-height: 1.45;
-  color: #64748b;
-  margin: 4px 0 10px 0;
-}
-
-.btn-auth-action {
-  background: var(--primary, #2563eb);
-  color: #ffffff !important;
-  font-size: 13px !important;
-  font-weight: 700 !important;
-  padding: 10px 14px !important;
-  border-radius: 8px !important;
-  width: 100%;
-  border: none !important;
-  cursor: pointer;
-  text-align: center;
-  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
-  transition: all 0.2s ease !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.btn-auth-action:hover {
-  background: #1d4ed8 !important;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
-  transform: translateY(-1px);
-}
-
-/* AUTHENTICATED CARD VIEW */
-.user-card-authenticated {
-  padding: 12px 14px;
-  background: linear-gradient(180deg, #f0fdf4 0%, #ecfdf5 100%);
-  border: 1.5px solid #86efac;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.08);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-body.role-admin .user-card-authenticated {
-  background: linear-gradient(180deg, #fef2f2 0%, #fff1f2 100%);
-  border-color: #fca5a5;
-  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.08);
-}
-
-.user-auth-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.btn-logout-link {
-  background: transparent;
-  border: none;
-  color: #ef4444;
-  font-size: 11.5px;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
-  transition: all 0.15s ease;
-}
-
-.btn-logout-link:hover {
-  background: #fee2e2;
-  text-decoration: underline;
-}
-
-.user-auth-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.user-auth-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: #10b981;
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  flex-shrink: 0;
-  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25);
-}
-
-body.role-admin .user-auth-avatar {
-  background: #ef4444;
-  box-shadow: 0 2px 4px rgba(239, 68, 68, 0.25);
-}
-
-.user-auth-details {
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.user-auth-name {
-  font-size: 13.5px;
-  font-weight: 800;
-  color: #0f172a;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.user-auth-sid {
-  font-size: 11.5px;
-  font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
-  color: #15803d;
-}
-
-body.role-admin .user-auth-sid {
-  color: #b91c1c;
-}
-
-.user-role-pill {
-  display: inline-block;
-  padding: 3px 8px;
-  background: #dbeafe;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
-  border-radius: 12px;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
-}
-
-.user-role-pill.role-admin {
-  background: #fef2f2;
-  color: #dc2626;
-  border-color: #fecaca;
-}
-
-.user-role-pill.role-referee {
-  background: #fffbeb;
-  color: #d97706;
-  border-color: #fde68a;
-}
-
-.user-role-pill.role-team {
-  background: #f0fdf4;
-  color: #16a34a;
-  border-color: #bbf7d0;
-}
-
-.user-role-pill.guest {
-  background: #f1f5f9;
-  color: #64748b;
-  border-color: #cbd5e1;
-}
-
-/* --- PREMIUM REDESIGNED AUTH MODAL STYLES --- */
-.auth-modal-premium {
-  max-width: 640px !important;
-  border-radius: 14px !important;
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.2) !important;
-}
-
-.auth-modal-header {
-  padding: 20px 24px !important;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.auth-header-title-group {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.auth-header-icon-badge {
-  font-size: 28px;
-  width: 48px;
-  height: 48px;
-  background: #eff6ff;
-  border: 1.5px solid #bfdbfe;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.auth-modal-title {
-  font-size: 18px !important;
-  font-weight: 800 !important;
-  color: #0f172a !important;
-  margin: 0 !important;
-}
-
-.auth-modal-body {
-  padding: 22px 24px !important;
-}
-
-.role-selector-pills-large {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-@media (max-width: 600px) {
-  .role-selector-pills-large {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.role-selector-pills-large .role-pill-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 10px 6px;
-  background: #f1f5f9;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.role-selector-pills-large .role-pill-btn:hover {
-  background: #e2e8f0;
-  border-color: #cbd5e1;
-}
-
-.role-selector-pills-large .role-pill-btn.active {
-  background: #eff6ff;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 1px #2563eb;
-}
-
-.role-pill-icon {
-  font-size: 18px;
-}
-
-.role-pill-text {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.role-selector-pills-large .role-pill-btn.active .role-pill-text {
-  color: #2563eb;
-}
-
-.auth-alert-box {
-  display: flex;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 8px;
-  margin-bottom: 18px;
-}
-
-.auth-alert-box.info {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  color: #1e40af;
-}
-
-.auth-alert-box.warning {
-  background: #fffbeb;
-  border: 1px solid #fde68a;
-  color: #92400e;
-}
-
-.auth-alert-icon {
-  font-size: 20px;
-  flex-shrink: 0;
-}
-
-.auth-alert-content strong {
-  font-size: 13px;
-  display: block;
-  margin-bottom: 2px;
-}
-
-.auth-alert-content p {
-  font-size: 12px;
-  line-height: 1.45;
-  margin: 0;
-}
-
-.form-group-large {
-  margin-bottom: 16px;
-}
-
-.form-label-bold {
-  display: block;
-  font-size: 13px;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 6px;
-}
-
-.input-text-lg {
-  width: 100%;
-  padding: 11px 14px;
-  font-size: 14px;
-  border: 1.5px solid #cbd5e1;
-  border-radius: 7px;
-  font-family: inherit;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.input-text-lg:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-}
-
-.input-with-action {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.input-select-quick {
-  width: 100%;
-  padding: 8px 12px;
-  font-size: 12.5px;
-  border: 1px dashed #94a3b8;
-  border-radius: 6px;
-  background: #f8fafc;
-  color: #334155;
-  cursor: pointer;
-}
-
-.btn-xl {
-  padding: 13px 20px !important;
-  font-size: 14.5px !important;
-  font-weight: 800 !important;
-  border-radius: 8px !important;
-  margin-top: 6px;
-}
-
-/* MISMATCH MODAL */
-.mismatch-info-card {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.mismatch-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12.5px;
-  color: #475569;
-}
-
-.mismatch-row strong {
-  color: #0f172a;
-}
-
-.btn-config-server {
-  margin-top: 8px;
-  width: 100%;
-  font-size: 11px;
-  padding: 6px;
-  border-radius: 6px;
-  background: #eff6ff;
-  color: #2563eb;
-  border: 1px solid #bfdbfe;
-  cursor: pointer;
-  font-weight: 600;
-  text-align: center;
-  transition: background 0.15s;
-}
-
-.btn-config-server:hover {
-  background: #dbeafe;
-}
-
-/* --- PUBLIC ARENA SUB-NAVIGATION --- */
-.public-subnav-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  padding: 8px 12px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  box-shadow: var(--shadow-xs);
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.subnav-pills {
-  display: flex;
-  gap: 8px;
-}
-
-.subnav-pill {
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.subnav-pill:hover {
-  background: var(--bg-subtle);
-  color: var(--text-main);
-}
-
-.subnav-pill.active {
-  background: var(--primary);
-  color: #ffffff;
-  border-color: var(--primary);
-}
-
-.subnav-hint {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-/* --- WORKSPACE GUEST BANNER --- */
-.workspace-guest-banner {
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  border-radius: 8px;
-  padding: 14px 18px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 16px;
-}
-
-.guest-banner-icon {
-  font-size: 26px;
-  line-height: 1;
-}
-
-.guest-banner-content {
-  flex: 1;
-}
-
-.guest-banner-content h4 {
-  font-size: 14.5px;
-  font-weight: 700;
-  color: #1e40af;
-  margin-bottom: 2px;
-}
-
-.guest-banner-content p {
-  font-size: 12.5px;
-  color: #3b82f6;
-  margin: 0;
-}
-
-/* --- TEAM WORKSPACE PROFILE CARD --- */
-.workspace-team-profile-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 14px 18px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  box-shadow: var(--shadow-xs);
-  flex-wrap: wrap;
-  gap: 14px;
-}
-
-.profile-header-col {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.profile-avatar-pill {
-  width: 46px;
-  height: 46px;
-  border-radius: 8px;
-  background: var(--primary-light);
-  color: var(--primary);
-  font-weight: 800;
-  font-size: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid var(--primary-border);
-}
-
-.profile-meta-col {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.profile-title-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.team-profile-name {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.profile-sub-desc {
-  font-size: 12.5px;
-  color: var(--text-muted);
-}
-
-.immutable-lock-pill {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-}
-
-.lock-icon {
-  font-size: 16px;
-}
-
-.lock-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.lock-text strong {
-  font-size: 11.5px;
-  color: var(--text-main);
-}
-
-.lock-text span {
-  font-size: 10.5px;
-  color: var(--text-muted);
-}
-
-.ide-trial-cluster {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-/* --- ROLE SELECTOR MODAL PILLS --- */
-.role-selector-pills {
-  display: flex;
-  gap: 6px;
-  padding: 4px;
-  background: var(--bg-subtle);
-  border-radius: 8px;
-  margin-bottom: 16px;
-}
-
-.role-pill-btn {
-  flex: 1;
-  padding: 8px 0;
-  font-size: 13px;
-  font-weight: 600;
-  border: none;
-  background: transparent;
-  border-radius: 6px;
-  cursor: pointer;
-  color: var(--text-muted);
-  transition: all 0.15s ease;
-  text-align: center;
-}
-
-.role-pill-btn:hover {
-  color: var(--text-main);
-}
-
-.role-pill-btn.active {
-  background: #ffffff;
-  color: var(--primary);
-  box-shadow: var(--shadow-xs);
-}
-
-.role-intro-card {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  padding: 12px 14px;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  margin-bottom: 16px;
-}
-
-.role-intro-icon {
-  font-size: 22px;
-  line-height: 1.2;
-}
-
-.role-intro-text strong {
-  display: block;
-  font-size: 13.5px;
-  color: var(--text-main);
-  margin-bottom: 2px;
-}
-
-.role-intro-text p {
-  font-size: 12.5px;
-  color: var(--text-muted);
-  line-height: 1.4;
-  margin: 0;
-}
-
-/* ==========================================================================
-   PUBLIC ARENA: SUB-NAVIGATION & DASHBOARD OVERVIEW (MỤC 3, 6, 7)
-   ========================================================================== */
-.tournament-control-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 18px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  margin-bottom: 14px;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.tourn-selector-cluster {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.tourn-dropdown {
-  padding: 7px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: #ffffff;
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--text-main);
-  outline: none;
-  min-width: 220px;
-}
-
-.tourn-dropdown:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
-}
-
-.tourn-stats-cluster {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.stat-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 13px;
-  color: var(--text-body);
-}
-
-.stat-badge.highlight {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1d4ed8;
-}
-
-.public-subnav-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 16px;
-  padding-bottom: 8px;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.subnav-pills {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.subnav-pill {
-  padding: 7px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.subnav-pill:hover {
-  background: var(--bg-subtle);
-  color: var(--text-main);
-}
-
-.subnav-pill.active {
-  background: var(--primary);
-  color: #ffffff;
-  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
-}
-
-.subnav-hint {
-  font-size: 12.5px;
-  color: var(--text-muted);
-}
-
-/* --- DASHBOARD GRID & CARDS --- */
-.dashboard-overview-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.dashboard-card {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 240px;
 }
 
 .card-head-compact {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.card-title-icon-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.badge-tag-soft {
+  background: var(--primary-blue-light);
+  color: var(--primary-blue);
+  border-radius: 12px;
+  padding: 3px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+/* KHỐI TRẬN ĐẤU NỔI BẬT */
+.match-highlight-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 0 4px 0;
+}
+
+.pairing-teams-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.team-pill-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.team-pill-box.red {
+  background: var(--red-team-light);
+  color: var(--red-team);
+}
+
+.team-pill-box.blue {
+  background: var(--blue-team-light);
+  color: var(--blue-team);
+}
+
+.team-trophy-icon {
+  display: flex;
+  align-items: center;
+}
+
+.vs-circle-pill {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-blue-light);
+  color: var(--primary-blue);
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.match-score-display {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text-heading);
+  margin-top: 14px;
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
+}
+
+.match-meta-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 22px;
+}
+
+.match-highlight-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+}
+
+/* BẢNG TOP XẾP HẠNG TRONG TỔNG QUAN */
+.link-all-ranking {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--primary-blue);
+  text-decoration: none;
+}
+
+.link-all-ranking:hover {
+  text-decoration: underline;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table-clean {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-clean th {
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-align: left;
+  border-bottom: 1px solid var(--border-divider);
+  letter-spacing: 0.3px;
+}
+
+.table-clean td {
+  padding: 12px 12px;
+  font-size: 13.5px;
+  color: var(--text-body);
+  border-bottom: 1px solid var(--border-divider);
+  vertical-align: middle;
+}
+
+.table-clean tr:last-child td {
+  border-bottom: none;
+}
+
+.table-clean tr:hover td {
+  background: #fbfcfe;
+}
+
+/* AVATAR TRÒN CỦA BOT / ĐỘI */
+.bot-team-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bot-avatar-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bot-avatar-circle.color-red { background: #ef4444; }
+.bot-avatar-circle.color-blue { background: #3b82f6; }
+.bot-avatar-circle.color-green { background: #10b981; }
+.bot-avatar-circle.color-yellow { background: #f59e0b; }
+.bot-avatar-circle.color-purple { background: #8b5cf6; }
+.bot-avatar-circle.color-orange { background: #f97316; }
+.bot-avatar-circle.color-pink { background: #ec4899; }
+.bot-avatar-circle.color-cyan { background: #06b6d4; }
+
+.rank-medal-icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.rank-num-bold {
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.team-name-bold {
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.student-id-code {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-family: inherit;
+}
+
+.elo-score-bold {
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+/* ==========================================================================
+   4. TRANG 2: BẢNG ĐẤU / SƠ ĐỒ NHÁNH (MOCKUP 2 REPLICATION)
+   ========================================================================== */
+.bracket-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.bracket-title-cluster {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.bracket-title-icon {
+  margin-top: 3px;
+}
+
+.bracket-header-right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.round-dropdown-pill {
+  background: var(--primary-blue-light);
+  color: var(--primary-blue);
+  border: 1px solid var(--primary-blue-border);
+  border-radius: 18px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.bracket-tournament-meta {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+}
+
+.meta-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-body);
+}
+
+.meta-subline {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* BỘ LỌC CÁC VÒNG ĐẤU (PILL BUTTONS) */
+.bracket-filter-pills-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.bracket-pill {
+  background: #ffffff;
+  color: var(--text-body);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.bracket-pill:hover {
+  background: var(--bg-hover);
+}
+
+.bracket-pill.active {
+  background: var(--primary-blue);
+  color: #ffffff;
+  border-color: var(--primary-blue);
+  font-weight: 600;
+}
+
+/* THẺ TRẮNG CHỨA CÂY NHÁNH ĐẤU */
+.bracket-main-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+}
+
+.bracket-card-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.btn-icon-subtle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+/* BỐ CỤC 3 CỘT NHÁNH ĐẤU */
+.bracket-columns-wrapper {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 28px;
+  position: relative;
+  min-height: 540px;
+}
+
+.bracket-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.bracket-col-header {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-heading);
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 8px 14px;
+  margin-bottom: 20px;
+}
+
+.bracket-matches-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  flex: 1;
+  gap: 16px;
+}
+
+/* THẺ TRẬN ĐẤU NHÁNH */
+.bracket-match-node {
+  background: #ffffff;
+  border: 1.5px solid var(--border-card);
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.bracket-match-node:hover {
+  border-color: var(--primary-blue);
+  box-shadow: 0 4px 12px rgba(26, 107, 240, 0.08);
+}
+
+.node-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.node-team-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 0;
+}
+
+.node-team-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.node-team-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.node-team-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.node-score {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+/* NHÃN TRẠNG THÁI NẰM TRÊN NHÁNH NỐI */
+.bracket-branch-tag {
+  background: var(--primary-blue-light);
+  color: var(--primary-blue);
+  border-radius: 12px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+/* BANNER THÔNG BÁO DƯỚI BẢNG ĐẤU */
+.bracket-info-alert-banner {
+  background: var(--primary-blue-light);
+  border-radius: 10px;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.info-alert-icon-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.info-alert-text {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--primary-blue);
+}
+
+/* ==========================================================================
+   5. TRANG 3: XẾP HẠNG (MOCKUP 3 REPLICATION)
+   ========================================================================== */
+.ranking-full-card {
+  padding: 16px 24px;
+}
+
+.ranking-full-table td {
+  padding: 14px 12px;
+}
+
+/* ==========================================================================
+   6. MÀN HÌNH ĐĂNG NHẬP RIÊNG BIỆT (MOCKUP 4 REPLICATION)
+   ========================================================================== */
+.login-page-view {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #f0f7ff 0%, #e8f2fe 50%, #f4f8fe 100%);
+  z-index: 999;
+  overflow-y: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.login-page-container {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  max-width: 1100px;
+  width: 100%;
+  align-items: center;
+  gap: 48px;
+}
+
+/* CỘT TRÁI ĐĂNG NHẬP */
+.login-left-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.login-brand-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.login-hero-heading {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--text-heading);
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+  margin-bottom: 14px;
+}
+
+.login-hero-desc {
+  font-size: 15px;
+  color: #475569;
+  line-height: 1.55;
+  max-width: 440px;
+  margin-bottom: 24px;
+}
+
+.login-isometric-graphic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 14px 28px rgba(37, 99, 235, 0.08));
+}
+
+/* CỘT PHẢI: FORM ĐĂNG NHẬP */
+.login-right-col {
+  display: flex;
+  justify-content: center;
+}
+
+.login-card-floating {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 44px 40px;
+  box-shadow: var(--shadow-floating);
+  width: 100%;
+  max-width: 440px;
+}
+
+.login-card-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-heading);
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+}
+
+.login-card-subtitle {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  margin-bottom: 26px;
+}
+
+.login-alert-banner {
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #dc2626;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  margin-bottom: 16px;
+}
+
+.login-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 0 14px;
+  margin-bottom: 16px;
+  height: 48px;
+  transition: border-color 0.15s ease;
+}
+
+.login-input-group:focus-within {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(26, 107, 240, 0.1);
+}
+
+.input-icon-left {
+  display: flex;
+  align-items: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.login-input-field {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: var(--text-heading);
+  font-family: inherit;
+  background: transparent;
+}
+
+.login-input-field::placeholder {
+  color: var(--text-light);
+}
+
+.btn-toggle-eye {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+}
+
+.btn-login-submit {
+  width: 100%;
+  height: 48px;
+  background: var(--primary-blue);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-primary-btn);
+  transition: background 0.15s ease;
+  margin-top: 8px;
   margin-bottom: 12px;
 }
 
-.dash-tourn-name {
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--text-main);
-  margin-bottom: 6px;
+.btn-login-submit:hover {
+  background: var(--primary-blue-hover);
 }
 
-.dash-tourn-desc {
-  font-size: 13px;
-  color: var(--text-muted);
-  line-height: 1.4;
-  margin: 0 0 14px 0;
-}
-
-.dash-metrics-row {
+.btn-login-back-home {
+  width: 100%;
+  height: 48px;
+  background: #ffffff;
+  color: var(--text-body);
+  border: 1.5px solid var(--border-light);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
   display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
-  padding: 10px 12px;
-  background: var(--bg-subtle);
-  border-radius: 6px;
-  font-size: 13px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s ease;
 }
 
-.dash-metric-item {
+.btn-login-back-home:hover {
+  background: var(--bg-hover);
+  color: var(--text-heading);
+}
+
+.login-hints-box {
+  margin-top: 18px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.login-hints-box code {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  color: var(--primary-blue);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+   7. TRANG 4: PHÒNG TRẬN ĐẤU & NỘP CODE (CUSTOM MATCH ROOM)
+   ========================================================================== */
+.match-room-desktop-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.match-room-header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.match-room-titles {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.room-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-heading);
+}
+
+.room-badge-stage {
+  background: var(--primary-blue-light);
+  color: var(--primary-blue);
+  border-radius: 14px;
+  padding: 3px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.match-room-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* BẢNG ĐIỀU HÀNH 2 ĐỘI & TỶ SỐ BO5 */
+.match-teams-score-board {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 16px;
+  padding: 18px 28px;
+  box-shadow: var(--shadow-card);
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.match-team-col {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 8px;
 }
 
-.dash-metric-item span {
+.match-team-col.blue {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.team-col-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.team-circle-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.team-circle-avatar.red { background: #ef4444; }
+.team-circle-avatar.blue { background: #3b82f6; }
+
+.team-col-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.team-col-sid {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.team-status-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.piece-count-badge {
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.piece-count-badge.red {
+  background: var(--red-team-light);
+  color: var(--red-team);
+}
+
+.piece-count-badge.blue {
+  background: var(--blue-team-light);
+  color: var(--blue-team);
+}
+
+.submission-state-badge {
+  font-size: 11px;
+  background: #f1f5f9;
+  color: var(--text-body);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.match-center-score-cluster {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.center-score-number {
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--text-heading);
+  letter-spacing: -0.5px;
+}
+
+.center-round-step {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--primary-blue);
+  margin-top: 2px;
+  margin-bottom: 8px;
+}
+
+.round-step-pills-row {
+  display: flex;
+  gap: 6px;
+}
+
+.step-pill {
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: var(--text-muted);
+}
+
+.step-pill.current {
+  background: var(--primary-blue);
+  color: #ffffff;
+}
+
+.step-pill.passed {
+  background: var(--green-status-light);
+  color: var(--green-status);
+}
+
+/* BỐ CỤC 2 CỘT: BÀN CỜ 9×9 & PHÒNG NỘP CODE */
+.match-arena-2col-layout {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.board-card {
+  padding: 20px 24px;
+}
+
+.board-top-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.board-title-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-heading);
+  letter-spacing: 0.5px;
+}
+
+.board-legend-label {
   font-size: 11.5px;
   color: var(--text-muted);
 }
 
-.dash-metric-item strong {
-  color: var(--text-main);
-  font-size: 13.5px;
-}
-
-.dash-card-actions {
+/* BÀN CỜ 9x9 */
+.board-wrapper {
   display: flex;
-  gap: 8px;
-  margin-top: auto;
-  padding-top: 12px;
-  border-top: 1px solid var(--border-color);
-}
-
-.dash-card-actions .btn {
-  flex: 1;
-  text-align: center;
-  font-size: 13px;
-  padding: 8px 12px;
-}
-
-/* Trận đấu trọng tâm */
-.dash-match-pairing {
-  display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 14px;
-  padding: 18px 12px;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  margin-bottom: 10px;
-}
-
-.dash-team {
-  font-weight: 700;
-  font-size: 15px;
-}
-
-.dash-team.red {
-  color: #dc2626;
-}
-
-.dash-team.blue {
-  color: #2563eb;
-}
-
-.dash-vs {
-  font-size: 12px;
-  font-weight: 800;
-  padding: 3px 8px;
-  background: #e2e8f0;
-  border-radius: 12px;
-  color: #475569;
-}
-
-.dash-match-meta {
-  font-size: 12.5px;
-  color: var(--text-muted);
-  text-align: center;
   margin-bottom: 14px;
 }
 
-/* Compact Table on Dashboard */
-.compact-table th,
-.compact-table td {
-  padding: 8px 10px;
-  font-size: 12.5px;
+.chessboard-9x9 {
+  display: grid;
+  grid-template-columns: repeat(9, 44px);
+  grid-template-rows: repeat(9, 44px);
+  gap: 2px;
+  background: #cbd5e1;
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid #94a3b8;
 }
 
-/* Central Tournament Table Toolbar */
-.table-toolbar {
+.board-cell {
+  background: #ffffff;
+  border-radius: 4px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: center;
+  position: relative;
+  transition: all 0.15s ease;
+}
+
+.board-cell.cell-alt {
+  background: #f8fafc;
+}
+
+.board-cell.cell-target-red {
+  background: #fee2e2;
+  border: 1.5px dashed #ef4444;
+}
+
+.board-cell.cell-target-blue {
+  background: #dbeafe;
+  border: 1.5px dashed #3b82f6;
+}
+
+.board-cell.cell-clash {
+  animation: flashClash 0.6s ease-out;
+  background: #fef08a !important;
+}
+
+@keyframes flashClash {
+  0% { transform: scale(1.15); background: #facc15; }
+  100% { transform: scale(1); background: #ffffff; }
+}
+
+/* QUÂN CỜ TRÊN BÀN */
+.board-piece {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #ffffff;
+  user-select: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.board-piece.piece-red {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border: 1.5px solid #b91c1c;
+}
+
+.board-piece.piece-blue {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border: 1.5px solid #1d4ed8;
+}
+
+/* BÌNH LUẬN TRỰC TIẾP */
+.live-commentary-ticker {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-divider);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: var(--text-body);
+  line-height: 1.45;
   margin-bottom: 12px;
 }
 
-.toolbar-stats {
-  font-size: 13px;
+.replay-controls-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.playback-step-text {
+  font-size: 12px;
+  font-weight: 600;
   color: var(--text-muted);
 }
 
+/* PHÒNG NỘP CODE (CODE SUBMISSION STUDIO) */
+.studio-card {
+  padding: 20px 24px;
+}
 
+.studio-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.ide-status-tag {
+  background: #f1f5f9;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 10px;
+}
+
+.ide-toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.toolbar-lang-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-label-sm {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-body);
+}
+
+.input-text-sm {
+  padding: 5px 10px;
+  font-size: 12.5px;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  background: #ffffff;
+  outline: none;
+  font-family: inherit;
+}
+
+.toolbar-btn-group {
+  display: flex;
+  gap: 6px;
+}
+
+.studio-code-editor {
+  width: 100%;
+  height: 240px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  background: #0f172a;
+  color: #f8fafc;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 14px;
+  outline: none;
+  resize: vertical;
+  margin-bottom: 14px;
+}
+
+.studio-bottom-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.trial-boss-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-submit-code {
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.match-submissions-subpanel {
+  border-top: 1px solid var(--border-divider);
+  padding-top: 14px;
+}
+
+.subpanel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.subpanel-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+/* ==========================================================================
+   8. HƯỚNG DẪN THI ĐẤU (GUIDE TAB)
+   ========================================================================== */
+.guide-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.guide-card {
+  padding: 24px;
+}
+
+.guide-p {
+  font-size: 13.5px;
+  color: var(--text-body);
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+
+.guide-list {
+  padding-left: 18px;
+  font-size: 13px;
+  color: var(--text-body);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.guide-list code {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.guide-code-box {
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 16px;
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+/* ==========================================================================
+   9. MODALS & TOAST NOTIFICATIONS
+   ========================================================================== */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: var(--shadow-floating);
+  width: 100%;
+  max-width: 580px;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+.modal-card.modal-lg {
+  max-width: 820px;
+}
+
+.modal-header {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border-divider);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.modal-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.modal-subtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.btn-modal-close {
+  font-size: 18px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.btn-modal-close:hover {
+  color: var(--text-heading);
+}
+
+.modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  padding: 14px 24px;
+  border-top: 1px solid var(--border-divider);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* TOAST NOTIFICATION BANNER */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast-item {
+  background: #ffffff;
+  border-radius: 10px;
+  box-shadow: var(--shadow-floating);
+  padding: 12px 16px;
+  min-width: 280px;
+  max-width: 380px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  pointer-events: auto;
+  border-left: 4px solid var(--primary-blue);
+}
+
+.toast-item.toast-success { border-left-color: var(--green-status); }
+.toast-item.toast-error { border-left-color: var(--red-team); }
+.toast-item.toast-warning { border-left-color: #f59e0b; }
+
+.toast-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #f1f5f9;
+}
+
+.toast-body {
+  flex: 1;
+}
+
+.toast-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-heading);
+}
+
+.toast-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.toast-close {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  color: var(--text-muted);
+  cursor: pointer;
+}

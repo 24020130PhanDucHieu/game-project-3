@@ -3,22 +3,24 @@
 <head>
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-  <title>Freshman Bot Arena - Đấu Trường Lập Trình OTTV2 ICPC K69</title>
+  <title>Freshman Bot Arena – OTTV2 ICPC K69</title>
   <link href="https://fonts.googleapis.com" rel="preconnect"/>
   <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
   <link href="styles.css" rel="stylesheet"/>
 </head>
 <body>
-  <!-- TOAST & IN-APP NOTIFICATION CONTAINER -->
+  <!-- TOAST NOTIFICATION CONTAINER -->
   <div id="toast-container" class="toast-container"></div>
 
-  <!-- BỐ CỤC TỔNG THỂ VỚI SIDEBAR DỌC -->
-  <div class="app-layout">
+  <!-- BỐ CỤC CHÍNH (DESKTOP LAYOUT VỚI SIDEBAR DỌC) -->
+  <div class="app-layout" id="app-layout">
+    
     <!-- ================================================================= -->
-    <!-- SIDEBAR DỌC BÊN TRÁI -->
+    <!-- SIDEBAR DỌC BÊN TRÁI (THEO SÁT MOCKUP 1, 2, 3) -->
     <!-- ================================================================= -->
-    <aside class="app-sidebar">
+    <aside class="app-sidebar" id="app-sidebar">
+      <!-- BRAND HEADER -->
       <div class="sidebar-brand">
         <span class="brand-badge">ICPC K69</span>
         <div class="brand-text">
@@ -27,156 +29,336 @@
         </div>
       </div>
 
-      <!-- KHỐI DANH TÍNH & ĐĂNG NHẬP (PREMIUM AUTH & USER CARD) -->
+      <!-- KHỐI DANH TÍNH NGƯỜI DÙNG / KHÁCH (USER PROFILE CARD) -->
       <div class="sidebar-user-card" id="sidebar-user-card">
-        <!-- Chế độ Khách (Guest) -->
+        <!-- Chế độ Khách tham quan (Guest Mode - Mockup 1 & 2) -->
         <div class="user-card-guest" id="user-card-guest-view">
-          <div class="guest-card-header">
-            <span class="user-role-pill guest" id="user-role-pill">CHƯA ĐĂNG NHẬP</span>
+          <div class="guest-card-top">
+            <div class="guest-avatar-circle">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </div>
+            <div class="guest-meta">
+              <div class="guest-name">Khách tham quan</div>
+              <p class="guest-desc">Đăng nhập để tham gia thi đấu và quản lý bot.</p>
+            </div>
           </div>
-          <div class="guest-card-body">
-            <div class="guest-title">Khách Thăm Quan</div>
-            <p class="guest-desc">Đăng nhập tài khoản đội để vào nhánh đấu và nộp bài bot</p>
-          </div>
-          <button class="btn btn-primary btn-full btn-auth-action" id="btn-user-auth-action">
-            <span>🔐 ĐĂNG NHẬP NGAY</span>
+          <button class="btn-sidebar-login" id="btn-user-auth-action">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <span>Đăng nhập</span>
           </button>
         </div>
 
-        <!-- Chế độ Đã Đăng Nhập (Authenticated: Team / Admin) -->
+        <!-- Chế độ Đã Đăng Nhập (Authenticated Mode - Mockup 3) -->
         <div class="user-card-authenticated" id="user-card-auth-view" style="display: none;">
-          <div class="user-auth-header">
-            <span class="user-role-pill" id="user-auth-pill">ĐỘI TUYỂN</span>
-            <button class="btn-logout-link" id="btn-user-logout">Đăng Xuất</button>
-          </div>
-          <div class="user-auth-info">
-            <div class="user-auth-avatar" id="user-auth-avatar">K69</div>
-            <div class="user-auth-details">
-              <div class="user-auth-name" id="user-display-name">Tên Đội Tuyển</div>
-              <div class="user-auth-sid" id="user-display-sid">SBD: 24020130</div>
+          <div class="auth-card-top">
+            <div class="auth-avatar-circle" id="user-auth-avatar">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
             </div>
+            <div class="auth-meta">
+              <div class="auth-name" id="user-display-name">Đội RedBot</div>
+              <div class="auth-sid" id="user-display-sid">K69A001</div>
+            </div>
+          </div>
+          <div class="auth-actions-row">
+            <span class="user-role-pill" id="user-auth-pill">ĐỘI TUYỂN</span>
+            <button class="btn-logout-link" id="btn-user-logout">Đăng xuất</button>
           </div>
         </div>
       </div>
 
-      <!-- 6 TAB CHÍNH THEO ĐÚNG THỨ TỰ BẮT BUỘC -->
+      <!-- 5 MENU ĐIỀU HƯỚNG CHÍNH (THEO ĐÚNG MOCKUP) -->
       <nav class="sidebar-nav" id="main-sidebar-nav">
-        <!-- 1. TỔNG QUAN (CÔNG KHAI CHO CẢ KHÁCH VÀ USER ĐÃ ĐĂNG NHẬP) -->
+        <!-- 1. TỔNG QUAN -->
         <button class="nav-tab-btn active" data-tab="tab-overview" id="nav-btn-overview">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+            </svg>
+          </span>
           <span class="nav-label">Tổng quan</span>
         </button>
 
-        <!-- 2-6: CHỈ HIỂN THỊ KHI ĐÃ ĐĂNG NHẬP (ADMIN HOẶC ĐỘI TUYỂN) -->
-        <button class="nav-tab-btn auth-required" data-tab="tab-tournaments" id="nav-btn-tournaments" style="display: none;">
-          <span class="nav-label">Các bảng đấu</span>
+        <!-- 2. BẢNG ĐẤU -->
+        <button class="nav-tab-btn" data-tab="tab-bracket" id="nav-btn-bracket">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="6" height="4" rx="1"/>
+              <rect x="3" y="17" width="6" height="4" rx="1"/>
+              <rect x="15" y="10" width="6" height="4" rx="1"/>
+              <path d="M9 5h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9"/>
+              <path d="M14 12h1"/>
+            </svg>
+          </span>
+          <span class="nav-label">Bảng đấu</span>
         </button>
-        <button class="nav-tab-btn auth-required" data-tab="tab-bracket" id="nav-btn-bracket" style="display: none;">
-          <span class="nav-label">Sơ đồ nhánh đấu</span>
+
+        <!-- 3. XẾP HẠNG -->
+        <button class="nav-tab-btn" data-tab="tab-ranking" id="nav-btn-ranking">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zM16.2 13h2.8v6h-2.8z"/>
+            </svg>
+          </span>
+          <span class="nav-label">Xếp hạng</span>
         </button>
-        <button class="nav-tab-btn auth-required" data-tab="tab-teams" id="nav-btn-teams" style="display: none;">
-          <span class="nav-label">Danh sách đội</span>
+
+        <!-- 4. TRẬN ĐẤU -->
+        <button class="nav-tab-btn" data-tab="tab-match-arena" id="nav-btn-match">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m14.5 17.5 3 3 3-3-3-3z"/>
+              <path d="m6.5 9.5-3-3 3-3 3 3z"/>
+              <path d="M8 8 16 16"/>
+              <path d="m16 8-8 8"/>
+              <path d="m9.5 6.5-3 3"/>
+              <path d="m17.5 14.5-3 3"/>
+            </svg>
+          </span>
+          <span class="nav-label">Trận đấu</span>
         </button>
-        <button class="nav-tab-btn auth-required" data-tab="tab-ranking" id="nav-btn-ranking" style="display: none;">
-          <span class="nav-label">Bảng xếp hạng</span>
-        </button>
-        <button class="nav-tab-btn auth-required" data-tab="tab-history" id="nav-btn-history" style="display: none;">
-          <span class="nav-label">Lịch sử đấu</span>
+
+        <!-- 5. HƯỚNG DẪN THI ĐẤU -->
+        <button class="nav-tab-btn" data-tab="tab-guide" id="nav-btn-guide">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </span>
+          <span class="nav-label">Hướng dẫn thi đấu</span>
         </button>
 
         <!-- BÀN QUẢN TRỊ (CHỈ DÀNH CHO ADMIN) -->
         <button class="nav-tab-btn admin-only" data-tab="tab-admin-console" id="nav-btn-admin" style="display: none;">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </span>
           <span class="nav-label">Bàn Quản Trị</span>
         </button>
       </nav>
 
       <!-- CHÂN TRANG SIDEBAR: TRẠNG THÁI HỆ THỐNG -->
       <div class="sidebar-footer">
-        <div class="footer-status-card">
-          <div class="status-row">
-            <span class="status-indicator online"></span>
-            <span class="status-text" id="sidebar-stage-text">Vòng 1: Luật Chuẩn</span>
-          </div>
-        </div>
+        <span class="footer-status-dot"></span>
+        <span class="footer-status-text" id="sidebar-stage-text">Vòng 1 · Luật Chuẩn</span>
       </div>
     </aside>
 
     <!-- ================================================================= -->
-    <!-- KHUNG NỘI DUNG CHÍNH (MAIN CONTENT) -->
+    <!-- KHUNG NỘI DUNG CHÍNH (MAIN VIEWPORT) -->
     <!-- ================================================================= -->
     <main class="app-main-content">
-      
+
       <!-- =============================================================== -->
-      <!-- TAB 1: TỔNG QUAN (CÔNG KHAI) -->
+      <!-- TRANG 1: TỔNG QUAN (BÁM SÁT 100% ẢNH MẪU 1) -->
       <!-- =============================================================== -->
       <section class="tab-pane active" id="tab-overview">
+        <!-- TIÊU ĐỀ TRANG -->
         <div class="content-header-row">
           <div>
-            <h2 class="page-title">Tổng Quan Đấu Trường</h2>
-            <p class="page-subtitle">Tình hình hệ thống, bảng đấu và cặp đối đầu trọng tâm.</p>
+            <h1 class="page-title">Tổng quan đấu trường</h1>
+            <p class="page-subtitle">Theo dõi tình hình giải đấu, bảng đấu và các trận đấu đang diễn ra.</p>
+          </div>
+          <div class="header-right-status">
+            <span class="status-pill-green">
+              <span class="pill-dot"></span>
+              Đang diễn ra
+            </span>
           </div>
         </div>
 
-        <div class="dashboard-overview-grid">
-          <!-- THẺ 1: TRẠNG THÁI BẢNG ĐẤU HIỆN TẠI -->
-          <div class="content-card dashboard-card">
-            <div class="card-head-compact">
-              <h3 class="panel-title">Bảng Đấu Đang Chọn</h3>
-              <span class="badge-tag highlight" id="dash-tourn-status">Đang diễn ra</span>
+        <!-- THẺ THÔNG TIN GIẢI ĐẤU LỚN -->
+        <div class="tournament-hero-card">
+          <div class="hero-card-header">
+            <div class="hero-title-cluster">
+              <span class="brand-badge-sm">ICPC K69</span>
+              <h2 class="hero-tourn-name" id="dash-tourn-title">Giải Đấu Tân Sinh Viên K69</h2>
             </div>
-            <div class="dash-tourn-name" id="dash-tourn-title">Giải Đấu Tân Sinh Viên K69</div>
-            <p class="dash-tourn-desc">Đấu trường lập trình thuật toán Oẳn Tù Tì V2 trên bàn cờ 9x9.</p>
-            <div class="dash-metrics-row">
-              <div class="dash-metric-item">
-                <span>Số đội tham gia:</span>
-                <strong id="dash-teams-num">8 Đội</strong>
+            <span class="hero-it-badge">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 15.9V19H7v2h10v-2h-4v-3.1a5.01 5.01 0 0 0 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2z"/>
+              </svg>
+              <span>Giải đấu IT</span>
+            </span>
+          </div>
+          <p class="hero-tourn-desc">Đấu trường lập trình thuật toán Oẳn Tù Tì V2 trên bàn cờ 9×9.</p>
+
+          <!-- 3 THẺ CHỈ SỐ THỐNG KÊ -->
+          <div class="hero-stats-grid">
+            <!-- Chỉ số 1: Số đội -->
+            <div class="hero-stat-card">
+              <div class="stat-card-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
               </div>
-              <div class="dash-metric-item">
-                <span>Tiến độ các vòng:</span>
-                <strong id="dash-progress-status">Tứ Kết &rarr; Chung Kết</strong>
+              <div class="stat-card-content">
+                <span class="stat-label">Số đội tham gia</span>
+                <strong class="stat-value" id="dash-teams-num">8 Đội</strong>
               </div>
             </div>
-            <div class="dash-card-actions">
-              <button class="btn btn-primary" id="btn-dash-view-bracket">Xem Sơ Đồ Nhánh</button>
-              <button class="btn btn-outline" id="btn-dash-manage-tourn">Các Bảng Đấu</button>
+
+            <!-- Chỉ số 2: Thể thức -->
+            <div class="hero-stat-card">
+              <div class="stat-card-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="6" height="4" rx="1"/>
+                  <rect x="3" y="17" width="6" height="4" rx="1"/>
+                  <rect x="15" y="10" width="6" height="4" rx="1"/>
+                  <path d="M9 5h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9"/>
+                  <path d="M14 12h1"/>
+                </svg>
+              </div>
+              <div class="stat-card-content">
+                <span class="stat-label">Thể thức</span>
+                <strong class="stat-value" id="dash-progress-status">Tứ Kết → Chung Kết</strong>
+              </div>
+            </div>
+
+            <!-- Chỉ số 3: Trạng thái -->
+            <div class="hero-stat-card">
+              <div class="stat-card-icon">
+                <span class="stat-dot-green"></span>
+              </div>
+              <div class="stat-card-content">
+                <span class="stat-label">Trạng thái</span>
+                <strong class="stat-value text-green" id="dash-tourn-status">Đang diễn ra</strong>
+              </div>
             </div>
           </div>
 
-          <!-- THẺ 2: TRẬN ĐẤU TRỌNG TÂM / TRỰC TIẾP -->
-          <div class="content-card dashboard-card">
+          <!-- CẶP NÚT HÀNH ĐỘNG DƯỚI THẺ GIẢI ĐẤU -->
+          <div class="hero-actions-row">
+            <button class="btn btn-primary" id="btn-dash-view-bracket">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <span>Xem bảng đấu</span>
+            </button>
+            <button class="btn btn-outline" id="btn-dash-manage-tourn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="6" height="4" rx="1"/>
+                <rect x="3" y="17" width="6" height="4" rx="1"/>
+                <rect x="15" y="10" width="6" height="4" rx="1"/>
+                <path d="M9 5h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9"/>
+                <path d="M14 12h1"/>
+              </svg>
+              <span>Xem sơ đồ nhánh</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- PHẦN DƯỚI: 2 CỘT (TRẬN ĐẤU NỔI BẬT & BẢNG XẾP HẠNG) -->
+        <div class="overview-lower-grid">
+          <!-- CỘT TRÁI: THẺ TRẬN ĐẤU NỔI BẬT -->
+          <div class="content-card match-highlight-card">
             <div class="card-head-compact">
-              <h3 class="panel-title">Trận Đấu Trọng Tâm</h3>
-              <span class="badge-tag" id="dash-match-status">Sẵn Sàng</span>
+              <div class="card-title-icon-group">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m14.5 17.5 3 3 3-3-3-3z"/>
+                  <path d="m6.5 9.5-3-3 3-3 3 3z"/>
+                  <path d="M8 8 16 16"/>
+                  <path d="m16 8-8 8"/>
+                </svg>
+                <h3 class="panel-title">Trận đấu nổi bật</h3>
+              </div>
+              <span class="badge-tag-soft" id="dash-match-status">Đang diễn ra</span>
             </div>
-            <div class="dash-match-pairing" id="dash-match-pairing">
-              <span class="dash-team red" id="dash-match-team-a">Đội Đỏ</span>
-              <span class="dash-vs">VS</span>
-              <span class="dash-team blue" id="dash-match-team-b">Đội Xanh</span>
-            </div>
-            <div class="dash-match-meta" id="dash-match-meta">Round 1 / 5 • Thể thức Bo5</div>
-            <div class="dash-card-actions">
-              <button class="btn btn-success" id="btn-dash-enter-match">Vào Xem Bàn Đấu 9x9</button>
-              <button class="btn btn-outline" id="btn-dash-team-workspace">Nộp Bài Cho Đội</button>
+
+            <!-- BỐ CỤC ĐỐI ĐẦU 2 ĐỘI -->
+            <div class="match-highlight-body">
+              <div class="pairing-teams-row">
+                <div class="team-pill-box red">
+                  <span class="team-trophy-icon red">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 15.9V19H7v2h10v-2h-4v-3.1a5.01 5.01 0 0 0 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2z"/>
+                    </svg>
+                  </span>
+                  <strong id="dash-match-team-a">Đội Đỏ</strong>
+                </div>
+
+                <div class="vs-circle-pill">VS</div>
+
+                <div class="team-pill-box blue">
+                  <span class="team-trophy-icon blue">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 15.9V19H7v2h10v-2h-4v-3.1a5.01 5.01 0 0 0 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2z"/>
+                    </svg>
+                  </span>
+                  <strong id="dash-match-team-b">Đội Xanh</strong>
+                </div>
+              </div>
+
+              <!-- TỶ SỐ TRẬN NỔI BẬT -->
+              <div class="match-score-display" id="dash-match-score">2 - 1</div>
+              <div class="match-meta-subtitle" id="dash-match-meta">Vòng 1 · Thể thức Bo5</div>
+
+              <!-- NÚT HÀNH ĐỘNG: XEM BÀN ĐẤU & THAM GIA / NỘP BÀI -->
+              <div class="match-highlight-actions">
+                <button class="btn btn-green" id="btn-dash-enter-match">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                  </svg>
+                  <span>Xem bàn đấu 9×9</span>
+                </button>
+                <button class="btn btn-outline" id="btn-dash-team-workspace">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="16 16 12 12 8 16"/>
+                    <line x1="12" y1="12" x2="12" y2="21"/>
+                    <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+                  </svg>
+                  <span>Nộp bài cho đội</span>
+                </button>
+              </div>
             </div>
           </div>
 
-          <!-- THẺ 3: TOP 3 BẢNG XẾP HẠNG ELO -->
-          <div class="content-card dashboard-card">
+          <!-- CỘT PHẢI: THẺ BẢNG XẾP HẠNG TOP ĐẦU -->
+          <div class="content-card leaderboard-summary-card">
             <div class="card-head-compact">
-              <h3 class="panel-title">Top Đầu Bảng Xếp Hạng</h3>
-              <button class="btn-clean text-primary" id="btn-dash-view-full-ranking">Xem tất cả &rarr;</button>
+              <div class="card-title-icon-group">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#2563eb">
+                  <path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.94A5.01 5.01 0 0 0 11 15.9V19H7v2h10v-2h-4v-3.1a5.01 5.01 0 0 0 3.61-2.96C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2z"/>
+                </svg>
+                <h3 class="panel-title">Bảng xếp hạng</h3>
+              </div>
+              <button class="btn-clean link-all-ranking" id="btn-dash-view-full-ranking">Xem tất cả &rarr;</button>
             </div>
+
+            <!-- BẢNG TOP ĐẦU ELO -->
             <div class="table-responsive">
               <table class="table-clean compact-table" id="table-dash-top-ranking">
                 <thead>
                   <tr>
-                    <th>Hạng</th>
-                    <th>Đội / Bot</th>
-                    <th>MSSV</th>
-                    <th>Điểm ELO</th>
+                    <th style="width: 15%;">HẠNG</th>
+                    <th style="width: 40%;">ĐỘI / BOT</th>
+                    <th style="width: 25%;">MSSV</th>
+                    <th style="width: 20%; text-align: right;">ĐIỂM ELO</th>
                   </tr>
                 </thead>
                 <tbody id="tbody-dash-top-ranking">
-                  <tr><td class="text-center text-muted" colspan="4">Đang tải xếp hạng...</td></tr>
+                  <!-- Render từ API hoặc fallback mẫu chuẩn K69 -->
                 </tbody>
               </table>
             </div>
@@ -185,293 +367,130 @@
       </section>
 
       <!-- =============================================================== -->
-      <!-- TAB 2: CÁC BẢNG ĐẤU -->
-      <!-- =============================================================== -->
-      <section class="tab-pane" id="tab-tournaments">
-        <div class="content-header-row">
-          <div>
-            <h2 class="page-title">Các Bảng Đấu</h2>
-            <p class="page-subtitle">Danh sách và quản lý tập trung tất cả các bảng đấu trong hệ thống.</p>
-          </div>
-          <button class="btn btn-primary" id="btn-central-create-tourn">+ Tạo Bảng Đấu Mới</button>
-        </div>
-
-        <div class="table-toolbar">
-          <div class="search-filter-box" style="flex: 1; max-width: 320px;">
-            <input class="input-text" id="inp-search-tournaments" placeholder="Tìm theo tên bảng đấu..." type="text"/>
-          </div>
-          <div class="toolbar-stats">
-            <span>Tổng số: <strong id="count-total-tournaments">0</strong> bảng đấu</span>
-          </div>
-        </div>
-
-        <div class="table-card-container">
-          <table class="table-clean" id="table-all-tournaments">
-            <thead>
-              <tr>
-                <th>Mã Bảng Đấu</th>
-                <th>Tên Bảng Đấu</th>
-                <th>Quy Mô</th>
-                <th>Định Dạng</th>
-                <th>Trạng Thái</th>
-                <th>Quán Quân</th>
-                <th>Thao Tác</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-all-tournaments">
-              <tr><td class="text-center text-muted" colspan="7">Đang tải danh sách bảng đấu...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- =============================================================== -->
-      <!-- TAB 3: SƠ ĐỒ NHÁNH ĐẤU -->
+      <!-- TRANG 2: BẢNG ĐẤU / SƠ ĐỒ NHÁNH (BÁM SÁT 100% ẢNH MẪU 2) -->
       <!-- =============================================================== -->
       <section class="tab-pane" id="tab-bracket">
-        <!-- THANH TIÊU ĐỀ BẢNG ĐẤU HIỆN TẠI -->
-        <div class="tournament-control-bar">
-          <div class="tourn-selector-cluster">
-            <label class="control-label">Bảng Đấu:</label>
-            <select class="tourn-dropdown" id="select-active-tournament"></select>
-            <!-- NÚT THAM GIA GIẢI ĐẤU DÀNH CHO USER ĐỘI TUYỂN -->
-            <button class="btn btn-success" id="btn-join-tournament">+ Tham Gia Giải Đấu</button>
-            <button class="btn btn-outline" id="btn-open-team-manager">Đội Thi Đấu (<span id="count-teams-badge">0/8</span>)</button>
+        <!-- HEADER TRANG BẢNG ĐẤU -->
+        <div class="bracket-page-header">
+          <div class="bracket-title-cluster">
+            <div class="bracket-title-icon">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="6" height="4" rx="1"/>
+                <rect x="3" y="17" width="6" height="4" rx="1"/>
+                <rect x="15" y="10" width="6" height="4" rx="1"/>
+                <path d="M9 5h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9"/>
+                <path d="M14 12h1"/>
+              </svg>
+            </div>
+            <div>
+              <h1 class="page-title">Bảng đấu</h1>
+              <p class="page-subtitle">Xem lịch thi đấu và kết quả các vòng đấu.</p>
+            </div>
           </div>
-          <div class="tourn-stats-cluster">
-            <div class="stat-badge">
-              <span>Quy mô:</span>
-              <strong id="tourn-teams-count">8 Đội</strong>
+
+          <!-- BỘ CHỌN VÒNG & THÔNG TIN GIẢI -->
+          <div class="bracket-header-right">
+            <div class="round-dropdown-pill" id="bracket-round-pill">
+              <span>Vòng 1</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
             </div>
-            <div class="stat-badge">
-              <span>Thể thức:</span>
-              <strong>Bo5 (5 Round)</strong>
-            </div>
-            <div class="stat-badge highlight" id="tourn-champion-pill">
-              <span>Quán quân:</span>
-              <strong id="tourn-champ-name">Đang tranh tài...</strong>
+            <div class="bracket-tournament-meta">
+              <div class="meta-line">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                <span>Giải đấu: <strong id="bracket-tourn-name-display">Giải Đấu Tân Sinh Viên K69</strong></span>
+              </div>
+              <div class="meta-subline">Thể thức: Tứ Kết → Chung Kết (Bo5)</div>
             </div>
           </div>
         </div>
 
-        <div class="tree-header-notice">
-          <span>Sơ đồ thi đấu loại trực tiếp (Single Elimination). Bấm vào trận đấu để mở bàn đấu 9x9 trực tiếp.</span>
+        <!-- HÀNG NÚT BỘ LỌC CÁC VÒNG ĐẤU (PILL BUTTONS) -->
+        <div class="bracket-filter-pills-row">
+          <button class="bracket-pill active" data-bracket-round="1">Vòng 1</button>
+          <button class="bracket-pill" data-bracket-round="qf">Tứ Kết</button>
+          <button class="bracket-pill" data-bracket-round="sf">Bán Kết</button>
+          <button class="bracket-pill" data-bracket-round="gf">Chung Kết</button>
         </div>
-        <div class="bracket-tree-canvas" id="bracket-tree-canvas">
-          <!-- Render tự động: Tứ Kết -> Bán Kết -> Chung Kết -> Quán Quân -->
+
+        <!-- THẺ TRẮNG CHỨA CÂY NHÁNH ĐẤU 3 CỘT (BRACKET CARD) -->
+        <div class="bracket-main-card">
+          <div class="bracket-card-top-bar">
+            <div class="card-title-icon-group">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="6" height="4" rx="1"/>
+                <rect x="3" y="17" width="6" height="4" rx="1"/>
+                <rect x="15" y="10" width="6" height="4" rx="1"/>
+                <path d="M9 5h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9"/>
+                <path d="M14 12h1"/>
+              </svg>
+              <h3 class="panel-title">Tứ kết</h3>
+            </div>
+            <button class="btn-icon-subtle" id="btn-bracket-menu-opts">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2">
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="3" y1="6" x2="21" y2="6"/>
+                <line x1="3" y1="18" x2="21" y2="18"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- BỐ CỤC 3 CỘT: TỨ KẾT -> BÁN KẾT -> CHUNG KẾT -->
+          <div class="bracket-columns-wrapper" id="bracket-tree-canvas">
+            <!-- Render cây nhánh đấu hoàn chỉnh bằng Javascript -->
+          </div>
+
+          <!-- BANNER THÔNG BÁO DƯỚI BẢNG ĐẤU -->
+          <div class="bracket-info-alert-banner">
+            <div class="info-alert-icon-circle">i</div>
+            <span class="info-alert-text">Vòng đấu đang diễn ra. Kết quả sẽ được cập nhật tự động sau mỗi trận đấu.</span>
+          </div>
+        </div>
+
+        <!-- MODAL / CONTROLS ẨN CHO TƯƠNG THÍCH CODE CŨ -->
+        <div style="display: none;">
+          <select class="tourn-dropdown" id="select-active-tournament"></select>
+          <button id="btn-join-tournament"></button>
+          <button id="btn-open-team-manager"></button>
+          <span id="count-teams-badge">0/8</span>
+          <span id="tourn-teams-count">8 Đội</span>
+          <span id="tourn-champ-name">---</span>
+          <span id="tourn-champion-pill"></span>
         </div>
       </section>
 
       <!-- =============================================================== -->
-      <!-- TAB 4: DANH SÁCH ĐỘI -->
-      <!-- =============================================================== -->
-      <section class="tab-pane" id="tab-teams">
-        <div class="content-header-row">
-          <div>
-            <h2 class="page-title">Danh Sách Tuyển Thủ &amp; Đội Thi Đấu</h2>
-            <p class="page-subtitle">Theo dõi hạt giống, tiến trình qua từng vòng, tỷ lệ thắng và điểm ELO chính thức.</p>
-          </div>
-          <div class="search-filter-box">
-            <input class="input-text" id="inp-search-teams" placeholder="Tìm theo tên đội hoặc MSSV..." type="text"/>
-          </div>
-        </div>
-        <div class="table-card-container">
-          <table class="table-clean" id="table-teams-overview">
-            <thead>
-              <tr>
-                <th>Hạt Giống</th>
-                <th>Tên Đội</th>
-                <th>Đại Diện (MSSV)</th>
-                <th>Đơn Vị / Trường</th>
-                <th>Vòng Hiện Tại</th>
-                <th>Trạng Thái</th>
-                <th>Trận Thắng</th>
-                <th>Round Thắng</th>
-                <th>Điểm ELO</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-teams-overview">
-              <tr><td class="text-center text-muted" colspan="9">Đang tải danh sách đội...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- =============================================================== -->
-      <!-- TAB 5: BẢNG XẾP HẠNG -->
+      <!-- TRANG 3: XẾP HẠNG ELO (BÁM SÁT 100% ẢNH MẪU 3) -->
       <!-- =============================================================== -->
       <section class="tab-pane" id="tab-ranking">
         <div class="content-header-row">
           <div>
-            <h2 class="page-title">Bảng Xếp Hạng ELO Toàn Trường</h2>
-            <p class="page-subtitle">Điểm ELO động tính toán tự động từ toàn bộ lịch sử các hiệp đối đầu chính thức.</p>
+            <h1 class="page-title">Bảng xếp hạng</h1>
+            <p class="page-subtitle">Thứ hạng các đội và bot tham gia giải đấu.</p>
           </div>
-          <button class="btn btn-outline" id="btn-refresh-ranking">Làm Mới Bảng</button>
-        </div>
-        <div class="table-card-container">
-          <table class="table-clean" id="table-ranking-overview">
-            <thead>
-              <tr>
-                <th>Hạng</th>
-                <th>Tên Bot / Đội</th>
-                <th>MSSV Đại Diện</th>
-                <th>Ngôn Ngữ</th>
-                <th>Phiên Bản</th>
-                <th>Điểm ELO</th>
-                <th>Số Ván</th>
-                <th>Thắng</th>
-                <th>Tỉ Lệ Thắng</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-ranking">
-              <tr><td class="text-center text-muted" colspan="9">Đang tải bảng xếp hạng...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- =============================================================== -->
-      <!-- TAB 6: LỊCH SỬ ĐẤU -->
-      <!-- =============================================================== -->
-      <section class="tab-pane" id="tab-history">
-        <div class="content-header-row">
-          <div>
-            <h2 class="page-title">Nhật Ký &amp; Lịch Sử Trận Đấu Chính Thức</h2>
-            <p class="page-subtitle">Minh bạch kết quả đối đầu và hỗ trợ xem lại diễn biến từng hiệp.</p>
-          </div>
-          <button class="btn btn-outline" id="btn-refresh-history">Làm Mới Lịch Sử</button>
-        </div>
-        <div class="table-card-container">
-          <table class="table-clean">
-            <thead>
-              <tr>
-                <th>Mã Trận</th>
-                <th>Thời Gian</th>
-                <th>Giai Đoạn</th>
-                <th>Cặp Đấu</th>
-                <th>Số Hiệp</th>
-                <th>Đội Thắng</th>
-                <th>Thao Tác</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-matches">
-              <tr><td class="text-center text-muted" colspan="7">Đang nạp dữ liệu lịch sử...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- =============================================================== -->
-      <!-- PHÒNG NỘP CODE CHO ĐỘI (BOT STUDIO & TEAM WORKSPACE) -->
-      <!-- =============================================================== -->
-      <section class="tab-pane" id="tab-team-workspace">
-        <div class="content-header-row" style="margin-bottom: 12px;">
-          <div>
-            <button class="btn btn-outline" id="btn-ws-back-bracket">&larr; Quay Lại Sơ Đồ Nhánh</button>
-          </div>
-          <div style="font-size: 13px; color: var(--text-muted);">
-            Bảng đấu: <strong id="ws-tourn-name">---</strong>
-          </div>
+          <button class="btn-clean link-all-ranking" id="btn-refresh-ranking">Xem tất cả &rarr;</button>
         </div>
 
-        <!-- HỒ SƠ ĐỘI TUYỂN (COMPACT) -->
-        <div class="workspace-team-profile-card" id="workspace-team-profile">
-          <div class="profile-header-col">
-            <div class="profile-avatar-pill" id="ws-avatar-pill">TEAM</div>
-            <div class="profile-meta-col">
-              <div class="profile-title-row">
-                <h2 class="team-profile-name" id="ws-team-name">Đội Thi Đấu</h2>
-                <span class="badge-tag highlight" id="ws-team-sid">MSSV: ---</span>
-                <span class="badge-tag" id="ws-team-uni">Đơn vị: Khối Kỹ Thuật</span>
-              </div>
-              <p class="profile-sub-desc" id="ws-match-pairing-info">
-                Trận đấu tiếp theo: Chọn trận đấu trong giải để xem đối thủ và mục tiêu round.
-              </p>
-            </div>
-          </div>
-          <div class="profile-actions-col">
-            <div class="immutable-lock-pill">
-              <div class="lock-text">
-                <strong>Khóa Phiên Bản Bất Biến</strong>
-                <span>Mã lệnh tự động đóng băng khi bắt đầu hiệp</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- BẢNG TÌNH BÁO CHIẾN THUẬT & TRẠNG THÁI HIỆP ĐẤU -->
-        <div class="studio-intel-card" id="workspace-intel-card">
-          <div class="intel-header">
-            <span class="intel-title" id="studio-round-target-title">Đang Soạn Mã Cho Round 1 / 5</span>
-            <div class="intel-round-badges" id="ws-round-selector-pills">
-              <span class="intel-badge active" data-target-round="1">Round 1</span>
-              <span class="intel-badge" data-target-round="2">Round 2</span>
-              <span class="intel-badge" data-target-round="3">Round 3</span>
-              <span class="intel-badge" data-target-round="4">Round 4</span>
-              <span class="intel-badge" data-target-round="5">Round 5</span>
-            </div>
-          </div>
-          <div class="intel-history-chips" id="studio-intel-history-chips">
-            <span class="intel-chip">Hệ thống OTTV2: Bàn cờ 9x9, mỗi bên 9 quân (3 Búa, 3 Bao, 3 Kéo). Mục tiêu: Chiếm cứ điểm hoặc tiêu diệt đối phương.</span>
-          </div>
-        </div>
-
-        <!-- TRÌNH SOẠN THẢO BOT STUDIO (BOT CODE EDITOR) -->
-        <div class="studio-ide-card" id="studio-ide-card">
-          <div class="ide-toolbar">
-            <div class="ide-lang-selector">
-              <label class="control-label">Ngôn Ngữ:</label>
-              <select class="input-text-sm" id="studio-sel-lang">
-                <option value="PYTHON">Python 3.10 (.py)</option>
-                <option value="CPP">C++ 17 (.cpp)</option>
-              </select>
-              <button class="btn btn-sm btn-outline" id="btn-studio-load-template">Nạp Mẫu Code</button>
-              <button class="btn btn-sm btn-outline" id="btn-studio-dryrun">Kiểm Tra Cú Pháp (Dry-run)</button>
-            </div>
-            <div class="ide-status-tag" id="studio-submission-status">Chưa nộp mã cho hiệp này</div>
-          </div>
-
-          <textarea class="studio-code-editor" id="studio-code-editor" spellcheck="false" placeholder="# Viết mã nguồn thuật toán Bot tại đây..."></textarea>
-
-          <div class="ide-bottom-actions">
-            <div class="ide-trial-cluster">
-              <label class="control-label" style="margin: 0;">Đấu Thử Nghiệm:</label>
-              <select class="input-text-sm" id="sel-trial-boss-bot" style="max-width: 200px;">
-                <option value="RANDOM">Boss 1: Random Bot</option>
-                <option value="AGGRESSIVE">Boss 2: Aggressive Bot</option>
-                <option value="ADAPTIVE">Boss 3: Adaptive Counter</option>
-              </select>
-              <button class="btn btn-outline" id="btn-studio-test-practice">Chạy Thử Với Bot BTC</button>
-            </div>
-            <div class="ide-btn-cluster">
-              <button class="btn btn-lg btn-success" id="btn-studio-submit-bot">NỘP MÃ LỆNH CHO ROUND</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- BẢNG QUẢN LÝ BÀI NỘP KAGGLE-STYLE SUBMISSIONS -->
-        <div class="kaggle-submissions-card" id="kaggle-submissions-card">
-          <div class="history-card-header">
-            <div>
-              <h3>Lịch Sử Các Bài Nộp Bot</h3>
-              <span class="history-sub">Danh sách các phiên bản mã lệnh bot đã nộp và kết quả validation.</span>
-            </div>
-            <button class="btn btn-sm btn-outline" id="btn-refresh-submissions">Làm Mới Bài Nộp</button>
-          </div>
+        <!-- THẺ BẢNG DỮ LIỆU ĐẦY ĐỦ 8 ĐỘI -->
+        <div class="content-card ranking-full-card">
           <div class="table-responsive">
-            <table class="table-clean" id="table-kaggle-submissions">
+            <table class="table-clean ranking-full-table" id="table-ranking-overview">
               <thead>
                 <tr>
-                  <th>Mã Bài Nộp</th>
-                  <th>Thời Gian Nộp</th>
-                  <th>Vòng Mục Tiêu</th>
-                  <th>Trạng Thái Sandbox</th>
-                  <th>Đã Khóa Hiệp</th>
-                  <th>Thao Tác</th>
+                  <th style="width: 10%;">HẠNG</th>
+                  <th style="width: 40%;">ĐỘI / BOT</th>
+                  <th style="width: 30%;">MSSV</th>
+                  <th style="width: 20%; text-align: right;">ĐIỂM ELO</th>
                 </tr>
               </thead>
-              <tbody id="tbody-kaggle-submissions">
-                <tr><td class="text-center text-muted" colspan="6">Đang tải lịch sử bài nộp...</td></tr>
+              <tbody id="tbody-ranking">
+                <!-- Render từ API xếp hạng -->
               </tbody>
             </table>
           </div>
@@ -479,571 +498,589 @@
       </section>
 
       <!-- =============================================================== -->
-      <!-- PHÒNG TRẬN ĐẤU TRỰC TIẾP (MATCH ARENA 9x9) -->
+      <!-- TRANG 4: PHÒNG TRẬN ĐẤU THI ĐẤU 9×9 & NỘP CODE (CUSTOM MATCH ROOM) -->
       <!-- =============================================================== -->
       <section class="tab-pane" id="tab-match-arena">
-        <div class="match-room-nav">
-          <div style="display: flex; align-items: center; gap: 10px;">
-            <button class="btn btn-outline" id="btn-match-back-bracket">&larr; Quay Lại Sơ Đồ Nhánh</button>
-            <span class="badge-tag highlight" id="arena-current-match-badge" style="font-weight: 700;">Đang Xem Trực Tiếp</span>
-          </div>
-          <div class="match-room-title-box">
-            <h2 id="match-room-title">TRẬN ĐẤU</h2>
-            <span class="badge-tag highlight" id="match-room-stage-badge">Bo5 (5 Round)</span>
-          </div>
-          <div class="match-status-badge" id="match-room-status-badge">SẴN SÀNG</div>
-        </div>
-
-        <!-- TIẾN TRÌNH 5 ROUND ĐẤU (5-ROUND PROGRESS TRACKER) -->
-        <div class="round-tracker-card">
-          <div class="tracker-header">
-            <span class="tracker-title">Tiến Trình Trận Đấu (Tối Đa 5 Round - Bo5)</span>
-            <span class="tracker-score" id="match-score-summary">Tỉ số: 0 - 0</span>
-          </div>
-          <div class="round-step-pills" id="round-step-pills">
-            <div class="step-pill current" data-round="1">Round 1</div>
-            <div class="step-pill" data-round="2">Round 2</div>
-            <div class="step-pill" data-round="3">Round 3</div>
-            <div class="step-pill" data-round="4">Round 4</div>
-            <div class="step-pill" data-round="5">Round 5</div>
-          </div>
-        </div>
-
-        <!-- BÀN CỜ CHIẾN THUẬT 9x9 -->
-        <div class="visual-battle-arena-board" id="visual-battle-arena-board">
-          <div class="arena-top-bar">
-            <div class="board-team-pill red">
-              <span class="team-dot red"></span>
-              <strong id="arena-name-red">Đội Đỏ</strong>
-              <span class="board-piece-badge red" id="board-count-red">9/9 quân</span>
-            </div>
-            <div class="arena-round-indicator" id="arena-round-indicator">ROUND 1 / 5</div>
-            <div class="board-team-pill blue">
-              <span class="board-piece-badge blue" id="board-count-blue">9/9 quân</span>
-              <strong id="arena-name-blue">Đội Xanh</strong>
-              <span class="team-dot blue"></span>
+        <!-- HEADER PHÒNG ĐẤU -->
+        <div class="match-room-desktop-header">
+          <div class="match-room-header-left">
+            <button class="btn btn-outline btn-sm" id="btn-match-back-bracket">
+              &larr; Quay lại bảng đấu
+            </button>
+            <div class="match-room-titles">
+              <h2 class="room-title" id="match-room-title">Trận 1 - Tứ Kết</h2>
+              <span class="room-badge-stage" id="match-room-stage-badge">Bo5 (5 Round)</span>
             </div>
           </div>
 
-          <div class="board-wrapper">
-            <div class="chessboard-9x9" id="chessboard-9x9"></div>
-          </div>
-
-          <div class="board-bottom-status">
-            <div class="live-commentary-ticker" id="live-commentary-ticker">
-              Sẵn sàng cho hiệp đấu trên bàn cờ 9x9...
-            </div>
-          </div>
-
-          <!-- BANNER KẾT THÚC ROUND -->
-          <div class="round-intermission-banner" id="round-intermission-banner" style="display: none;">
-            <div class="intermission-body">
-              <div class="intermission-top-header">
-                <span class="intermission-badge" id="intermission-badge">HIỆP ĐẤU HOÀN TẤT</span>
-                <h4 id="intermission-title">ROUND HOÀN TẤT</h4>
-              </div>
-              <p id="intermission-desc">Kết quả chính thức đã được ghi nhận vào hệ thống.</p>
-              <div class="intermission-countdown-box">
-                <span class="countdown-spinner">Đếm ngược:</span>
-                <span id="intermission-countdown-text">Bàn cờ sẽ chuyển sang Round tiếp theo sau <strong id="countdown-num">5</strong>s...</span>
-              </div>
-            </div>
+          <div class="match-room-header-right">
+            <span class="status-pill-green" id="match-room-status-badge">Đang diễn ra</span>
+            <!-- NÚT THAM GIA TRẬN ĐẤU (KIỂM TRA ĐĂNG NHẬP, KHÔNG TỰ ĐỘNG CHẠY TRẬN) -->
+            <button class="btn btn-primary" id="btn-match-join-action">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m14.5 17.5 3 3 3-3-3-3z"/>
+                <path d="m6.5 9.5-3-3 3-3 3 3z"/>
+                <path d="M8 8 16 16"/>
+                <path d="m16 8-8 8"/>
+              </svg>
+              <span id="btn-match-join-text">Tham gia trận đấu</span>
+            </button>
+            <!-- NÚT QUẢN TRỊ VIÊN BẮT ĐẦU HIỆP (CHỈ ADMIN THẤY) -->
+            <button class="btn btn-green admin-only" id="btn-arena-start-match" style="display: none;">
+              ▶ Bắt Đầu Hiệp
+            </button>
           </div>
         </div>
 
-        <!-- KHUNG 2 ĐỘI THI ĐẤU -->
-        <div class="match-fighters-grid">
+        <!-- BẢNG THÔNG TIN 2 ĐỘI & TỶ SỐ BO5 -->
+        <div class="match-teams-score-board">
           <!-- ĐỘI ĐỎ -->
-          <div class="fighter-side-card red-side" id="card-team-a">
-            <div class="side-header">
-              <div class="fighter-avatar red-avatar">ĐỎ</div>
-              <div class="fighter-info-col">
-                <h3 class="fighter-name" id="team-a-name">Đội Đỏ</h3>
-                <p class="fighter-meta" id="team-a-meta">MSSV: --- • Chờ nộp bot</p>
+          <div class="match-team-col red" id="arena-card-red">
+            <div class="team-col-header">
+              <span class="team-circle-avatar red">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </span>
+              <div>
+                <strong class="team-col-name" id="arena-name-red">RedBot</strong>
+                <div class="team-col-sid" id="arena-sid-red">MSSV: K69A001</div>
               </div>
-              <div class="auth-status-badge badge-waiting" id="team-a-auth-badge">Chờ Nộp Code</div>
             </div>
-            <div class="fighter-stats-row">
-              <span>Số Round Thắng: <strong id="team-a-rounds-won">0</strong></span>
-              <span>Sinh mệnh: <strong id="team-a-hp">100 HP</strong></span>
+            <div class="team-status-pills">
+              <span class="piece-count-badge red" id="board-count-red">9/9 quân</span>
+              <span class="submission-state-badge" id="sub-state-red">Đã nộp code</span>
             </div>
-            <div class="submission-mini-status" id="team-a-sub-status">
-              <span class="sub-indicator sub-wait" id="team-a-sub-indicator">●</span>
-              <span class="sub-text" id="team-a-sub-text">Chưa có bài nộp cho Round này</span>
+          </div>
+
+          <!-- KHỐI TỶ SỐ TRUNG TÂM -->
+          <div class="match-center-score-cluster">
+            <div class="center-score-number" id="match-score-summary">2 - 1</div>
+            <div class="center-round-step" id="arena-round-indicator">ROUND 1 / 5</div>
+            <!-- BỘ BƯỚC ROUND 1-5 -->
+            <div class="round-step-pills-row" id="round-step-pills">
+              <div class="step-pill current" data-round="1">Round 1</div>
+              <div class="step-pill" data-round="2">Round 2</div>
+              <div class="step-pill" data-round="3">Round 3</div>
+              <div class="step-pill" data-round="4">Round 4</div>
+              <div class="step-pill" data-round="5">Round 5</div>
             </div>
           </div>
 
           <!-- ĐỘI XANH -->
-          <div class="fighter-side-card blue-side" id="card-team-b">
-            <div class="side-header">
-              <div class="fighter-avatar blue-avatar">XANH</div>
-              <div class="fighter-info-col">
-                <h3 class="fighter-name" id="team-b-name">Đội Xanh</h3>
-                <p class="fighter-meta" id="team-b-meta">MSSV: --- • Chờ nộp bot</p>
+          <div class="match-team-col blue" id="arena-card-blue">
+            <div class="team-col-header">
+              <div>
+                <strong class="team-col-name" id="arena-name-blue">BlueBot</strong>
+                <div class="team-col-sid" id="arena-sid-blue">MSSV: K69A002</div>
               </div>
-              <div class="auth-status-badge badge-waiting" id="team-b-auth-badge">Chờ Nộp Code</div>
+              <span class="team-circle-avatar blue">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </span>
             </div>
-            <div class="fighter-stats-row">
-              <span>Số Round Thắng: <strong id="team-b-rounds-won">0</strong></span>
-              <span>Sinh mệnh: <strong id="team-b-hp">100 HP</strong></span>
-            </div>
-            <div class="submission-mini-status" id="team-b-sub-status">
-              <span class="sub-indicator sub-wait" id="team-b-sub-indicator">●</span>
-              <span class="sub-text" id="team-b-sub-text">Chưa có bài nộp cho Round này</span>
+            <div class="team-status-pills" style="justify-content: flex-end;">
+              <span class="submission-state-badge" id="sub-state-blue">Đã nộp code</span>
+              <span class="piece-count-badge blue" id="board-count-blue">9/9 quân</span>
             </div>
           </div>
         </div>
 
-        <!-- BẢNG ĐIỀU HÀNH TRỌNG TÀI (CHỈ REFEREE HOẶC ADMIN) -->
-        <div class="referee-action-center" id="referee-action-center">
-          <div class="referee-center-head">
-            <span class="referee-title">Bàn Điều Hành Trọng Tài</span>
-            <div class="referee-sub-actions" style="display: none;">
-              <button class="btn btn-sm btn-outline" id="btn-referee-demo-fill">Nạp Code Mẫu 2 Bên</button>
-              <button class="btn btn-sm btn-outline" id="btn-referee-reset">Đặt Lại Hiệp Đấu</button>
-              <button class="btn btn-sm btn-outline" id="btn-referee-view-code">Xem Mã Lệnh Đã Khóa</button>
+        <!-- BỐ CỤC 2 CỘT DESKTOP: BÀN CỜ 9×9 TRUNG TÂM & PHÒNG NỘP CODE -->
+        <div class="match-arena-2col-layout">
+          <!-- CỘT TRÁI: BÀN CỜ 9×9 VÀ DIỄN BIẾN TRẬN ĐẤU -->
+          <div class="arena-board-column">
+            <div class="content-card board-card">
+              <div class="board-top-status-bar">
+                <span class="board-title-label">BÀN ĐẤU CHIẾN THUẬT 9×9</span>
+                <span class="board-legend-label">Búa ăn Kéo • Kéo ăn Bao • Bao ăn Búa</span>
+              </div>
+
+              <!-- KHUNG CHỨA BÀN CỜ 9×9 -->
+              <div class="board-wrapper">
+                <div class="chessboard-9x9" id="chessboard-9x9">
+                  <!-- Render 81 ô cờ -->
+                </div>
+              </div>
+
+              <!-- DÒNG BÌNH LUẬN TRỰC TIẾP -->
+              <div class="live-commentary-ticker" id="arena-commentary-ticker">
+                Trận đấu đang ở trạng thái sẵn sàng. Hãy nộp code và bắt đầu hiệp đấu!
+              </div>
+
+              <!-- THANH ĐIỀU KHIỂN XEM LẠI TỪNG BƯỚC (REPLAY CONTROLS) -->
+              <div class="replay-controls-inline" id="match-playback-bar">
+                <button class="btn btn-sm btn-outline" id="btn-playback-step-prev">◀ Nước trước</button>
+                <button class="btn btn-sm btn-primary" id="btn-playback-play">▶ Phát lại</button>
+                <button class="btn btn-sm btn-outline" id="btn-playback-step-next">Nước sau ▶</button>
+                <span class="playback-step-text" id="playback-step-indicator">Hiệp 1: Bước 0 / 0</span>
+              </div>
             </div>
           </div>
-          <div class="referee-main-btn-row">
-            <button class="btn btn-success btn-lg btn-full" id="btn-referee-start" style="display: none;">
-              BẮT ĐẦU HIỆP ĐẤU (RUN ROUND)
-            </button>
-          </div>
-          <div class="referee-role-notice" id="referee-role-notice">
-            Bạn đang ở chế độ Xem Trực Tiếp. Đăng nhập tài khoản Trọng tài để mở khóa bảng điều khiển trận đấu.
+
+          <!-- CỘT PHẢI: PHÒNG NỘP CODE CHO ĐỘI (BOT SUBMISSION STUDIO) -->
+          <div class="arena-studio-column">
+            <div class="content-card studio-card">
+              <div class="studio-card-header">
+                <div>
+                  <h3 class="panel-title" id="studio-round-target-title">Phòng nộp code bot</h3>
+                  <p class="panel-subtitle">Soạn thuật toán Oẳn Tù Tì V2 cho round hiện tại</p>
+                </div>
+                <div class="ide-status-tag" id="studio-submission-status">Chưa nộp code</div>
+              </div>
+
+              <!-- THANH CÔNG CỤ SOẠN THẢO -->
+              <div class="ide-toolbar-row">
+                <div class="toolbar-lang-group">
+                  <label class="control-label-sm">Ngôn ngữ:</label>
+                  <select class="input-text-sm" id="studio-sel-lang">
+                    <option value="PYTHON">Python 3.10 (.py)</option>
+                    <option value="CPP">C++ 17 (.cpp)</option>
+                  </select>
+                </div>
+                <div class="toolbar-btn-group">
+                  <button class="btn btn-sm btn-outline" id="btn-studio-load-template">Nạp mẫu code</button>
+                  <button class="btn btn-sm btn-outline" id="btn-studio-dryrun">Kiểm tra cú pháp (Dry-run)</button>
+                </div>
+              </div>
+
+              <!-- TRÌNH SOẠN THẢO CODE MÃ NGUỒN -->
+              <textarea class="studio-code-editor" id="studio-code-editor" spellcheck="false" placeholder="# Viết hàm decide_move(game_state) tại đây..."></textarea>
+
+              <!-- CỤM NÚT NỘP VÀ CHẠY THỬ -->
+              <div class="studio-bottom-actions">
+                <div class="trial-boss-group">
+                  <select class="input-text-sm" id="sel-trial-boss-bot">
+                    <option value="RANDOM">Boss 1: Random Bot</option>
+                    <option value="AGGRESSIVE">Boss 2: Aggressive Bot</option>
+                    <option value="ADAPTIVE">Boss 3: Adaptive Counter</option>
+                  </select>
+                  <button class="btn btn-sm btn-outline" id="btn-studio-test-practice">Chạy thử với Boss</button>
+                </div>
+                <button class="btn btn-green btn-submit-code" id="btn-studio-submit-bot">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
+                  <span>Nộp mã lệnh cho Round</span>
+                </button>
+              </div>
+
+              <!-- LỊCH SỬ BÀI NỘP TRONG TRẬN NÀY -->
+              <div class="match-submissions-subpanel">
+                <div class="subpanel-header">
+                  <h4 class="subpanel-title">Lịch sử bài nộp trận này</h4>
+                  <button class="btn-clean text-primary" id="btn-refresh-submissions">Làm mới</button>
+                </div>
+                <div class="table-responsive" style="max-height: 140px; overflow-y: auto;">
+                  <table class="table-clean compact-table" id="table-kaggle-submissions">
+                    <thead>
+                      <tr>
+                        <th>Mã nộp</th>
+                        <th>Thời gian</th>
+                        <th>Round</th>
+                        <th>Trạng thái Sandbox</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tbody-kaggle-submissions">
+                      <tr><td colspan="4" class="text-center text-muted">Chưa có bài nộp nào.</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- 3 DÒNG LOG STREAMS -->
-        <div class="match-logs-grid">
-          <div class="log-stream-card">
-            <div class="log-stream-head">Logs Nước Đi Bàn Cờ</div>
-            <pre class="log-stream-content" id="log-stream-moves">Chờ trận đấu bắt đầu...</pre>
-          </div>
-          <div class="log-stream-card">
-            <div class="log-stream-head">Logs Thực Thi Thuật Toán Bot</div>
-            <pre class="log-stream-content" id="log-stream-bot">Chờ xuất dữ liệu bot...</pre>
-          </div>
-          <div class="log-stream-card">
-            <div class="log-stream-head">Logs Hệ Thống FSM &amp; Trọng Tài</div>
-            <pre class="log-stream-content" id="log-stream-system">Hệ thống trọng tài sẵn sàng.</pre>
-          </div>
-        </div>
-
-        <!-- BANNER QUÁN QUÂN CHUNG CUỘC -->
-        <div class="match-victory-banner" id="match-victory-banner" style="display: none;">
-          <h2 id="victory-champ-name">ĐỘI CHIẾN THẮNG TRẬN ĐẤU</h2>
-          <p id="victory-champ-sub">Đã xuất sắc giành chiến thắng thuyết phục trong trận đối đầu Bo5.</p>
-          <button class="btn btn-primary" id="btn-victory-back-tree">Quay Lại Sơ Đồ Nhánh Đấu</button>
+        <!-- NÚT ẨN CHO TƯƠNG THÍCH LOGIC CŨ -->
+        <div style="display: none;">
+          <button id="btn-arena-next-round"></button>
+          <button id="btn-arena-reset-match"></button>
+          <button id="btn-arena-quick-demo"></button>
+          <span id="arena-current-match-badge"></span>
         </div>
       </section>
 
       <!-- =============================================================== -->
-      <!-- BÀN QUẢN TRỊ (ADMIN CONSOLE) -->
+      <!-- TRANG 5: HƯỚNG DẪN THI ĐẤU (GUIDE TAB) -->
+      <!-- =============================================================== -->
+      <section class="tab-pane" id="tab-guide">
+        <div class="content-header-row">
+          <div>
+            <h1 class="page-title">Hướng dẫn thi đấu</h1>
+            <p class="page-subtitle">Luật thi đấu Ô Ăn Tù Tì V2 trên bàn cờ 9×9 và tài liệu lập trình bot.</p>
+          </div>
+        </div>
+
+        <div class="guide-cards-grid">
+          <div class="content-card guide-card">
+            <h3 class="panel-title">1. Luật Ô Ăn Tù Tì V2 trên Bàn Cờ 9×9</h3>
+            <p class="guide-p">Mỗi bên điều khiển 9 quân cờ gồm: <strong>3 Búa, 3 Bao, 3 Kéo</strong>.</p>
+            <ul class="guide-list">
+              <li><strong>Bàn cờ:</strong> Kích thước 9×9. Đội Đỏ bắt đầu tại hàng 7, Đội Xanh bắt đầu tại hàng 1.</li>
+              <li><strong>Cứ điểm đích:</strong> Đội Đỏ cần chiếm cứ điểm đích tại ô <code>[col 8, row 0]</code>. Đội Xanh cần chiếm ô <code>[col 0, row 8]</code>.</li>
+              <li><strong>Quy tắc ăn quân:</strong> Búa ăn Kéo, Kéo ăn Bao, Bao ăn Búa. Khi hai quân cùng loại chạm nhau, quân tấn công (đi vào) sẽ chiến thắng hoặc hòa theo luật hiệp đấu.</li>
+              <li><strong>Điều kiện thắng:</strong> Chiếm cứ điểm đối phương trước, hoặc tiêu diệt toàn bộ quân đối phương.</li>
+            </ul>
+          </div>
+
+          <div class="content-card guide-card">
+            <h3 class="panel-title">2. Cấu trúc hàm lập trình Bot (Python 3.10)</h3>
+            <p class="guide-p">Bot nộp bài cần cung cấp hàm <code>decide_move(game_state)</code>:</p>
+            <pre class="guide-code-box"><code>def decide_move(game_state):
+    """
+    game_state bao gồm:
+    - my_pieces: danh sách tọa độ và loại quân của bạn
+    - opp_pieces: danh sách tọa độ quân đối phương
+    - board_size: 9
+    - turn_number: số thứ tự lượt đi
+    - remaining_cards: số thẻ còn lại
+    """
+    # Trả về nước đi hợp lệ: "ROCK", "PAPER", hoặc "SCISSORS"
+    return "ROCK"</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- =============================================================== -->
+      <!-- TAB BÀN QUẢN TRỊ (DÀNH CHO ADMIN) -->
       <!-- =============================================================== -->
       <section class="tab-pane" id="tab-admin-console">
         <div class="content-header-row">
           <div>
-            <h2 class="page-title">Bàn Điều Hành Ban Tổ Chức</h2>
-            <p class="page-subtitle">Quản lý giải đấu, xếp lịch và thiết lập luật thi đấu.</p>
-          </div>
-          <div style="display: flex; gap: 8px;">
-            <button class="btn btn-outline" id="btn-admin-open-team-mgr">Quản Lý &amp; Duyệt Đội</button>
-            <button class="btn btn-primary" id="btn-admin-create-tourn">+ Tạo Bảng Đấu Mới</button>
+            <h1 class="page-title">Bàn Quản Trị Giải Đấu</h1>
+            <p class="page-subtitle">Điều hành bảng đấu, sắp xếp lịch thi đấu và kiểm soát trận.</p>
           </div>
         </div>
 
-        <div class="admin-grid-layout">
-          <!-- CỘT 1: THIẾT LẬP VÀ XẾP LỊCH ĐẤU -->
-          <div class="content-card">
-            <h3 class="panel-title">Tự Động Xếp Lịch (Single-Elimination)</h3>
-            <div class="admin-scheduler-status-box" style="margin: 12px 0; padding: 10px; background: var(--bg-subtle); border-radius: 6px; font-size: 13px;">
-              <div>Trạng thái: <strong id="admin-sched-status">Sẵn sàng</strong></div>
-              <div>Bảng đấu hiện tại: <strong id="admin-sched-tourn-name">---</strong></div>
-            </div>
-            <div style="display: flex; gap: 8px;">
-              <button class="btn btn-success btn-full" id="btn-admin-auto-schedule">Xếp Lịch Đấu Ngay</button>
-              <button class="btn btn-outline" id="btn-admin-quick-fill-teams">Nạp 8 Đội Mẫu</button>
-            </div>
+        <div class="content-card">
+          <div class="card-head-compact">
+            <h3 class="panel-title">Cấu hình giải đấu</h3>
+            <span class="badge-tag highlight" id="admin-sched-status">Sẵn sàng điều hành</span>
           </div>
-
-          <!-- CỘT 2: KÍCH HOẠT LUẬT VÒNG ĐẤU ĐỘT BIẾN -->
-          <div class="content-card">
-            <h3 class="panel-title">Luật Vòng Đấu Đột Biến</h3>
-            <div class="rule-picker" style="margin-top: 10px;">
-              <label class="rule-choice">
-                <input checked="" name="admin_stage" type="radio" value="STAGE_1_STANDARD"/>
-                <div>
-                  <strong>Vòng 1: Luật Chuẩn ICPC</strong>
-                  <span style="font-size: 12px; color: var(--text-muted);">15 thẻ đều (5-5-5), 100 HP, 15 HP/lượt.</span>
-                </div>
-              </label>
-              <label class="rule-choice">
-                <input name="admin_stage" type="radio" value="STAGE_2_MUTATED"/>
-                <div>
-                  <strong>Vòng 2: Kho Thẻ Lệch &amp; Hiệp Chẵn x2 Dame</strong>
-                  <span style="font-size: 12px; color: var(--text-muted);">7 Búa, 3 Bao, 5 Kéo. Hiệp chẵn 30 HP.</span>
-                </div>
-              </label>
-              <label class="rule-choice">
-                <input name="admin_stage" type="radio" value="STAGE_3_REVERSE_FOG"/>
-                <div>
-                  <strong>Vòng 3: Đảo Ngược &amp; Sương Mù</strong>
-                  <span style="font-size: 12px; color: var(--text-muted);">Hiệp lẻ đảo tương khắc. Ẩn thẻ đối thủ.</span>
-                </div>
-              </label>
-              <label class="rule-choice">
-                <input name="admin_stage" type="radio" value="STAGE_4_FINALS"/>
-                <div>
-                  <strong>Vòng 4: Chung Kết Đỉnh Cao</strong>
-                  <span style="font-size: 12px; color: var(--text-muted);">Ma trận luật động JSON. Bot tự thích nghi.</span>
-                </div>
-              </label>
-            </div>
-            <button class="btn btn-primary btn-full" id="btn-apply-stage" style="margin-top: 12px;">Áp Dụng Luật</button>
-          </div>
-
-          <!-- CỘT 3: CẤU HÌNH KẾT NỐI MÁY CHỦ API -->
-          <div class="content-card">
-            <h3 class="panel-title">Cấu Hình Kết Nối Máy Chủ API</h3>
-            <p style="font-size: 12px; color: var(--text-muted); margin: 6px 0 12px 0;">
-              Cấu hình địa chỉ máy chủ Cloudflare Tunnel hoặc Render backend.
-            </p>
-            <div class="form-group" style="margin-bottom: 12px;">
-              <label class="form-label" for="admin-server-url-display">Endpoint Hiện Tại:</label>
-              <input class="input-text" id="admin-server-url-display" type="text" readonly value="(Đang dùng URL mặc định)"/>
-            </div>
-            <div style="display: flex; gap: 8px;">
-              <button class="btn btn-primary btn-full" id="btn-set-backend">Cấu Hình Địa Chỉ API</button>
-              <button class="btn btn-outline" id="btn-reset-backend" style="white-space: nowrap;">Đặt Lại Mặc Định</button>
-            </div>
-          </div>
-
-          <!-- CỘT 4: GIÁM SÁT MÃ NGUỒN REALTIME -->
-          <div class="content-card">
-            <h3 class="panel-title">Giám Sát Mã Nguồn Trực Tiếp</h3>
-            <div class="monitor-code-grid" id="admin-live-code-monitor" style="margin-top: 10px;">
-              <div class="monitor-code-col red-side">
-                <div class="monitor-col-head">
-                  <strong id="monitor-team-a-name">Đội Đỏ</strong>
-                  <span class="badge-tag" id="monitor-team-a-lang">PYTHON</span>
-                </div>
-                <pre class="monitor-code-box" id="monitor-code-a">Chưa nộp mã lệnh...</pre>
-              </div>
-              <div class="monitor-code-col blue-side">
-                <div class="monitor-col-head">
-                  <strong id="monitor-team-b-name">Đội Xanh</strong>
-                  <span class="badge-tag" id="monitor-team-b-lang">PYTHON</span>
-                </div>
-                <pre class="monitor-code-box" id="monitor-code-b">Chưa nộp mã lệnh...</pre>
-              </div>
-            </div>
+          <div style="display: flex; gap: 12px; margin-top: 16px;">
+            <button class="btn btn-outline" id="btn-admin-manage-teams">Quản Lý Tuyển Thủ &amp; Đội</button>
+            <button class="btn btn-primary" id="btn-admin-auto-schedule">Tự Sắp Xếp Nhánh Đấu</button>
           </div>
         </div>
       </section>
-
     </main>
   </div>
 
   <!-- =================================================================== -->
-  <!-- MODAL XÁC THỰC DANH TÍNH & ĐĂNG NHẬP (PREMIUM REDESIGNED) -->
+  <!-- MÀN HÌNH ĐĂNG NHẬP RIÊNG BIỆT (BÁM SÁT 100% ẢNH MẪU 4) -->
   <!-- =================================================================== -->
-  <div class="modal-overlay" id="modal-auth-role" style="display: none;">
-    <div class="modal-card modal-lg auth-modal-premium">
-      <div class="modal-header auth-modal-header">
-        <div class="auth-header-title-group">
-          <div class="auth-header-icon-badge">🏆</div>
-          <div>
-            <h3 class="modal-title auth-modal-title">CỔNG ĐĂNG NHẬP ĐẤU TRƯỜNG OTTV2</h3>
-            <span class="modal-subtitle">Xác thực danh tính để tự động so khớp vào đúng nhánh đấu của bạn</span>
+  <div class="login-page-view" id="view-login" style="display: none;">
+    <div class="login-page-container">
+      <!-- CỘT TRÁI: GIỚI THIỆU & MINH HỌA 3D BÀN CỜ ISOMETRIC 9×9 -->
+      <div class="login-left-col">
+        <!-- BRAND HEADER -->
+        <div class="login-brand-header">
+          <span class="brand-badge">ICPC K69</span>
+          <div class="brand-text">
+            <h2 class="brand-title">ARENA OTTV2</h2>
+            <p class="brand-sub">Đấu Trường Lập Trình</p>
           </div>
         </div>
-        <button class="btn-clean btn-modal-close" id="btn-close-role-modal-x" title="Đóng">✕</button>
+
+        <!-- TIÊU ĐỀ LỚN & ĐOẠN GIỚI THIỆU -->
+        <h1 class="login-hero-heading">Sẵn sàng bước vào đấu trường?</h1>
+        <p class="login-hero-desc">
+          Nền tảng thi đấu bot lập trình dành cho sinh viên UET. Thách thức bản thân, khẳng định tài năng!
+        </p>
+
+        <!-- HÌNH MINH HỌA 3D ISOMETRIC BÀN CỜ 9×9 ĐỈNH CAO (CHUẨN ẢNH 4) -->
+        <div class="login-isometric-graphic">
+          <svg width="440" height="280" viewBox="0 0 440 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="gridBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+                <stop offset="100%" stop-color="#eff6ff" stop-opacity="0.8"/>
+              </linearGradient>
+              <linearGradient id="baseSlabGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#dbeafe"/>
+                <stop offset="100%" stop-color="#bfdbfe"/>
+              </linearGradient>
+              <filter id="glowDrop" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#2563eb" flood-opacity="0.12"/>
+              </filter>
+            </defs>
+
+            <!-- KHỐI ĐẾ BÀN CỜ 3D ISOMETRIC -->
+            <!-- Mặt bên đáy -->
+            <polygon points="50,190 220,250 390,190 390,205 220,265 50,205" fill="#93c5fd" opacity="0.7"/>
+            <polygon points="50,180 220,240 390,180 390,195 220,255 50,195" fill="url(#baseSlabGrad)"/>
+            <!-- Mặt trên bàn cờ -->
+            <polygon points="220,50 390,140 220,230 50,140" fill="url(#gridBgGrad)" stroke="#60a5fa" stroke-width="2.5" filter="url(#glowDrop)"/>
+
+            <!-- LƯỚI Ô CỜ 9x9 ISOMETRIC (Isometric Grid) -->
+            <!-- Đường dọc -->
+            <path d="M68,130 L238,220 M87,120 L257,210 M106,110 L276,200 M125,100 L295,190 M144,90 L314,180 M163,80 L333,170 M182,70 L352,160 M201,60 L371,150" stroke="#bfdbfe" stroke-width="1.2" opacity="0.8"/>
+            <!-- Đường ngang -->
+            <path d="M87,160 L257,70 M106,170 L276,80 M125,180 L295,90 M144,190 L314,100 M163,200 L333,110 M182,210 L352,120 M201,220 L371,130" stroke="#bfdbfe" stroke-width="1.2" opacity="0.8"/>
+
+            <!-- CÁC QUÂN CỜ XANH (BLUE PIECES) HÌNH TRỤ TRÊN BÀN CỜ -->
+            <!-- Quân Xanh 1 -->
+            <g transform="translate(130, 115)">
+              <ellipse cx="0" cy="5" rx="8" ry="4.5" fill="#1d4ed8"/>
+              <path d="M-8,0 L-8,5 C-8,7.5 8,7.5 8,5 L8,0 Z" fill="#2563eb"/>
+              <ellipse cx="0" cy="0" rx="8" ry="4.5" fill="#3b82f6"/>
+            </g>
+            <!-- Quân Xanh 2 -->
+            <g transform="translate(170, 95)">
+              <ellipse cx="0" cy="5" rx="8" ry="4.5" fill="#1d4ed8"/>
+              <path d="M-8,0 L-8,5 C-8,7.5 8,7.5 8,5 L8,0 Z" fill="#2563eb"/>
+              <ellipse cx="0" cy="0" rx="8" ry="4.5" fill="#3b82f6"/>
+            </g>
+            <!-- Quân Xanh 3 -->
+            <g transform="translate(150, 145)">
+              <ellipse cx="0" cy="5" rx="8" ry="4.5" fill="#1d4ed8"/>
+              <path d="M-8,0 L-8,5 C-8,7.5 8,7.5 8,5 L8,0 Z" fill="#2563eb"/>
+              <ellipse cx="0" cy="0" rx="8" ry="4.5" fill="#3b82f6"/>
+            </g>
+            <!-- Quân Xanh 4 -->
+            <g transform="translate(195, 125)">
+              <ellipse cx="0" cy="5" rx="8" ry="4.5" fill="#1d4ed8"/>
+              <path d="M-8,0 L-8,5 C-8,7.5 8,7.5 8,5 L8,0 Z" fill="#2563eb"/>
+              <ellipse cx="0" cy="0" rx="8" ry="4.5" fill="#3b82f6"/>
+            </g>
+            <!-- Quân Xanh 5 -->
+            <g transform="translate(210, 155)">
+              <ellipse cx="0" cy="5" rx="8" ry="4.5" fill="#1d4ed8"/>
+              <path d="M-8,0 L-8,5 C-8,7.5 8,7.5 8,5 L8,0 Z" fill="#2563eb"/>
+              <ellipse cx="0" cy="0" rx="8" ry="4.5" fill="#3b82f6"/>
+            </g>
+            <!-- Quân Xanh 6 -->
+            <g transform="translate(175, 175)">
+              <ellipse cx="0" cy="5" rx="8" ry="4.5" fill="#1d4ed8"/>
+              <path d="M-8,0 L-8,5 C-8,7.5 8,7.5 8,5 L8,0 Z" fill="#2563eb"/>
+              <ellipse cx="0" cy="0" rx="8" ry="4.5" fill="#3b82f6"/>
+            </g>
+            <!-- Quân Xanh 7 -->
+            <g transform="translate(190, 205)">
+              <ellipse cx="0" cy="5" rx="8" ry="4.5" fill="#1d4ed8"/>
+              <path d="M-8,0 L-8,5 C-8,7.5 8,7.5 8,5 L8,0 Z" fill="#2563eb"/>
+              <ellipse cx="0" cy="0" rx="8" ry="4.5" fill="#3b82f6"/>
+            </g>
+
+            <!-- CÁC QUÂN CỜ ĐỎ (RED PIECES) HÌNH TRỤ TRÊN BÀN CỜ -->
+            <!-- Quân Đỏ 1 -->
+            <g transform="translate(245, 115)">
+              <ellipse cx="0" cy="5" rx="8" ry="4.5" fill="#b91c1c"/>
+              <path d="M-8,0 L-8,5 C-8,7.5 8,7.5 8,5 L8,0 Z" fill="#dc2626"/>
+              <ellipse cx="0" cy="0" rx="8" ry="4.5" fill="#ef4444"/>
+            </g>
+            <!-- Quân Đỏ 2 -->
+            <g transform="translate(285, 135)">
+              <ellipse cx="0" cy="5" rx="8" ry="4.5" fill="#b91c1c"/>
+              <path d="M-8,0 L-8,5 C-8,7.5 8,7.5 8,5 L8,0 Z" fill="#dc2626"/>
+              <ellipse cx="0" cy="0" rx="8" ry="4.5" fill="#ef4444"/>
+            </g>
+            <!-- Quân Đỏ 3 -->
+            <g transform="translate(260, 165)">
+              <ellipse cx="0" cy="5" rx="8" ry="4.5" fill="#b91c1c"/>
+              <path d="M-8,0 L-8,5 C-8,7.5 8,7.5 8,5 L8,0 Z" fill="#dc2626"/>
+              <ellipse cx="0" cy="0" rx="8" ry="4.5" fill="#ef4444"/>
+            </g>
+            <!-- Quân Đỏ 4 -->
+            <g transform="translate(305, 155)">
+              <ellipse cx="0" cy="5" rx="8" ry="4.5" fill="#b91c1c"/>
+              <path d="M-8,0 L-8,5 C-8,7.5 8,7.5 8,5 L8,0 Z" fill="#dc2626"/>
+              <ellipse cx="0" cy="0" rx="8" ry="4.5" fill="#ef4444"/>
+            </g>
+            <!-- Quân Đỏ 5 -->
+            <g transform="translate(225, 185)">
+              <ellipse cx="0" cy="5" rx="8" ry="4.5" fill="#b91c1c"/>
+              <path d="M-8,0 L-8,5 C-8,7.5 8,7.5 8,5 L8,0 Z" fill="#dc2626"/>
+              <ellipse cx="0" cy="0" rx="8" ry="4.5" fill="#ef4444"/>
+            </g>
+            <!-- Quân Đỏ 6 -->
+            <g transform="translate(275, 195)">
+              <ellipse cx="0" cy="5" rx="8" ry="4.5" fill="#b91c1c"/>
+              <path d="M-8,0 L-8,5 C-8,7.5 8,7.5 8,5 L8,0 Z" fill="#dc2626"/>
+              <ellipse cx="0" cy="0" rx="8" ry="4.5" fill="#ef4444"/>
+            </g>
+
+            <!-- CÁC KHỐI ISOMETRIC HỌA TIẾT BAY TRÔI -->
+            <polygon points="50,110 65,102 80,110 65,118" fill="#dbeafe" opacity="0.6"/>
+            <polygon points="360,90 380,80 400,90 380,100" fill="#bfdbfe" opacity="0.7"/>
+            <polygon points="280,240 295,232 310,240 295,248" fill="#dbeafe" opacity="0.6"/>
+            <polygon points="80,215 95,207 110,215 95,223" fill="#bfdbfe" opacity="0.6"/>
+          </svg>
+        </div>
       </div>
-      <div class="modal-body auth-modal-body">
-        <!-- ROLE SELECTOR TABS -->
-        <div class="role-selector-pills-large">
-          <button class="role-pill-btn active" data-role-choice="TEAM" id="btn-role-choice-team">
-            <span class="role-pill-icon">🎓</span>
-            <span class="role-pill-text">Đội Tuyển / Thí Sinh</span>
+
+      <!-- CỘT PHẢI: FORM ĐĂNG NHẬP CHUẨN MOCKUP 4 -->
+      <div class="login-right-col">
+        <div class="login-card-floating">
+          <h2 class="login-card-title">Đăng nhập</h2>
+          <p class="login-card-subtitle">Đăng nhập để tiếp tục vào đấu trường.</p>
+
+          <!-- BÁO LỖI NẾU CÓ -->
+          <div class="login-alert-banner" id="login-error-msg" style="display: none;"></div>
+
+          <!-- TRƯỜNG 1: TÊN ĐĂNG NHẬP HOẶC MSSV -->
+          <div class="login-input-group">
+            <span class="input-icon-left">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+              </svg>
+            </span>
+            <input autocomplete="off" class="login-input-field" id="inp-login-user" placeholder="Tên đăng nhập hoặc MSSV" type="text"/>
+          </div>
+
+          <!-- TRƯỜNG 2: MẬT KHẨU -->
+          <div class="login-input-group">
+            <span class="input-icon-left">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+            </span>
+            <input autocomplete="off" class="login-input-field" id="inp-login-pass" placeholder="Mật khẩu" type="password"/>
+            <button class="btn-toggle-eye" id="btn-toggle-login-pass" type="button" title="Hiển thị mật khẩu">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- NÚT ĐĂNG NHẬP (SOLID BLUE) -->
+          <button class="btn-login-submit" id="btn-login-submit">
+            Đăng nhập
           </button>
-          <button class="role-pill-btn" data-role-choice="ADMIN" id="btn-role-choice-admin">
-            <span class="role-pill-icon">👑</span>
-            <span class="role-pill-text">Ban Tổ Chức (Admin)</span>
+
+          <!-- NÚT QUAY VỀ TRANG CHỦ (OUTLINE HOME) -->
+          <button class="btn-login-back-home" id="btn-login-back-home">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            <span>Quay về trang chủ</span>
           </button>
-          <button class="role-pill-btn" data-role-choice="REFEREE" id="btn-role-choice-referee">
-            <span class="role-pill-icon">⚖️</span>
-            <span class="role-pill-text">Trọng Tài</span>
-          </button>
-          <button class="role-pill-btn" data-role-choice="GUEST" id="btn-role-choice-guest">
-            <span class="role-pill-icon">👁️</span>
-            <span class="role-pill-text">Khách Thăm Quan</span>
-          </button>
+
+          <!-- GỢI Ý TÀI KHOẢN HỆ THỐNG -->
+          <div class="login-hints-box">
+            <span>Admin: <code>admin / admin123</code> • Tuyển thủ: Nhập MSSV hoặc Tên Đội (MK: <code>12345</code>)</span>
+          </div>
         </div>
-
-        <!-- PANE 1: TEAM / THÍ SINH -->
-        <div class="role-auth-pane active" id="pane-role-team">
-          <div class="auth-alert-box info">
-            <div class="auth-alert-icon">⚡</div>
-            <div class="auth-alert-content">
-              <strong>Quy Định So Khớp Nhánh Đấu:</strong>
-              <p>Mỗi sinh viên đăng nhập bằng <strong>Số Báo Danh (MSSV)</strong>. Khi bấm <em>"Tham Gia Giải Đấu"</em>, hệ thống sẽ đối soát Số Báo Danh này với danh sách bảng đấu để mở đúng phòng nộp code của bạn. Bạn không thể nộp bài vào nhánh đấu của thí sinh khác!</p>
-            </div>
-          </div>
-
-          <div class="form-group-large">
-            <label class="form-label-bold" for="inp-team-auth-sid">
-              Số Báo Danh / Mã Sinh Viên (MSSV):
-              <span class="text-danger">*</span>
-            </label>
-            <div class="input-with-action">
-              <input class="input-text-lg" id="inp-team-auth-sid" placeholder="Ví dụ: 24020130, 24020001..." type="text" autocomplete="off"/>
-              <select class="input-select-quick" id="sel-quick-team-auth">
-                <option value="">-- Hoặc chọn nhanh sinh viên đã đăng ký --</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-group-large">
-            <label class="form-label-bold" for="inp-team-auth-name">
-              Tên Đội Tuyển (Tự động nhận diện):
-            </label>
-            <input class="input-text-lg" id="inp-team-auth-name" placeholder="Tên đội tương ứng với MSSV..." type="text"/>
-          </div>
-
-          <div class="form-group-large">
-            <label class="form-label-bold" for="inp-team-auth-pass">
-              Mật Khẩu Đội / PIN Bảo Mật:
-            </label>
-            <input class="input-text-lg" id="inp-team-auth-pass" placeholder="Mật khẩu đội (mặc định: 123 hoặc 12345)" type="password" value="123"/>
-            <small class="form-hint">Mật khẩu thử nghiệm mặc định: <code>123</code> hoặc <code>12345</code></small>
-          </div>
-
-          <div class="auth-preview-badge" id="auth-team-preview-badge" style="display: none;">
-            <span class="badge-tag highlight" id="auth-preview-text">Đã khớp: ---</span>
-          </div>
-
-          <button class="btn btn-primary btn-full btn-xl" id="btn-confirm-team-role">
-            <span>✅ XÁC NHẬN ĐĂNG NHẬP &amp; VÀO NHÁNH ĐẤU</span>
-          </button>
-        </div>
-
-        <!-- PANE 2: ADMIN -->
-        <div class="role-auth-pane" id="pane-role-admin" style="display: none;">
-          <div class="auth-alert-box warning">
-            <div class="auth-alert-icon">👑</div>
-            <div class="auth-alert-content">
-              <strong>Khu Vực Ban Tổ Chức (Administrator):</strong>
-              <p>Toàn quyền khởi tạo bảng đấu, xếp lịch nhánh đấu, duyệt danh sách sinh viên, điều chỉnh luật thi đấu và giám sát mã nguồn trực tiếp.</p>
-            </div>
-          </div>
-          <div class="form-group-large">
-            <label class="form-label-bold" for="inp-admin-auth-user">Tài Khoản Quản Trị:</label>
-            <input class="input-text-lg" id="inp-admin-auth-user" placeholder="admin" type="text" value="admin"/>
-          </div>
-          <div class="form-group-large">
-            <label class="form-label-bold" for="inp-admin-auth-pass">Mật Khẩu Quản Trị:</label>
-            <input class="input-text-lg" id="inp-admin-auth-pass" placeholder="admin123" type="password" value="admin123"/>
-            <small class="form-hint">Mặc định tài khoản BTC: <code>admin</code> / <code>admin123</code></small>
-          </div>
-          <button class="btn btn-primary btn-full btn-xl" id="btn-confirm-admin-role">
-            <span>ĐĂNG NHẬP BAN TỔ CHỨC (ADMIN)</span>
-          </button>
-        </div>
-
-        <!-- PANE 3: REFEREE -->
-        <div class="role-auth-pane" id="pane-role-referee" style="display: none;">
-          <div class="auth-alert-box warning">
-            <div class="auth-alert-icon">⚖️</div>
-            <div class="auth-alert-content">
-              <strong>Trọng Tài Điều Hành Trận Đấu:</strong>
-              <p>Quyền kích hoạt round thi đấu, kiểm tra tính hợp lệ bài nộp và ghi nhận kết quả điểm số.</p>
-            </div>
-          </div>
-          <div class="form-group-large">
-            <label class="form-label-bold" for="inp-referee-auth-user">Tài Khoản Trọng Tài:</label>
-            <input class="input-text-lg" id="inp-referee-auth-user" placeholder="referee" type="text" value="referee"/>
-          </div>
-          <div class="form-group-large">
-            <label class="form-label-bold" for="inp-referee-auth-pass">Mật Khẩu Trọng Tài:</label>
-            <input class="input-text-lg" id="inp-referee-auth-pass" placeholder="ref123" type="password" value="ref123"/>
-            <small class="form-hint">Mặc định: <code>referee</code> / <code>ref123</code></small>
-          </div>
-          <button class="btn btn-primary btn-full btn-xl" id="btn-confirm-referee-role">
-            <span>XÁC THỰC QUYỀN TRỌNG TÀI</span>
-          </button>
-        </div>
-
-        <!-- PANE 4: GUEST -->
-        <div class="role-auth-pane" id="pane-role-guest" style="display: none;">
-          <div class="auth-alert-box info">
-            <div class="auth-alert-icon">👁️</div>
-            <div class="auth-alert-content">
-              <strong>Chế Độ Khách Thăm Quan:</strong>
-              <p>Bạn chỉ có thể xem trang Tổng quan tóm tắt. Các chức năng xem nhánh đấu, nộp code và xem lịch sử chi tiết yêu cầu đăng nhập tài khoản đội hoặc BTC.</p>
-            </div>
-          </div>
-          <button class="btn btn-outline btn-full btn-xl" id="btn-confirm-guest-role">
-            <span>TIẾP TỤC VỚI TƯ CÁCH KHÁCH</span>
-          </button>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" id="btn-close-role-modal">Đóng Cửa Sổ</button>
       </div>
     </div>
   </div>
 
   <!-- =================================================================== -->
-  <!-- MODAL CẢNH BÁO TỪ CHỐI TRUY CẬP DO LỆCH SỐ BÁO DANH / NHÁNH ĐẤU -->
+  <!-- CÁC MODAL HỆ THỐNG: QUẢN LÝ ĐỘI, XEM MÃ NGUỒN, REPLAY, PRACTICE -->
   <!-- =================================================================== -->
-  <div class="modal-overlay" id="modal-branch-mismatch" style="display: none;">
-    <div class="modal-card modal-md">
-      <div class="modal-header" style="background: #fef2f2; border-bottom: 1px solid #fee2e2;">
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 24px;">⛔</span>
-          <div>
-            <h3 class="modal-title" style="color: #dc2626;">KHÔNG THUỘC NHÁNH ĐẤU NÀY</h3>
-            <span class="modal-subtitle" style="color: #991b1b;">Từ chối truy cập phòng nộp code của bảng đấu</span>
-          </div>
-        </div>
-        <button class="btn-clean btn-modal-close" id="btn-close-mismatch-x">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="mismatch-info-card">
-          <div class="mismatch-row">
-            <span>Số Báo Danh đăng nhập:</span>
-            <strong id="mismatch-user-sid">---</strong>
-          </div>
-          <div class="mismatch-row">
-            <span>Tên Đội Tuyển:</span>
-            <strong id="mismatch-user-team">---</strong>
-          </div>
-          <div class="mismatch-row">
-            <span>Bảng đấu đang chọn:</span>
-            <strong id="mismatch-tourn-name">---</strong>
-          </div>
-        </div>
-
-        <div class="auth-alert-box warning" style="margin-top: 14px;">
-          <div class="auth-alert-content">
-            <p id="mismatch-detail-msg">
-              Hệ thống đã so khớp và <strong>không tìm thấy Số Báo Danh của bạn</strong> trong nhánh đấu của bảng này. Vì lý do bảo mật và tính công bằng, bạn không thể truy cập hoặc nộp bài vào nhánh đấu của các sinh viên khác!
-            </p>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer" style="display: flex; gap: 8px; justify-content: flex-end;">
-        <button class="btn btn-outline" id="btn-mismatch-change-account">Đổi Tài Khoản / Đổi MSSV</button>
-        <button class="btn btn-primary" id="btn-mismatch-switch-tourn">Xem Các Bảng Đấu Khác</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- =================================================================== -->
-  <!-- MODAL TẠO GIẢI ĐẤU MỚI -->
-  <!-- =================================================================== -->
-  <div class="modal-overlay" id="modal-create-tournament" style="display: none;">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3 class="modal-title">Tạo Giải Đấu Lập Trình Mới</h3>
-        <button class="btn-clean btn-modal-close" id="btn-close-create-tourn-x">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label class="form-label">Tên Giải Đấu:</label>
-          <input class="input-text" id="inp-new-tourn-name" placeholder="Ví dụ: Cúp Vô Địch Tân Sinh Viên K69..." type="text" value="Giải Đấu ICPC K69 Mùa 2"/>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Số Lượng Đội Tham Gia:</label>
-          <input class="input-text" id="inp-new-tourn-teams" min="4" placeholder="Nhập số đội: 4, 8, 16, 32..." step="1" type="number" value="8"/>
-          <small class="form-hint">Quy tắc bắt buộc: Số lượng đội phải là lũy thừa của 2 (4, 8, 16, 32...).</small>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" id="btn-close-create-tourn">Hủy</button>
-        <button class="btn btn-primary" id="btn-submit-create-tourn">Khởi Tạo Giải Đấu</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- =================================================================== -->
-  <!-- MODAL QUẢN LÝ ĐỘI THI ĐẤU & TỰ ĐỘNG XẾP LỊCH -->
-  <!-- =================================================================== -->
+  <!-- MODAL QUẢN LÝ ĐỘI -->
   <div class="modal-overlay" id="modal-manage-teams" style="display: none;">
     <div class="modal-card modal-lg">
       <div class="modal-header">
         <div>
-          <h3 class="modal-title">Danh Sách Đội Thi Đấu &amp; Xếp Lịch</h3>
-          <span class="modal-subtitle" id="team-mgr-tourn-name">Giải Đấu Hiện Tại</span>
+          <h3 class="modal-title">Quản Lý Tuyển Thủ &amp; Đội Thi Đấu</h3>
+          <span class="modal-subtitle">Ghi danh đội thi đấu vào giải (Tối đa 8 đội)</span>
         </div>
         <button class="btn-clean btn-modal-close" id="btn-close-team-mgr-x">✕</button>
       </div>
       <div class="modal-body">
-        <div class="team-mgr-summary-bar">
-          <div class="mgr-stat-item">
-            <span>Quy mô yêu cầu:</span>
-            <strong id="mgr-required-count">8 Đội</strong>
+        <div class="team-mgr-form-grid">
+          <div class="form-group">
+            <label class="form-label">Tên Đội:</label>
+            <input class="input-text" id="mgr-inp-name" placeholder="Ví dụ: K69_AlphaBot" type="text"/>
           </div>
-          <div class="mgr-stat-item">
-            <span>Đã ghi danh:</span>
-            <strong id="mgr-current-count">0 Đội</strong>
+          <div class="form-group">
+            <label class="form-label">MSSV Đại Diện:</label>
+            <input class="input-text" id="mgr-inp-sid" placeholder="Ví dụ: 24020001" type="text"/>
           </div>
-          <div class="mgr-status-badge" id="mgr-status-pill">Chưa Đủ Số Đội</div>
-        </div>
-
-        <div class="team-mgr-add-card">
-          <h4 class="form-section-title">Thêm Đội Thi Đấu Mới</h4>
-          <div class="team-mgr-form-grid">
-            <div class="form-group">
-              <label class="form-label">Tên Đội:</label>
-              <input class="input-text" id="mgr-inp-name" placeholder="Ví dụ: K69_MasterBot" type="text"/>
-            </div>
-            <div class="form-group">
-              <label class="form-label">MSSV Đại Diện:</label>
-              <input class="input-text" id="mgr-inp-sid" placeholder="Ví dụ: 24020199" type="text"/>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Đơn Vị / Trường:</label>
-              <input class="input-text" id="mgr-inp-uni" placeholder="Ví dụ: ĐHQG Hà Nội" type="text" value="Khối Kỹ Thuật"/>
-            </div>
-          </div>
-          <div class="team-mgr-form-actions">
-            <button class="btn btn-outline" id="btn-mgr-quick-fill">Nạp Nhanh Đội Mẫu</button>
-            <button class="btn btn-primary" id="btn-mgr-add-team">+ Thêm Đội Vào Giải</button>
+          <div class="form-group">
+            <label class="form-label">Đơn Vị:</label>
+            <input class="input-text" id="mgr-inp-uni" placeholder="Ví dụ: ĐHQG Hà Nội" type="text" value="Khối Kỹ Thuật"/>
           </div>
         </div>
-
-        <div class="team-mgr-list-card">
-          <h4 class="form-section-title">Danh Sách Tuyển Thủ Đã Ghi Danh</h4>
-          <div class="table-responsive" style="max-height: 220px; overflow-y: auto;">
-            <table class="table-clean" id="table-mgr-teams">
-              <thead>
-                <tr>
-                  <th>Hạt Giống</th>
-                  <th>Tên Đội</th>
-                  <th>MSSV</th>
-                  <th>Đơn Vị</th>
-                  <th>Thao Tác</th>
-                </tr>
-              </thead>
-              <tbody id="tbody-mgr-teams">
-                <tr><td class="text-center text-muted" colspan="5">Chưa có đội nào đăng ký.</td></tr>
-              </tbody>
-            </table>
-          </div>
+        <div class="team-mgr-actions" style="margin-top: 10px; display: flex; gap: 8px;">
+          <button class="btn btn-outline" id="btn-mgr-quick-fill">Nạp Nhanh Đội Mẫu</button>
+          <button class="btn btn-primary" id="btn-mgr-add-team">+ Thêm Đội</button>
+        </div>
+        <div class="table-responsive" style="margin-top: 16px; max-height: 200px; overflow-y: auto;">
+          <table class="table-clean" id="table-mgr-teams">
+            <thead>
+              <tr><th>Hạt Giống</th><th>Tên Đội</th><th>MSSV</th><th>Đơn Vị</th><th>Thao Tác</th></tr>
+            </thead>
+            <tbody id="tbody-mgr-teams">
+              <tr><td colspan="5" class="text-center text-muted">Chưa có đội nào.</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline" id="btn-close-team-mgr">Đóng</button>
-        <button class="btn btn-success btn-lg" id="btn-mgr-auto-schedule">Tự Sắp Xếp Lịch Đấu</button>
+        <button class="btn btn-success" id="btn-mgr-auto-schedule">Tự Sắp Xếp Lịch Đấu</button>
       </div>
     </div>
   </div>
 
-  <!-- =================================================================== -->
-  <!-- MODAL XEM MÃ NGUỒN CỦA ROUND -->
-  <!-- =================================================================== -->
+  <!-- MODAL XEM LẠI TRẬN ĐẤU (REPLAY) -->
+  <div class="modal-overlay" id="modal-match-replay" style="display: none;">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" id="replay-modal-title">Xem Lại Diễn Biến Trận Đấu (Replay)</h3>
+          <span class="modal-subtitle" id="replay-modal-subtitle">Tái hiện lại các nước đi từ dữ liệu đã lưu</span>
+        </div>
+        <button class="btn-clean btn-modal-close" id="btn-close-replay-x">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="board-top-status-bar" style="margin-bottom: 10px;">
+          <div class="board-team-pill red"><strong id="replay-name-red">Đội Đỏ</strong> (<span id="replay-count-red">9/9</span>)</div>
+          <div class="arena-round-indicator" id="replay-step-indicator">BƯỚC 0 / 0</div>
+          <div class="board-team-pill blue"><strong id="replay-name-blue">Đội Xanh</strong> (<span id="replay-count-blue">9/9</span>)</div>
+        </div>
+        <div class="board-wrapper"><div class="chessboard-9x9" id="replay-chessboard-9x9"></div></div>
+        <div class="live-commentary-ticker" id="replay-commentary-ticker" style="margin-top: 10px;">Đang tải replay...</div>
+        <div class="replay-controls-toolbar" style="margin-top: 12px; display: flex; align-items: center; gap: 8px;">
+          <button class="btn btn-sm btn-outline" id="btn-replay-prev">◀ Nước Trước</button>
+          <button class="btn btn-sm btn-primary" id="btn-replay-play-pause">▶ Tự Động Chạy</button>
+          <button class="btn btn-sm btn-outline" id="btn-replay-next">Nước Kế ▶</button>
+          <input class="replay-slider" id="replay-step-slider" max="10" min="0" type="range" value="0"/>
+          <span id="replay-slider-label">Bước: 0/0</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btn-close-replay">Đóng Replay</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ĐẤU THỬ NGHIỆM VỚI BOT BOSS (PRACTICE ARENA) -->
+  <div class="modal-overlay" id="modal-practice-arena" style="display: none;">
+    <div class="modal-card modal-lg">
+      <div class="modal-header">
+        <div>
+          <h3 class="modal-title" id="practice-title">Đấu Thử Nghiệm Với Bot BTC</h3>
+          <span class="modal-subtitle">Kiểm tra chiến thuật di chuyển và ăn quân trên bàn cờ 9×9</span>
+        </div>
+        <button class="btn-clean btn-modal-close" id="btn-close-practice-x">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="board-top-status-bar" style="margin-bottom: 10px;">
+          <div class="board-team-pill red"><strong id="practice-name-red">Bot Của Bạn (Đỏ)</strong></div>
+          <div class="arena-round-indicator">BÀN ĐẤU THỬ</div>
+          <div class="board-team-pill blue"><strong id="practice-name-blue">Bot Mẫu BTC (Xanh)</strong></div>
+        </div>
+        <div class="board-wrapper"><div class="chessboard-9x9" id="practice-chessboard-9x9"></div></div>
+        <div class="live-commentary-ticker" id="practice-commentary-ticker" style="margin-top: 10px;">Đang chạy mô phỏng...</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" id="btn-close-practice">Đóng Bàn Đấu Thử</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL XEM MÃ NGUỒN ĐÃ KHÓA -->
   <div class="modal-overlay" id="modal-view-code" style="display: none;">
     <div class="modal-card modal-lg">
       <div class="modal-header">
@@ -1062,93 +1099,7 @@
     </div>
   </div>
 
-  <!-- =================================================================== -->
-  <!-- MODAL BÀN ĐẤU THỬ NGHIỆM VỚI BOT MẪU (PRACTICE TEST ARENA) -->
-  <!-- =================================================================== -->
-  <div class="modal-overlay" id="modal-practice-arena" style="display: none;">
-    <div class="modal-card modal-lg">
-      <div class="modal-header">
-        <div>
-          <h3 class="modal-title" id="practice-title">Đấu Thử Nghiệm Với Bot BTC</h3>
-          <span class="modal-subtitle">Kiểm tra chiến thuật di chuyển và ăn quân trên bàn cờ 9x9</span>
-        </div>
-        <button class="btn-clean btn-modal-close" id="btn-close-practice-x">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="arena-top-bar" style="margin-bottom: 12px;">
-          <div class="board-team-pill red">
-            <span class="team-dot red"></span>
-            <strong id="practice-name-red">Bot Của Bạn (Đỏ)</strong>
-          </div>
-          <div class="arena-round-indicator">BÀN ĐẤU THỬ</div>
-          <div class="board-team-pill blue">
-            <strong id="practice-name-blue">Bot Mẫu BTC (Xanh)</strong>
-            <span class="team-dot blue"></span>
-          </div>
-        </div>
-        <div class="board-wrapper" style="margin: 12px 0;">
-          <div class="chessboard-9x9" id="practice-chessboard-9x9"></div>
-        </div>
-        <div class="live-commentary-ticker" id="practice-commentary-ticker" style="margin: 0 auto 12px;">
-          Khởi tạo trận đấu thử nghiệm...
-        </div>
-        <div class="practice-result-banner" id="practice-result-banner" style="display: none;">
-          <h4 id="practice-result-title">KẾT QUẢ TRẬN THỬ</h4>
-          <p id="practice-result-desc">Chi tiết kết quả trận đấu.</p>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" id="btn-close-practice">Đóng Bàn Đấu Thử</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- =================================================================== -->
-  <!-- MODAL XEM LẠI DIỄN BIẾN TRẬN ĐẤU (MATCH REPLAY) -->
-  <!-- =================================================================== -->
-  <div class="modal-overlay" id="modal-match-replay" style="display: none;">
-    <div class="modal-card modal-lg">
-      <div class="modal-header">
-        <div>
-          <h3 class="modal-title" id="replay-modal-title">Xem Lại Diễn Biến Trận Đấu (Replay)</h3>
-          <span class="modal-subtitle" id="replay-modal-subtitle">Tái hiện lại các nước đi từ dữ liệu đã lưu</span>
-        </div>
-        <button class="btn-clean btn-modal-close" id="btn-close-replay-x">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="arena-top-bar" style="margin-bottom: 12px;">
-          <div class="board-team-pill red">
-            <span class="team-dot red"></span>
-            <strong id="replay-name-red">Đội Đỏ</strong>
-            <span class="board-piece-badge red" id="replay-count-red">9/9 quân</span>
-          </div>
-          <div class="arena-round-indicator" id="replay-step-indicator">BƯỚC 0 / 0</div>
-          <div class="board-team-pill blue">
-            <span class="board-piece-badge blue" id="replay-count-blue">9/9 quân</span>
-            <strong id="replay-name-blue">Đội Xanh</strong>
-            <span class="team-dot blue"></span>
-          </div>
-        </div>
-        <div class="board-wrapper" style="margin: 12px 0;">
-          <div class="chessboard-9x9" id="replay-chessboard-9x9"></div>
-        </div>
-        <div class="live-commentary-ticker" id="replay-commentary-ticker" style="margin: 0 auto 12px;">
-          Đang khởi tạo trình phát lại...
-        </div>
-        <div class="replay-controls-toolbar">
-          <button class="btn btn-sm btn-outline" id="btn-replay-prev">◀ Nước Trước</button>
-          <button class="btn btn-sm btn-primary" id="btn-replay-play-pause">▶ Tự Động Chạy</button>
-          <button class="btn btn-sm btn-outline" id="btn-replay-next">Nước Kế ▶</button>
-          <input class="replay-slider" id="replay-step-slider" max="10" min="0" type="range" value="0"/>
-          <span class="replay-step-label" id="replay-slider-label">Bước: 0 / 0</span>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" id="btn-close-replay">Đóng Replay</button>
-      </div>
-    </div>
-  </div>
-
+  <!-- SCRIPT ENGINE -->
   <script src="app.js"></script>
 </body>
 </html>
