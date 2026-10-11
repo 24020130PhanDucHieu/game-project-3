@@ -489,7 +489,7 @@ function findBestMatchToDisplay(tournament) {
   return matches[0];
 }
 
-function switchToTab(tabId) {
+function switchToTab(tabId, { skipMatchOpen = false } = {}) {
   // Đóng màn hình đăng nhập nếu đang mở
   hideLoginPage();
 
@@ -556,7 +556,7 @@ function switchToTab(tabId) {
     }
   } else if (tabId === "tab-ranking") {
     loadLeaderboard();
-  } else if (tabId === "tab-match-arena") {
+  } else if (tabId === "tab-match-arena" && !skipMatchOpen) {
     const targetMatch = (currentActiveMatchId && currentTournamentData?.matches?.[currentActiveMatchId])
       ? currentTournamentData.matches[currentActiveMatchId]
       : findBestMatchToDisplay(currentTournamentData);
@@ -2304,7 +2304,7 @@ function openMatchRoom(matchId) {
   connectActiveMatchSocket(matchId);
 
   // Chuyển sang Tab 3: Match Arena
-  switchToTab("tab-match-arena");
+  switchToTab("tab-match-arena", { skipMatchOpen: true });
 
   renderMatchRoomData(match);
   populateArenaMatchDropdown();
