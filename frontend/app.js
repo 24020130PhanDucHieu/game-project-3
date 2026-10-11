@@ -579,7 +579,10 @@ function switchToTab(tabId, { skipMatchOpen = false } = {}) {
 // QUẢN LÝ MÀN HÌNH ĐĂNG NHẬP RIÊNG BIỆT (MOCKUP 4 REPLICATION)
 // =============================================================================
 function showLoginPage(targetMatchId = null) {
-  pendingLoginMatchId = targetMatchId;
+  const matches = currentTournamentData?.matches || {};
+  const savedMatchId = sessionStorage.getItem("activeMatchId");
+  pendingLoginMatchId = [targetMatchId, currentActiveMatchId, savedMatchId]
+    .find(matchId => matchId && matches[matchId]) || null;
   const loginView = document.getElementById("view-login");
   if (loginView) {
     loginView.style.display = "flex";
@@ -636,9 +639,42 @@ async function handleLoginPageSubmit() {
   const username = document.getElementById("inp-login-user")?.value.trim() || "";
   const password = document.getElementById("inp-login-pass")?.value.trim() || "";
   const isAdminLogin = username.toLowerCase() === "admin";
-  if (!isAdminLogin && (!currentTournamentId || !pendingLoginMatchId)) {
-    notifyWarning("Chưa chọn trận", "Hãy chọn đúng trận trên bảng đấu trước khi đăng nhập tài khoản đội.");
-    return;
+  if (!isAdminLogin) {
+    if (!currentTournamentId) {
+      notifyWarning("Chưa chọn giải", "Hãy chọn giải đấu có đăng ký đội của bạn rồi thử đăng nhập lại.");
+      return;
+    }
+    if (!username) {
+      const error = document.getElementById("login-error-msg");
+      if (error) {
+        error.textContent = "Nhập MSSV/SBD của đội trước khi đăng nhập.";
+        error.style.display = "block";
+      }
+      return;
+    }
+    if (!currentTournamentData?.matches) await loadActiveTournament(currentTournamentId);
+
+    const normalizedUsername = username.toLowerCase();
+    const teamMatches = Object.entries(currentTournamentData?.matches || {}).filter(([, match]) =>
+      [match.team_a, match.team_b].some(team =>
+        String(team?.student_id || "").trim().toLowerCase() === normalizedUsername
+      )
+    );
+    const activeTeamMatches = teamMatches.filter(([, match]) => match.status !== "COMPLETED");
+    const activeMatchIds = new Set(activeTeamMatches.map(([matchId]) => matchId));
+    pendingLoginMatchId = [pendingLoginMatchId, currentActiveMatchId, sessionStorage.getItem("activeMatchId")]
+      .find(matchId => matchId && activeMatchIds.has(matchId))
+      || activeTeamMatches[0]?.[0]
+      || teamMatches[0]?.[0]
+      || null;
+
+    if (!pendingLoginMatchId) {
+      notifyWarning(
+        "Chưa tìm thấy trận của đội",
+        "Kiểm tra MSSV/SBD và giải đấu đang chọn. Nếu đội chưa có trong lịch đấu, nhờ Ban Tổ Chức xếp lịch trước khi đăng nhập."
+      );
+      return;
+    }
   }
   const error = document.getElementById("login-error-msg");
   const button = document.getElementById("btn-login-submit");
@@ -1026,7 +1062,7 @@ function updateRoleUI() {
 
   // Cập nhật nút Đăng Nhập trên card khách và Đăng Xuất trên card tài khoản
   if (authBtn) {
-    authBtn.onclick = () => showLoginPage();
+    authBtn.onclick = () => showLoginPage(currentActiveMatchId);
   }
   if (btnLogout) {
     btnLogout.onclick = handleUserLogout;
