@@ -3843,6 +3843,7 @@ async function handleResetCurrentMatch() {
 
     notifyInfo("Thông Báo", data.message || "");
     await loadActiveTournament(currentTournamentId);
+    broadcastCrossTabSync("MATCH_UPDATED");
 
   } catch (err) {
     console.error("Lỗi:", err);
