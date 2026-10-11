@@ -2043,7 +2043,7 @@ function renderBracketTree(tourn) {
       const colorB = getDynamicTeamColor(teamBName, (lvl === 1 ? 2 * i + 1 : 1));
 
       roundMatchesData.push({
-        id: mId,
+        id: refMatch?.match_id || mId,
         title: `Trận ${i + 1}`,
         isFinal: isGf,
         team_a: teamAName,
@@ -2282,7 +2282,10 @@ function openMatchRoom(matchId) {
       matchId = altKey;
     }
   }
-  if (!match) return;
+  if (!match) {
+    notifyWarning("Không tìm thấy trận", "Trận này chưa có trong dữ liệu giải đấu. Hãy tải lại giải hoặc xếp lịch trận trước.");
+    return;
+  }
 
   // Phân quyền: Tuyển thủ (TEAM) chỉ được phép vào trận đấu của chính mình
   if (currentAppRole === "TEAM") {
