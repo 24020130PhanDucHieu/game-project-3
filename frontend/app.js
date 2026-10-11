@@ -419,7 +419,7 @@ function setupSidebarNavigation() {
   // Nút đăng nhập bên sidebar
   const btnSidebarAuth = document.getElementById("btn-user-auth-action");
   if (btnSidebarAuth) {
-    btnSidebarAuth.addEventListener("click", () => showLoginPage());
+    btnSidebarAuth.addEventListener("click", () => showLoginPage(currentActiveMatchId));
   }
 
   // Nút đăng xuất bên sidebar
@@ -634,7 +634,7 @@ async function handleLoginPageSubmit() {
   const password = document.getElementById("inp-login-pass")?.value.trim() || "";
   const isAdminLogin = username.toLowerCase() === "admin";
   if (!isAdminLogin && (!currentTournamentId || !pendingLoginMatchId)) {
-    notifyWarning("Chưa chọn trận", "Hãy mở một trận đấu để đăng nhập.");
+    notifyWarning("Chưa chọn trận", "Hãy chọn đúng trận trên bảng đấu trước khi đăng nhập tài khoản đội.");
     return;
   }
   const error = document.getElementById("login-error-msg");
