@@ -4098,20 +4098,6 @@ function setupModals() {
     });
   }
 
-  // Modal Quản Lý Đội Thi Đấu
-  const modalTeamMgr = document.getElementById("modal-manage-teams");
-  const btnCloseTeamMgr = document.getElementById("btn-close-team-mgr");
-  const btnCloseTeamMgrX = document.getElementById("btn-close-team-mgr-x");
-  const btnMgrAddTeam = document.getElementById("btn-mgr-add-team");
-  const btnMgrQuickFill = document.getElementById("btn-mgr-quick-fill");
-  const btnMgrAutoSchedule = document.getElementById("btn-mgr-auto-schedule");
-
-  const closeTeamMgr = () => { if (modalTeamMgr) modalTeamMgr.style.display = "none"; };
-  if (btnCloseTeamMgr) btnCloseTeamMgr.addEventListener("click", closeTeamMgr);
-  if (btnCloseTeamMgrX) btnCloseTeamMgrX.addEventListener("click", closeTeamMgr);
-  if (btnMgrAddTeam) btnMgrAddTeam.addEventListener("click", handleAddTeamSubmit);
-  if (btnMgrQuickFill) btnMgrQuickFill.addEventListener("click", handleQuickFillTeams);
-  if (btnMgrAutoSchedule) btnMgrAutoSchedule.addEventListener("click", handleAutoSchedule);
 
   // Modal Đăng Nhập Trận Đấu (2 Trường Duy Nhất: Tài Khoản & Mật Khẩu)
   const btnCloseMatchLogin = document.getElementById("btn-close-match-login");

@@ -12,7 +12,8 @@ if hasattr(sys.stdout, "reconfigure"):
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8")
 
-API_URL = "http://127.0.0.1:8080"
+import os
+API_URL = os.environ.get("API_URL", "http://127.0.0.1:8080")
 
 def request_json(path, method="GET", data=None):
     url = f"{API_URL}{path}"
