@@ -285,17 +285,6 @@
               <span>Thêm & Quản lý đội</span>
             </button>
 
-            <!-- DROPDOWN CÁC GIẢI ĐẤU CHO PHÉP CHỌN GIẢI ĐẤU ĐỂ XEM SƠ ĐỒ -->
-            <div class="tourn-selector-group">
-              <label class="tourn-sel-label" for="select-active-tournament">
-
-                <span>Các giải đấu:</span>
-              </label>
-              <select class="select-tourn-bracket" id="select-active-tournament" title="Chọn giải đấu để xem sơ đồ nhánh">
-                <option value="">Đang tải danh sách giải...</option>
-              </select>
-            </div>
-
             <!-- THÔNG TIN GIẢI HIỆN TẠI -->
             <div class="bracket-tournament-meta">
               <div class="meta-line">
@@ -347,7 +336,6 @@
             <h1 class="page-title">Bảng xếp hạng</h1>
             <p class="page-subtitle">Thứ hạng các đội và bot tham gia giải đấu.</p>
           </div>
-          <button class="btn-clean link-all-ranking" id="btn-refresh-ranking">Xem tất cả &rarr;</button>
         </div>
 
         <!-- THẺ BẢNG DỮ LIỆU ĐẦY ĐỦ 8 ĐỘI -->
@@ -383,9 +371,6 @@
             <div class="match-room-titles" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
               <h2 class="room-title" id="match-room-title">Trận 1 - Tứ Kết</h2>
               <span class="room-badge-stage" id="match-room-stage-badge">Bo6 (6 Round)</span>
-              <select id="arena-match-selector" class="input-text-sm" style="max-width: 220px; font-weight: 500; font-size: 12px; height: 32px; border-radius: 6px; cursor: pointer;">
-                <option value="">-- Chọn Trận Đấu --</option>
-              </select>
             </div>
           </div>
 
@@ -594,7 +579,6 @@
           <button id="btn-arena-next-round">Vòng tiếp theo</button>
           <button id="btn-arena-reset-match">Đặt lại trận</button>
           <button id="btn-arena-quick-demo">Nạp bot mẫu</button>
-          <span id="arena-current-match-badge"></span>
         </div>
       </section>
 

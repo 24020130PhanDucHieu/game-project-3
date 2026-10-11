@@ -724,8 +724,6 @@ function setupPublicSubNav() {
     btnMatchBack.addEventListener("click", () => switchToTab("tab-bracket"));
   }
 
-  const btnRefRank = document.getElementById("btn-refresh-ranking");
-  if (btnRefRank) btnRefRank.addEventListener("click", loadLeaderboard);
 }
 
 function switchPublicSubView(subviewName) {
@@ -938,8 +936,6 @@ function renderTournamentsTableRows(list) {
 window.selectAndLoadTournament = async function(tournamentId) {
   currentTournamentId = tournamentId;
   sessionStorage.setItem("activeTournamentId", tournamentId);
-  const sel = document.getElementById("select-active-tournament");
-  if (sel) sel.value = tournamentId;
   await loadActiveTournament(tournamentId);
   notifySuccess("Chọn Bảng Đấu", "Đã nạp bảng đấu thành công!");
   switchPublicSubView("overview");
@@ -948,8 +944,6 @@ window.selectAndLoadTournament = async function(tournamentId) {
 window.viewTournamentBracket = async function(tournamentId) {
   currentTournamentId = tournamentId;
   sessionStorage.setItem("activeTournamentId", tournamentId);
-  const sel = document.getElementById("select-active-tournament");
-  if (sel) sel.value = tournamentId;
   await loadActiveTournament(tournamentId);
   switchPublicSubView("bracket");
 };
@@ -1477,55 +1471,6 @@ function updateAdminConsoleStatus() {
   }
 }
 
-function populateArenaMatchDropdown() {
-  const badge = document.getElementById("arena-current-match-badge");
-  if (badge && currentMatchData) {
-    badge.textContent = `Đang Xem: ${currentMatchData.title}`;
-  }
-
-  const selMatch = document.getElementById("select-arena-match");
-  const arenaMatchSel = document.getElementById("arena-match-selector");
-  if (!currentTournamentData || !currentTournamentData.matches) return;
-
-  const matches = Object.values(currentTournamentData.matches);
-
-  if (selMatch) {
-    selMatch.innerHTML = "";
-    matches.forEach(m => {
-      const opt = document.createElement("option");
-      opt.value = m.match_id;
-      opt.textContent = `${m.title} (${m.status})`;
-      if (m.match_id === currentActiveMatchId) opt.selected = true;
-      selMatch.appendChild(opt);
-    });
-  }
-
-  if (arenaMatchSel) {
-    arenaMatchSel.innerHTML = "";
-    matches.forEach((m, idx) => {
-      const opt = document.createElement("option");
-      opt.value = m.match_id;
-      const nameA = m.team_a ? m.team_a.team_name : "Chờ Đội Đỏ";
-      const nameB = m.team_b ? m.team_b.team_name : "Chờ Đội Xanh";
-      const roundName = m.round_name || `Trận ${idx + 1}`;
-      opt.textContent = `${roundName}: ${nameA} vs ${nameB}`;
-      if (m.match_id === currentActiveMatchId) opt.selected = true;
-      arenaMatchSel.appendChild(opt);
-    });
-
-    if (currentActiveMatchId) {
-      arenaMatchSel.value = currentActiveMatchId;
-    }
-
-    if (!arenaMatchSel.dataset.bound) {
-      arenaMatchSel.dataset.bound = "true";
-      arenaMatchSel.addEventListener("change", (e) => {
-        if (e.target.value) openMatchRoom(e.target.value);
-      });
-    }
-  }
-}
-
 function openTeamStudio(side) {
   if (currentAppRole === "GUEST") {
     notifyWarning("Yêu Cầu Đăng Nhập", "Vui lòng đăng nhập với tài khoản đội để vào phòng soạn thảo bot!");
@@ -1570,19 +1515,10 @@ function openTeamStudio(side) {
 // 2. QUẢN LÝ ĐA GIẢI ĐẤU (TOURNAMENT MANAGEMENT)
 // =============================================================================
 function setupTournamentControls() {
-  const selTourn = document.getElementById("select-active-tournament");
   const btnRefresh = document.getElementById("btn-refresh-tourn");
   const btnBackBracket = document.getElementById("btn-back-to-bracket");
   const btnVictoryBack = document.getElementById("btn-victory-back-tree");
   const btnTeamMgr = document.getElementById("btn-open-team-manager");
-
-  if (selTourn) {
-    selTourn.addEventListener("change", (e) => {
-      currentTournamentId = e.target.value;
-      sessionStorage.setItem("activeTournamentId", currentTournamentId);
-      loadActiveTournament(currentTournamentId);
-    });
-  }
 
   if (btnRefresh) {
     btnRefresh.addEventListener("click", () => {
@@ -1684,29 +1620,18 @@ async function loadTournamentsList() {
   try {
     const res = await fetch(`${API_BASE}/api/tournaments/list`);
     const list = await res.json();
-    const sel = document.getElementById("select-active-tournament");
-    sel.innerHTML = "";
 
     if (!list || list.length === 0) {
       currentTournamentId = null;
       currentTournamentData = null;
       sessionStorage.removeItem("activeTournamentId");
       localStorage.removeItem("activeTournamentId");
-      sel.innerHTML = `<option value="">Chưa có giải đấu nào</option>`;
       return;
     }
-
-    list.forEach(t => {
-      const opt = document.createElement("option");
-      opt.value = t.tournament_id;
-      opt.textContent = `${t.name} (${t.num_teams} Đội)`;
-      sel.appendChild(opt);
-    });
 
     if (!currentTournamentId || !list.some(t => t.tournament_id === currentTournamentId)) {
       currentTournamentId = list[0].tournament_id;
     }
-    sel.value = currentTournamentId;
     sessionStorage.setItem("activeTournamentId", currentTournamentId);
     await loadActiveTournament(currentTournamentId);
 
@@ -1777,7 +1702,6 @@ async function loadActiveTournament(tournamentId) {
       renderMatchRoomData(data.matches[currentActiveMatchId]);
       loadMatchSubmissions(currentActiveMatchId);
     }
-    populateArenaMatchDropdown();
   } catch (err) {
     console.error("Lỗi nạp giải đấu:", err);
   }
@@ -1851,7 +1775,6 @@ async function loadActiveTournamentSilent(tournamentId) {
         renderVisualBattleArena(data.matches[currentActiveMatchId]);
         loadMatchSubmissions(currentActiveMatchId);
       }
-      populateArenaMatchDropdown();
     }
 
     const teamsPane = document.getElementById("teams-tab");
@@ -2307,7 +2230,6 @@ function openMatchRoom(matchId) {
   switchToTab("tab-match-arena", { skipMatchOpen: true });
 
   renderMatchRoomData(match);
-  populateArenaMatchDropdown();
 }
 
 function renderMatchRoomData(match) {
@@ -3061,14 +2983,6 @@ function setupMatchRoomControls() {
 
   // Điều khiển xem lại từng bước trực tiếp trên bàn cờ 9×9
   setupInlineBoardPlayback();
-
-  // Dropdown chuyển nhanh trận trong Match Arena
-  const selMatch = document.getElementById("select-arena-match");
-  if (selMatch) {
-    selMatch.addEventListener("change", (e) => {
-      if (e.target.value) openMatchRoom(e.target.value);
-    });
-  }
 
   // Nút Vào Nộp Bot Đội Đỏ / Đội Xanh
   document.querySelectorAll(".btn-jump-to-studio").forEach(btn => {
