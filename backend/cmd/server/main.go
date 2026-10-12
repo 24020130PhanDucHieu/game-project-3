@@ -133,18 +133,20 @@ func main() {
 		api.GET("/tournaments/list", tHandler.GetList)
 		api.GET("/tournaments/:id", optionalSession(sessions), tHandler.GetByID)
 		api.POST("/tournaments/create", adminOnly, tHandler.Create)
+		api.DELETE("/tournaments/:id", adminOnly, tHandler.Delete)
 		api.POST("/tournaments/:id/auto-schedule", adminOnly, tHandler.AutoSchedule)
 
 		// Teams
 		api.GET("/tournaments/:id/teams", optionalSession(sessions), teamHandler.GetTeams)
 		api.POST("/tournaments/:id/teams", adminOnly, teamHandler.AddTeam)
-		api.POST("/tournaments/:id/teams/:studentId/access-code", adminOnly, teamHandler.RotateCredential)
 		api.DELETE("/tournaments/:id/teams/:studentId", adminOnly, teamHandler.RemoveTeam)
 		api.POST("/tournaments/:id/teams/quick-fill", adminOnly, teamHandler.QuickFill)
 
 		// Matches & Submission Studio
 		api.POST("/admin/login", mHandler.AdminLogin)
+		api.POST("/teams/login", mHandler.TeamLogin)
 		api.POST("/tournaments/:id/matches/:matchId/login", mHandler.Login)
+		api.POST("/tournaments/:id/matches/:matchId/select", requireSession(sessions, false, false), mHandler.SelectTeamMatch)
 		api.POST("/tournaments/:id/matches/:matchId/auth", mHandler.Auth)
 		api.POST("/tournaments/:id/matches/:matchId/draft-code", matchSession, mHandler.SubmitDraftCode)
 		api.POST("/tournaments/:id/matches/:matchId/code", matchSession, mHandler.SubmitCode)

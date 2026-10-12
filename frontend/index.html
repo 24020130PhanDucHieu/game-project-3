@@ -279,6 +279,10 @@
               <span>Tạo giải đấu</span>
             </button>
 
+            <button class="btn btn-outline btn-sm" id="btn-open-tournament-list" type="button">
+              <span>Các giải đấu</span>
+            </button>
+
             <!-- NÚT THÊM & QUẢN LÝ ĐỘI TUYỂN (CHỈ ADMIN MỚI TẠO/SỬA ĐƯỢC) -->
             <button class="btn btn-outline btn-sm" id="btn-open-team-mgr-bracket" title="Chỉ Ban Tổ Chức (Admin) mới có quyền thêm, xóa và sắp xếp các đội thi đấu">
 
@@ -639,19 +643,18 @@
             <h3 class="panel-title">Tài khoản và mật khẩu đội thi</h3>
             <span class="badge-tag highlight" id="admin-credentials-status">Đang tải đội...</span>
           </div>
-          <p class="page-subtitle" style="margin-top: 10px;">Tên đăng nhập là MSSV/SBD. Mật khẩu mới chỉ hiện trong phiên hiện tại sau khi thêm đội hoặc cấp lại mã. Mã cũ không thể xem lại.</p>
+          <p class="page-subtitle" style="margin-top: 10px;">Tên đăng nhập là MSSV/SBD. Mật khẩu mặc định của mỗi đội là k69 ghép với MSSV/SBD.</p>
           <div class="table-responsive" style="margin-top: 16px;">
             <table class="table-clean ranking-full-table" id="table-team-credentials">
               <thead>
                 <tr>
                   <th>ĐỘI</th>
                   <th>MSSV / TÊN ĐĂNG NHẬP</th>
-                  <th>MẬT KHẨU MỚI (CHỈ PHIÊN NÀY)</th>
-                  <th>THAO TÁC</th>
+                  <th>MẬT KHẨU MẶC ĐỊNH</th>
                 </tr>
               </thead>
               <tbody id="tbody-team-credentials">
-                <tr><td colspan="4" class="text-center text-muted">Đang tải danh sách đội...</td></tr>
+                <tr><td colspan="3" class="text-center text-muted">Đang tải danh sách đội...</td></tr>
               </tbody>
             </table>
           </div>
@@ -721,7 +724,7 @@
 
           <!-- GỢI Ý TÀI KHOẢN HỆ THỐNG -->
           <div class="login-hints-box">
-            <span>Organizers use the configured staff password. Teams use their student ID and one-time access code.</span>
+            <span>Ban Tổ Chức dùng mật khẩu quản trị. Đội thi dùng MSSV/SBD làm tài khoản và mật khẩu k69 + MSSV/SBD.</span>
           </div>
         </div>
       </div>
@@ -881,6 +884,28 @@
       <div class="modal-footer">
         <button class="btn btn-outline" id="btn-close-create-tourn" onclick="closeCreateTournModal()">Hủy</button>
         <button class="btn btn-primary" id="btn-submit-create-tourn">Khởi Tạo Giải Đấu</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="modal-tournament-list" style="display: none;" onclick="if(event.target === this) window.closeTournamentListModal()">
+    <div class="modal-card" style="width:min(900px, 94vw); max-height:85vh; overflow:auto;">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">Các giải đấu</h2>
+          <p class="page-subtitle">Chọn giải để tải đúng danh sách đội và nhánh đấu.</p>
+        </div>
+        <button class="btn-clean btn-modal-close" type="button" onclick="window.closeTournamentListModal()">Đóng</button>
+      </div>
+      <div class="table-responsive" style="margin-top:16px;">
+        <table class="table-clean ranking-full-table">
+          <thead>
+            <tr><th>TÊN GIẢI</th><th>SỐ ĐỘI</th><th>TRẠNG THÁI</th><th>THAO TÁC</th></tr>
+          </thead>
+          <tbody id="tbody-bracket-tournament-list">
+            <tr><td colspan="4" class="text-center text-muted">Đang tải danh sách giải...</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>

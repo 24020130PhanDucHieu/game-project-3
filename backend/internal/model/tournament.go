@@ -1,9 +1,12 @@
 package model
 
 type TournamentSummary struct {
-	TournamentID string `json:"tournament_id"`
-	Name         string `json:"name"`
-	NumTeams     int    `json:"num_teams"`
+	TournamentID string  `json:"tournament_id"`
+	Name         string  `json:"name"`
+	NumTeams     int     `json:"num_teams"`
+	CreatedAt    float64 `json:"created_at,omitempty"`
+	Status       string  `json:"status,omitempty"`
+	Champion     string  `json:"champion,omitempty"`
 }
 
 type Tournament struct {

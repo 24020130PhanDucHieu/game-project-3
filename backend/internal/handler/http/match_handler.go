@@ -4,6 +4,7 @@ import (
 	"crypto/subtle"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -116,6 +117,133 @@ func (h *MatchHandler) Login(c *gin.Context) {
 		res["tournament"] = redactTournament(tournament, auth.Session{Role: "TEAM", Side: side, TournamentID: id, MatchID: matchID})
 	}
 	c.JSON(http.StatusOK, res)
+}
+
+func (h *MatchHandler) TeamLogin(c *gin.Context) {
+	var req map[string]interface{}
+	if err := c.ShouldBindJSON(&req); err != nil || req == nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Invalid login request"})
+		return
+	}
+	username, _ := req["username"].(string)
+	password, _ := req["password"].(string)
+	if strings.TrimSpace(username) == "" || password == "" || isAdminUsername(username) {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Enter a team student ID and access code"})
+		return
+	}
+	preferredTournament, _ := req["tournament_id"].(string)
+	type loginCandidate struct {
+		tournamentID string
+		matchID      string
+		priority     int
+	}
+	var candidates []loginCandidate
+	for tournamentID, rawTournament := range h.service.GetAllTournaments() {
+		tournament, ok := rawTournament.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		tournamentPriority := 2
+		if status, _ := tournament["status"].(string); status == "RUNNING" {
+			tournamentPriority = 0
+			if tournamentID == preferredTournament {
+				tournamentPriority = -1
+			}
+		} else if tournamentID == preferredTournament {
+			tournamentPriority = 1
+		}
+		matches, _ := tournament["matches"].(map[string]interface{})
+		for matchID, rawMatch := range matches {
+			match, ok := rawMatch.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			participates := false
+			for _, side := range []string{"team_a", "team_b"} {
+				team, _ := match[side].(map[string]interface{})
+				studentID, _ := team["student_id"].(string)
+				if strings.EqualFold(strings.TrimSpace(studentID), strings.TrimSpace(username)) {
+					participates = true
+					break
+				}
+			}
+			if !participates {
+				continue
+			}
+			priority := tournamentPriority
+			if status, _ := match["status"].(string); status == "COMPLETED" {
+				priority += 3
+			}
+			candidates = append(candidates, loginCandidate{tournamentID, matchID, priority})
+		}
+	}
+	sort.SliceStable(candidates, func(i, j int) bool { return candidates[i].priority < candidates[j].priority })
+	for _, candidate := range candidates {
+		params := map[string]interface{}{
+			"match_id": candidate.matchID,
+			"username": username,
+			"password": password,
+		}
+		result, err := h.service.MutateTournament(candidate.tournamentID, "login", params)
+		if err != nil {
+			continue
+		}
+		role, _ := result["role"].(string)
+		side, _ := result["side"].(string)
+		team, _ := result["team"].(map[string]interface{})
+		studentID := username
+		if team != nil {
+			studentID, _ = team["student_id"].(string)
+			delete(team, "credential_hash")
+		}
+		h.issueSession(candidate.tournamentID, candidate.matchID, role, side, studentID, result)
+		if result["session_token"] == nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"detail": "Could not create session"})
+			return
+		}
+		delete(result, "tournament")
+		result["tournament_id"] = candidate.tournamentID
+		result["match_id"] = candidate.matchID
+		c.JSON(http.StatusOK, result)
+		return
+	}
+	c.JSON(http.StatusUnauthorized, gin.H{"detail": "Không tìm thấy đội trong lịch thi đấu với MSSV và mật khẩu này. Hãy kiểm tra MSSV, mã k69+MSSV và việc đội đã được thêm vào giải."})
+}
+
+func (h *MatchHandler) SelectTeamMatch(c *gin.Context) {
+	session, ok := sessionFromContext(c)
+	if !ok || session.Role == "ADMIN" {
+		c.JSON(http.StatusForbidden, gin.H{"detail": "A team session is required"})
+		return
+	}
+	tournamentID := c.Param("id")
+	matchID := c.Param("matchId")
+	tournament, err := h.service.GetTournamentByID(tournamentID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"detail": err.Error()})
+		return
+	}
+	matches, _ := tournament["matches"].(map[string]interface{})
+	match, _ := matches[matchID].(map[string]interface{})
+	if match == nil {
+		c.JSON(http.StatusNotFound, gin.H{"detail": "Match not found"})
+		return
+	}
+	for _, side := range []string{"team_a", "team_b"} {
+		team, _ := match[side].(map[string]interface{})
+		studentID, _ := team["student_id"].(string)
+		if team != nil && strings.EqualFold(strings.TrimSpace(studentID), strings.TrimSpace(session.StudentID)) {
+			result := map[string]interface{}{"status": "SUCCESS", "match_id": matchID, "side": side}
+			h.issueSession(tournamentID, matchID, session.Role, side, session.StudentID, result)
+			if result["session_token"] == nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"detail": "Could not create match session"})
+				return
+			}
+			c.JSON(http.StatusOK, result)
+			return
+		}
+	}
+	c.JSON(http.StatusForbidden, gin.H{"detail": "This match does not include your team"})
 }
 
 func (h *MatchHandler) SubmitDraftCode(c *gin.Context) {

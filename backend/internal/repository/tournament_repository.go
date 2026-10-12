@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 
 	"project-tuan3/internal/model"
@@ -14,7 +15,7 @@ type TournamentRepository interface {
 	GetList() []model.TournamentSummary
 	GetByID(id string) (map[string]interface{}, bool)
 	Save(id string, tournament map[string]interface{}) error
-	Delete(id string)
+	Delete(id string) error
 	SaveToDisk() error
 }
 
@@ -121,13 +122,20 @@ func (r *JSONTournamentRepository) GetList() []model.TournamentSummary {
 			if nt, ok := t["num_teams"].(float64); ok {
 				numTeams = int(nt)
 			}
+			createdAt, _ := t["created_at"].(float64)
+			status, _ := t["status"].(string)
+			champion, _ := t["champion"].(string)
 			list = append(list, model.TournamentSummary{
 				TournamentID: id,
 				Name:         name,
 				NumTeams:     numTeams,
+				CreatedAt:    createdAt,
+				Status:       status,
+				Champion:     champion,
 			})
 		}
 	}
+	sort.SliceStable(list, func(i, j int) bool { return list[i].CreatedAt > list[j].CreatedAt })
 	return list
 }
 
@@ -172,11 +180,12 @@ func cloneTournament(tournament map[string]interface{}) map[string]interface{} {
 	return cloned
 }
 
-func (r *JSONTournamentRepository) Delete(id string) {
+func (r *JSONTournamentRepository) Delete(id string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	tournaments, ok := r.store["tournaments"].(map[string]interface{})
 	if ok {
 		delete(tournaments, id)
 	}
+	return nil
 }

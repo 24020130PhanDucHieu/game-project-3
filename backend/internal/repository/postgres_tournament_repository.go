@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"sort"
 	"sync"
 	"time"
 
@@ -141,12 +142,19 @@ func (r *PostgresTournamentRepository) GetList() []model.TournamentSummary {
 		} else if nt, ok := t["num_teams"].(int); ok {
 			numTeams = nt
 		}
+		createdAt, _ := t["created_at"].(float64)
+		status, _ := t["status"].(string)
+		champion, _ := t["champion"].(string)
 		list = append(list, model.TournamentSummary{
 			TournamentID: id,
 			Name:         name,
 			NumTeams:     numTeams,
+			CreatedAt:    createdAt,
+			Status:       status,
+			Champion:     champion,
 		})
 	}
+	sort.SliceStable(list, func(i, j int) bool { return list[i].CreatedAt > list[j].CreatedAt })
 	return list
 }
 
@@ -197,11 +205,14 @@ func (r *PostgresTournamentRepository) Save(id string, tournament map[string]int
 	return nil
 }
 
-func (r *PostgresTournamentRepository) Delete(id string) {
+func (r *PostgresTournamentRepository) Delete(id string) error {
+	if _, err := r.db.Exec("DELETE FROM tournaments WHERE id = $1", id); err != nil {
+		return fmt.Errorf("delete tournament %s: %w", id, err)
+	}
 	r.mu.Lock()
 	delete(r.cache, id)
 	r.mu.Unlock()
-	_, _ = r.db.Exec("DELETE FROM tournaments WHERE id = $1", id)
+	return nil
 }
 func (r *PostgresTournamentRepository) SaveToDisk() error {
 	// Không cần thiết với Postgres

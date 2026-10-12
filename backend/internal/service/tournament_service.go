@@ -53,6 +53,18 @@ func (s *TournamentService) GetTournamentByID(id string) (map[string]interface{}
 	return t, nil
 }
 
+func (s *TournamentService) DeleteTournament(id string) error {
+	unlock := s.lockTournament(id)
+	defer unlock()
+	if _, found := s.repo.GetByID(id); !found {
+		return fmt.Errorf("không tìm thấy giải đấu có ID: %s", id)
+	}
+	if err := s.repo.Delete(id); err != nil {
+		return err
+	}
+	return s.repo.SaveToDisk()
+}
+
 func (s *TournamentService) CreateTournament(name string, numTeams int) (map[string]interface{}, error) {
 	if numTeams <= 0 {
 		numTeams = 8

@@ -160,6 +160,15 @@ func (h *TournamentHandler) Create(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
+func (h *TournamentHandler) Delete(c *gin.Context) {
+	id := c.Param("id")
+	if err := h.service.DeleteTournament(id); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "tournament_id": id})
+}
+
 func (h *TournamentHandler) AutoSchedule(c *gin.Context) {
 	id := c.Param("id")
 	res, err := h.service.MutateTournament(id, "auto-schedule", map[string]interface{}{})

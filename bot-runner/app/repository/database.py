@@ -14,7 +14,6 @@ import os
 import json
 import hashlib
 import hmac
-import secrets
 from app.models.schemas import (
     UserResponse, BotProfileResponse, BotVersionInfo, MatchHistory, TournamentStage, BotLanguage
 )
@@ -696,7 +695,7 @@ class Database:
         if any(t["team_name"].strip().lower() == team_name.strip().lower() for t in teams):
             raise ValueError(f"Tên đội '{team_name.strip()}' đã tồn tại trong giải đấu này!")
             
-        access_code = secrets.token_urlsafe(24)
+        access_code = self.default_team_access_code(student_id.strip())
         new_team = {
             "seed": len(teams) + 1,
             "bot_id": f"bot_{student_id.strip()}",
@@ -719,40 +718,9 @@ class Database:
             "capacity": num_teams
         }
 
-    def rotate_team_access_code(self, tournament_id: str, student_id: str) -> dict:
-        tourn = self.tournaments.get(tournament_id)
-        if not tourn:
-            raise ValueError("Không tìm thấy giải đấu.")
-
-        requested_id = str(student_id or "").strip().casefold()
-        if not requested_id:
-            raise ValueError("MSSV/SBD không được để trống.")
-
-        team = next(
-            (item for item in tourn.get("teams", [])
-             if str(item.get("student_id", "")).strip().casefold() == requested_id),
-            None,
-        )
-        if not team:
-            raise ValueError("Không tìm thấy đội trong giải đấu.")
-
-        access_code = secrets.token_urlsafe(24)
-        credential_hash = hashlib.sha256(access_code.encode()).hexdigest()
-        team["credential_hash"] = credential_hash
-        # Matches keep team snapshots, and login validates against those snapshots.
-        # Rotate every copy so the new code works in all rounds and the old code stops.
-        for match in (tourn.get("matches") or {}).values():
-            for side in ("team_a", "team_b"):
-                match_team = match.get(side)
-                if (match_team and
-                        str(match_team.get("student_id", "")).strip().casefold() == requested_id):
-                    match_team["credential_hash"] = credential_hash
-        self.save_tournaments_to_file()
-        return {
-            "student_id": team["student_id"],
-            "team_name": team.get("team_name", ""),
-            "team_access_code": access_code,
-        }
+    @staticmethod
+    def default_team_access_code(student_id: str) -> str:
+        return f"k69{str(student_id or '').strip()}"
 
     def remove_team_from_tournament(self, tournament_id: str, student_id: str) -> dict:
         tourn = self.tournaments.get(tournament_id)
@@ -954,7 +922,7 @@ class Database:
         team_a = match.get("team_a")
         team_b = match.get("team_b")
 
-        # Teams authenticate with their registered student ID and one-time-issued access code.
+        # Teams authenticate with their registered student ID and deterministic default code.
         match_team_a = False
         if team_a:
             sid_a = team_a.get("student_id", "").strip().lower()
@@ -962,8 +930,8 @@ class Database:
                 match_team_a = True
 
         if match_team_a:
-            supplied_hash = hashlib.sha256(p_clean.encode()).hexdigest()
-            if team_a.get("credential_hash") and hmac.compare_digest(supplied_hash, team_a["credential_hash"]):
+            expected_code = Database.default_team_access_code(team_a.get("student_id", ""))
+            if hmac.compare_digest(p_clean, expected_code):
                 team_a["authenticated"] = True
                 self.save_tournaments_to_file()
                 return {
@@ -984,8 +952,8 @@ class Database:
                 match_team_b = True
 
         if match_team_b:
-            supplied_hash = hashlib.sha256(p_clean.encode()).hexdigest()
-            if team_b.get("credential_hash") and hmac.compare_digest(supplied_hash, team_b["credential_hash"]):
+            expected_code = Database.default_team_access_code(team_b.get("student_id", ""))
+            if hmac.compare_digest(p_clean, expected_code):
                 team_b["authenticated"] = True
                 self.save_tournaments_to_file()
                 return {
@@ -1117,10 +1085,9 @@ def decide_move(game_state):
         if not team_slot:
             raise ValueError(f"Phe {side} chưa có đội tham gia.")
 
-        supplied_hash = hashlib.sha256(password.strip().encode()).hexdigest()
+        expected_code = Database.default_team_access_code(team_slot["student_id"])
         if (student_id.strip().upper() == team_slot["student_id"].strip().upper()
-                and team_slot.get("credential_hash")
-                and hmac.compare_digest(supplied_hash, team_slot["credential_hash"])):
+                and hmac.compare_digest(password.strip(), expected_code)):
             team_slot["authenticated"] = True
             return {"status": "SUCCESS", "message": f"Xác thực đội {team_slot['team_name']} thành công!", "team": team_slot}
         else:
