@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -128,13 +129,12 @@ func (r *PostgresTournamentRepository) cachedSnapshot() map[string]interface{} {
 
 func (r *PostgresTournamentRepository) GetList() []model.TournamentSummary {
 	tournaments := r.GetAll()
-	var list []model.TournamentSummary
-	for _, raw := range tournaments {
+	list := []model.TournamentSummary{}
+	for id, raw := range tournaments {
 		t, ok := raw.(map[string]interface{})
 		if !ok {
 			continue
 		}
-		id, _ := t["tournament_id"].(string)
 		name, _ := t["name"].(string)
 		numTeams := 0
 		if nt, ok := t["num_teams"].(float64); ok {
@@ -158,24 +158,35 @@ func (r *PostgresTournamentRepository) GetList() []model.TournamentSummary {
 	return list
 }
 
-func (r *PostgresTournamentRepository) GetByID(id string) (map[string]interface{}, bool) {
-	// Fallback đọc trực tiếp từ DB nếu cache miss
+func (r *PostgresTournamentRepository) GetByID(id string) (map[string]interface{}, bool, error) {
 	var rawData []byte
-	err := r.db.QueryRow("SELECT data FROM tournaments WHERE id = $1", id).Scan(&rawData)
+	var err error
+	for attempt := 0; attempt < 2; attempt++ {
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		err = r.db.QueryRowContext(ctx, "SELECT data FROM tournaments WHERE id = $1", id).Scan(&rawData)
+		cancel()
+		if err == nil || err == sql.ErrNoRows {
+			break
+		}
+	}
+	if err == sql.ErrNoRows {
+		return nil, false, nil
+	}
 	if err != nil {
-		return nil, false
+		return nil, false, fmt.Errorf("không thể kết nối dữ liệu giải đấu: %w", err)
 	}
 
 	var t map[string]interface{}
 	if err := json.Unmarshal(rawData, &t); err != nil {
-		return nil, false
+		return nil, false, fmt.Errorf("dữ liệu giải đấu không hợp lệ: %w", err)
 	}
+	t["tournament_id"] = id
 
 	r.mu.Lock()
 	r.cache[id] = t
 	r.mu.Unlock()
 
-	return cloneTournament(t), true
+	return cloneTournament(t), true, nil
 }
 
 func (r *PostgresTournamentRepository) Save(id string, tournament map[string]interface{}) error {
@@ -206,8 +217,16 @@ func (r *PostgresTournamentRepository) Save(id string, tournament map[string]int
 }
 
 func (r *PostgresTournamentRepository) Delete(id string) error {
-	if _, err := r.db.Exec("DELETE FROM tournaments WHERE id = $1", id); err != nil {
+	result, err := r.db.Exec("DELETE FROM tournaments WHERE id = $1", id)
+	if err != nil {
 		return fmt.Errorf("delete tournament %s: %w", id, err)
+	}
+	count, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return ErrTournamentNotFound
 	}
 	r.mu.Lock()
 	delete(r.cache, id)

@@ -46,7 +46,19 @@ def mutate_tournament(req: MutateRequest):
     
     action_res = {}
     try:
-        if action == "create-tournament":
+        if action in {"submit-draft", "submit-code"} and t_id:
+            match = stateless_db.tournaments[t_id].get("matches", {}).get(p.get("match_id"))
+            if not match:
+                raise ValueError("Không tìm thấy trận đấu.")
+            if p.get("round_number") is not None and int(p["round_number"]) != match.get("current_round_idx", 1):
+                raise ValueError("Hiệp đấu đã thay đổi. Hãy kiểm tra hiệp hiện tại rồi nộp lại.")
+            side = p.get("side") or "team_a"
+            if p.get("session_authenticated") and match.get(side):
+                match[side]["authenticated"] = True
+        if action == "validate-code":
+            from app.sandbox.runner import BotRunner
+            return BotRunner.validate_bot_code(p.get("code_content") or "", p.get("language") or "PYTHON")
+        elif action == "create-tournament":
             new_t = stateless_db.create_tournament(p.get("name"), p.get("num_teams", 8))
             return {"status": "SUCCESS", "tournament": new_t}
         elif action == "auto-schedule":

@@ -57,10 +57,44 @@ func isAdminUsername(username string) bool {
 }
 
 func (h *MatchHandler) issueSession(tournamentID, matchID, role, side, studentID string, result map[string]interface{}) {
-	token, err := h.sessions.Create(auth.Session{TournamentID: tournamentID, MatchID: matchID, Role: role, Side: side, StudentID: studentID})
+	teamName := ""
+	if team, ok := result["team"].(map[string]interface{}); ok {
+		teamName, _ = team["team_name"].(string)
+	}
+	token, err := h.sessions.Create(auth.Session{TournamentID: tournamentID, MatchID: matchID, Role: role, Side: side, StudentID: studentID, TeamName: teamName})
 	if err == nil {
 		result["session_token"] = token
 	}
+}
+
+func (h *MatchHandler) CurrentSession(c *gin.Context) {
+	session, ok := sessionFromContext(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"detail": "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."})
+		return
+	}
+	session.Nonce = ""
+	c.JSON(http.StatusOK, session)
+}
+
+func (h *MatchHandler) Logout(c *gin.Context) {
+	token := strings.TrimSpace(strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer "))
+	h.sessions.Revoke(token)
+	c.JSON(http.StatusOK, gin.H{"status": "SUCCESS"})
+}
+
+func (h *MatchHandler) ValidateCode(c *gin.Context) {
+	var req map[string]interface{}
+	if c.ShouldBindJSON(&req) != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Mã lệnh không hợp lệ"})
+		return
+	}
+	result, err := h.service.ValidateCode(req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, result)
 }
 
 func (h *MatchHandler) Login(c *gin.Context) {
@@ -138,6 +172,9 @@ func (h *MatchHandler) TeamLogin(c *gin.Context) {
 		priority     int
 	}
 	var candidates []loginCandidate
+	var rosterTeam map[string]interface{}
+	rosterTournament := ""
+	rosterPriority := 100
 	for tournamentID, rawTournament := range h.service.GetAllTournaments() {
 		tournament, ok := rawTournament.(map[string]interface{})
 		if !ok {
@@ -151,6 +188,15 @@ func (h *MatchHandler) TeamLogin(c *gin.Context) {
 			}
 		} else if tournamentID == preferredTournament {
 			tournamentPriority = 1
+		}
+		if teams, ok := tournament["teams"].([]interface{}); ok {
+			for _, rawTeam := range teams {
+				team, _ := rawTeam.(map[string]interface{})
+				sid, _ := team["student_id"].(string)
+				if strings.EqualFold(strings.TrimSpace(sid), strings.TrimSpace(username)) && tournamentPriority < rosterPriority {
+					rosterTeam, rosterTournament, rosterPriority = team, tournamentID, tournamentPriority
+				}
+			}
 		}
 		matches, _ := tournament["matches"].(map[string]interface{})
 		for matchID, rawMatch := range matches {
@@ -207,12 +253,30 @@ func (h *MatchHandler) TeamLogin(c *gin.Context) {
 		c.JSON(http.StatusOK, result)
 		return
 	}
-	c.JSON(http.StatusUnauthorized, gin.H{"detail": "Không tìm thấy đội trong lịch thi đấu với MSSV và mật khẩu này. Hãy kiểm tra MSSV, mã k69+MSSV và việc đội đã được thêm vào giải."})
+	if rosterTeam != nil {
+		sid, _ := rosterTeam["student_id"].(string)
+		if subtle.ConstantTimeCompare([]byte(password), []byte("k69"+strings.TrimSpace(sid))) == 1 {
+			name, _ := rosterTeam["team_name"].(string)
+			result := map[string]interface{}{"status": "SUCCESS", "role": "TEAM", "tournament_id": rosterTournament, "match_id": "", "team": map[string]interface{}{"student_id": sid, "team_name": name}}
+			h.issueSession(rosterTournament, "", "TEAM", "", sid, result)
+			if result["session_token"] == nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"detail": "Could not create session"})
+				return
+			}
+			c.JSON(http.StatusOK, result)
+			return
+		}
+	}
+	c.JSON(http.StatusUnauthorized, gin.H{"detail": "Không tìm thấy đội với MSSV và mật khẩu này. Hãy kiểm tra MSSV, mã k69+MSSV và việc đội đã được thêm vào giải."})
 }
 
 func (h *MatchHandler) SelectTeamMatch(c *gin.Context) {
 	session, ok := sessionFromContext(c)
-	if !ok || session.Role == "ADMIN" {
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"detail": "Phiên đăng nhập đã hết hạn."})
+		return
+	}
+	if session.Role != "TEAM" {
 		c.JSON(http.StatusForbidden, gin.H{"detail": "A team session is required"})
 		return
 	}
@@ -233,8 +297,15 @@ func (h *MatchHandler) SelectTeamMatch(c *gin.Context) {
 		team, _ := match[side].(map[string]interface{})
 		studentID, _ := team["student_id"].(string)
 		if team != nil && strings.EqualFold(strings.TrimSpace(studentID), strings.TrimSpace(session.StudentID)) {
-			result := map[string]interface{}{"status": "SUCCESS", "match_id": matchID, "side": side}
+			result := map[string]interface{}{"status": "SUCCESS", "match_id": matchID, "side": side, "team": team}
+			params := map[string]interface{}{"match_id": matchID, "side": side, "student_id": studentID, "password": "k69" + strings.TrimSpace(studentID)}
+			if _, err := h.service.MutateTournament(tournamentID, "auth", params); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+				return
+			}
 			h.issueSession(tournamentID, matchID, session.Role, side, session.StudentID, result)
+			result["team_name"] = team["team_name"]
+			delete(result, "team")
 			if result["session_token"] == nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"detail": "Could not create match session"})
 				return
@@ -246,9 +317,37 @@ func (h *MatchHandler) SelectTeamMatch(c *gin.Context) {
 	c.JSON(http.StatusForbidden, gin.H{"detail": "This match does not include your team"})
 }
 
+func (h *MatchHandler) authorizeCurrentTeam(c *gin.Context, tournamentID, matchID string) bool {
+	session, ok := sessionFromContext(c)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"detail": "Cần đăng nhập để nộp mã lệnh."})
+		return false
+	}
+	if session.Role == "ADMIN" {
+		return true
+	}
+	tournament, err := h.service.GetTournamentByID(tournamentID)
+	if err != nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"detail": err.Error()})
+		return false
+	}
+	matches, _ := tournament["matches"].(map[string]interface{})
+	match, _ := matches[matchID].(map[string]interface{})
+	team, _ := match[session.Side].(map[string]interface{})
+	studentID, _ := team["student_id"].(string)
+	if session.TournamentID != tournamentID || session.MatchID != matchID || session.StudentID == "" || !strings.EqualFold(strings.TrimSpace(studentID), strings.TrimSpace(session.StudentID)) {
+		c.JSON(http.StatusForbidden, gin.H{"detail": "Đội hoặc nhánh đấu đã thay đổi. Hãy chọn lại trận của đội trên bảng đấu để cập nhật phiên."})
+		return false
+	}
+	return true
+}
+
 func (h *MatchHandler) SubmitDraftCode(c *gin.Context) {
 	id := c.Param("id")
 	matchID := c.Param("matchId")
+	if !h.authorizeCurrentTeam(c, id, matchID) {
+		return
+	}
 	var req map[string]interface{}
 	_ = c.ShouldBindJSON(&req)
 	if req == nil {
@@ -257,6 +356,7 @@ func (h *MatchHandler) SubmitDraftCode(c *gin.Context) {
 	if session, ok := sessionFromContext(c); ok && session.Role != "ADMIN" {
 		req["side"] = session.Side
 	}
+	req["session_authenticated"] = true
 	req["match_id"] = matchID
 
 	res, err := h.service.MutateTournament(id, "submit-draft", req)
@@ -278,6 +378,9 @@ func (h *MatchHandler) SubmitDraftCode(c *gin.Context) {
 func (h *MatchHandler) SubmitCode(c *gin.Context) {
 	id := c.Param("id")
 	matchID := c.Param("matchId")
+	if !h.authorizeCurrentTeam(c, id, matchID) {
+		return
+	}
 	var req map[string]interface{}
 	_ = c.ShouldBindJSON(&req)
 	if req == nil {
@@ -286,6 +389,7 @@ func (h *MatchHandler) SubmitCode(c *gin.Context) {
 	if session, ok := sessionFromContext(c); ok && session.Role != "ADMIN" {
 		req["side"] = session.Side
 	}
+	req["session_authenticated"] = true
 	req["match_id"] = matchID
 
 	res, err := h.service.MutateTournament(id, "submit-code", req)

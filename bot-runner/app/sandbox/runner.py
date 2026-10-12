@@ -144,7 +144,7 @@ safe_modules = {"random", "math", "collections", "itertools", "re", "json", "hea
 def safe_import(name, globals=None, locals=None, fromlist=(), level=0):
     if name.split(".")[0] not in safe_modules: raise ImportError("Import module bị cấm")
     return builtins.__import__(name, globals, locals, fromlist, level)
-safe_builtins = {"range":range,"len":len,"min":min,"max":max,"abs":abs,"sum":sum,"int":int,"float":float,"str":str,"bool":bool,"list":list,"dict":dict,"set":set,"tuple":tuple,"print":lambda *a:None,"sorted":sorted,"reversed":reversed,"enumerate":enumerate,"zip":zip,"any":any,"all":all,"map":map,"filter":filter,"isinstance":isinstance,"type":type,"__import__":safe_import}
+safe_builtins = {"range":range,"len":len,"min":min,"max":max,"abs":abs,"sum":sum,"int":int,"float":float,"str":str,"bool":bool,"list":list,"dict":dict,"set":set,"tuple":tuple,"print":lambda *a:None,"sorted":sorted,"reversed":reversed,"enumerate":enumerate,"zip":zip,"next":next,"iter":iter,"any":any,"all":all,"map":map,"filter":filter,"isinstance":isinstance,"type":type,"__import__":safe_import}
 scope = {"__builtins__":safe_builtins,"random":random,"math":math}
 try:
     exec(compile(payload["code"], "<bot>", "exec"), scope, scope)

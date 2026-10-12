@@ -24,7 +24,7 @@ func NewHTTPBotRunnerAdapter(workerURL string) *HTTPBotRunnerAdapter {
 	return &HTTPBotRunnerAdapter{
 		workerURL: workerURL,
 		client: &http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: 3 * time.Minute,
 		},
 	}
 }

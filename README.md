@@ -21,9 +21,12 @@ Mở `http://localhost:8080`. Khi phát triển local, backend dùng JSON store 
 ## Đăng nhập và vận hành giải
 
 - Đặt `ADMIN_PASSWORD` trong môi trường backend để bật đăng nhập Ban Tổ Chức. Không dùng mật khẩu mẫu trong mã nguồn.
-- Khi đăng ký đội, hệ thống tạo mã truy cập ngẫu nhiên và chỉ trả mã một lần trong phản hồi thêm đội. Ban Tổ Chức cần gửi mã đó riêng cho đại diện đội.
-- Phiên đăng nhập có thời hạn; đăng nhập lại nếu phiên hết hạn hoặc máy chủ khởi động lại.
-- API công khai không trả credential hash hoặc mã nguồn đội khác. WebSocket gửi thông báo cập nhật theo trận để giao diện tải lại trạng thái mới.
+- Đội dùng MSSV/SBD làm tài khoản, mật khẩu cố định là `k69` + MSSV/SBD (ví dụ `24020001` / `k6924020001`). Có thể đăng nhập ngay sau khi đăng ký đội, trước khi xếp lịch.
+- Admin và đội chọn trận trên cây bảng đấu trước khi vào tab Trận đấu. Khi chuyển giải, cần chọn trận thuộc giải đó.
+- Phiên ký có thời hạn 7 ngày và giữ qua F5 hoặc restart nếu `SESSION_SECRET` ổn định; nếu không cấu hình biến này, backend dùng `ADMIN_PASSWORD` làm cơ sở ký phiên. Thay đổi khóa ký làm phiên cũ hết hiệu lực.
+- API công khai không trả credential hash hoặc mã nguồn đội khác. WebSocket thông báo theo giải, giữ kết nối bằng heartbeat và tải lại snapshot khi kết nối trở lại.
+- Máy chủ tự chuyển round theo thời điểm đã lưu. Mỗi round và mỗi trận mới cần bài nộp mới; không cần đăng nhập lại mỗi round. Không xếp lại nhánh hoặc xóa đội khi giải đã có kết quả.
+- Bản nháp, ngôn ngữ, vị trí replay, tab nhật ký và lựa chọn giải/trận được lưu trong trình duyệt theo tài khoản và trận.
 - `CORS_ORIGIN` nhận danh sách origin cách nhau bằng dấu phẩy. Hãy đặt đúng domain frontend khi triển khai.
 
 ## Kiểm thử
@@ -34,6 +37,9 @@ go test ./...
 cd ..
 python -m unittest discover -s tests/unit -p "test_*.py"
 python tests/security/test_sandbox_security.py
+go build -C backend -o bin/arena-verification.exe ./cmd/server/main.go
+python -m pip install playwright
+python -X utf8 tests/e2e/test_reliability.py
 cd bot-runner
 python -m py_compile main.py app/repository/database.py app/sandbox/runner.py
 ```
@@ -46,7 +52,9 @@ python -m py_compile main.py app/repository/database.py app/sandbox/runner.py
 docker build -t ottv2-arena -f deploy/Dockerfile .
 ```
 
-Đẩy source lên GitHub chỉ cập nhật repository. Muốn phát hành dịch vụ, cần kết nối repository với Render và cấu hình secrets/database ở trên.
+Đẩy source lên GitHub chỉ cập nhật repository. Muốn phát hành dịch vụ, cần kết nối repository với Render và cấu hình secrets/database ở trên. Render phục vụ luôn frontend tại URL web service. Nếu dùng thêm Cloudflare Workers để phục vụ assets, phải triển khai lại cả thư mục `frontend/`; bản này dùng URL assets `v=3.0` để tránh lấy JavaScript cũ từ cache.
+
+Kết quả và phạm vi kiểm thử: [docs/VERIFICATION_RELIABILITY.md](docs/VERIFICATION_RELIABILITY.md).
 
 ## Ghi chú sandbox
 

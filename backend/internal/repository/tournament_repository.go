@@ -2,6 +2,7 @@ package repository
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"sort"
@@ -10,10 +11,12 @@ import (
 	"project-tuan3/internal/model"
 )
 
+var ErrTournamentNotFound = errors.New("không tìm thấy giải đấu")
+
 type TournamentRepository interface {
 	GetAll() map[string]interface{}
 	GetList() []model.TournamentSummary
-	GetByID(id string) (map[string]interface{}, bool)
+	GetByID(id string) (map[string]interface{}, bool, error)
 	Save(id string, tournament map[string]interface{}) error
 	Delete(id string) error
 	SaveToDisk() error
@@ -113,10 +116,9 @@ func (r *JSONTournamentRepository) GetList() []model.TournamentSummary {
 		return []model.TournamentSummary{}
 	}
 
-	var list []model.TournamentSummary
-	for _, v := range tournaments {
+	list := []model.TournamentSummary{}
+	for id, v := range tournaments {
 		if t, ok := v.(map[string]interface{}); ok {
-			id, _ := t["tournament_id"].(string)
 			name, _ := t["name"].(string)
 			numTeams := 0
 			if nt, ok := t["num_teams"].(float64); ok {
@@ -139,21 +141,21 @@ func (r *JSONTournamentRepository) GetList() []model.TournamentSummary {
 	return list
 }
 
-func (r *JSONTournamentRepository) GetByID(id string) (map[string]interface{}, bool) {
+func (r *JSONTournamentRepository) GetByID(id string) (map[string]interface{}, bool, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	tournaments, ok := r.store["tournaments"].(map[string]interface{})
 	if !ok {
-		return nil, false
+		return nil, false, nil
 	}
 	val, exists := tournaments[id]
 	if !exists || val == nil {
-		return nil, false
+		return nil, false, nil
 	}
 	if tMap, ok := val.(map[string]interface{}); ok {
-		return cloneTournament(tMap), true
+		return cloneTournament(tMap), true, nil
 	}
-	return nil, false
+	return nil, false, nil
 }
 
 func (r *JSONTournamentRepository) Save(id string, tournament map[string]interface{}) error {
@@ -184,8 +186,9 @@ func (r *JSONTournamentRepository) Delete(id string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	tournaments, ok := r.store["tournaments"].(map[string]interface{})
-	if ok {
-		delete(tournaments, id)
+	if !ok || tournaments[id] == nil {
+		return ErrTournamentNotFound
 	}
+	delete(tournaments, id)
 	return nil
 }

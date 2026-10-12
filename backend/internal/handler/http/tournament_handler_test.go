@@ -11,8 +11,8 @@ func TestRedactTournamentProtectsSourceAndCredentials(t *testing.T) {
 		"teams": []interface{}{map[string]interface{}{"credential_hash": "hash", "code_content": "registration source"}},
 		"matches": map[string]interface{}{
 			"m1": map[string]interface{}{
-				"team_a":              map[string]interface{}{"current_code": "secret-a", "draft_code": "draft-a", "credential_hash": "hash-a"},
-				"team_b":              map[string]interface{}{"current_code": "secret-b", "draft_code": "draft-b", "credential_hash": "hash-b"},
+				"team_a":              map[string]interface{}{"student_id": "sid-a", "current_code": "secret-a", "draft_code": "draft-a", "credential_hash": "hash-a"},
+				"team_b":              map[string]interface{}{"student_id": "sid-b", "current_code": "secret-b", "draft_code": "draft-b", "credential_hash": "hash-b"},
 				"rounds_history":      []interface{}{map[string]interface{}{"team_a_code": "replay-a", "team_b_code": "replay-b"}},
 				"submissions_history": []interface{}{map[string]interface{}{"side": "team_a", "code": "submitted-a"}, map[string]interface{}{"side": "team_b", "code": "submitted-b"}},
 			},
@@ -31,7 +31,7 @@ func TestRedactTournamentProtectsSourceAndCredentials(t *testing.T) {
 		t.Fatal("public response exposed credential hash")
 	}
 
-	own := redactTournament(input, auth.Session{Role: "TEAM", TournamentID: "t1", MatchID: "m1", Side: "team_a"})
+	own := redactTournament(input, auth.Session{Role: "TEAM", StudentID: "sid-a", TournamentID: "t1", MatchID: "m1", Side: "team_a"})
 	ownMatch := own["matches"].(map[string]interface{})["m1"].(map[string]interface{})
 	if ownMatch["team_a"].(map[string]interface{})["current_code"] != "secret-a" {
 		t.Fatal("team session cannot read its own source")
@@ -41,6 +41,14 @@ func TestRedactTournamentProtectsSourceAndCredentials(t *testing.T) {
 	}
 	if len(ownMatch["submissions_history"].([]interface{})) != 1 {
 		t.Fatal("team session exposed opponent submissions")
+	}
+	if ownMatch["rounds_history"].([]interface{})[0].(map[string]interface{})["team_a_code"] != "replay-a" {
+		t.Fatal("own replay source was hidden")
+	}
+	stale := redactTournament(input, auth.Session{Role: "TEAM", StudentID: "different-team", MatchID: "m1", Side: "team_a"})
+	staleMatch := stale["matches"].(map[string]interface{})["m1"].(map[string]interface{})
+	if _, visible := staleMatch["team_a"].(map[string]interface{})["current_code"]; visible || len(staleMatch["submissions_history"].([]interface{})) != 0 {
+		t.Fatal("a stale team session exposed another team's source")
 	}
 
 	official := redactTournament(input, auth.Session{Role: "ADMIN"})

@@ -2,12 +2,15 @@ package http
 
 import (
 	"encoding/json"
+	"errors"
 	"math"
 	"net/http"
 	"sort"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"project-tuan3/internal/auth"
+	"project-tuan3/internal/repository"
 	"project-tuan3/internal/service"
 )
 
@@ -41,7 +44,11 @@ func (h *TournamentHandler) GetByID(c *gin.Context) {
 	id := c.Param("id")
 	t, err := h.service.GetTournamentByID(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"detail": err.Error()})
+		status := http.StatusServiceUnavailable
+		if errors.Is(err, repository.ErrTournamentNotFound) {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, gin.H{"detail": err.Error()})
 		return
 	}
 	session := requestSession(c)
@@ -81,6 +88,7 @@ func redactTournament(value map[string]interface{}, session auth.Session) map[st
 		if !ok {
 			continue
 		}
+		ownsMatch := false
 		for _, side := range []string{"team_a", "team_b"} {
 			team, ok := match[side].(map[string]interface{})
 			if !ok {
@@ -88,7 +96,10 @@ func redactTournament(value map[string]interface{}, session auth.Session) map[st
 			}
 			delete(team, "credential_hash")
 			isTeamSession := session.Role == "TEAM" || session.Role == "TEAM_A" || session.Role == "TEAM_B"
-			if session.Role != "ADMIN" && (!isTeamSession || session.MatchID != matchID || session.Side != side) {
+			studentID, _ := team["student_id"].(string)
+			ownsSide := isTeamSession && session.MatchID == matchID && session.Side == side && session.StudentID != "" && strings.EqualFold(strings.TrimSpace(studentID), strings.TrimSpace(session.StudentID))
+			ownsMatch = ownsMatch || ownsSide
+			if session.Role != "ADMIN" && !ownsSide {
 				delete(team, "current_code")
 				delete(team, "draft_code")
 			}
@@ -96,14 +107,18 @@ func redactTournament(value map[string]interface{}, session auth.Session) map[st
 		if rounds, ok := match["rounds_history"].([]interface{}); ok && session.Role != "ADMIN" {
 			for _, roundRaw := range rounds {
 				if round, ok := roundRaw.(map[string]interface{}); ok {
-					delete(round, "team_a_code")
-					delete(round, "team_b_code")
+					if !ownsMatch || session.Side != "team_a" {
+						delete(round, "team_a_code")
+					}
+					if !ownsMatch || session.Side != "team_b" {
+						delete(round, "team_b_code")
+					}
 				}
 			}
 		}
 		if submissions, ok := match["submissions_history"].([]interface{}); ok && session.Role != "ADMIN" {
 			visible := make([]interface{}, 0, len(submissions))
-			if session.Role == "TEAM" || session.Role == "TEAM_A" || session.Role == "TEAM_B" {
+			if ownsMatch {
 				for _, rawSubmission := range submissions {
 					if submission, ok := rawSubmission.(map[string]interface{}); ok && submission["side"] == session.Side {
 						visible = append(visible, submission)
@@ -163,7 +178,11 @@ func (h *TournamentHandler) Create(c *gin.Context) {
 func (h *TournamentHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 	if err := h.service.DeleteTournament(id); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+		status := http.StatusServiceUnavailable
+		if errors.Is(err, repository.ErrTournamentNotFound) {
+			status = http.StatusNotFound
+		}
+		c.JSON(status, gin.H{"detail": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "tournament_id": id})

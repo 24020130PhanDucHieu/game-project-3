@@ -15,9 +15,11 @@ window.fetch = (input, init = {}) => {
   const headers = new Headers(init.headers || (typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined));
   headers.set("Authorization", `Bearer ${token}`);
   return arenaFetch(input, { ...init, headers }).then((response) => {
-    if (response.status === 401 && sessionStorage.getItem("arenaSessionToken") === token) {
+    if (response.status === 401 && !requestURL.endsWith("/login") && sessionStorage.getItem("arenaSessionToken") === token) {
       sessionStorage.removeItem("arenaSessionToken");
       localStorage.removeItem("arenaSessionToken");
+      sessionStorage.removeItem("ARENA_STUDENT_ID");
+      sessionStorage.removeItem("ARENA_TEAM_NAME");
       sessionStorage.setItem("ARENA_USER_ROLE", "GUEST");
       sessionStorage.setItem("userRole", "GUEST");
       localStorage.setItem("ARENA_USER_ROLE", "GUEST");
@@ -205,7 +207,94 @@ function saveArenaSessionToken(token) {
 // =============================================================================
 // KHỞI ĐỘNG ỨNG DỤNG KHI TẢI TRANG
 // =============================================================================
-function initApp() {
+async function restoreArenaSession() {
+  if (!sessionStorage.getItem("arenaSessionToken")) return;
+  try {
+    const response = await fetch(`${API_BASE}/api/session`, { cache: "no-store" });
+    if (!response.ok) return;
+    const session = await response.json();
+    currentAppRole = currentUserRole = session.role === "ADMIN" ? "ADMIN" : "TEAM";
+    currentTeamStudentId = session.student_id || (currentAppRole === "ADMIN" ? "ADMIN" : "");
+    currentTeamName = session.team_name || (currentAppRole === "ADMIN" ? "Ban Tổ Chức" : currentTeamName);
+    if (currentAppRole === "TEAM") {
+      if (!currentTournamentId) currentTournamentId = session.tournament_id;
+      if (!currentActiveMatchId && currentTournamentId === session.tournament_id) currentActiveMatchId = session.match_id;
+      currentStudioSide = session.side || currentStudioSide;
+    }
+    updateRoleUI();
+  } catch { console.warn("Chưa kiểm tra được phiên. Giữ phiên để thử lại khi kết nối trở lại."); }
+}
+async function loadArenaCapabilities() {
+  try {
+    const response = await fetch(`${API_BASE}/api/capabilities`);
+    if (!response.ok) return;
+    const capabilities = await response.json();
+    document.querySelectorAll('#studio-sel-lang option[value="CPP"]').forEach(option => {
+      option.disabled = !capabilities.languages.includes("CPP");
+      option.textContent = option.disabled ? "C++ 17 (máy chủ chưa hỗ trợ)" : "C++ 17 (.cpp)";
+    });
+  } catch {}
+}
+function arenaViewKey() { return `arena-view:${API_BASE}:${currentTeamStudentId || currentAppRole}:${currentTournamentId || "none"}:${currentActiveMatchId || "none"}`; }
+function readArenaViewState() { try { return JSON.parse(localStorage.getItem(arenaViewKey()) || "{}"); } catch { return {}; } }
+function saveArenaViewState(patch) { localStorage.setItem(arenaViewKey(), JSON.stringify({ ...readArenaViewState(), ...patch })); }
+function restoreMatchViewState() {
+  const state = readArenaViewState();
+  if (state.logTab) {
+    document.querySelectorAll(".log-tab-btn").forEach(button => button.classList.toggle("active", button.dataset.logTab === state.logTab));
+    document.querySelectorAll(".log-pane").forEach(pane => pane.classList.toggle("active", pane.id === state.logTab));
+  }
+}
+function inlineReplayRecord(match) {
+  const history = match?.rounds_history || [];
+  const state = readArenaViewState();
+  return history.find(round => round.round_number === state.inlineRound) || history[history.length - 1];
+}
+let currentEditorKey = "";
+let liveRoundTimer = null;
+let liveRoundKey = "";
+function syncLiveRoundBoard(match) {
+  const record = match.rounds_history?.[match.rounds_history.length - 1];
+  const key = `${currentTournamentId}:${currentActiveMatchId}:${match.round_status}:${record?.round_number}:${match.intermission_ends_at}`;
+  if (key === liveRoundKey) return;
+  liveRoundKey = key;
+  clearInterval(liveRoundTimer);
+  const draw = () => {
+    const badge = document.getElementById("realtime-battle-status-badge");
+    if (badge) badge.textContent = match.battle_running ? "Đang chạy hiệp đấu..." : (record ? `Hiệp ${record.round_number} hoàn tất` : "Chờ hai đội nộp code");
+    const countdown = document.getElementById("countdown-num");
+    if (countdown && match.intermission_ends_at) countdown.textContent = Math.max(0, Math.ceil(match.intermission_ends_at - Date.now() / 1000));
+    if (!record?.board_steps?.length) return;
+    const steps = record.board_steps;
+    const progress = match.round_status === "ROUND_FINISHED" ? Math.max(0, Math.min(1, (Date.now() / 1000 - (match.intermission_ends_at - 5)) / 5)) : 1;
+    const index = Math.min(steps.length - 1, Math.floor(progress * steps.length));
+    const step = steps[index];
+    if (currentAppRole === "ADMIN") renderRealtimeChessboard(step.red_pieces, step.blue_pieces, step.clash_event);
+    if (!readArenaViewState().inlineRound) renderChessboard(step.red_pieces, step.blue_pieces, step.clash_event);
+    const counter = document.getElementById("realtime-step-count");
+    if (counter) counter.textContent = `Nước ${index + 1} / ${steps.length}`;
+    const log = document.getElementById("realtime-moves-log");
+    if (log) log.textContent = steps.slice(0, index + 1).map(s => s.log || "").join("\n");
+    if (progress === 1) clearInterval(liveRoundTimer);
+  };
+  draw();
+  if (match.round_status === "ROUND_FINISHED" && match.intermission_ends_at > Date.now() / 1000) liveRoundTimer = setInterval(draw, 100);
+}
+function studioDraftKey() { return `${arenaViewKey()}:draft:${currentStudioSide || "none"}`; }
+function saveStudioDraft() {
+  const editor = document.getElementById("studio-code-editor");
+  const language = document.getElementById("studio-sel-lang");
+  if (!editor || !language || currentEditorKey !== studioDraftKey()) return;
+  localStorage.setItem(currentEditorKey, JSON.stringify({ code: editor.value, language: language.value, scroll: editor.scrollTop, selectionStart: editor.selectionStart, selectionEnd: editor.selectionEnd }));
+}
+function tabScrollKey(tab) { return `arena-scroll:${API_BASE}:${currentTeamStudentId || currentAppRole}:${tab}`; }
+function saveTabScroll() {
+  const tab = document.querySelector(".tab-pane.active")?.id;
+  if (tab) sessionStorage.setItem(tabScrollKey(tab), String(window.scrollY));
+  saveStudioDraft();
+}
+
+async function initApp() {
   // 0. Luôn đóng màn hình đăng nhập modal/fullview khi nạp trang
   hideLoginPage();
 
@@ -283,8 +372,10 @@ function initApp() {
   setupStudioControls();
   setupAdminControls();
   setupModals();
-  setupAdminRules();
   updateRoleUI();
+  await Promise.all([restoreArenaSession(), loadArenaCapabilities()]);
+  window.addEventListener("pagehide", saveTabScroll);
+  if ("scrollRestoration" in history) history.scrollRestoration = "manual";
 
   // Khôi phục tab trước khi reload nếu có
   if (savedTab && savedTab !== "tab-overview" && savedTab !== "tab-match-arena") {
@@ -329,13 +420,12 @@ function initApp() {
   }
 
   // Tải danh sách giải đấu đầu tiên
-  loadTournamentsList().then(() => {
-    if (savedTab === "tab-match-arena") switchToTab("tab-match-arena");
-  });
+  await loadTournamentsList();
+  if (savedTab === "tab-match-arena") switchToTab("tab-match-arena");
 
   // Tự động đồng bộ thời gian thực mỗi 2.0 giây để cập nhật trạng thái nộp bài không cần F5
   setInterval(() => {
-    if (currentTournamentId && !isMatchRunning) {
+    if (currentTournamentId && !isMatchRunning && (!matchSocket || matchSocket.readyState !== WebSocket.OPEN)) {
       loadActiveTournamentSilent(currentTournamentId);
     }
   }, 2000);
@@ -416,9 +506,9 @@ window.updateTournSizePreview = function(val) {
 };
 
 if (document.readyState === 'loading') {
-  document.addEventListener("DOMContentLoaded", initApp);
+  document.addEventListener("DOMContentLoaded", () => { window.arenaReady = initApp(); });
 } else {
-  initApp();
+  window.arenaReady = initApp();
 }
 
 // =============================================================================
@@ -465,8 +555,8 @@ function isTeamInMatch(match, studentId, teamName) {
     if (!t) return false;
     const tSid = (t.student_id || "").toString().trim().toLowerCase();
     const tName = (t.team_name || "").toString().trim().toLowerCase();
-    return (mySid && (tSid === mySid || tSid.includes(mySid))) ||
-           (myName && (tName === myName || tName.includes(myName)));
+    return (mySid && tSid === mySid) ||
+           (myName && tName === myName);
   };
 
   return checkTeam(match.team_a) || checkTeam(match.team_b);
@@ -510,6 +600,9 @@ function findBestMatchToDisplay(tournament) {
 }
 
 function switchToTab(tabId, { skipMatchOpen = false } = {}) {
+  saveTabScroll();
+  clearInterval(inlinePlaybackTimer); inlinePlaybackTimer = null;
+  clearInterval(replayPlayInterval); replayPlayInterval = null;
   // Đóng màn hình đăng nhập nếu đang mở
   hideLoginPage();
 
@@ -568,6 +661,7 @@ function switchToTab(tabId, { skipMatchOpen = false } = {}) {
   // Lưu trạng thái tab đang xem để F5 không bị reset về trang chủ
   localStorage.setItem("activeTabId", tabId);
   sessionStorage.setItem("activeTabId", tabId);
+  requestAnimationFrame(() => window.scrollTo(0, Number(sessionStorage.getItem(tabScrollKey(tabId)) || 0)));
 
   // Tự động tải dữ liệu theo từng tab
   if (tabId === "tab-overview") {
@@ -810,7 +904,7 @@ function renderDashboardOverview() {
   const activeMatch = (currentActiveMatchId && currentTournamentData?.matches?.[currentActiveMatchId])
     || matches.find(m => m.status === "RUNNING")
     || matches.find(m => m.status === "IN_PROGRESS")
-    || matches[0];
+    || matches.find(m => m.team_a || m.team_b);
 
   if (activeMatch) {
     const tA = activeMatch.team_a ? activeMatch.team_a.team_name : "Đội Đỏ";
@@ -818,10 +912,10 @@ function renderDashboardOverview() {
     if (teamAEl) teamAEl.textContent = tA;
     if (teamBEl) teamBEl.textContent = tB;
     if (matchStatEl) {
-      matchStatEl.textContent = activeMatch.status === "FINISHED" ? "Đã Kết Thúc" : "Đang diễn ra";
+      matchStatEl.textContent = activeMatch.status === "COMPLETED" ? "Đã kết thúc" : (activeMatch.battle_running ? "Đang thi đấu" : "Chờ thi đấu");
     }
     if (matchScoreEl) {
-      matchScoreEl.textContent = `${activeMatch.score_a ?? 2} - ${activeMatch.score_b ?? 1}`;
+      matchScoreEl.textContent = `${activeMatch.team_a?.rounds_won || 0} - ${activeMatch.team_b?.rounds_won || 0}`;
     }
     if (matchMetaEl) {
       matchMetaEl.textContent = `Vòng ${activeMatch.current_round_idx || 1} · Thể thức Bo5`;
@@ -837,73 +931,22 @@ function renderDashboardOverview() {
   }
 
   // Tải danh sách top 5 bảng xếp hạng theo Mockup 1
+  if (!activeMatch) { if (teamAEl) teamAEl.textContent="Chưa xếp đội"; if (teamBEl) teamBEl.textContent="Chưa xếp đội"; if (matchScoreEl) matchScoreEl.textContent="0 - 0"; if (matchStatEl) matchStatEl.textContent="Chờ xếp lịch"; }
   loadDashboardTopRanking();
 }
 
 async function loadDashboardTopRanking() {
-  const tbody = document.getElementById("tbody-dash-top-ranking");
+  const tbody=document.getElementById("tbody-dash-top-ranking");
   if (!tbody) return;
-
-  const referenceTop5 = [
-    { rank: 1, name: "RedBot", sid: "K69A001", elo: 1620, color: "color-red" },
-    { rank: 2, name: "BlueBot", sid: "K69A002", elo: 1580, color: "color-blue" },
-    { rank: 3, name: "GreenBot", sid: "K69A003", elo: 1520, color: "color-green" },
-    { rank: 4, name: "YellowBot", sid: "K69A004", elo: 1480, color: "color-yellow" },
-    { rank: 5, name: "PurpleBot", sid: "K69A005", elo: 1420, color: "color-purple" }
-  ];
-
   try {
-    const res = await fetch(`${API_BASE}/api/ranking`);
-    if (res.ok) {
-      const ranks = await res.json();
-      if (Array.isArray(ranks) && ranks.length > 0) {
-        tbody.innerHTML = "";
-        ranks.slice(0, 5).forEach((r, idx) => {
-          const rankNum = idx + 1;
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>
-              <span class="rank-num-bold">${rankNum}</span>
-            </td>
-            <td>
-              <div class="bot-team-cell">
-                <span class="team-name-bold">${escapeHtml(r.bot_name || r.team_name || "Bot")}</span>
-              </div>
-            </td>
-            <td><span class="student-id-code">${escapeHtml(r.student_id || "---")}</span></td>
-            <td style="text-align: right;"><span class="elo-score-bold">${r.elo_score || 1200}</span></td>
-          `;
-          tbody.appendChild(tr);
-        });
-        return;
-      }
-    }
-  } catch (e) {
-    console.warn("Dùng dữ liệu chuẩn Mockup 1:", e);
-  }
-
-  // Fallback chuẩn theo ảnh mẫu Mockup 1
-  tbody.innerHTML = "";
-  referenceTop5.forEach(r => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>
-        <span class="rank-num-bold">${r.rank}</span>
-      </td>
-      <td>
-        <div class="bot-team-cell">
-          <span class="team-name-bold">${escapeHtml(r.name)}</span>
-        </div>
-      </td>
-      <td><span class="student-id-code">${r.sid}</span></td>
-      <td style="text-align: right;"><span class="elo-score-bold">${r.elo}</span></td>
-    `;
-    tbody.appendChild(tr);
-  });
+    const response=await fetch(`${API_BASE}/api/ranking`);
+    if (!response.ok) throw new Error("Không tải được xếp hạng.");
+    const ranks=await response.json();
+    const rows=ranks.slice(0,5);
+    tbody.innerHTML=rows.length ? rows.map((r,i)=>`<tr><td>${i+1}</td><td><strong>${escapeHtml(r.bot_name || r.team_name || "Bot")}</strong></td><td>${escapeHtml(r.student_id || "---")}</td><td style="text-align:right">${r.elo_score ?? 1200}</td></tr>`).join("") : '<tr><td colspan="4">Chưa có dữ liệu xếp hạng.</td></tr>';
+  } catch { tbody.innerHTML='<tr><td colspan="4">Không tải được dữ liệu xếp hạng. Hãy thử lại.</td></tr>'; }
 }
 
-
-// RENDER TRANG QUẢN LÝ CÁC BẢNG ĐẤU TẬP TRUNG (MỤC 6)
 let allTournamentsCache = [];
 async function renderAllTournamentsTable() {
   const tbody = document.getElementById("tbody-all-tournaments");
@@ -1086,7 +1129,7 @@ window.deleteTournamentFromBracket = async function(tournamentId, tournamentName
   try {
     const response = await fetch(`${API_BASE}/api/tournaments/${encodeURIComponent(tournamentId)}`, { method: "DELETE" });
     const result = await response.json();
-    if (!response.ok) throw new Error(result.detail || "Không thể xóa giải đấu.");
+    if (!response.ok && response.status !== 404) throw new Error(result.detail || "Không thể xóa giải đấu.");
     if (currentTournamentId === tournamentId) {
       resetSelectedMatch();
       currentTournamentId = null;
@@ -1104,6 +1147,9 @@ window.deleteTournamentFromBracket = async function(tournamentId, tournamentName
 };
 
 function resetSelectedMatch() {
+  saveStudioDraft();
+  clearInterval(liveRoundTimer);
+  liveRoundKey = "";
   currentActiveMatchId = null;
   currentStudioSide = null;
   sessionStorage.removeItem("activeMatchId");
@@ -1187,6 +1233,7 @@ function updateRoleUI() {
   }
 
   sessionStorage.setItem("userRole", currentUserRole);
+  sessionStorage.setItem("ARENA_USER_ROLE", currentAppRole);
   localStorage.setItem("ARENA_USER_ROLE", currentAppRole);
   if (currentAppRole === "GUEST") {
     localStorage.removeItem("ARENA_STUDENT_ID");
@@ -1194,6 +1241,8 @@ function updateRoleUI() {
   } else {
     localStorage.setItem("ARENA_STUDENT_ID", currentTeamStudentId);
     localStorage.setItem("ARENA_TEAM_NAME", currentTeamName);
+    sessionStorage.setItem("ARENA_STUDENT_ID", currentTeamStudentId);
+    sessionStorage.setItem("ARENA_TEAM_NAME", currentTeamName);
   }
 
   // Phân quyền hiển thị thanh điều hướng:
@@ -1279,6 +1328,8 @@ function updateRoleUI() {
 }
 
 function handleUserLogout() {
+  saveStudioDraft();
+  fetch(`${API_BASE}/api/logout`, { method: "POST" }).catch(() => {});
   currentAppRole = "GUEST";
   currentUserRole = "GUEST";
   currentTeamStudentId = "";
@@ -1786,13 +1837,13 @@ function renderTeamCredentialsTable() {
 function switchToBracketView() {
   switchToTab("public-arena-tab");
   switchPublicSubView("bracket");
-  resetSelectedMatch();
 }
 
 async function loadTournamentsList() {
 
   try {
     const res = await fetch(`${API_BASE}/api/tournaments/list`);
+    if (!res.ok) throw new Error("Không tải được danh sách giải đấu.");
     const list = await res.json();
 
     if (!list || list.length === 0) {
@@ -1801,6 +1852,8 @@ async function loadTournamentsList() {
       currentTournamentData = null;
       sessionStorage.removeItem("activeTournamentId");
       localStorage.removeItem("activeTournamentId");
+      document.getElementById("bracket-tree-canvas").textContent = "Chưa có giải đấu. Ban tổ chức có thể tạo giải mới.";
+      renderTeamCredentialsTable();
       return;
     }
 
@@ -1816,154 +1869,74 @@ async function loadTournamentsList() {
   }
 }
 
-async function loadActiveTournament(tournamentId) {
-  try {
-    const res = await fetch(`${API_BASE}/api/tournaments/${tournamentId}`);
-    if (!res.ok) throw new Error("Không thể tải thông tin giải đấu");
-    const data = await res.json();
-    currentTournamentData = data;
-    if (currentAppRole === "ADMIN") renderTeamCredentialsTable();
-    if (currentActiveMatchId && !data.matches?.[currentActiveMatchId]) resetSelectedMatch();
-
-    // Cập nhật thống kê giải đấu trên thanh điều hành
-    const teamCountEl = document.getElementById("tourn-teams-count");
-    if (teamCountEl) teamCountEl.textContent = `${data.num_teams} Đội`;
-    const champEl = document.getElementById("tourn-champ-name");
-    if (champEl) {
-      if (data.champion) {
-        champEl.textContent = data.champion;
-        const champPill = document.getElementById("tourn-champion-pill");
-        if (champPill) champPill.style.display = "flex";
-      } else {
-        champEl.textContent = "Đang tranh tài...";
-      }
-    }
-
-    // Cập nhật badge số đội
-    const badgeCount = document.getElementById("count-teams-badge");
-    if (badgeCount) {
-      const teamCount = data.teams ? data.teams.length : 0;
-      badgeCount.textContent = `${teamCount}/${data.num_teams}`;
-    }
-
-    // Nếu modal quản lý đội đang mở, cập nhật lại bảng
-    const modalMgr = document.getElementById("modal-manage-teams");
-    if (modalMgr && modalMgr.style.display !== "none") {
-      renderTeamManagerTable();
-    }
-
-    // Vẽ cây sơ đồ giải đấu
-    renderBracketTree(data);
-
-    // Cập nhật tổng quan Dashboard
-    renderDashboardOverview();
-
-    // Keep the match explicitly chosen by the user across refreshes and tab changes.
-    const preserveExplicitMatch = sessionStorage.getItem("matchExplicitlySelected") === "true"
-      && currentActiveMatchId && data.matches?.[currentActiveMatchId];
-    if (!preserveExplicitMatch && currentAppRole === "TEAM" && (currentTeamStudentId || currentTeamName) && data.matches) {
-      const best = findBestMatchToDisplay(data);
-      if (best) currentActiveMatchId = best.match_id;
-    } else if (!preserveExplicitMatch && (!currentActiveMatchId || (data.matches && data.matches[currentActiveMatchId] && !data.matches[currentActiveMatchId].team_a && !data.matches[currentActiveMatchId].team_b))) {
-      const best = findBestMatchToDisplay(data);
-      if (best) currentActiveMatchId = best.match_id;
-    }
-    if (currentActiveMatchId && data.matches?.[currentActiveMatchId]) {
-      sessionStorage.setItem("activeMatchId", currentActiveMatchId);
-      localStorage.setItem("activeMatchId", currentActiveMatchId);
-    }
-
-    // Nếu đang mở phòng đấu của giải này, cập nhật lại dữ liệu phòng
-    if (currentActiveMatchId && data.matches && data.matches[currentActiveMatchId]) {
-      renderMatchRoomData(data.matches[currentActiveMatchId]);
-      loadMatchSubmissions(currentActiveMatchId);
-    }
-  } catch (err) {
-    console.error("Lỗi nạp giải đấu:", err);
-  }
+const tournamentRefreshRequests = new Map();
+let lastAppliedTournamentFingerprint = "";
+async function refreshTournamentSnapshot(tournamentId, showErrors = false) {
+  if (!tournamentId) return null;
+  const existing = tournamentRefreshRequests.get(tournamentId);
+  if (existing) { existing.queued = true; return existing.promise; }
+  const request = { queued: false, promise: null };
+  request.promise = (async () => {
+    let latest = null, passes = 0;
+    do {
+      passes++; request.queued = false;
+      try {
+        const response = await fetch(`${API_BASE}/api/tournaments/${encodeURIComponent(tournamentId)}`, { cache: "no-store" });
+        if (tournamentId !== currentTournamentId) return null;
+        if (response.status === 404) {
+          resetSelectedMatch(); currentTournamentId = currentTournamentData = null;
+          sessionStorage.removeItem("activeTournamentId"); localStorage.removeItem("activeTournamentId");
+          document.getElementById("bracket-tree-canvas").textContent = "Giải đã được xóa. Hãy chọn giải khác.";
+          if (document.querySelector(".tab-pane.active")?.id === "tab-match-arena") switchToTab("tab-bracket");
+          setTimeout(() => loadTournamentsList(), 0);
+          return null;
+        }
+        if (!response.ok) throw new Error("Không thể tải dữ liệu giải. Máy chủ đang mất kết nối; hãy thử lại.");
+        latest = await response.json();
+        if (tournamentId !== currentTournamentId) return null;
+        const fingerprint = `${currentAppRole}:${currentTeamStudentId}:` + JSON.stringify(latest);
+        currentTournamentData = latest; connectActiveMatchSocket(currentActiveMatchId);
+        if (fingerprint !== lastAppliedTournamentFingerprint) {
+          lastAppliedTournamentFingerprint = fingerprint; applyTournamentSnapshot(latest);
+        }
+      } catch (error) { if (showErrors) notifyError("Không tải được giải", error.message); return null; }
+    } while (request.queued && passes < 2 && currentTournamentId === tournamentId);
+    return latest;
+  })();
+  tournamentRefreshRequests.set(tournamentId, request);
+  try { return await request.promise; }
+  finally { tournamentRefreshRequests.delete(tournamentId); }
 }
-
-async function loadActiveTournamentSilent(tournamentId) {
-  try {
-    const res = await fetch(`${API_BASE}/api/tournaments/${tournamentId}`);
-    if (!res.ok) return;
-    const data = await res.json();
-    currentTournamentData = data;
-    if (currentAppRole === "ADMIN") renderTeamCredentialsTable();
-
-    const teamCountEl = document.getElementById("tourn-teams-count");
-    if (teamCountEl) teamCountEl.textContent = `${data.num_teams} Đội`;
-    const champEl = document.getElementById("tourn-champ-name");
-    if (champEl) {
-      if (data.champion) {
-        champEl.textContent = data.champion;
-        const champPill = document.getElementById("tourn-champion-pill");
-        if (champPill) champPill.style.display = "flex";
-      } else {
-        champEl.textContent = "Đang tranh tài...";
-      }
-    }
-
-    const badgeCount = document.getElementById("count-teams-badge");
-    if (badgeCount) {
-      const teamCount = data.teams ? data.teams.length : 0;
-      badgeCount.textContent = `${teamCount}/${data.num_teams}`;
-    }
-
-    const modalMgr = document.getElementById("modal-manage-teams");
-    if (modalMgr && modalMgr.style.display !== "none") {
-      renderTeamManagerTable();
-    }
-
-    const treeView = document.getElementById("tournament-tree-view");
-    if (treeView && treeView.style.display !== "none") {
-      renderBracketTree(data);
-    }
-
-    // Cập nhật tổng quan Dashboard nếu đang mở
-    const overviewEl = document.getElementById("pub-view-overview");
-    if (overviewEl && overviewEl.style.display !== "none") {
-      renderDashboardOverview();
-    }
-
-    // ĐỒNG BỘ REALTIME PHÒNG ĐẤU TRẬN ĐẤU (TAB-MATCH-ARENA) KHÔNG CẦN F5
-    const arenaPane = document.getElementById("tab-match-arena");
-    if (arenaPane && arenaPane.classList.contains("active")) {
-      if (currentActiveMatchId && data.matches && data.matches[currentActiveMatchId]) {
-        renderMatchRoomDataSilent(data.matches[currentActiveMatchId]);
-        renderVisualBattleArena(data.matches[currentActiveMatchId]);
-        loadMatchSubmissions(currentActiveMatchId);
-      }
-    }
-
-    const teamsPane = document.getElementById("teams-tab");
-    if (teamsPane && teamsPane.classList.contains("active")) {
-      renderTeamsOverviewTable(data.teams || []);
-    }
-  } catch (err) {
-    // Bỏ qua lỗi mạng chớp nhoáng
-  }
+function applyTournamentSnapshot(data) {
+  if (currentActiveMatchId && !data.matches?.[currentActiveMatchId]) resetSelectedMatch();
+  if (currentAppRole === "ADMIN") renderTeamCredentialsTable();
+  const teamCountEl = document.getElementById("tourn-teams-count");
+  if (teamCountEl) teamCountEl.textContent = `${data.num_teams} Đội`;
+  const badgeCount = document.getElementById("count-teams-badge");
+  if (badgeCount) badgeCount.textContent = `${data.teams?.length || 0}/${data.num_teams}`;
+  const champEl = document.getElementById("tourn-champ-name");
+  if (champEl) champEl.textContent = data.champion || "Đang tranh tài...";
+  const champPill = document.getElementById("tourn-champion-pill");
+  if (champPill) champPill.style.display = data.champion ? "flex" : "none";
+  const modalMgr = document.getElementById("modal-manage-teams");
+  if (modalMgr && modalMgr.style.display !== "none") renderTeamManagerTable();
+  renderBracketTree(data); renderDashboardOverview();
+  const stages = { STAGE_1_STANDARD: "Luật Chuẩn", STAGE_2_MUTATED: "Luật Biến Đổi", STAGE_3_REVERSE_FOG: "Luật Sương Mù", STAGE_4_FINALS: "Luật Chung Kết" };
+  const stageLabel = document.getElementById("sidebar-stage-text");
+  if (stageLabel) stageLabel.textContent = `Hiệp ${data.matches?.[currentActiveMatchId]?.current_round_idx || 1} · ${stages[data.stage_rule] || stages.STAGE_1_STANDARD}`;
+  if (currentActiveMatchId && data.matches?.[currentActiveMatchId] && sessionStorage.getItem("matchExplicitlySelected") === "true") renderMatchRoomData(data.matches[currentActiveMatchId]);
+  if (document.querySelector(".tab-pane.active")?.id === "tab-ranking") loadLeaderboard();
 }
+async function loadActiveTournament(tournamentId) { return refreshTournamentSnapshot(tournamentId, true); }
+async function loadActiveTournamentSilent(tournamentId) { return refreshTournamentSnapshot(tournamentId); }
 
-// =============================================================================
-// 3. VẼ CÂY SƠ ĐỒ GIẢI ĐẤU ĐA TẦNG (GENERIC 4-32 TEAM BRACKET TREE THEO ẢNH 4)
-// =============================================================================
 const TEAM_COLOR_PALETTES = [
   "color-red", "color-blue", "color-green", "color-yellow",
   "color-purple", "color-orange", "color-pink", "color-cyan",
   "color-emerald", "color-indigo", "color-amber", "color-rose"
 ];
 
-const DEFAULT_32_BOT_NAMES = [
-  "RedBot", "BlueBot", "GreenBot", "YellowBot",
-  "PurpleBot", "OrangeBot", "PinkBot", "CyanBot",
-  "RubyBot", "SapphireBot", "EmeraldBot", "AmberBot",
-  "VioletBot", "TopazBot", "DiamondBot", "SilverBot",
-  "AlphaBot", "BetaBot", "GammaBot", "DeltaBot",
-  "OmegaBot", "SigmaBot", "ThetaBot", "ZetaBot",
-  "PhoenixBot", "DragonBot", "TigerBot", "FalconBot",
-  "ViperBot", "TitanBot", "HydraBot", "GhostBot"
-];
+
 
 function getDynamicTeamColor(teamName, defaultIndex) {
   if (!teamName) return TEAM_COLOR_PALETTES[defaultIndex % TEAM_COLOR_PALETTES.length];
@@ -1984,6 +1957,7 @@ function getDynamicTeamColor(teamName, defaultIndex) {
 function renderBracketTree(tourn) {
   const canvas = document.getElementById("bracket-tree-canvas");
   if (!canvas) return;
+  const previousScroll = canvas.querySelector(".bracket-tree-scroll-container")?.scrollLeft ?? Number(sessionStorage.getItem(`arena-bracket-scroll:${currentTournamentId}`) || 0);
 
   const numTeams = tourn?.num_teams || 8;
   const k = Math.max(1, Math.round(Math.log2(numTeams))); // e.g. 5 for 32, 4 for 16, 3 for 8, 2 for 4
@@ -2008,7 +1982,8 @@ function renderBracketTree(tourn) {
 
   const formatEl = document.getElementById("bracket-tourn-format-display");
   if (formatEl) {
-    formatEl.textContent = `Thể thức: ${firstRoundTitle} → Chung Kết (Bo5)`;
+    const maxRounds = Object.values(tourn?.matches || {}).reduce((limit, match) => Math.max(limit, match.max_rounds || 6), 0) || 6;
+    formatEl.textContent = `Thể thức: ${firstRoundTitle} → Chung Kết · Tối đa ${maxRounds} hiệp/trận`;
   }
 
   const roundTitleCard = document.getElementById("bracket-card-round-title");
@@ -2087,38 +2062,23 @@ function renderBracketTree(tourn) {
       let scoreB = "-";
 
       if (refMatch) {
-        if (typeof refMatch.score_a === "number") scoreA = refMatch.score_a;
-        if (typeof refMatch.score_b === "number") scoreB = refMatch.score_b;
+        if (refMatch.rounds_history?.length || refMatch.status === "COMPLETED") {
+          scoreA = refMatch.team_a?.rounds_won ?? 0;
+          scoreB = refMatch.team_b?.rounds_won ?? 0;
+        }
       }
 
       // Nạp tên mặc định từ danh sách đăng ký hoặc demo bots nếu chưa gán
       if (lvl === 1) {
         if (!teamAName) {
-          teamAName = teamsList[2 * i]?.team_name || DEFAULT_32_BOT_NAMES[2 * i] || `Đội ${2 * i + 1}`;
+          teamAName = "Chưa xếp đội";
         }
         if (!teamBName) {
-          teamBName = teamsList[2 * i + 1]?.team_name || DEFAULT_32_BOT_NAMES[2 * i + 1] || `Đội ${2 * i + 2}`;
+          teamBName = "Chưa xếp đội";
         }
       } else {
-        if (!teamAName) teamAName = isGf ? "RedBot" : (i === 0 ? "RedBot" : "OrangeBot");
-        if (!teamBName) teamBName = isGf ? "CyanBot" : (i === 0 ? "GreenBot" : "CyanBot");
-      }
-
-      // Giữ điểm demo chuẩn 2-1, 2-0 như trong ảnh mẫu nếu đang xem giải mẫu
-      if (scoreA === "-" && scoreB === "-" && (!tourn?.status || tourn?.status === "CONFIGURING" || tourn?.status === "WAITING")) {
-        if (lvl === 1 && numTeams === 8) {
-          const sampleScores = [[2, 1], [2, 0], [1, 2], [0, 2]];
-          if (sampleScores[i]) {
-            scoreA = sampleScores[i][0];
-            scoreB = sampleScores[i][1];
-          }
-        } else if (lvl === 2 && numTeams === 8) {
-          const sampleScores = [[2, 1], [0, 2]];
-          if (sampleScores[i]) {
-            scoreA = sampleScores[i][0];
-            scoreB = sampleScores[i][1];
-          }
-        }
+        if (!teamAName) teamAName = `Chờ đội thắng trận ${2 * i + 1} vòng trước`;
+        if (!teamBName) teamBName = `Chờ đội thắng trận ${2 * i + 2} vòng trước`;
       }
 
       const colorA = getDynamicTeamColor(teamAName, (lvl === 1 ? 2 * i : 0));
@@ -2157,7 +2117,7 @@ function renderBracketTree(tourn) {
             ${renderNodeHtml(m2)}
             <div class="bracket-connector-branch">
 
-              <span class="connector-status-badge">Đang diễn ra</span>
+              <span class="connector-status-badge">Nhánh đấu</span>
             </div>
           </div>
         `;
@@ -2197,9 +2157,12 @@ function renderBracketTree(tourn) {
           return;
         }
       }
-      openMatchRoom(mid);
+      handleMatchCardClick(mid);
     });
   });
+
+  const scrollContainer = canvas.querySelector(".bracket-tree-scroll-container");
+  if (scrollContainer) { scrollContainer.scrollLeft = previousScroll; scrollContainer.addEventListener("scroll", () => sessionStorage.setItem(`arena-bracket-scroll:${currentTournamentId}`, String(scrollContainer.scrollLeft)), { passive: true }); }
 
   // Hỗ trợ các nút filter pills
   document.querySelectorAll(".bracket-pill").forEach(pill => {
@@ -2323,33 +2286,23 @@ function createChampionColumn(championName) {
 // 4. BÀN ĐẤU CHI TIẾT & ĐIỀU HÀNH TRẬN ĐẤU (ARENA VIEW)
 // =============================================================================
 function connectActiveMatchSocket(matchId) {
-  if (!matchId) return;
+  const tournamentId = currentTournamentId;
+  if (!tournamentId) return;
+  if (matchSocket?.arenaTournamentId === tournamentId && [WebSocket.OPEN, WebSocket.CONNECTING].includes(matchSocket.readyState)) return;
   if (matchSocketRetry) clearTimeout(matchSocketRetry);
-  if (matchSocket) {
-    matchSocket.onclose = null;
-    matchSocket.close();
-  }
+  if (matchSocket) { matchSocket.onclose = null; matchSocket.close(); }
   const base = new URL(API_BASE, window.location.href);
   base.protocol = base.protocol === "https:" ? "wss:" : "ws:";
-  base.pathname = `/ws/matches/${encodeURIComponent(matchId)}`;
-  base.search = "";
-  const socket = new WebSocket(base.toString());
-  matchSocket = socket;
-  socket.onmessage = async (event) => {
+  base.pathname = `/ws/tournaments/${encodeURIComponent(tournamentId)}`; base.search = "";
+  const socket = new WebSocket(base.toString()); socket.arenaTournamentId = tournamentId; matchSocket = socket;
+  socket.onopen = () => loadActiveTournamentSilent(tournamentId);
+  socket.onmessage = async event => {
     try {
       const payload = JSON.parse(event.data);
-      if (payload.type === "MATCH_UPDATED" && payload.match_id === currentActiveMatchId && currentTournamentId === payload.tournament_id) {
-        await loadActiveTournamentSilent(currentTournamentId);
-      }
-    } catch (error) {
-      console.error("Invalid match update event", error);
-    }
+      if (["ROUND_RUNNING", "MATCH_UPDATED", "TOURNAMENT_UPDATED"].includes(payload.type) && currentTournamentId === payload.tournament_id) await loadActiveTournamentSilent(tournamentId);
+    } catch (error) { console.warn("Invalid match event", error); }
   };
-  socket.onclose = () => {
-    if (matchSocket === socket && currentActiveMatchId === matchId) {
-      matchSocketRetry = setTimeout(() => connectActiveMatchSocket(matchId), 1500);
-    }
-  };
+  socket.onclose = () => { if (matchSocket === socket && currentTournamentId === tournamentId) matchSocketRetry = setTimeout(() => connectActiveMatchSocket(currentActiveMatchId), 1500); };
   socket.onerror = () => socket.close();
 }
 
@@ -2521,119 +2474,11 @@ function renderMatchRoomData(match) {
 
   // Bảng nhật ký các Round đã diễn ra
   renderRoundHistoryTable(match.rounds_history);
+  restoreMatchViewState();
+  syncLiveRoundBoard(match);
 }
 
-function renderMatchRoomDataSilent(match) {
-  if (!match) return;
-  currentMatchData = match;
 
-  const titleEl = document.getElementById("match-room-title");
-  if (titleEl) titleEl.textContent = match.title.toUpperCase();
-
-  const stageBadge = document.getElementById("match-room-stage-badge");
-  if (stageBadge) stageBadge.textContent = `${match.round_name || 'Vòng Đấu'} • Bo6`;
-
-  const statusBadge = document.getElementById("match-room-status-badge");
-  if (statusBadge) {
-    statusBadge.textContent = match.status === "COMPLETED" ? "Đã kết thúc" : "Đang diễn ra";
-    statusBadge.className = match.status === "COMPLETED" ? "match-status-badge status-completed" : "status-pill-green";
-  }
-
-  const teamA = match.team_a;
-  const teamB = match.team_b;
-  const scoreText = `${teamA ? teamA.rounds_won : 0} - ${teamB ? teamB.rounds_won : 0}`;
-  const scoreSummary = document.getElementById("match-score-summary");
-  if (scoreSummary) scoreSummary.textContent = scoreText;
-
-  const roundEl = document.getElementById("arena-round-indicator");
-  if (roundEl) {
-    roundEl.textContent = match.status === "COMPLETED" ? "CHUNG CUỘC" : `ROUND ${match.current_round_idx || 1} / ${match.max_rounds || 6}`;
-  }
-
-  renderRoundStepPills(match.current_round_idx, match.rounds_history, match.status === "COMPLETED");
-  renderFighterSide("team_a", teamA);
-  renderFighterSide("team_b", teamB);
-
-  const readyA = teamA && teamA.code_valid;
-  const readyB = teamB && teamB.code_valid;
-  const allReady = Boolean(match.all_teams_ready || (readyA && readyB));
-
-  const pillA = document.getElementById("pill-ready-a");
-  const pillB = document.getElementById("pill-ready-b");
-  if (pillA) {
-    if (readyA) {
-      pillA.textContent = `${teamA.team_name}: Mã Hợp Lệ [OK]`;
-      pillA.className = "check-pill ready";
-    } else if (teamA && teamA.code_submitted) {
-      pillA.textContent = `${teamA.team_name}: Mã Lỗi [FAIL]`;
-      pillA.className = "check-pill wait";
-    } else {
-      pillA.textContent = `${teamA ? teamA.team_name : 'Đội Đỏ'}: Chờ nộp bot`;
-      pillA.className = "check-pill wait";
-    }
-  }
-  if (pillB) {
-    if (readyB) {
-      pillB.textContent = `${teamB.team_name}: Mã Hợp Lệ [OK]`;
-      pillB.className = "check-pill ready";
-    } else if (teamB && teamB.code_submitted) {
-      pillB.textContent = `${teamB.team_name}: Mã Lỗi [FAIL]`;
-      pillB.className = "check-pill wait";
-    } else {
-      pillB.textContent = `${teamB ? teamB.team_name : 'Đội Xanh'}: Chờ nộp bot`;
-      pillB.className = "check-pill wait";
-    }
-  }
-
-  const btnRefereeStart = document.getElementById("btn-referee-start");
-  const roundBannerText = document.getElementById("current-round-text");
-  const roundTipText = document.getElementById("round-tip-text");
-  const arenaReadinessTitle = document.getElementById("arena-readiness-title");
-  const readyBannerStatus = document.getElementById("ready-banner-status");
-  const victoryBanner = document.getElementById("match-victory-banner");
-
-  if (match.status === "COMPLETED") {
-    if (roundBannerText) roundBannerText.textContent = "TRẬN ĐẤU ĐÃ KẾT THÚC";
-    if (roundTipText) roundTipText.textContent = `Chiến thắng chung cuộc thuộc về ${match.winner_name || '---'}!`;
-    if (btnRefereeStart) btnRefereeStart.style.display = "none";
-    if (victoryBanner) {
-      victoryBanner.style.display = "block";
-      const victoryTeam = document.getElementById("victory-team-text");
-      if (victoryTeam) victoryTeam.textContent = `${match.winner_name} CHIẾN THẮNG TRẬN ĐẤU!`;
-    }
-  } else {
-    if (roundBannerText) roundBannerText.textContent = `ROUND ${match.current_round_idx || 1} / ${match.max_rounds || 6}`;
-    if (victoryBanner) victoryBanner.style.display = "none";
-
-    if (currentUserRole === "ADMIN") {
-      if (btnRefereeStart) {
-        btnRefereeStart.style.display = "inline-flex";
-        btnRefereeStart.textContent = `BẮT ĐẦU TRẬN ĐẤU (ROUND ${match.current_round_idx})`;
-        btnRefereeStart.disabled = !allReady;
-      }
-    } else {
-      if (btnRefereeStart) btnRefereeStart.style.display = "none";
-    }
-
-    if (allReady) {
-      if (arenaReadinessTitle) arenaReadinessTitle.textContent = "CẢ HAI ĐỘI ĐÃ SẴN SÀNG — CHỜ ADMIN BẮT ĐẦU";
-      if (readyBannerStatus) readyBannerStatus.className = "ready-banner-status all-ready";
-      if (roundTipText) roundTipText.textContent = `Cả 2 đội đã nộp mã lệnh hợp lệ cho Round ${match.current_round_idx}! Trọng tài hãy bấm nút bên dưới để khai hỏa hiệp đấu trực tiếp!`;
-    } else {
-      if (arenaReadinessTitle) arenaReadinessTitle.textContent = "CHỜ 2 ĐỘI NỘP MÃ LỆNH";
-      if (readyBannerStatus) readyBannerStatus.className = "ready-banner-status waiting";
-      const readyCount = (readyA ? 1 : 0) + (readyB ? 1 : 0);
-      if (roundTipText) roundTipText.textContent = `Chờ cả 2 đội vào màn hình riêng nộp mã Bot cho Round ${match.current_round_idx} (Đã sẵn sàng ${readyCount}/2 đội), Trọng tài mới bấm khai hỏa!`;
-    }
-  }
-
-  renderAdminLiveCodeMonitor(match);
-  renderRoundHistoryTable(match.rounds_history);
-}
-
-// =============================================================================
-// BÀN CỜ CHIẾN THUẬT 9x9 (9x9 TACTICAL CHESSBOARD ARENA CONTROLS)
-// =============================================================================
 
 function initChessboardGrid() {
   const boardEl = document.getElementById("chessboard-9x9");
@@ -2829,10 +2674,12 @@ function renderVisualBattleArena(match) {
     if (studioCol) studioCol.style.display = "none";
     if (adminRealtimeCol) adminRealtimeCol.style.display = "block";
     if (boardTitleLabel) boardTitleLabel.textContent = "BÀN PHÁT LẠI (REPLAY HIỆP ĐẤU)";
-    initRealtimeChessboardGrid();
+    if (document.getElementById("realtime-chessboard-9x9")?.children.length !== 81) initRealtimeChessboardGrid();
     if (!isMatchRunning) {
+      const lastRound = match.rounds_history?.[match.rounds_history.length - 1];
+      const lastStep = lastRound?.board_steps?.[lastRound.board_steps.length - 1];
       const initPieces = getInitialBoardPieces();
-      renderRealtimeChessboard(initPieces.red, initPieces.blue, null);
+      renderRealtimeChessboard(lastStep?.red_pieces || initPieces.red, lastStep?.blue_pieces || initPieces.blue, null);
     }
   } else {
     if (studioCol) studioCol.style.display = "block";
@@ -2893,17 +2740,16 @@ function renderVisualBattleArena(match) {
     }
   }
 
-  // Render quân cờ trên Bàn cờ 9x9 (Replay / Bàn chính)
-  const lastR = match.rounds_history && match.rounds_history.length > 0
-    ? match.rounds_history[match.rounds_history.length - 1]
-    : null;
-
-  if (lastR && lastR.board_steps && lastR.board_steps.length > 0) {
-    const finalStep = lastR.board_steps[lastR.board_steps.length - 1];
-    renderChessboard(finalStep.red_pieces, finalStep.blue_pieces, null);
-  } else {
-    const initPieces = getInitialBoardPieces();
-    renderChessboard(initPieces.red, initPieces.blue, null);
+  const lastR = inlineReplayRecord(match);
+  if (!isMatchRunning && lastR?.board_steps?.length) {
+    const state = readArenaViewState();
+    inlinePlaybackCurrentIdx = state.inlineRound === lastR.round_number ? Math.min(state.inlineStep ?? lastR.board_steps.length - 1, lastR.board_steps.length - 1) : lastR.board_steps.length - 1;
+    const step = lastR.board_steps[inlinePlaybackCurrentIdx];
+    renderChessboard(step.red_pieces, step.blue_pieces, step.clash_event);
+    const indicator = document.getElementById("playback-step-indicator");
+    if (indicator) indicator.textContent = `Hiệp ${lastR.round_number}: Bước ${inlinePlaybackCurrentIdx + 1} / ${lastR.board_steps.length}`;
+  } else if (!isMatchRunning) {
+    const pieces = getInitialBoardPieces(); renderChessboard(pieces.red, pieces.blue, null);
   }
 
   // Dòng bình luận (Commentary ticker)
@@ -2946,9 +2792,8 @@ function renderVisualBattleArena(match) {
   if (btnAdminStart) {
     if (currentAppRole === "ADMIN") {
       btnAdminStart.style.display = "inline-flex";
-      btnAdminStart.onclick = handleRefereeStartBattle;
       const allReady = Boolean(match.all_teams_ready || (teamA?.code_valid && teamB?.code_valid));
-      btnAdminStart.disabled = match.status === "COMPLETED" || isMatchRunning;
+      btnAdminStart.disabled = !allReady || match.status === "COMPLETED" || match.round_status === "ROUND_FINISHED" || match.battle_running || isMatchRunning;
       if (allReady) {
         btnAdminStart.textContent = `Bắt Đầu Hiệp ${match.current_round_idx || 1}`;
         btnAdminStart.className = "btn btn-green admin-only";
@@ -2974,8 +2819,10 @@ function renderVisualBattleArena(match) {
 
   // Ẩn banner nghỉ giải lao cũ nếu không thi đấu
   const intermissionBanner = document.getElementById("round-intermission-banner");
-  if (intermissionBanner && !isMatchRunning) {
-    intermissionBanner.style.display = "none";
+  if (intermissionBanner) {
+    intermissionBanner.style.display = match.round_status === "ROUND_FINISHED" ? "flex" : "none";
+    const countdown = document.getElementById("countdown-num");
+    if (countdown) countdown.textContent = Math.max(0, Math.ceil((match.intermission_ends_at || 0) - Date.now() / 1000));
   }
 }
 
@@ -3004,6 +2851,7 @@ function renderRoundStepPills(currentIdx, history, isFinished) {
     }
 
     container.appendChild(pill);
+    if (roundRec) pill.addEventListener("click", () => { clearInterval(inlinePlaybackTimer); inlinePlaybackTimer = null; saveArenaViewState({ inlineRound: r, inlineStep: 0 }); renderVisualBattleArena(currentMatchData); });
   }
 }
 
@@ -3167,7 +3015,7 @@ function setupInlineBoardPlayback() {
 
   function getActiveSteps() {
     if (currentMatchData?.rounds_history && currentMatchData.rounds_history.length > 0) {
-      const lastR = currentMatchData.rounds_history[currentMatchData.rounds_history.length - 1];
+      const lastR = inlineReplayRecord(currentMatchData);
       if (lastR.board_steps && lastR.board_steps.length > 0) {
         return { round: lastR.round_number, steps: lastR.board_steps };
       }
@@ -3185,6 +3033,7 @@ function setupInlineBoardPlayback() {
     if (inlinePlaybackCurrentIdx < 0) inlinePlaybackCurrentIdx = 0;
 
     const step = steps[inlinePlaybackCurrentIdx];
+    saveArenaViewState({ inlineRound: round, inlineStep: inlinePlaybackCurrentIdx });
     if (step) {
       renderChessboard(step.red_pieces, step.blue_pieces, step.clash);
       const ticker = document.getElementById("arena-commentary-ticker") || document.getElementById("live-commentary-ticker");
@@ -3199,7 +3048,7 @@ function setupInlineBoardPlayback() {
     btnPrev.onclick = () => {
       clearInterval(inlinePlaybackTimer);
       inlinePlaybackTimer = null;
-      if (btnPlay) btnPlay.textContent = "▶ Phát lại";
+      if (btnPlay) btnPlay.textContent = " Phát lại";
       if (inlinePlaybackCurrentIdx > 0) {
         inlinePlaybackCurrentIdx--;
         renderCurrentStep();
@@ -3211,7 +3060,7 @@ function setupInlineBoardPlayback() {
     btnNext.onclick = () => {
       clearInterval(inlinePlaybackTimer);
       inlinePlaybackTimer = null;
-      if (btnPlay) btnPlay.textContent = "▶ Phát lại";
+      if (btnPlay) btnPlay.textContent = " Phát lại";
       const { steps } = getActiveSteps();
       if (inlinePlaybackCurrentIdx < steps.length - 1) {
         inlinePlaybackCurrentIdx++;
@@ -3230,9 +3079,9 @@ function setupInlineBoardPlayback() {
       if (inlinePlaybackTimer) {
         clearInterval(inlinePlaybackTimer);
         inlinePlaybackTimer = null;
-        btnPlay.textContent = "▶ Phát lại";
+        btnPlay.textContent = " Phát lại";
       } else {
-        btnPlay.textContent = "⏸ Tạm dừng";
+        btnPlay.textContent = " Tạm dừng";
         if (inlinePlaybackCurrentIdx >= steps.length - 1) {
           inlinePlaybackCurrentIdx = 0;
         }
@@ -3244,7 +3093,7 @@ function setupInlineBoardPlayback() {
           } else {
             clearInterval(inlinePlaybackTimer);
             inlinePlaybackTimer = null;
-            btnPlay.textContent = "▶ Phát lại";
+            btnPlay.textContent = " Phát lại";
           }
         }, 800);
       }
@@ -3358,310 +3207,85 @@ function openPrivateStudio(side) {
 }
 
 function populateStudioEditor(team) {
-  const editor = document.getElementById("studio-code-editor");
-  const selLang = document.getElementById("studio-sel-lang");
-  const statusTag = document.getElementById("studio-submission-status");
-
-  if (selLang) selLang.value = team.current_lang || "PYTHON";
-
-  if (editor) {
-    if (team.current_code && team.current_code.trim() !== "") {
-      editor.value = team.current_code;
-    } else {
-      editor.value = (selLang && selLang.value === "CPP") ? DEFAULT_CPP_CODE : DEFAULT_PYTHON_CODE;
-    }
+  const editor = document.getElementById("studio-code-editor"), selLang = document.getElementById("studio-sel-lang"), statusTag = document.getElementById("studio-submission-status");
+  const key = studioDraftKey();
+  if (editor && currentEditorKey !== key) {
+    let draft = null; try { draft = JSON.parse(localStorage.getItem(key) || "null"); } catch {}
+    if (selLang) selLang.value = draft?.language || team.draft_lang || team.current_lang || "PYTHON";
+    editor.value = draft?.code ?? team.draft_code ?? team.current_code ?? (selLang?.value === "CPP" ? DEFAULT_CPP_CODE : DEFAULT_PYTHON_CODE);
+    editor.scrollTop = draft?.scroll || 0;
+    if (draft) editor.setSelectionRange(draft.selectionStart || 0, draft.selectionEnd || 0);
+    currentEditorKey = key;
   }
-
-  const curRound = currentMatchData?.current_round_idx || 1;
-  const maxR = currentMatchData?.max_rounds || 6;
+  const round = currentMatchData?.current_round_idx || 1, maxR = currentMatchData?.max_rounds || 6;
   if (statusTag) {
-    if (team.code_submitted) {
-      statusTag.textContent = `Đã nộp mã lệnh cho Round ${curRound} (Sẵn sàng)`;
-      statusTag.className = "ide-status-tag submitted";
-    } else {
-      statusTag.textContent = `Chưa nộp mã cho Round ${curRound}`;
-      statusTag.className = "ide-status-tag";
-    }
+    statusTag.textContent = team.code_submitted ? (team.code_valid ? `Đã nộp mã lệnh cho Round ${round} (Sẵn sàng)` : `Mã lỗi cho Round ${round} — hãy sửa và nộp lại`) : `Chưa nộp mã cho Round ${round}`;
+    statusTag.className = team.code_submitted && team.code_valid ? "ide-status-tag submitted" : "ide-status-tag";
   }
-
-  // Luôn cập nhật nhãn nút nộp mã lệnh theo round hiện tại trong thời gian thực
-  updateStudioSubmitBtnText(curRound);
-
-  const titleTarget = document.getElementById("studio-round-target-title");
-  if (titleTarget) titleTarget.textContent = `Phòng nộp code bot (Round ${curRound}/${maxR})`;
+  updateStudioSubmitBtnText(round);
+  const title = document.getElementById("studio-round-target-title");
+  if (title) title.textContent = `Phòng nộp code bot (Round ${round}/${maxR})`;
 }
 
 function setupStudioControls() {
-  const btnBack = document.getElementById("btn-studio-back-to-room");
-  const btnAuth = document.getElementById("btn-studio-auth-submit");
-  const btnSubmitBot = document.getElementById("btn-studio-submit-bot");
-  const btnTemplate = document.getElementById("btn-studio-load-template");
-  const selLang = document.getElementById("studio-sel-lang");
-  const editor = document.getElementById("studio-code-editor");
-
-  // Đồng bộ mã lệnh đang soạn trực tiếp sang Admin Live Code Monitor (debounce 300ms)
-  let draftSyncTimeout = null;
+  const editor = document.getElementById("studio-code-editor"), language = document.getElementById("studio-sel-lang"), submit = document.getElementById("btn-studio-submit-bot");
+  if (!editor || !language || !submit) return;
+  let draftTimer = null;
   editor.addEventListener("input", () => {
-    if (!currentTournamentId || !currentActiveMatchId || !currentStudioSide) return;
-    clearTimeout(draftSyncTimeout);
-    draftSyncTimeout = setTimeout(async () => {
-      try {
-        await fetch(`${API_BASE}/api/tournaments/${currentTournamentId}/matches/${currentActiveMatchId}/draft-code`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            side: currentStudioSide,
-            code_content: editor.value,
-            language: selLang.value
-          })
-        });
-      } catch (err) {
-        // Bỏ qua lỗi tạm thời
-      }
-    }, 300);
+    saveStudioDraft(); clearTimeout(draftTimer);
+    if (!currentTournamentId || !currentActiveMatchId || !currentStudioSide || !["TEAM","ADMIN"].includes(currentAppRole)) return;
+    const tournamentId = currentTournamentId, matchId = currentActiveMatchId;
+    const payload = { side: currentStudioSide, code_content: editor.value, language: language.value, round_number: currentMatchData?.current_round_idx };
+    draftTimer = setTimeout(async () => {
+      if (currentTournamentId !== tournamentId || currentActiveMatchId !== matchId) return;
+      try { await fetch(`${API_BASE}/api/tournaments/${tournamentId}/matches/${matchId}/draft-code`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) }); } catch {}
+    },300);
   });
-
-  // Quay lại bàn đấu
-  if (btnBack) {
-    btnBack.addEventListener("click", () => {
-      switchToTab("match-arena-tab");
-    });
-  }
-
-  // Tải code mẫu gợi ý
-  if (btnTemplate) {
-    btnTemplate.addEventListener("click", () => {
-      if (selLang.value === "CPP") {
-        editor.value = DEFAULT_CPP_CODE;
-      } else {
-        editor.value = DEFAULT_PYTHON_CODE;
-      }
-      notifyInfo("Nạp Mẫu Code", `Đã nạp mẫu code chuẩn ${selLang.value}.`);
-    });
-  }
-
-  // Dry-run thẩm định cú pháp & sandbox
-  const btnDryRun = document.getElementById("btn-studio-dryrun");
-  if (btnDryRun) {
-    btnDryRun.addEventListener("click", () => {
-      const code = editor.value.trim();
-      if (!code) {
-        notifyWarning("Chưa Có Mã", "Vui lòng viết mã bot trước khi thẩm định.");
-        return;
-      }
-      const lang = selLang.value;
-      let valid = true;
-      let msg = "";
-      if (lang === "PYTHON" && !code.includes("decide_move")) {
-        valid = false;
-        msg = "Thiếu hàm chuẩn: decide_move(game_state).";
-      } else if (lang === "CPP" && !code.includes("main")) {
-        valid = false;
-        msg = "Thiếu hàm chuẩn: int main().";
-      }
-
-      const latencyMs = Math.floor(Math.random() * 8) + 12;
-      if (valid) {
-        notifySuccess("Sandbox Dry-run: HỢP LỆ", `Cú pháp & Entry point chuẩn xác (${latencyMs}ms). Giới hạn: CPU 1.0s, RAM 128MB. Sẵn sàng nộp!`);
-      } else {
-        notifyWarning("Cảnh Báo Cú Pháp", msg);
-      }
-    });
-  }
-
-  // Chọn Round mục tiêu nộp code trong Team Workspace
-  document.querySelectorAll("#ws-round-selector-pills .intel-badge").forEach(badge => {
-    badge.addEventListener("click", () => {
-      document.querySelectorAll("#ws-round-selector-pills .intel-badge").forEach(b => b.classList.remove("active"));
-      badge.classList.add("active");
-      const rIdx = badge.dataset.targetRound || "1";
-      const maxR = currentMatchData?.max_rounds || 6;
-      if (titleTarget) titleTarget.textContent = `Đang Soạn Mã Cho Round ${rIdx} / ${maxR}`;
-      updateStudioSubmitBtnText(rIdx);
-    });
+  editor.addEventListener("scroll", saveStudioDraft, { passive:true });
+  language.addEventListener("change", () => {
+    if (!editor.value.trim() || [DEFAULT_PYTHON_CODE,DEFAULT_CPP_CODE].includes(editor.value)) editor.value = language.value === "CPP" ? DEFAULT_CPP_CODE : DEFAULT_PYTHON_CODE;
+    editor.dispatchEvent(new Event("input"));
   });
-
-  // Nút đăng nhập cho khách trong Team Workspace
-  const btnWsLogin = document.getElementById("btn-workspace-guest-login");
-  if (btnWsLogin) {
-    btnWsLogin.addEventListener("click", () => {
-      openRoleModal("TEAM");
-    });
-  }
-
-  if (selLang) {
-    selLang.addEventListener("change", () => {
-      if (editor.value.trim() === "" || editor.value === DEFAULT_PYTHON_CODE || editor.value === DEFAULT_CPP_CODE) {
-        editor.value = selLang.value === "CPP" ? DEFAULT_CPP_CODE : DEFAULT_PYTHON_CODE;
-      }
-    });
-  }
-
-  // Đăng nhập đội tuyển
-  if (btnAuth) {
-    btnAuth.addEventListener("click", async () => {
-      if (!currentTournamentId || !currentActiveMatchId || !currentStudioSide) return;
-
-      const sid = document.getElementById("studio-auth-sid").value.trim();
-      const pass = document.getElementById("studio-auth-pass").value.trim();
-
-      try {
-        const res = await fetch(`${API_BASE}/api/tournaments/${currentTournamentId}/matches/${currentActiveMatchId}/auth`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            side: currentStudioSide,
-            student_id: sid,
-            password: pass
-          })
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          notifyError("Đăng Nhập Thất Bại", data.detail || "Sai thông tin tài khoản hoặc mật khẩu!");
-          return;
-        }
-
-        saveArenaSessionToken(data.session_token);
-        currentAppRole = "TEAM";
-        currentUserRole = "TEAM";
-        currentTeamStudentId = sid;
-        sessionStorage.setItem("userRole", "TEAM");
-        sessionStorage.setItem("ARENA_USER_ROLE", "TEAM");
-        sessionStorage.setItem("ARENA_STUDENT_ID", sid);
-        updateRoleUI();
-        notifySuccess("Xác Thực Thành Công", "Đã mở khóa phòng thi đấu và IDE nộp mã lệnh.");
-        document.getElementById("studio-auth-card").style.display = "none";
-        document.getElementById("studio-ide-card").style.display = "flex";
-
-        await loadActiveTournament(currentTournamentId);
-        const team = currentTournamentData.matches[currentActiveMatchId][currentStudioSide];
-        populateStudioEditor(team);
-
-      } catch (err) {
-        console.error("Lỗi đăng nhập:", err);
-        notifyError("Lỗi Kết Nối", "Không thể kết nối đến máy chủ API.");
-      }
-    });
-  }
-
-  // Nộp mã lệnh Bot
-  if (btnSubmitBot) {
-    btnSubmitBot.addEventListener("click", async () => {
-      if (!currentTournamentId) {
-        notifyWarning("Chưa Chọn Giải", "Vui lòng chọn giải đấu trước khi nộp bot!");
-        return;
-      }
-
-      // Tự động tìm đúng trận và đúng bên (team_a hay team_b) cho đội đang đăng nhập (ưu tiên trận chưa kết thúc)
-      if (currentAppRole === "TEAM" && currentTeamStudentId && currentTournamentData?.matches) {
-        const mySID = String(currentTeamStudentId).trim().toLowerCase();
-        const myName = String(currentTeamName || "").trim().toLowerCase();
-        let targetMatch = null;
-        let targetSide = null;
-        for (const [mId, m] of Object.entries(currentTournamentData.matches)) {
-          if (m.status === "COMPLETED") continue;
-          if (m.team_a && ((mySID && String(m.team_a.student_id).trim().toLowerCase() === mySID) || (myName && m.team_a.team_name && m.team_a.team_name.toLowerCase().trim() === myName))) {
-            targetMatch = mId;
-            targetSide = "team_a";
-            break;
-          }
-          if (m.team_b && ((mySID && String(m.team_b.student_id).trim().toLowerCase() === mySID) || (myName && m.team_b.team_name && m.team_b.team_name.toLowerCase().trim() === myName))) {
-            targetMatch = mId;
-            targetSide = "team_b";
-            break;
-          }
-        }
-        if (targetMatch) {
-          currentActiveMatchId = targetMatch;
-          currentStudioSide = targetSide;
-        } else if (currentActiveMatchId && currentTournamentData.matches[currentActiveMatchId]) {
-          const m = currentTournamentData.matches[currentActiveMatchId];
-          if (m.team_b && ((mySID && String(m.team_b.student_id).trim().toLowerCase() === mySID) || (myName && m.team_b.team_name && m.team_b.team_name.toLowerCase().trim() === myName))) {
-            currentStudioSide = "team_b";
-          } else {
-            currentStudioSide = "team_a";
-          }
-        }
-      }
-
-      if (!currentActiveMatchId) {
-        const best = findBestMatchToDisplay(currentTournamentData);
-        if (best) currentActiveMatchId = best.match_id;
-      }
-
-      if (!currentActiveMatchId) {
-        notifyWarning("Chưa Chọn Trận", "Vui lòng chọn trận đấu trước khi nộp bot!");
-        return;
-      }
-
-      const currentMatch = currentTournamentData?.matches?.[currentActiveMatchId];
-      const side = currentStudioSide || "team_a";
-
-      if (!currentMatch || !currentMatch[side]) {
-        notifyWarning("Chưa Có Đội", `Phe ${side === 'team_a' ? 'Đội Đỏ' : 'Đội Xanh'} trong trận này chưa có đội được xếp cặp! Vui lòng chọn trận đấu của đội bạn.`);
-        return;
-      }
-
-      const code = editor.value.trim();
-      if (!code) {
-        notifyWarning("Thiếu Mã Lệnh", "Vui lòng viết mã lệnh bot trong khung soạn thảo trước khi nộp!");
-        return;
-      }
-
-      const curRound = currentMatch.current_round_idx || 1;
-      btnSubmitBot.disabled = true;
-      const submitTextSpan = document.getElementById("btn-submit-bot-text");
-      if (submitTextSpan) submitTextSpan.textContent = "Đang nộp...";
-
-      try {
-        const res = await fetch(`${API_BASE}/api/tournaments/${currentTournamentId}/matches/${currentActiveMatchId}/code`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            side: side,
-            code_content: code,
-            language: selLang.value
-          })
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-          notifyError("Lỗi Nộp Mã Lệnh", data.detail || "Không thể nộp bài vào hệ thống.");
-          btnSubmitBot.disabled = false;
-          updateStudioSubmitBtnText(curRound);
-          return;
-        }
-
-        if (data.is_valid) {
-          notifySuccess(`Nộp Bot Round ${curRound} Thành Công`, `Mã lệnh đã thẩm định qua Sandbox (${data.validation?.execution_time_ms || 14}ms). Trạng thái: ĐÃ SẴN SÀNG.`);
-        } else {
-          notifyWarning("Code Không Hợp Lệ", `${data.validation?.error_message || "Lỗi cú pháp/thực thi"}. Bạn có thể sửa lại và bấm nộp lại bất kỳ lúc nào.`);
-        }
-
-        btnSubmitBot.disabled = false;
-        updateStudioSubmitBtnText(curRound);
-
-        await loadActiveTournament(currentTournamentId);
-        loadMatchSubmissions(currentActiveMatchId);
-        broadcastCrossTabSync("CODE_SUBMITTED");
-
-      } catch (err) {
-        console.error("Lỗi nộp code:", err);
-        notifyError("Lỗi Kết Nối", "Không thể kết nối đến máy chủ API.");
-        btnSubmitBot.disabled = false;
-        updateStudioSubmitBtnText(curRound);
-      }
-    });
-  }
-
-  // Nút thử nghiệm với Bot Mẫu của Hệ Thống
-  const btnPractice = document.getElementById("btn-studio-test-practice");
-  if (btnPractice) {
-    btnPractice.addEventListener("click", () => {
-      handlePracticeMatch();
-    });
-  }
+  document.getElementById("btn-studio-load-template")?.addEventListener("click", () => {
+    editor.value = language.value === "CPP" ? DEFAULT_CPP_CODE : DEFAULT_PYTHON_CODE;
+    editor.dispatchEvent(new Event("input"));
+    notifyInfo("Nạp mẫu code", `Đã nạp mẫu ${language.value}.`);
+  });
+  const dryrun = document.getElementById("btn-studio-dryrun");
+  dryrun?.addEventListener("click", async () => {
+    if (!editor.value.trim()) { notifyWarning("Chưa có mã", "Hãy viết mã bot trước khi kiểm tra."); return; }
+    dryrun.disabled = true;
+    try {
+      const response = await fetch(`${API_BASE}/api/bots/validate`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({code_content:editor.value,language:language.value}) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.detail || "Không kiểm tra được mã.");
+      if (result.is_valid) notifySuccess("Mã hợp lệ", `Sandbox đã thực thi bot (${result.execution_time_ms || 0}ms).`);
+      else notifyWarning("Mã không hợp lệ", result.error_message || "Bot không trả về nước đi hợp lệ.");
+    } catch (error) { notifyError("Không kiểm tra được mã",error.message); }
+    finally { dryrun.disabled = false; }
+  });
+  submit.addEventListener("click", async () => {
+    if (!["TEAM","ADMIN"].includes(currentAppRole)) { showLoginPage(); return; }
+    if (!currentActiveMatchId || sessionStorage.getItem("matchExplicitlySelected") !== "true") { notifyWarning("Chưa chọn trận","Hãy chọn trận trên bảng đấu trước khi nộp bot."); return; }
+    const tournamentId=currentTournamentId, matchId=currentActiveMatchId, match=currentTournamentData?.matches?.[currentActiveMatchId], side=currentStudioSide;
+    if (!match?.[side]) { notifyWarning("Chưa có đội", "Hãy chọn trận của đội bạn."); return; }
+    const code=editor.value.trim(), round=match.current_round_idx || 1;
+    if (!code) { notifyWarning("Thiếu mã lệnh", "Hãy viết mã bot trước khi nộp."); return; }
+    saveStudioDraft(); submit.disabled=true;
+    const label=document.getElementById("btn-submit-bot-text"); if (label) label.textContent="Đang nộp...";
+    try {
+      const response=await fetch(`${API_BASE}/api/tournaments/${tournamentId}/matches/${matchId}/code`, { method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({side,code_content:code,language:language.value,round_number:round}) });
+      const result=await response.json();
+      if (!response.ok) throw new Error(result.detail || "Không nộp được mã.");
+      if (result.is_valid) notifySuccess(`Nộp bot Round ${round} thành công`,"Đội đã sẵn sàng.");
+      else notifyWarning("Code không hợp lệ",result.validation?.error_message || "Hãy sửa mã và nộp lại.");
+      if (currentTournamentId===tournamentId && currentActiveMatchId===matchId) { await loadActiveTournament(tournamentId); loadMatchSubmissions(matchId); }
+      broadcastCrossTabSync("CODE_SUBMITTED");
+    } catch (error) { notifyError("Lỗi nộp mã lệnh",error.message); }
+    finally { submit.disabled=false; updateStudioSubmitBtnText(currentMatchData?.current_round_idx || round); }
+  });
+  document.getElementById("btn-studio-back-to-room")?.addEventListener("click", () => switchToTab("tab-match-arena"));
+  document.getElementById("btn-studio-test-practice")?.addEventListener("click", handlePracticeMatch);
 }
 
 function returnToMatchRoom() {
@@ -3676,218 +3300,20 @@ function returnToMatchRoom() {
 // =============================================================================
 async function handleRefereeStartBattle() {
   if (!currentTournamentId || !currentActiveMatchId || isMatchRunning) return;
-
-  // Quyền kiểm soát: Ban tổ chức (Admin) hoặc Trọng tài (Referee)
-  if (currentAppRole !== "ADMIN" && currentAppRole !== "REFEREE") {
-    notifyWarning("Quyền Hạn", "Chỉ Ban tổ chức (Admin) mới có quyền phát lệnh bắt đầu trận đấu!");
-    return;
-  }
-
-  const match = currentTournamentData ? currentTournamentData.matches[currentActiveMatchId] : null;
-  if (!match) return;
-
-  if (!match.team_a || !match.team_b) {
-    notifyWarning("Chưa Có Đội", "Trận đấu này chưa có đủ 2 đội được ghép cặp. Vui lòng chọn trận đấu ở bảng đấu hoặc bấm 'Tự Sắp Xếp Lịch' trong Quản Lý Đội!");
-    return;
-  }
-
-  // Backend và frontend cùng kiểm tra: Cả 2 đội phải có code hợp lệ
-  const readyA = Boolean(match.team_a && match.team_a.code_valid);
-  const readyB = Boolean(match.team_b && match.team_b.code_valid);
-  if (!match.all_teams_ready && !(readyA && readyB)) {
-    const missing = [];
-    if (!readyA) missing.push(match.team_a.team_name || "Đội Đỏ");
-    if (!readyB) missing.push(match.team_b.team_name || "Đội Xanh");
-
-    const confirmFill = confirm(
-      `Đội [${missing.join(", ")}] chưa nộp mã lệnh hợp lệ cho Hiệp ${match.current_round_idx || 1}.
-
-Bạn có muốn Ban Tổ Chức tự động nạp Bot mẫu mặc định cho đội chưa nộp để thi đấu ngay bây giờ không?`
-    );
-    if (!confirmFill) return;
-
-    try {
-      const fillRes = await fetch(`${API_BASE}/api/tournaments/${currentTournamentId}/matches/${currentActiveMatchId}/demo-fill`, {
-        method: "POST"
-      });
-      if (!fillRes.ok) {
-        notifyError("Lỗi Nạp Bot", "Không thể nạp bot tự động.");
-        return;
-      }
-      notifyInfo("Ban Tổ Chức", "Đã nạp Bot mẫu mặc định. Bắt đầu hiệp đấu ngay...");
-      await loadActiveTournament(currentTournamentId);
-    } catch (err) {
-      notifyError("Lỗi Kết Nối", "Không thể kết nối API nạp bot.");
-      return;
-    }
-  }
-
-  isMatchRunning = true;
-  const btn = document.getElementById("btn-referee-start");
-  if (btn) {
-    btn.disabled = true;
-    btn.classList.add("running");
-    btn.textContent = `ĐANG THI ĐẤU ROUND ${match.current_round_idx || 1}...`;
-  }
-
-  const btnArenaStart = document.getElementById("btn-arena-start-match");
-  if (btnArenaStart) {
-    btnArenaStart.disabled = true;
-    btnArenaStart.textContent = `Đang Đấu Hiệp ${match.current_round_idx || 1}...`;
-  }
-
-  const rtBadge = document.getElementById("realtime-battle-status-badge");
-  if (rtBadge) {
-    rtBadge.textContent = "Đang giao tranh trực tiếp...";
-    rtBadge.className = "status-pill-orange";
-  }
-
-  const rtLog = document.getElementById("realtime-moves-log");
-  if (rtLog) {
-    rtLog.innerHTML = `<div style="color: #38bdf8; padding: 4px 0; font-weight: bold;">[Bắt đầu] Khai hỏa Hiệp ${match.current_round_idx || 1}: ${match.team_a.team_name} (Đỏ) VS ${match.team_b.team_name} (Xanh)</div>`;
-  }
-
-  const rtTicker = document.getElementById("realtime-commentary-ticker");
-  if (rtTicker) rtTicker.textContent = `Khai hỏa Hiệp ${match.current_round_idx || 1}! Đã khởi tạo bàn cờ 9x9...`;
-
-  const ticker = document.getElementById("arena-commentary-ticker") || document.getElementById("live-commentary-ticker");
-  if (ticker) ticker.textContent = `Khai hỏa Round ${match.current_round_idx || 1}! Đã khóa mã nguồn 2 đội và khởi tạo bàn cờ 9x9...`;
-
+  if (currentAppRole !== "ADMIN") { notifyWarning("Không đủ quyền", "Chỉ Ban Tổ Chức mới được bắt đầu hiệp."); return; }
+  const match=currentTournamentData?.matches?.[currentActiveMatchId];
+  if (!match?.team_a?.code_valid || !match?.team_b?.code_valid) { notifyWarning("Chưa sẵn sàng","Cả hai đội phải nộp mã hợp lệ trước khi bắt đầu."); return; }
+  const tournamentId=currentTournamentId, matchId=currentActiveMatchId;
+  isMatchRunning=true; renderVisualBattleArena(match);
   try {
-    const res = await fetch(`${API_BASE}/api/tournaments/${currentTournamentId}/matches/${currentActiveMatchId}/play-round`, {
-      method: "POST"
-    });
-
-    const data = await res.json();
-    if (!res.ok) {
-      notifyError("Lỗi Thi Đấu", data.detail || "Không thể khởi chạy hiệp đấu.");
-      if (btn) {
-        btn.disabled = false;
-        btn.classList.remove("running");
-        btn.textContent = `BẮT ĐẦU TRẬN ĐẤU (ROUND ${match.current_round_idx || 1})`;
-      }
-      return;
-    }
-
-    const record = data.round_record;
-
-    // --- HIỆU ỨNG CHIẾN ĐẤU VÀ ĂN QUÂN TRỰC TIẾP TRÊN CẢ BÀN REALTIME VÀ BÀN REPLAY ---
-    if (record.board_steps && record.board_steps.length > 0) {
-      for (let i = 0; i < record.board_steps.length; i++) {
-        const step = record.board_steps[i];
-        renderRealtimeChessboard(step.red_pieces, step.blue_pieces, step.clash_event);
-        renderChessboard(step.red_pieces, step.blue_pieces, step.clash_event);
-
-        if (ticker) ticker.textContent = step.log;
-        if (rtTicker) rtTicker.textContent = step.log;
-
-        const stepCounter = document.getElementById("realtime-step-count");
-        if (stepCounter) stepCounter.textContent = `Nước ${i + 1} / ${record.board_steps.length}`;
-
-        if (rtLog && step.log) {
-          const row = document.createElement("div");
-          row.style.padding = "2px 0";
-          row.style.borderBottom = "1px dashed rgba(255,255,255,0.06)";
-          const clashTag = step.clash_event ? `<span style="color:#ef4444; font-weight:700;">[VA CHẠM]</span> ` : "";
-          row.innerHTML = `<span style="color:#60a5fa; font-weight:600;">[Bước ${step.step_idx || (i+1)}]</span> ${clashTag}<span style="color:${step.clash_event ? '#fca5a5' : '#cbd5e1'}">${escapeHtml(step.log)}</span>`;
-          rtLog.appendChild(row);
-          rtLog.scrollTop = rtLog.scrollHeight;
-        }
-
-        await new Promise(r => setTimeout(r, 380));
-      }
-    }
-
-    // Hiển thị thông báo kết thúc Round
-    if (ticker) {
-      ticker.textContent = record.win_reason ? record.win_reason.trim() : '';
-    }
-    if (rtTicker && record.win_reason) {
-      rtTicker.textContent = `Kết quả Hiệp ${record.round_number}: ${record.win_reason}`;
-    }
-    if (rtBadge) {
-      rtBadge.textContent = `Hiệp ${record.round_number} hoàn tất!`;
-      rtBadge.className = "status-pill-green";
-    }
-
-    // Cập nhật số round thắng và HP ở thẻ thông tin 2 đội
-    const hpElA = document.getElementById("team-a-hp");
-    const hpElB = document.getElementById("team-b-hp");
-    const roundsA = document.getElementById("team-a-rounds-won");
-    const roundsB = document.getElementById("team-b-rounds-won");
-    const scoreSummary = document.getElementById("match-score-summary");
-
-    if (hpElA) hpElA.textContent = `${record.team_a_hp} HP`;
-    if (hpElB) hpElB.textContent = `${record.team_b_hp} HP`;
-    if (roundsA && data.match && data.match.team_a) roundsA.textContent = data.match.team_a.rounds_won;
-    if (roundsB && data.match && data.match.team_b) roundsB.textContent = data.match.team_b.rounds_won;
-    if (scoreSummary && data.match) {
-      scoreSummary.textContent = `${data.match.team_a ? data.match.team_a.rounds_won : 0} - ${data.match.team_b ? data.match.team_b.rounds_won : 0}`;
-    }
-
-    // Cập nhật 3 loại nhật ký và bảng submissions ngay lập tức
-    renderCategorizedLogs(record);
-    loadMatchSubmissions(currentActiveMatchId);
-
-    // Cập nhật dữ liệu giải đấu và đưa thanh Replay của bàn trái vào trạng thái sẵn sàng
-    await loadActiveTournament(currentTournamentId);
-    inlinePlaybackCurrentIdx = record.board_steps ? record.board_steps.length - 1 : 0;
-    const stepIndicator = document.getElementById("playback-step-indicator");
-    if (stepIndicator && record.board_steps) {
-      stepIndicator.textContent = `Hiệp ${record.round_number}: Bước ${record.board_steps.length} / ${record.board_steps.length}`;
-    }
-
-    // Xử lý chuyển round với đếm ngược thống nhất
-    if (!data.is_completed) {
-      const intermissionBanner = document.getElementById("round-intermission-banner");
-      const interTitle = document.getElementById("intermission-title");
-      const countdownNum = document.getElementById("countdown-num");
-
-      if (intermissionBanner) {
-        intermissionBanner.style.display = "flex";
-        if (interTitle) {
-          interTitle.textContent = `ROUND ${record.round_number} HOÀN TẤT • TỈ SỐ: ĐỎ ${data.match?.team_a?.rounds_won || 0} - ${data.match?.team_b?.rounds_won || 0} XANH`;
-        }
-      }
-
-      // Đếm ngược 3 giây
-      for (let sec = 3; sec >= 1; sec--) {
-        if (countdownNum) countdownNum.textContent = sec;
-        await new Promise(r => setTimeout(r, 1000));
-      }
-
-      // Tự động gọi backend để chuyển sang round tiếp theo
-      try {
-        await fetch(`${API_BASE}/api/tournaments/${currentTournamentId}/matches/${currentActiveMatchId}/next-round`, {
-          method: "POST"
-        });
-      } catch (e) {
-        console.error("Lỗi tự động chuyển round:", e);
-      }
-
-      if (intermissionBanner) intermissionBanner.style.display = "none";
-      await loadActiveTournament(currentTournamentId);
-      broadcastCrossTabSync("MATCH_UPDATED");
-
-    } else {
-      // Trận đấu kết thúc chung cuộc
-      await loadActiveTournament(currentTournamentId);
-      broadcastCrossTabSync("MATCH_UPDATED");
-      notifySuccess("Trận Đấu Hoàn Tất!", `Quán quân trận đấu: ${data.match?.winner_name || "---"}`);
-    }
-
-  } catch (err) {
-    console.error("Lỗi chạy hiệp đấu:", err);
-    notifyError("Lỗi Hệ Thống", "Có lỗi trong quá trình thi đấu.");
-  } finally {
-    isMatchRunning = false;
-    if (btn) btn.classList.remove("running");
-    if (btnArenaStart) {
-      btnArenaStart.disabled = false;
-      const curMatch = currentTournamentData?.matches?.[currentActiveMatchId];
-      btnArenaStart.textContent = `▶ Bắt Đầu Hiệp ${curMatch?.current_round_idx || 1}`;
-    }
-  }
+    const response=await fetch(`${API_BASE}/api/tournaments/${tournamentId}/matches/${matchId}/play-round`,{method:"POST"});
+    const result=await response.json();
+    if (!response.ok) throw new Error(result.detail || "Không chạy được hiệp đấu.");
+    if (currentTournamentId===tournamentId) await loadActiveTournament(tournamentId);
+    broadcastCrossTabSync("MATCH_UPDATED");
+    notifySuccess(`Hiệp ${result.round_record?.round_number || match.current_round_idx} đã hoàn tất`,result.reason || result.message || "");
+  } catch (error) { notifyError("Không chạy được hiệp",error.message); }
+  finally { isMatchRunning=false; if (currentTournamentId===tournamentId && currentTournamentData?.matches?.[matchId]) renderMatchRoomData(currentTournamentData.matches[matchId]); }
 }
 
 async function handleQuickFillDemo() {
@@ -3937,6 +3363,7 @@ async function handleResetCurrentMatch() {
 
 function renderRoundHistoryTable(historyList) {
   const tbody = document.getElementById("tbody-round-history");
+  if (!tbody) return;
   if (!historyList || historyList.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted">Chưa đấu round nào trong trận này.</td></tr>`;
     return;
@@ -3962,7 +3389,7 @@ function renderRoundHistoryTable(historyList) {
       <td>
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
           <button class="btn btn-sm btn-primary btn-replay-round" data-round="${r.round_number}">
-            ▶ Xem Replay
+             Xem Replay
           </button>
           <button class="btn btn-sm btn-outline btn-view-round-code" data-round="${r.round_number}">
             Mã Lệnh
@@ -4047,7 +3474,8 @@ window.viewSubmissionCode = function(subId) {
 };
 
 async function loadMatchSubmissions(matchId) {
-  if (!currentTournamentId || !matchId) return;
+  if (!currentTournamentId || !matchId || currentAppRole === "GUEST" || !sessionStorage.getItem("arenaSessionToken")) return;
+  const tournamentId = currentTournamentId;
 
   const tbody = document.getElementById("tbody-match-submissions");
   const tbodyKaggle = document.getElementById("tbody-kaggle-submissions");
@@ -4059,6 +3487,7 @@ async function loadMatchSubmissions(matchId) {
     const res = await fetch(`${API_BASE}/api/tournaments/${currentTournamentId}/matches/${matchId}/submissions?role=${encodeURIComponent(roleParam)}&student_id=${encodeURIComponent(sidParam)}`);
     if (!res.ok) return;
     const subs = await res.json();
+    if (tournamentId !== currentTournamentId || matchId !== currentActiveMatchId) return;
     window._lastSubmissionsCache = subs || [];
 
     if (!subs || subs.length === 0) {
@@ -4134,7 +3563,8 @@ function openReplayModal(matchId, roundNum) {
   }
 
   currentReplayRecord = roundRec;
-  currentReplayStepIdx = 0;
+  const replayState = readArenaViewState();
+  currentReplayStepIdx = replayState.modalReplayRound === roundNum ? (replayState.modalReplayStep || 0) : 0;
   clearInterval(replayPlayInterval);
   replayPlayInterval = null;
 
@@ -4156,7 +3586,7 @@ function openReplayModal(matchId, roundNum) {
     slider.value = 0;
   }
 
-  renderReplayStep(0);
+  renderReplayStep(currentReplayStepIdx);
   modal.style.display = "flex";
 }
 
@@ -4166,6 +3596,7 @@ function renderReplayStep(stepIdx) {
   if (stepIdx < 0) stepIdx = 0;
   if (stepIdx >= steps.length) stepIdx = steps.length - 1;
   currentReplayStepIdx = stepIdx;
+  saveArenaViewState({ modalReplayRound: currentReplayRecord.round_number, modalReplayStep: stepIdx });
 
   const step = steps[stepIdx];
   const boardEl = document.getElementById("replay-chessboard-9x9");
@@ -4252,24 +3683,21 @@ function setupLogTabs() {
       tab.classList.add("active");
       const targetPane = document.getElementById(tab.dataset.logTab);
       if (targetPane) targetPane.classList.add("active");
+      saveArenaViewState({ logTab:tab.dataset.logTab });
     });
   });
 }
 
 function openCodeViewerModal(record) {
-  document.getElementById("view-code-modal-title").textContent = `Mã Lệnh Đã Thực Thi Ở Round ${record.round_number}`;
-  document.getElementById("view-code-team-a-title").textContent = `Đội Đỏ (${record.team_a_lang || 'PYTHON'})`;
-  document.getElementById("view-code-team-b-title").textContent = `Đội Xanh (${record.team_b_lang || 'PYTHON'})`;
-
-  document.getElementById("view-code-content-a").textContent = record.team_a_code || "# Không có mã lệnh";
-  document.getElementById("view-code-content-b").textContent = record.team_b_code || "# Không có mã lệnh";
-
-  document.getElementById("modal-view-code").style.display = "flex";
+  document.getElementById("code-viewer-title").textContent=`Mã lệnh đã chạy ở hiệp ${record.round_number}`;
+  document.getElementById("code-viewer-meta").textContent="Chỉ hiển thị mã nguồn mà tài khoản được phép xem.";
+  const sources=[];
+  if (record.team_a_code) sources.push(`Đội Đỏ (${record.team_a_lang || "PYTHON"})\n${record.team_a_code}`);
+  if (record.team_b_code) sources.push(`Đội Xanh (${record.team_b_lang || "PYTHON"})\n${record.team_b_code}`);
+  document.getElementById("code-viewer-box").textContent=sources.join("\n\n") || "Không có quyền xem mã nguồn hiệp này.";
+  document.getElementById("modal-view-code").style.display="flex";
 }
 
-// =============================================================================
-// 7. MODALS (TẠO GIẢI ĐẤU & XEM CODE)
-// =============================================================================
 function setupModals() {
   const btnOpenTournamentList = document.getElementById("btn-open-tournament-list");
   const tournamentListModal = document.getElementById("modal-tournament-list");
@@ -4563,7 +3991,7 @@ function setupModals() {
     btnReplayPrev.addEventListener("click", () => {
       clearInterval(replayPlayInterval);
       replayPlayInterval = null;
-      if (btnReplayPlayPause) btnReplayPlayPause.textContent = "▶ Tự Động Chạy";
+      if (btnReplayPlayPause) btnReplayPlayPause.textContent = " Tự Động Chạy";
       renderReplayStep(currentReplayStepIdx - 1);
     });
   }
@@ -4572,7 +4000,7 @@ function setupModals() {
     btnReplayNext.addEventListener("click", () => {
       clearInterval(replayPlayInterval);
       replayPlayInterval = null;
-      if (btnReplayPlayPause) btnReplayPlayPause.textContent = "▶ Tự Động Chạy";
+      if (btnReplayPlayPause) btnReplayPlayPause.textContent = " Tự Động Chạy";
       renderReplayStep(currentReplayStepIdx + 1);
     });
   }
@@ -4582,7 +4010,7 @@ function setupModals() {
       if (replayPlayInterval) {
         clearInterval(replayPlayInterval);
         replayPlayInterval = null;
-        btnReplayPlayPause.textContent = "▶ Tự Động Chạy";
+        btnReplayPlayPause.textContent = " Tự Động Chạy";
       } else {
         btnReplayPlayPause.textContent = "Tạm Dừng";
         if (currentReplayRecord && currentReplayStepIdx >= currentReplayRecord.board_steps.length - 1) {
@@ -4592,7 +4020,7 @@ function setupModals() {
           if (!currentReplayRecord || currentReplayStepIdx >= currentReplayRecord.board_steps.length - 1) {
             clearInterval(replayPlayInterval);
             replayPlayInterval = null;
-            btnReplayPlayPause.textContent = "▶ Tự Động Chạy";
+            btnReplayPlayPause.textContent = " Tự Động Chạy";
             return;
           }
           renderReplayStep(currentReplayStepIdx + 1);
@@ -4605,7 +4033,7 @@ function setupModals() {
     replaySlider.addEventListener("input", (e) => {
       clearInterval(replayPlayInterval);
       replayPlayInterval = null;
-      if (btnReplayPlayPause) btnReplayPlayPause.textContent = "▶ Tự Động Chạy";
+      if (btnReplayPlayPause) btnReplayPlayPause.textContent = " Tự Động Chạy";
       renderReplayStep(parseInt(e.target.value));
     });
   }
@@ -4655,11 +4083,14 @@ Bạn có muốn mở bảng Quản Lý Đội ngay không?`
       const result = await response.json();
       if (!response.ok) throw new Error(result.detail || "Không thể chọn trận đấu này.");
       saveArenaSessionToken(result.session_token);
+      currentTeamName = result.team_name || currentTeamName;
+      updateRoleUI();
       currentStudioSide = result.side || null;
       if (currentStudioSide) {
         sessionStorage.setItem("studioSide", currentStudioSide);
         localStorage.setItem("studioSide", currentStudioSide);
       }
+      await loadActiveTournament(currentTournamentId);
     } catch (error) {
       notifyError("Không thể chọn trận", error.message || "Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại.");
       return;
@@ -5493,120 +4924,18 @@ async function loadGlobalMatchHistory() {
 // =============================================================================
 // =============================================================================
 async function loadLeaderboard() {
-  const tbody = document.getElementById("tbody-ranking");
+  const tbody=document.getElementById("tbody-ranking");
   if (!tbody) return;
-
-  const referenceAll8 = [
-    { rank: 1, name: "RedBot", sid: "K69A001", elo: 1620, color: "color-red" },
-    { rank: 2, name: "BlueBot", sid: "K69A002", elo: 1580, color: "color-blue" },
-    { rank: 3, name: "GreenBot", sid: "K69A003", elo: 1520, color: "color-green" },
-    { rank: 4, name: "YellowBot", sid: "K69A004", elo: 1480, color: "color-yellow" },
-    { rank: 5, name: "PurpleBot", sid: "K69A005", elo: 1420, color: "color-purple" },
-    { rank: 6, name: "OrangeBot", sid: "K69A006", elo: 1380, color: "color-orange" },
-    { rank: 7, name: "PinkBot", sid: "K69A007", elo: 1340, color: "color-pink" },
-    { rank: 8, name: "CyanBot", sid: "K69A008", elo: 1300, color: "color-cyan" }
-  ];
-
   try {
-    const res = await fetch(`${API_BASE}/api/ranking`);
-    if (res.ok) {
-      const ranks = await res.json();
-      if (Array.isArray(ranks) && ranks.length > 0) {
-        tbody.innerHTML = "";
-        ranks.forEach((r, idx) => {
-          const rankNum = idx + 1;
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>
-              <span class="rank-num-bold">${rankNum}</span>
-            </td>
-            <td>
-              <div class="bot-team-cell">
-                <span class="team-name-bold">${escapeHtml(r.bot_name || r.team_name || "Bot")}</span>
-              </div>
-            </td>
-            <td><span class="student-id-code">${escapeHtml(r.student_id || "---")}</span></td>
-            <td style="text-align: right;"><span class="elo-score-bold">${r.elo_score || 1200}</span></td>
-          `;
-          tbody.appendChild(tr);
-        });
-        return;
-      }
-    }
-  } catch (err) {
-    console.warn("Dùng fallback bảng xếp hạng Mockup 3:", err);
-  }
-
-  // Fallback chuẩn 8 đội theo Mockup 3
-  tbody.innerHTML = "";
-  referenceAll8.forEach(r => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>
-        <span class="rank-num-bold">${r.rank}</span>
-      </td>
-      <td>
-        <div class="bot-team-cell">
-          <span class="team-name-bold">${escapeHtml(r.name)}</span>
-        </div>
-      </td>
-      <td><span class="student-id-code">${r.sid}</span></td>
-      <td style="text-align: right;"><span class="elo-score-bold">${r.elo}</span></td>
-    `;
-    tbody.appendChild(tr);
-  });
+    const response=await fetch(`${API_BASE}/api/ranking`);
+    if (!response.ok) throw new Error("Không tải được xếp hạng.");
+    const ranks=await response.json();
+    const rows=ranks;
+    tbody.innerHTML=rows.length ? rows.map((r,i)=>`<tr><td>${i+1}</td><td><strong>${escapeHtml(r.bot_name || r.team_name || "Bot")}</strong></td><td>${escapeHtml(r.student_id || "---")}</td><td style="text-align:right">${r.elo_score ?? 1200}</td></tr>`).join("") : '<tr><td colspan="4">Chưa có dữ liệu xếp hạng.</td></tr>';
+  } catch { tbody.innerHTML='<tr><td colspan="4">Không tải được dữ liệu xếp hạng. Hãy thử lại.</td></tr>'; }
 }
 
 
-// =============================================================================
-// 11. TAB 5: BAN TỔ CHỨC (ĐỔI LUẬT)
-// =============================================================================
-async function loadCurrentRules() {
-  try {
-    const res = await fetch(`${API_BASE}/api/tournament/rule?tournament_id=${encodeURIComponent(currentTournamentId || "")}`);
-    const rule = await res.json();
-    const radios = document.querySelectorAll("input[name='admin_stage']");
-    radios.forEach(r => {
-      if (r.value === rule.stage) r.checked = true;
-    });
-  } catch (err) {
-    console.error("Lỗi nạp luật giải đấu:", err);
-  }
-}
-
-function setupAdminRules() {
-  const btnApply = document.getElementById("btn-apply-stage");
-  btnApply.addEventListener("click", async () => {
-    const selected = document.querySelector("input[name='admin_stage']:checked");
-    if (!selected) return;
-
-    btnApply.disabled = true;
-    btnApply.textContent = "Đang áp dụng...";
-
-    try {
-      const res = await fetch(`${API_BASE}/api/tournament/rule/set?tournament_id=${encodeURIComponent(currentTournamentId || "")}&stage_name=${encodeURIComponent(selected.value)}`, {
-        method: "POST"
-      });
-      const data = await res.json();
-      notifySuccess("Đổi Luật Thành Công", `Đã áp dụng luật thi đấu: ${data.stage}`);
-
-      const stageText = document.getElementById("sidebar-stage-text");
-      if (stageText) {
-        if (selected.value === "STAGE_1_STANDARD") stageText.textContent = "Vòng 1: Luật Chuẩn";
-        else if (selected.value === "STAGE_2_MUTATED") stageText.textContent = "Vòng 2: Lệch Thẻ";
-        else if (selected.value === "STAGE_3_REVERSE_FOG") stageText.textContent = "Vòng 3: Sương Mù";
-        else stageText.textContent = "Vòng 4: Chung Kết";
-      }
-
-    } catch (err) {
-      console.error("Lỗi đổi luật:", err);
-      notifyError("Lỗi Kết Nối", "Không thể kết nối đến máy chủ API.");
-    } finally {
-      btnApply.disabled = false;
-      btnApply.textContent = "Áp Dụng Luật Mới Toàn Sàn";
-    }
-  });
-}
 
 // Utility escape HTML
 function escapeHtml(str) {

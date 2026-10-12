@@ -1,66 +1,110 @@
 package auth
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
-	"encoding/hex"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
+	"os"
+	"strings"
 	"sync"
 	"time"
 )
 
 type Session struct {
-	Role         string
-	Side         string
-	TournamentID string
-	MatchID      string
-	StudentID    string
-	ExpiresAt    time.Time
+	Role         string    `json:"role"`
+	Side         string    `json:"side,omitempty"`
+	TournamentID string    `json:"tournament_id,omitempty"`
+	MatchID      string    `json:"match_id,omitempty"`
+	StudentID    string    `json:"student_id,omitempty"`
+	TeamName     string    `json:"team_name,omitempty"`
+	ExpiresAt    time.Time `json:"expires_at"`
+	Nonce        string    `json:"nonce"`
 }
 
 type Manager struct {
-	mu       sync.RWMutex
-	sessions map[string]Session
+	mu      sync.RWMutex
+	key     []byte
+	revoked map[string]time.Time
 }
 
-func NewManager() *Manager { return &Manager{sessions: make(map[string]Session)} }
+// A stable signing key keeps browser sessions valid across service restarts.
+func NewManager() *Manager {
+	secret := os.Getenv("SESSION_SECRET")
+	if secret == "" {
+		secret = os.Getenv("ADMIN_PASSWORD")
+	}
+	if secret == "" {
+		var randomKey [32]byte
+		if _, err := rand.Read(randomKey[:]); err != nil {
+			panic(err)
+		}
+		secret = base64.RawURLEncoding.EncodeToString(randomKey[:])
+	}
+	key := sha256.Sum256([]byte("arena-session-v1:" + secret))
+	return &Manager{key: key[:], revoked: make(map[string]time.Time)}
+}
+
+func (m *Manager) signature(payload string) []byte {
+	mac := hmac.New(sha256.New, m.key)
+	mac.Write([]byte(payload))
+	return mac.Sum(nil)
+}
 
 func (m *Manager) Create(session Session) (string, error) {
-	var raw [32]byte
+	var raw [16]byte
 	if _, err := rand.Read(raw[:]); err != nil {
 		return "", err
 	}
-	token := hex.EncodeToString(raw[:])
-	session.ExpiresAt = time.Now().Add(12 * time.Hour)
-	m.mu.Lock()
-	if len(m.sessions) >= 2048 {
-		now := time.Now()
-		for existingToken, existingSession := range m.sessions {
-			if now.After(existingSession.ExpiresAt) {
-				delete(m.sessions, existingToken)
-			}
-		}
+	session.Nonce = base64.RawURLEncoding.EncodeToString(raw[:])
+	session.ExpiresAt = time.Now().Add(7 * 24 * time.Hour)
+	if strings.HasPrefix(session.Role, "TEAM") {
+		session.Role = "TEAM"
 	}
-	m.sessions[token] = session
-	m.mu.Unlock()
-	return token, nil
+	data, err := json.Marshal(session)
+	if err != nil {
+		return "", err
+	}
+	payload := base64.RawURLEncoding.EncodeToString(data)
+	return payload + "." + base64.RawURLEncoding.EncodeToString(m.signature(payload)), nil
 }
 
 func (m *Manager) Get(token string) (Session, bool) {
-	m.mu.RLock()
-	session, ok := m.sessions[token]
-	m.mu.RUnlock()
-	if !ok || time.Now().After(session.ExpiresAt) {
-		if ok {
-			m.mu.Lock()
-			delete(m.sessions, token)
-			m.mu.Unlock()
-		}
+	parts := strings.Split(token, ".")
+	if len(parts) != 2 {
 		return Session{}, false
 	}
-	return session, true
+	sig, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil || !hmac.Equal(sig, m.signature(parts[0])) {
+		return Session{}, false
+	}
+	data, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return Session{}, false
+	}
+	var session Session
+	if json.Unmarshal(data, &session) != nil || session.Nonce == "" || !time.Now().Before(session.ExpiresAt) {
+		return Session{}, false
+	}
+	if session.Role != "ADMIN" && (session.Role != "TEAM" || session.StudentID == "") {
+		return Session{}, false
+	}
+	m.mu.RLock()
+	_, revoked := m.revoked[token]
+	m.mu.RUnlock()
+	return session, !revoked
 }
 
 func (m *Manager) Revoke(token string) {
-	m.mu.Lock()
-	delete(m.sessions, token)
-	m.mu.Unlock()
+	if session, ok := m.Get(token); ok {
+		m.mu.Lock()
+		for existing, expires := range m.revoked {
+			if time.Now().After(expires) {
+				delete(m.revoked, existing)
+			}
+		}
+		m.revoked[token] = session.ExpiresAt
+		m.mu.Unlock()
+	}
 }

@@ -1,12 +1,16 @@
 package middleware
 
 import (
+	"bytes"
+	"encoding/json"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"project-tuan3/internal/auth"
 )
 
 type rateEntry struct {
@@ -27,15 +31,39 @@ func RateLimitMiddleware() gin.HandlerFunc {
 		}
 		// Honor only the socket peer until trusted proxies are explicitly configured.
 		key := c.RemoteIP()
+		if value, exists := c.Get("session"); exists {
+			if session, ok := value.(auth.Session); ok {
+				key += ":" + session.Role + ":" + session.StudentID
+			}
+		}
 		limit := 600
 		bucket := "read"
 		if c.Request.Method != http.MethodGet && c.Request.Method != http.MethodHead {
-			limit = 60
+			limit = 120
 			bucket = "write"
 		}
 		if strings.HasSuffix(c.Request.URL.Path, "/login") || strings.HasSuffix(c.Request.URL.Path, "/auth") {
 			limit = 10
 			bucket = "auth"
+			if c.Request.Body != nil {
+				body, _ := io.ReadAll(io.LimitReader(c.Request.Body, 4096))
+				c.Request.Body = io.NopCloser(bytes.NewReader(body))
+				var login struct {
+					Username  string `json:"username"`
+					StudentID string `json:"student_id"`
+				}
+				if json.Unmarshal(body, &login) == nil {
+					username := login.Username
+					if username == "" {
+						username = login.StudentID
+					}
+					key += ":" + strings.ToLower(strings.TrimSpace(username))
+				}
+			}
+		}
+		if strings.HasSuffix(c.Request.URL.Path, "/draft-code") {
+			limit = 240
+			bucket = "draft"
 		}
 		key += ":" + bucket
 		now := time.Now()

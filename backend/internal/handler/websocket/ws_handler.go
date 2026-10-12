@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -30,10 +31,11 @@ func newUpgrader(allowedOrigins string) websocket.Upgrader {
 }
 
 type Client struct {
-	Hub     *Hub
-	Conn    *websocket.Conn
-	Send    chan []byte
-	MatchID string
+	Hub          *Hub
+	Conn         *websocket.Conn
+	Send         chan []byte
+	MatchID      string
+	TournamentID string
 }
 
 type Hub struct {
@@ -44,8 +46,9 @@ type Hub struct {
 }
 
 type matchMessage struct {
-	matchID string
-	data    []byte
+	matchID      string
+	tournamentID string
+	data         []byte
 }
 
 func NewHub() *Hub {
@@ -69,7 +72,7 @@ func (h *Hub) Run() {
 			}
 		case message := <-h.matchBroadcast:
 			for client := range h.clients {
-				if client.MatchID != message.matchID {
+				if (client.TournamentID != "" && client.TournamentID != message.tournamentID) || (client.MatchID != "" && client.MatchID != message.matchID) {
 					continue
 				}
 				select {
@@ -84,8 +87,8 @@ func (h *Hub) Run() {
 	}
 }
 
-func (h *Hub) BroadcastMatchJSON(matchID string, v interface{}) {
-	if matchID == "" {
+func (h *Hub) BroadcastTournamentJSON(tournamentID, matchID string, v interface{}) {
+	if tournamentID == "" {
 		return
 	}
 	data, err := json.Marshal(v)
@@ -94,7 +97,7 @@ func (h *Hub) BroadcastMatchJSON(matchID string, v interface{}) {
 		return
 	}
 	select {
-	case h.matchBroadcast <- matchMessage{matchID: matchID, data: data}:
+	case h.matchBroadcast <- matchMessage{tournamentID: tournamentID, matchID: matchID, data: data}:
 	default:
 		log.Printf("[WS] Dropped match event for %s because the queue is full", matchID)
 	}
@@ -108,7 +111,13 @@ func ServeWS(hub *Hub, c *gin.Context, allowedOrigins string) {
 		return
 	}
 
-	client := &Client{Hub: hub, Conn: conn, Send: make(chan []byte, 256), MatchID: c.Param("matchId")}
+	tournamentID := c.Param("id")
+	if tournamentID == "" {
+		tournamentID = c.Query("tournament_id")
+	}
+	client := &Client{Hub: hub, Conn: conn, Send: make(chan []byte, 256), MatchID: c.Param("matchId"), TournamentID: tournamentID}
+	conn.SetReadDeadline(time.Now().Add(70 * time.Second))
+	conn.SetPongHandler(func(string) error { return conn.SetReadDeadline(time.Now().Add(70 * time.Second)) })
 	hub.register <- client
 
 	go func() {
@@ -128,9 +137,22 @@ func ServeWS(hub *Hub, c *gin.Context, allowedOrigins string) {
 
 	go func() {
 		defer client.Conn.Close()
-		for message := range client.Send {
-			if err := client.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
-				break
+		ticker := time.NewTicker(25 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case message, ok := <-client.Send:
+				if !ok {
+					return
+				}
+				client.Conn.SetWriteDeadline(time.Now().Add(5 * time.Second))
+				if client.Conn.WriteMessage(websocket.TextMessage, message) != nil {
+					return
+				}
+			case <-ticker.C:
+				if client.Conn.WriteControl(websocket.PingMessage, nil, time.Now().Add(5*time.Second)) != nil {
+					return
+				}
 			}
 		}
 	}()

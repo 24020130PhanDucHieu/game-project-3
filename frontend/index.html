@@ -8,7 +8,7 @@
   <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 
-  <link href="styles.css?v=2.2" rel="stylesheet"/>
+  <link href="styles.css?v=3.0" rel="stylesheet"/>
 </head>
 <body>
   <!-- TOAST NOTIFICATION CONTAINER -->
@@ -578,12 +578,39 @@
           </div>
         </div>
 
-        <!-- NÚT ẨN CHO TƯƠNG THÍCH LOGIC CŨ -->
-        <div style="display: none;">
-          <button id="btn-arena-next-round">Vòng tiếp theo</button>
-          <button id="btn-arena-reset-match">Đặt lại trận</button>
-          <button id="btn-arena-quick-demo">Nạp bot mẫu</button>
+        <div class="content-card" id="round-intermission-banner" style="display:none; margin-top:16px; align-items:center; gap:12px;">
+          <strong id="intermission-title">Hiệp đã hoàn tất. Chuẩn bị hiệp tiếp theo.</strong>
+          <span id="countdown-num">5</span><span>giây</span>
         </div>
+
+        <details class="content-card" id="admin-live-code-monitor" style="display:none; margin-top:16px;">
+          <summary>Mã lệnh hai đội — cập nhật trực tiếp</summary>
+          <div class="arena-code-monitor-grid">
+            <div><strong id="monitor-team-a-name">Đội Đỏ</strong> <span id="monitor-team-a-lang"></span><pre id="monitor-code-a"></pre></div>
+            <div><strong id="monitor-team-b-name">Đội Xanh</strong> <span id="monitor-team-b-lang"></span><pre id="monitor-code-b"></pre></div>
+          </div>
+        </details>
+
+        <div class="content-card" style="margin-top:16px;">
+          <div class="arena-log-tabs">
+            <button class="btn btn-sm btn-outline log-tab-btn active" data-log-tab="log-moves">Nước đi</button>
+            <button class="btn btn-sm btn-outline log-tab-btn" data-log-tab="log-bots">Thực thi bot</button>
+            <button class="btn btn-sm btn-outline log-tab-btn" data-log-tab="log-system">Hệ thống</button>
+          </div>
+          <div class="log-pane active" id="log-moves"><div id="move-log-list"></div></div>
+          <div class="log-pane" id="log-bots"><div id="bot-log-list"></div></div>
+          <div class="log-pane" id="log-system"><div id="system-log-list"></div></div>
+        </div>
+
+        <details class="content-card" style="margin-top:16px;">
+          <summary>Lịch sử hiệp đấu và phát lại</summary>
+          <div class="table-responsive">
+            <table class="table-clean"><thead><tr><th>Hiệp</th><th>Đỏ</th><th>Xanh</th><th>Kết quả</th><th>Diễn biến</th><th>Phát lại</th></tr></thead><tbody id="tbody-round-history"></tbody></table>
+          </div>
+        </details>
+
+        <!-- NÚT ẨN CHO TƯƠNG THÍCH LOGIC CŨ -->
+
       </section>
 
       <!-- =============================================================== -->
@@ -955,6 +982,6 @@
   </div>
 
   <!-- SCRIPT ENGINE -->
-  <script src="app.js?v=2.3"></script>
+  <script src="app.js?v=3.0"></script>
 </body>
 </html>

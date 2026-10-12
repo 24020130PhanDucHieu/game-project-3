@@ -681,6 +681,7 @@ class Database:
         tourn = self.tournaments.get(tournament_id)
         if not tourn:
             raise ValueError("Không tìm thấy giải đấu.")
+        self.ensure_tournament_editable(tourn)
         if not team_name or not team_name.strip():
             raise ValueError("Tên đội không được để trống!")
         if not student_id or not student_id.strip():
@@ -722,10 +723,17 @@ class Database:
     def default_team_access_code(student_id: str) -> str:
         return f"k69{str(student_id or '').strip()}"
 
+    @staticmethod
+    def ensure_tournament_editable(tournament: dict):
+        if any(match.get("rounds_history") or match.get("battle_running")
+               for match in tournament.get("matches", {}).values()):
+            raise ValueError("Giải đã bắt đầu thi đấu. Không thể thay đổi đội hoặc xếp lại nhánh đấu vì sẽ làm mất kết quả.")
+
     def remove_team_from_tournament(self, tournament_id: str, student_id: str) -> dict:
         tourn = self.tournaments.get(tournament_id)
         if not tourn:
             raise ValueError("Không tìm thấy giải đấu.")
+        self.ensure_tournament_editable(tourn)
         teams = tourn.get("teams", [])
         init_len = len(teams)
         tourn["teams"] = [t for t in teams if t["student_id"].strip().upper() != student_id.strip().upper()]
@@ -749,6 +757,7 @@ class Database:
         tourn = self.tournaments.get(tournament_id)
         if not tourn:
             raise ValueError("Không tìm thấy giải đấu.")
+        self.ensure_tournament_editable(tourn)
         num_teams = tourn["num_teams"]
         demo_pool = [
             ("K69_AlphaBot", "24020001", "ĐHQG Hà Nội"),
@@ -811,6 +820,7 @@ class Database:
         tourn = self.tournaments.get(tournament_id)
         if not tourn:
             raise ValueError("Không tìm thấy giải đấu.")
+        self.ensure_tournament_editable(tourn)
         num_teams = tourn["num_teams"]
         teams = tourn.get("teams", [])
         
@@ -1101,6 +1111,8 @@ def decide_move(game_state):
         match = tourn["matches"].get(match_id)
         if not match:
             raise ValueError("Không tìm thấy trận đấu.")
+        if match.get("status") == "COMPLETED" or match.get("round_status") == "ROUND_FINISHED":
+            raise ValueError("Hiệp đấu đã kết thúc. Chờ hiệp tiếp theo để nộp mã lệnh.")
         team_slot = match.get(side)
         if not team_slot:
             raise ValueError(f"Phe {side} chưa có đội.")
@@ -1286,19 +1298,17 @@ def decide_move(game_state):
             match["battle_running"] = False
             match["intermission_ends_at"] = None
 
-            # Bắt buộc cả 2 đội phải đăng nhập lại và nộp mã hợp lệ cho round mới
+            # Both sides submit again; their signed login session remains valid.
             if match.get("team_a"):
                 match["team_a"]["code_submitted"] = False
                 match["team_a"]["code_valid"] = False
                 match["team_a"]["validation_error"] = None
                 match["team_a"]["active_submission_id"] = None
-                match["team_a"]["authenticated"] = False
             if match.get("team_b"):
                 match["team_b"]["code_submitted"] = False
                 match["team_b"]["code_valid"] = False
                 match["team_b"]["validation_error"] = None
                 match["team_b"]["active_submission_id"] = None
-                match["team_b"]["authenticated"] = False
 
             self.save_tournaments_to_file()
             return {
@@ -1927,6 +1937,11 @@ def decide_move(game_state):
                 advanced_team["authenticated"] = True
                 advanced_team["rounds_won"] = 0
                 advanced_team["hp"] = 100
+                advanced_team["code_submitted"] = False
+                advanced_team["code_valid"] = False
+                advanced_team["validation_error"] = None
+                advanced_team["active_submission_id"] = None
+                next_m["all_teams_ready"] = False
                 next_m[slot] = advanced_team
                 if next_m["team_a"] and next_m["team_b"]:
                     next_m["status"] = "READY"
