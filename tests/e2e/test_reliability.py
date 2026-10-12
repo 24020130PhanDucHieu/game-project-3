@@ -297,14 +297,14 @@ def run(arena):
         history_panel.locator("summary").click()
         team_a.locator("#tbody-round-history .btn-view-round-code").first.click()
         expect(team_a.locator("#code-viewer-box")).to_contain_text(CODE)
-        team_a.locator("#btn-close-view-code").click()
+        team_a.locator("#btn-close-view-code-x").click()
         team_a.locator("#tbody-round-history .btn-replay-round").first.click()
         team_a.locator("#replay-step-slider").press("ArrowRight")
         saved_step = team_a.locator("#replay-step-indicator").inner_text()
-        team_a.locator("#btn-close-replay").click()
+        team_a.locator("#btn-close-replay-x").click()
         team_a.locator("#tbody-round-history .btn-replay-round").first.click()
         expect(team_a.locator("#replay-step-indicator")).to_have_text(saved_step)
-        team_a.locator("#btn-close-replay").click()
+        team_a.locator("#btn-close-replay-x").click()
         check("round source viewer and replay modal work and preserve the selected step")
 
         cpp = '#include <iostream>\nint main() { std::cout << "ROCK" << std::endl; }'
@@ -322,7 +322,7 @@ def run(arena):
         expect(admin_page.locator("#tbody-bracket-tournament-list tr").filter(has_text="Unrelated Cup")).to_have_count(0)
         api("GET", f"/api/tournaments/{second}", expected=404)
         assert admin_page.evaluate("currentTournamentId") == tid
-        admin_page.locator("#modal-tournament-list").get_by_role("button", name="Đóng", exact=True).click()
+        admin_page.locator("#modal-tournament-list").get_by_role("button", name="Đóng hộp thoại", exact=True).click()
         check("real Delete button deletes the selected list row and preserves another open bracket")
 
         # Complete all three matches, including winner propagation and final champion.

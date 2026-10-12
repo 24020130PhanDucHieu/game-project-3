@@ -34,7 +34,7 @@ function setupInlineBoardPlayback() {
     if (step) {
       renderChessboard(step.red_pieces, step.blue_pieces, step.clash);
       const ticker = document.getElementById("arena-commentary-ticker") || document.getElementById("live-commentary-ticker");
-      if (ticker && step.log) ticker.textContent = step.log;
+      if (ticker && step.log) setBattleCommentary(ticker, step.log);
     }
     if (stepIndicator) {
       stepIndicator.textContent = `Hiệp ${round}: Bước ${inlinePlaybackCurrentIdx + 1} / ${steps.length}`;

@@ -34,7 +34,12 @@ function saveArenaViewState(patch) { localStorage.setItem(arenaViewKey(), JSON.s
 function restoreMatchViewState() {
   const state = readArenaViewState();
   if (state.logTab) {
-    document.querySelectorAll(".log-tab-btn").forEach(button => button.classList.toggle("active", button.dataset.logTab === state.logTab));
+    document.querySelectorAll(".log-tab-btn").forEach(button => {
+      const active = button.dataset.logTab === state.logTab;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-selected", String(active));
+      button.tabIndex = active ? 0 : -1;
+    });
     document.querySelectorAll(".log-pane").forEach(pane => pane.classList.toggle("active", pane.id === state.logTab));
   }
 }
@@ -48,26 +53,28 @@ let liveRoundTimer = null;
 let liveRoundKey = "";
 function syncLiveRoundBoard(match) {
   const record = match.rounds_history?.[match.rounds_history.length - 1];
-  const key = `${currentTournamentId}:${currentActiveMatchId}:${match.round_status}:${record?.round_number}:${match.intermission_ends_at}`;
+  const key = `${currentTournamentId}:${currentActiveMatchId}:${currentAppRole}:${match.round_status}:${match.battle_running}:${match.all_teams_ready}:${record?.round_number}:${match.intermission_ends_at}`;
   if (key === liveRoundKey) return;
   liveRoundKey = key;
   clearInterval(liveRoundTimer);
   const draw = () => {
-    const badge = document.getElementById("realtime-battle-status-badge");
-    if (badge) badge.textContent = match.battle_running ? "Đang chạy hiệp đấu..." : (record ? `Hiệp ${record.round_number} hoàn tất` : "Chờ hai đội nộp code");
     const countdown = document.getElementById("countdown-num");
     if (countdown && match.intermission_ends_at) countdown.textContent = Math.max(0, Math.ceil(match.intermission_ends_at - Date.now() / 1000));
-    if (!record?.board_steps?.length) return;
+    if (!record?.board_steps?.length) { renderLiveAction(match, null, null); return; }
     const steps = record.board_steps;
     const progress = match.round_status === "ROUND_FINISHED" ? Math.max(0, Math.min(1, (Date.now() / 1000 - (match.intermission_ends_at - 5)) / 5)) : 1;
     const index = Math.min(steps.length - 1, Math.floor(progress * steps.length));
     const step = steps[index];
     if (currentAppRole === "ADMIN") renderRealtimeChessboard(step.red_pieces, step.blue_pieces, step.clash_event);
-    if (!readArenaViewState().inlineRound) renderChessboard(step.red_pieces, step.blue_pieces, step.clash_event);
-    const counter = document.getElementById("realtime-step-count");
-    if (counter) counter.textContent = `Nước ${index + 1} / ${steps.length}`;
-    const log = document.getElementById("realtime-moves-log");
-    if (log) log.textContent = steps.slice(0, index + 1).map(s => s.log || "").join("\n");
+    if (currentAppRole !== "ADMIN" && !readArenaViewState().inlineRound) {
+      inlinePlaybackCurrentIdx = index;
+      renderChessboard(step.red_pieces, step.blue_pieces, step.clash_event);
+      const indicator = document.getElementById("playback-step-indicator");
+      if (indicator) indicator.textContent = `Hiệp ${record.round_number}: Bước ${index + 1} / ${steps.length}`;
+      setBattleCommentary(document.getElementById("arena-commentary-ticker"), step.log);
+    }
+    renderLiveAction(match, record, step, index);
+    renderCategorizedLogs(record, index);
     if (progress === 1) clearInterval(liveRoundTimer);
   };
   draw();

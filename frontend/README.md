@@ -7,7 +7,7 @@
 - `templates/modals/`: HTML các hộp thoại.
 - `templates/partials/sidebar.html`: điều hướng và danh tính tài khoản.
 - `templates/partials/icons.html`: bộ icon SVG dùng chung.
-- `static/css/`: CSS theo trang/thành phần. `base.css` giữ biến màu, `icons.css` giữ icon, avatar đội và huy chương.
+- `static/css/`: CSS theo trang/thành phần. `base.css` giữ biến màu, `icons.css` giữ avatar đội và huy chương; `battle-presentation.css` giữ icon quân cờ, Live Action, nhật ký và thanh công cụ nộp bot.
 
 ## Chỉnh logic
 

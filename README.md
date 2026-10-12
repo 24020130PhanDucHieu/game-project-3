@@ -76,7 +76,7 @@ docker build -t ottv2-arena -f deploy/Dockerfile .
 
 Đẩy source lên GitHub chỉ cập nhật repository. Muốn phát hành dịch vụ, cần kết nối repository với Render và cấu hình secrets/database ở trên. Docker/Render phục vụ trực tiếp templates và static, không cần build frontend riêng.
 
-Với Cloudflare Workers/Pages hoặc hosting tĩnh, chạy `python scripts/build_frontend.py` và đặt thư mục assets/publish là **`frontend/dist`**. Lệnh build ghép cùng các template mà Go sử dụng và chép JS, CSS, SDK sang thư mục này. Bản mới dùng URL assets `v=4.0`.
+Với Cloudflare Workers/Pages hoặc hosting tĩnh, chạy `python scripts/build_frontend.py` và đặt thư mục assets/publish là **`frontend/dist`**. Lệnh build ghép cùng các template mà Go sử dụng và chép JS, CSS, SDK sang thư mục này. Bản mới dùng URL assets `v=4.1`.
 
 Kết quả và phạm vi kiểm thử: [docs/VERIFICATION_RELIABILITY.md](docs/VERIFICATION_RELIABILITY.md).
 

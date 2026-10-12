@@ -20,7 +20,7 @@ function updateStudioSubmitBtnText(roundNum = null) {
   }
 }
 
-// Mẫu code mặc định chuẩn ICPC
+// Mẫu code mặc định chuẩn đấu trường
 const DEFAULT_PYTHON_CODE = `# -*- coding: utf-8 -*-
 import random
 
@@ -47,7 +47,7 @@ def decide_move(game_state):
 `;
 
 const DEFAULT_CPP_CODE = `/**
- * Bot Mẫu C++ 17 ICPC Standard I/O
+ * Bot Mẫu C++ 17 Standard I/O
  */
 #include <iostream>
 #include <string>

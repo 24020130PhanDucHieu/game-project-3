@@ -1,6 +1,6 @@
 /**
- * Bot Mẫu Oẳn Tù Tì V2 (OTTV2) - Ngôn ngữ C++ (Chuẩn ICPC I/O)
- * Dành cho Tân sinh viên K69 tham gia Giải đấu Lập trình ICPC Bot
+ * Bot Mẫu Oẳn Tù Tì V2 (OTTV2) - Ngôn ngữ C++ (Giao tiếp STDIN/STDOUT)
+ * Dành cho Tân sinh viên K69 tham gia Giải đấu Lập trình BOT ARENA
  * 
  * Biên dịch: g++ -O3 -std=c++17 bot_template.cpp -o bot
  * Giao tiếp: Đọc dữ liệu bàn đấu từ STDIN (cin), in nước đi ra STDOUT (cout).
@@ -14,7 +14,7 @@
 #include <random>
 
 int main() {
-    // Tối ưu hóa I/O cho chuẩn thi đấu ICPC
+    // Tối ưu hóa I/O cho bot thi đấu
     std::ios_base::sync_with_stdio(false);
     std::cin.tie(NULL);
 

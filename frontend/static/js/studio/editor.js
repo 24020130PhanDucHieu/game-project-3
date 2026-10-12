@@ -152,6 +152,9 @@ function setupStudioControls() {
   dryrun?.addEventListener("click", async () => {
     if (!editor.value.trim()) { notifyWarning("Chưa có mã", "Hãy viết mã bot trước khi kiểm tra."); return; }
     dryrun.disabled = true;
+    const dryrunLabel = dryrun.querySelector("span");
+    if (dryrunLabel) dryrunLabel.textContent = "Đang kiểm tra…";
+    dryrun.setAttribute("aria-busy", "true");
     try {
       const response = await fetch(`${API_BASE}/api/bots/validate`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({code_content:editor.value,language:language.value}) });
       const result = await response.json();
@@ -159,7 +162,11 @@ function setupStudioControls() {
       if (result.is_valid) notifySuccess("Mã hợp lệ", `Sandbox đã thực thi bot (${result.execution_time_ms || 0}ms).`);
       else notifyWarning("Mã không hợp lệ", result.error_message || "Bot không trả về nước đi hợp lệ.");
     } catch (error) { notifyError("Không kiểm tra được mã",error.message); }
-    finally { dryrun.disabled = false; }
+    finally {
+      dryrun.disabled = false;
+      dryrun.removeAttribute("aria-busy");
+      if (dryrunLabel) dryrunLabel.textContent = "Kiểm tra";
+    }
   });
   submit.addEventListener("click", async () => {
     if (!["TEAM","ADMIN"].includes(currentAppRole)) { showLoginPage(); return; }

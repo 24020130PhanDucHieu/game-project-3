@@ -1,5 +1,5 @@
 // All symbols live in templates/partials/icons.html; decorative SVGs keep labels readable.
-const ARENA_ICON_NAMES = new Set(["home", "bracket", "chart", "swords", "book", "shield", "user", "users", "bot", "trophy", "medal", "plus", "grid", "upload", "code", "play", "check", "info", "warning", "logout", "sparkles", "clock", "trash", "chevron"]);
+const ARENA_ICON_NAMES = new Set(["home", "bracket", "chart", "swords", "book", "shield", "user", "users", "bot", "trophy", "medal", "plus", "grid", "upload", "code", "play", "check", "info", "warning", "logout", "sparkles", "clock", "trash", "chevron", "close", "activity", "hand-rock", "hand-paper", "hand-scissors"]);
 
 function arenaIcon(name, extraClass = "") {
   if (!ARENA_ICON_NAMES.has(name)) return "";

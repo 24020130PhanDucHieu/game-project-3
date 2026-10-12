@@ -105,7 +105,9 @@ function renderPracticeChessboard(redPieces, bluePieces, clashEvent = null) {
       if (cell) {
         const pieceEl = document.createElement("div");
         pieceEl.className = "board-piece piece-blue";
-        pieceEl.textContent = PIECE_ICONS[p.type] || "Búa";
+        pieceEl.innerHTML = pieceIcon(p.type);
+        pieceEl.setAttribute("role", "img");
+        pieceEl.setAttribute("aria-label", PIECE_ICONS[p.type] || "B\u00faa");
         pieceEl.title = `Quân Bot Mẫu: ${p.type}`;
         cell.appendChild(pieceEl);
       }
@@ -121,7 +123,9 @@ function renderPracticeChessboard(redPieces, bluePieces, clashEvent = null) {
       if (cell) {
         const pieceEl = document.createElement("div");
         pieceEl.className = "board-piece piece-red";
-        pieceEl.textContent = PIECE_ICONS[p.type] || "Búa";
+        pieceEl.innerHTML = pieceIcon(p.type);
+        pieceEl.setAttribute("role", "img");
+        pieceEl.setAttribute("aria-label", PIECE_ICONS[p.type] || "B\u00faa");
         pieceEl.title = `Quân Của Bạn: ${p.type}`;
         cell.appendChild(pieceEl);
       }
@@ -150,7 +154,7 @@ async function openPracticeArenaModal(simResult) {
   if (banner) banner.style.display = "none";
 
   const ticker = document.getElementById("practice-commentary-ticker");
-  if (ticker) ticker.textContent = "Bắt đầu trận đấu thử nghiệm 9x9... Đang triển khai quân cờ!";
+  if (ticker) setBattleCommentary(ticker, "Bắt đầu trận đấu thử nghiệm 9x9… Đang triển khai quân cờ!");
 
   initPracticeChessboardGrid();
 
@@ -163,7 +167,7 @@ async function openPracticeArenaModal(simResult) {
       if (modal.style.display === "none" || practiceSimCancelToken) break;
       const st = steps[i];
       renderPracticeChessboard(st.red_pieces, st.blue_pieces, st.clash_event);
-      if (ticker) ticker.textContent = st.log || `Bước ${st.step}`;
+      if (ticker) setBattleCommentary(ticker, st.log || `Bước ${st.step}`);
       await new Promise(r => setTimeout(r, 220));
     }
   }

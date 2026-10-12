@@ -96,11 +96,12 @@ function renderVisualBattleArena(match) {
   const ticker = document.getElementById("arena-commentary-ticker") || document.getElementById("live-commentary-ticker");
   if (ticker) {
     if (match.status === "COMPLETED") {
-      ticker.textContent = `Trận đấu đã hoàn tất! Quán quân: ${match.winner_name || '---'}!`;
+      setBattleCommentary(ticker, `Trận đấu đã hoàn tất! Đội thắng: ${match.winner_name || '---'}.`);
     } else if (lastR) {
-      ticker.textContent = `Hiệp vừa qua: ${lastR.log || lastR.win_reason}`;
+      const selectedStep = lastR.board_steps?.[inlinePlaybackCurrentIdx];
+      setBattleCommentary(ticker, selectedStep?.log || lastR.win_reason || lastR.log);
     } else {
-      ticker.textContent = `Sẵn sàng cho Round ${match.current_round_idx || 1}! Chờ Trọng tài khai hỏa trên bàn cờ 9×9...`;
+      setBattleCommentary(ticker, `Hiệp ${match.current_round_idx || 1}: chờ hai đội nộp bot và Ban tổ chức bắt đầu.`);
     }
   }
 
@@ -222,7 +223,7 @@ function renderFighterSide(side, team) {
   }
 
   if (nameEl) nameEl.textContent = team.team_name;
-  if (metaEl) metaEl.textContent = `MSSV: ${team.student_id} • ${team.university || 'ICPC K69'}`;
+  if (metaEl) metaEl.textContent = `MSSV: ${team.student_id} • ${team.university || 'BOT K69'}`;
   if (roundsWonEl) roundsWonEl.textContent = team.rounds_won;
   if (hpEl) hpEl.textContent = `${team.hp} HP`;
   if (btnOpen) {

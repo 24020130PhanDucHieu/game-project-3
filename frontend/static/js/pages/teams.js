@@ -51,7 +51,7 @@ function renderTeamsOverviewTable(teams) {
       <td><strong>#${t.seed || '-'}</strong></td>
       <td><strong>${escapeHtml(t.team_name)}</strong></td>
       <td><code>${escapeHtml(t.student_id)}</code></td>
-      <td>${escapeHtml(t.university || 'ICPC K69')}</td>
+      <td>${escapeHtml(t.university || 'BOT K69')}</td>
       <td>${escapeHtml(t.current_stage || 'Tứ Kết')}</td>
       <td>${statusHtml}</td>
       <td>${t.matches_won || 0}</td>

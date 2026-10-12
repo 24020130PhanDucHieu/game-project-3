@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 Bot Mẫu Oẳn Tù Tì V2 (OTTV2) - Ngôn ngữ Python
-Dành cho Tân sinh viên K69 tham gia Giải đấu Lập trình ICPC Bot
+Dành cho Tân sinh viên K69 tham gia Giải đấu Lập trình BOT ARENA
 
 Luật cơ bản:
 - Mỗi Bot có 100 HP.

@@ -62,7 +62,9 @@ function renderChessboard(redPieces, bluePieces, clashEvent = null) {
       if (cell) {
         const pieceEl = document.createElement("div");
         pieceEl.className = "board-piece piece-blue";
-        pieceEl.textContent = PIECE_ICONS[p.type] || "BÚA";
+        pieceEl.innerHTML = pieceIcon(p.type);
+        pieceEl.setAttribute("role", "img");
+        pieceEl.setAttribute("aria-label", PIECE_ICONS[p.type] || "B\u00faa");
         pieceEl.title = `Quân Xanh: ${p.type} (${p.col}, ${p.row})`;
         cell.appendChild(pieceEl);
       }
@@ -79,7 +81,9 @@ function renderChessboard(redPieces, bluePieces, clashEvent = null) {
       if (cell) {
         const pieceEl = document.createElement("div");
         pieceEl.className = "board-piece piece-red";
-        pieceEl.textContent = PIECE_ICONS[p.type] || "BÚA";
+        pieceEl.innerHTML = pieceIcon(p.type);
+        pieceEl.setAttribute("role", "img");
+        pieceEl.setAttribute("aria-label", PIECE_ICONS[p.type] || "B\u00faa");
         pieceEl.title = `Quân Đỏ: ${p.type} (${p.col}, ${p.row})`;
         cell.appendChild(pieceEl);
       }
@@ -149,7 +153,9 @@ function renderRealtimeChessboard(redPieces, bluePieces, clashEvent = null) {
       if (cell) {
         const pieceEl = document.createElement("div");
         pieceEl.className = "board-piece piece-blue";
-        pieceEl.textContent = PIECE_ICONS[p.type] || "BÚA";
+        pieceEl.innerHTML = pieceIcon(p.type);
+        pieceEl.setAttribute("role", "img");
+        pieceEl.setAttribute("aria-label", PIECE_ICONS[p.type] || "B\u00faa");
         pieceEl.title = `Quân Xanh: ${p.type} (${p.col}, ${p.row})`;
         cell.appendChild(pieceEl);
       }
@@ -163,7 +169,9 @@ function renderRealtimeChessboard(redPieces, bluePieces, clashEvent = null) {
       if (cell) {
         const pieceEl = document.createElement("div");
         pieceEl.className = "board-piece piece-red";
-        pieceEl.textContent = PIECE_ICONS[p.type] || "BÚA";
+        pieceEl.innerHTML = pieceIcon(p.type);
+        pieceEl.setAttribute("role", "img");
+        pieceEl.setAttribute("aria-label", PIECE_ICONS[p.type] || "B\u00faa");
         pieceEl.title = `Quân Đỏ: ${p.type} (${p.col}, ${p.row})`;
         cell.appendChild(pieceEl);
       }

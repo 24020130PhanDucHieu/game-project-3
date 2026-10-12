@@ -95,21 +95,17 @@ function setupModals() {
 
   // Modal xem code
   const modalCode = document.getElementById("modal-view-code");
-  const btnCloseCode = document.getElementById("btn-close-view-code") || document.getElementById("btn-close-code-modal");
-  const btnCloseCodeBtn = document.getElementById("btn-close-view-code-x") || document.getElementById("btn-close-code-modal-btn");
+  const btnCloseCode = document.getElementById("btn-close-view-code-x");
 
   const closeCodeModal = () => { if (modalCode) modalCode.style.display = "none"; };
   if (btnCloseCode) btnCloseCode.addEventListener("click", closeCodeModal);
-  if (btnCloseCodeBtn) btnCloseCodeBtn.addEventListener("click", closeCodeModal);
 
   // Modal Quản Lý Đội Tuyển & Bốc Thăm Nhánh Đấu
-  const btnCloseTeamMgr = document.getElementById("btn-close-team-mgr");
   const btnCloseTeamMgrX = document.getElementById("btn-close-team-mgr-x");
   const btnMgrAddTeam = document.getElementById("btn-mgr-add-team");
   const btnMgrQuickFill = document.getElementById("btn-mgr-quick-fill");
   const btnMgrAutoSchedule = document.getElementById("btn-mgr-auto-schedule");
 
-  if (btnCloseTeamMgr) btnCloseTeamMgr.addEventListener("click", () => window.closeTeamManagerModal());
   if (btnCloseTeamMgrX) btnCloseTeamMgrX.addEventListener("click", () => window.closeTeamManagerModal());
   if (btnMgrAddTeam) btnMgrAddTeam.addEventListener("click", handleAddTeamSubmit);
   if (btnMgrQuickFill) btnMgrQuickFill.addEventListener("click", handleQuickFillTeams);
@@ -246,11 +242,9 @@ function setupModals() {
   }
 
   // Modal Bàn Đấu Thử Nghiệm với Bot Mẫu (Hỗ trợ nút X và nút thoát tức thì)
-  const btnClosePractice = document.getElementById("btn-close-practice");
   const btnClosePracticeX = document.getElementById("btn-close-practice-x");
   const btnPracticeExitInline = document.getElementById("btn-practice-exit-inline");
 
-  if (btnClosePractice) btnClosePractice.addEventListener("click", closePracticeArenaModal);
   if (btnClosePracticeX) btnClosePracticeX.addEventListener("click", closePracticeArenaModal);
   if (btnPracticeExitInline) btnPracticeExitInline.addEventListener("click", closePracticeArenaModal);
 
@@ -271,7 +265,6 @@ function setupModals() {
   });
 
   // Modal Xem Lại Trận Đấu Step-by-Step (Match Replay Viewer)
-  const btnCloseReplay = document.getElementById("btn-close-replay");
   const btnCloseReplayX = document.getElementById("btn-close-replay-x");
   const btnReplayPrev = document.getElementById("btn-replay-prev");
   const btnReplayNext = document.getElementById("btn-replay-next");
@@ -284,7 +277,6 @@ function setupModals() {
     const modal = document.getElementById("modal-match-replay");
     if (modal) modal.style.display = "none";
   };
-  if (btnCloseReplay) btnCloseReplay.addEventListener("click", closeReplay);
   if (btnCloseReplayX) btnCloseReplayX.addEventListener("click", closeReplay);
 
   if (btnReplayPrev) {

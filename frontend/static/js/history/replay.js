@@ -10,8 +10,8 @@ function renderRoundHistoryTable(historyList) {
   historyList.forEach(r => {
     const tr = document.createElement("tr");
 
-    const moveAIcon = PIECE_ICONS[r.team_a_move] || "BÚA";
-    const moveBIcon = PIECE_ICONS[r.team_b_move] || "BÚA";
+    const moveAIcon = pieceChip(r.team_a_move);
+    const moveBIcon = pieceChip(r.team_b_move);
 
     let winText = "Hòa";
     if (r.winner === "team_a") winText = `<span class="text-danger" style="font-weight:700">Đội Đỏ Thắng</span>`;
@@ -19,10 +19,10 @@ function renderRoundHistoryTable(historyList) {
 
     tr.innerHTML = `
       <td><strong>Round ${r.round_number}</strong></td>
-      <td>${moveAIcon} ${r.team_a_move}</td>
-      <td>${moveBIcon} ${r.team_b_move}</td>
+      <td>${moveAIcon}</td>
+      <td>${moveBIcon}</td>
       <td>${winText}</td>
-      <td style="font-size:12.5px">${escapeHtml(r.log)}</td>
+      <td style="font-size:12.5px">${formatBattleLog(r.log)}</td>
       <td>
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
           <button class="btn btn-sm btn-primary btn-replay-round" data-round="${r.round_number}">
@@ -139,7 +139,9 @@ function renderReplayStep(stepIdx) {
       if (cell) {
         const pieceEl = document.createElement("div");
         pieceEl.className = "board-piece piece-blue";
-        pieceEl.textContent = PIECE_ICONS[p.type] || "BÚA";
+        pieceEl.innerHTML = pieceIcon(p.type);
+        pieceEl.setAttribute("role", "img");
+        pieceEl.setAttribute("aria-label", PIECE_ICONS[p.type] || "B\u00faa");
         cell.appendChild(pieceEl);
       }
     });
@@ -154,7 +156,9 @@ function renderReplayStep(stepIdx) {
       if (cell) {
         const pieceEl = document.createElement("div");
         pieceEl.className = "board-piece piece-red";
-        pieceEl.textContent = PIECE_ICONS[p.type] || "BÚA";
+        pieceEl.innerHTML = pieceIcon(p.type);
+        pieceEl.setAttribute("role", "img");
+        pieceEl.setAttribute("aria-label", PIECE_ICONS[p.type] || "B\u00faa");
         cell.appendChild(pieceEl);
       }
     });
@@ -175,7 +179,7 @@ function renderReplayStep(stepIdx) {
   if (indicator) indicator.textContent = `BƯỚC ${stepIdx + 1} / ${steps.length}`;
   if (countRed) countRed.textContent = `${redAlive}/9 quân`;
   if (countBlue) countBlue.textContent = `${blueAlive}/9 quân`;
-  if (ticker) ticker.textContent = `[${step.turn_label}] ${step.log}`;
+  if (ticker) setBattleCommentary(ticker, step.log || step.turn_label);
   if (slider) slider.value = stepIdx;
   if (sliderLabel) sliderLabel.textContent = `Bước: ${stepIdx + 1} / ${steps.length}`;
 }
