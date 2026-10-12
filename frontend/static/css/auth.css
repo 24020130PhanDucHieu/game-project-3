@@ -1,0 +1,203 @@
+/* ==========================================================================
+   6. MÀN HÌNH ĐĂNG NHẬP RIÊNG BIỆT (MOCKUP 4 REPLICATION)
+   ========================================================================== */
+.login-page-view {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #f0f7ff 0%, #e8f2fe 50%, #f4f8fe 100%);
+  z-index: 999;
+  overflow-y: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.login-page-container {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  max-width: 1100px;
+  width: 100%;
+  align-items: center;
+  gap: 48px;
+}
+
+/* CỘT TRÁI ĐĂNG NHẬP */
+.login-left-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.login-brand-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.login-hero-heading {
+  font-size: 36px;
+  font-weight: 800;
+  color: var(--text-heading);
+  line-height: 1.25;
+  letter-spacing: -0.5px;
+  margin-bottom: 14px;
+}
+
+.login-hero-desc {
+  font-size: 15px;
+  color: #475569;
+  line-height: 1.55;
+  max-width: 440px;
+  margin-bottom: 24px;
+}
+
+.login-isometric-graphic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 14px 28px rgba(37, 99, 235, 0.08));
+}
+
+/* CỘT PHẢI: FORM ĐĂNG NHẬP */
+.login-right-col {
+  display: flex;
+  justify-content: center;
+}
+
+.login-card-floating {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 44px 40px;
+  box-shadow: var(--shadow-floating);
+  width: 100%;
+  max-width: 440px;
+}
+
+.login-card-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-heading);
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+}
+
+.login-card-subtitle {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  margin-bottom: 26px;
+}
+
+.login-alert-banner {
+  background: #fef2f2;
+  border: 1px solid #fee2e2;
+  color: #dc2626;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  margin-bottom: 16px;
+}
+
+.login-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 0 14px;
+  margin-bottom: 16px;
+  height: 48px;
+  transition: border-color 0.15s ease;
+}
+
+.login-input-group:focus-within {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(26, 107, 240, 0.1);
+}
+
+.login-input-field {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  color: var(--text-heading);
+  font-family: inherit;
+  background: transparent;
+}
+
+.login-input-field::placeholder {
+  color: var(--text-light);
+}
+
+.btn-toggle-eye {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+}
+
+.btn-login-submit {
+  width: 100%;
+  height: 48px;
+  background: var(--primary-blue);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--shadow-primary-btn);
+  transition: background 0.15s ease;
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+
+.btn-login-submit:hover {
+  background: var(--primary-blue-hover);
+}
+
+.btn-login-back-home {
+  width: 100%;
+  height: 48px;
+  background: #ffffff;
+  color: var(--text-body);
+  border: 1.5px solid var(--border-light);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.btn-login-back-home:hover {
+  background: var(--bg-hover);
+  color: var(--text-heading);
+}
+
+.login-hints-box {
+  margin-top: 18px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.4;
+}
+
+.login-hints-box code {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  color: var(--primary-blue);
+  font-weight: 600;
+}

@@ -1,0 +1,65 @@
+<section class="tab-pane" id="tab-bracket">
+
+  <div class="bracket-page-header">
+    <div class="bracket-title-cluster">
+      <div>
+        <h1 class="page-title">Bảng đấu</h1>
+        <p class="page-subtitle">Xem lịch thi đấu và kết quả các vòng đấu.</p>
+      </div>
+    </div>
+
+    <div class="bracket-header-right">
+
+      <button class="btn btn-primary btn-sm" id="btn-open-create-tourn" title="Chỉ Ban Tổ Chức (Admin) mới có quyền tạo giải đấu mới">
+<svg class="arena-icon " aria-hidden="true" focusable="false"><use href="#icon-plus"></use></svg>
+
+        <span>Tạo giải đấu</span>
+      </button>
+
+      <button class="btn btn-outline btn-sm" id="btn-open-tournament-list" type="button">
+<svg class="arena-icon " aria-hidden="true" focusable="false"><use href="#icon-trophy"></use></svg>
+        <span>Các giải đấu</span>
+      </button>
+
+      <button class="btn btn-outline btn-sm" id="btn-open-team-mgr-bracket" title="Chỉ Ban Tổ Chức (Admin) mới có quyền thêm, xóa và sắp xếp các đội thi đấu">
+<svg class="arena-icon " aria-hidden="true" focusable="false"><use href="#icon-users"></use></svg>
+
+        <span>Thêm & Quản lý đội</span>
+      </button>
+
+      <div class="bracket-tournament-meta">
+        <div class="meta-line">
+          <span>Giải: <strong id="bracket-tourn-name-display">Giải Đấu Tân Sinh Viên K69</strong></span>
+        </div>
+        <div class="meta-subline" id="bracket-tourn-format-display">Thể thức: Tứ Kết → Chung Kết (Bo6)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bracket-main-card">
+    <div class="bracket-card-top-bar">
+      <div class="card-title-group"><svg class="arena-icon " aria-hidden="true" focusable="false"><use href="#icon-bracket"></use></svg>
+
+        <h3 class="panel-title" id="bracket-card-round-title">Tứ kết</h3>
+      </div>
+      <button class="btn-subtle" id="btn-bracket-menu-opts">Tùy chọn</button>
+    </div>
+
+    <div class="bracket-tree-canvas-wrapper" id="bracket-tree-canvas">
+
+    </div>
+
+    <div class="bracket-info-alert-banner">
+      <span class="info-alert-text">Vòng đấu đang diễn ra. Kết quả sẽ được cập nhật tự động sau mỗi trận đấu.</span>
+    </div>
+  </div>
+
+  <div style="display: none;">
+    <button id="btn-join-tournament">Tham gia giải</button>
+    <button id="btn-open-team-manager">Quản lý đội</button>
+    <span id="count-teams-badge">0/8</span>
+    <span id="tourn-teams-count">8 Đội</span>
+    <span id="tourn-champ-name">---</span>
+    <span id="tourn-champion-pill"></span>
+  </div>
+</section>

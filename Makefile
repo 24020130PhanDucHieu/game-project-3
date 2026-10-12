@@ -1,7 +1,8 @@
-.PHONY: help run-backend run-runner tunnel test test-unit test-security test-go test-worker test-load bench backup docker-build docker-up docker-down
+.PHONY: help frontend-build run-backend run-runner tunnel test test-unit test-security test-go test-worker test-load bench backup docker-build docker-up docker-down
 
 help:
 	@echo "Available commands:"
+	@echo "  make frontend-build Build static frontend in frontend/dist"
 	@echo "  make run-backend   Run the Go API gateway on port 8080"
 	@echo "  make run-runner    Run the Python engine worker on port 8001"
 	@echo "  make test          Run unit, security, Go and Python checks"
@@ -12,6 +13,9 @@ help:
 	@echo "  make docker-build  Build the deployment image"
 	@echo "  make docker-up     Start the Docker Compose deployment"
 	@echo "  make docker-down   Stop the Docker Compose deployment"
+
+frontend-build:
+	python scripts/build_frontend.py
 
 run-backend:
 	cd backend && go run ./cmd/server

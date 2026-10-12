@@ -1,0 +1,30 @@
+<div class="modal-overlay" id="modal-match-replay" style="display: none;">
+  <div class="modal-card modal-lg">
+    <div class="modal-header">
+      <div>
+        <h3 class="modal-title" id="replay-modal-title">Xem Lại Diễn Biến Trận Đấu (Replay)</h3>
+        <span class="modal-subtitle" id="replay-modal-subtitle">Tái hiện lại các nước đi từ dữ liệu đã lưu</span>
+      </div>
+      <button class="btn-clean btn-modal-close" id="btn-close-replay-x">Đóng</button>
+    </div>
+    <div class="modal-body">
+      <div class="board-top-status-bar" style="margin-bottom: 10px;">
+        <div class="board-team-pill red"><strong id="replay-name-red">Đội Đỏ</strong> (<span id="replay-count-red">9/9</span>)</div>
+        <div class="arena-round-indicator" id="replay-step-indicator">BƯỚC 0 / 0</div>
+        <div class="board-team-pill blue"><strong id="replay-name-blue">Đội Xanh</strong> (<span id="replay-count-blue">9/9</span>)</div>
+      </div>
+      <div class="board-wrapper"><div class="chessboard-9x9" id="replay-chessboard-9x9"></div></div>
+      <div class="live-commentary-ticker" id="replay-commentary-ticker" style="margin-top: 10px;">Đang tải replay...</div>
+      <div class="replay-controls-toolbar" style="margin-top: 12px; display: flex; align-items: center; gap: 8px;">
+        <button class="btn btn-sm btn-outline" id="btn-replay-prev">◀ Nước Trước</button>
+        <button class="btn btn-sm btn-primary" id="btn-replay-play-pause">▶ Tự Động Chạy</button>
+        <button class="btn btn-sm btn-outline" id="btn-replay-next">Nước Kế ▶</button>
+        <input class="replay-slider" id="replay-step-slider" max="10" min="0" type="range" value="0"/>
+        <span id="replay-slider-label">Bước: 0/0</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" id="btn-close-replay">Đóng Replay</button>
+    </div>
+  </div>
+</div>

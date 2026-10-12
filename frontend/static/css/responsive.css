@@ -1,0 +1,50 @@
+/* Narrow screens keep the same controls and labels without clipping the content. */
+@media (max-width: 1000px) and (min-width: 701px) {
+  :root { --sidebar-width: 215px; }
+  .app-main-content { padding: 24px; }
+  .hero-stats-grid { gap: 10px; }
+  .hero-stat-card { padding: 12px; gap: 8px; }
+  .stat-icon { width: 30px; height: 30px; }
+  .overview-lower-grid, .match-arena-2col-layout { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 700px) {
+  .app-layout { flex-direction: column; }
+  .app-sidebar { width: 100%; height: auto; position: static; border-right: 0; border-bottom: 1px solid var(--border-card); }
+  .sidebar-brand { padding: 16px 18px 10px; }
+  .sidebar-user-card { margin: 0 16px 10px; }
+  .sidebar-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 0 12px 12px; gap: 4px; }
+  .nav-tab-btn { padding: 0 10px; gap: 8px; font-size: 12px; }
+  .sidebar-footer { padding: 10px 18px; }
+  .app-main-content { padding: 20px 16px; }
+  .overview-lower-grid, .hero-stats-grid, .guide-cards-grid, .match-arena-2col-layout { grid-template-columns: minmax(0, 1fr); }
+  .overview-lower-grid > *, .guide-cards-grid > * { min-width: 0; }
+  .card-head-compact { flex-wrap: wrap; gap: 10px; }
+  .content-header-row { gap: 12px; flex-wrap: wrap; }
+  .page-title { font-size: 22px; }
+  .tournament-hero-card { padding: 18px; }
+  .hero-card-header { align-items: flex-start; gap: 8px; }
+  .hero-title-cluster { align-items: flex-start; flex-wrap: wrap; gap: 8px; }
+  .hero-tourn-name { font-size: 18px; }
+  .hero-it-badge { white-space: nowrap; font-size: 10px; padding: 4px 8px; }
+  .hero-actions-row, .match-highlight-actions { display: grid; grid-template-columns: 1fr; }
+  .pairing-teams-row { gap: 8px; }
+  .team-pill-box { padding: 10px; min-width: 0; gap: 6px; }
+  .team-pill-box strong { overflow-wrap: anywhere; }
+  .bracket-main-card, .content-card, .board-card { padding: 18px; }
+  .bracket-header-right { gap: 8px; width: 100%; }
+  .bracket-header-right .btn { padding: 8px 10px; }
+  .bracket-tournament-meta { width: 100%; }
+  .login-page-view { padding: 20px 16px; align-items: flex-start; }
+  .login-page-container { grid-template-columns: 1fr; gap: 20px; }
+  .login-hero-heading { font-size: 26px; }
+  .login-brand-header { margin-bottom: 12px; }
+  .login-hero-desc { font-size: 14px; }
+  .login-form-card { padding: 24px; }
+  .toast-container { left: 12px; right: 12px; }
+  .toast-item { min-width: 0; max-width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-pane { animation: none; }
+}

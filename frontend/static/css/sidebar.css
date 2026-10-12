@@ -1,0 +1,274 @@
+/* BRAND HEADER */
+.sidebar-brand {
+  padding: 22px 20px 16px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-badge {
+  background: var(--primary-blue);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 5px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.2px;
+}
+
+.brand-badge-sm {
+  background: var(--primary-blue);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 4px 10px;
+  display: inline-flex;
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-heading);
+  letter-spacing: -0.2px;
+  line-height: 1.2;
+}
+
+.brand-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+/* KHỐI DANH TÍNH / THẺ NGƯỜI DÙNG (USER PROFILE CARD) */
+.sidebar-user-card {
+  margin: 10px 14px 14px 14px;
+  background: #ffffff;
+  border: 1px solid var(--border-card);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+/* Chế độ Khách (Guest) */
+.user-card-guest {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.guest-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.guest-avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.guest-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.guest-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-heading);
+  line-height: 1.2;
+}
+
+.guest-desc {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  line-height: 1.3;
+  margin-top: 2px;
+}
+
+.btn-sidebar-login {
+  width: 100%;
+  background: var(--primary-blue);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  box-shadow: var(--shadow-primary-btn);
+}
+
+.btn-sidebar-login:hover {
+  background: var(--primary-blue-hover);
+}
+
+/* Chế độ Đã Đăng Nhập (Authenticated Team / Admin) */
+.user-card-authenticated {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.auth-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary-blue-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.auth-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-heading);
+  line-height: 1.2;
+}
+
+.auth-sid {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.auth-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 4px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.user-role-pill {
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--primary-blue-light);
+  color: var(--primary-blue);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.btn-logout-link {
+  background: transparent;
+  border: none;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.btn-logout-link:hover {
+  color: var(--red-team);
+  text-decoration: underline;
+}
+
+/* 5 MENU ĐIỀU HƯỚNG DỌC (SIDEBAR NAV) */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 12px;
+  flex: 1;
+}
+
+.nav-tab-btn {
+  height: 42px;
+  border: none;
+  background: transparent;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-body);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+  text-align: left;
+  position: relative;
+}
+
+.nav-tab-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-heading);
+}
+
+.nav-tab-btn.active {
+  background: var(--primary-blue-light);
+  color: var(--primary-blue);
+  font-weight: 600;
+}
+
+.nav-tab-btn.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 3.5px;
+  background: var(--primary-blue);
+  border-radius: 0 4px 4px 0;
+}
+
+.nav-label {
+  flex: 1;
+}
+
+/* CHÂN TRANG SIDEBAR: TRẠNG THÁI */
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-divider);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green-status);
+  box-shadow: 0 0 6px rgba(22, 163, 74, 0.6);
+  flex-shrink: 0;
+}
+
+.footer-status-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-heading);
+}

@@ -1,0 +1,21 @@
+<div class="modal-overlay" id="modal-tournament-list" style="display: none;" onclick="if(event.target === this) window.closeTournamentListModal()">
+  <div class="modal-card" style="width:min(900px, 94vw); max-height:85vh; overflow:auto;">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Các giải đấu</h2>
+        <p class="page-subtitle">Chọn giải để tải đúng danh sách đội và nhánh đấu.</p>
+      </div>
+      <button class="btn-clean btn-modal-close" type="button" onclick="window.closeTournamentListModal()">Đóng</button>
+    </div>
+    <div class="table-responsive" style="margin-top:16px;">
+      <table class="table-clean ranking-full-table">
+        <thead>
+          <tr><th>TÊN GIẢI</th><th>SỐ ĐỘI</th><th>TRẠNG THÁI</th><th>THAO TÁC</th></tr>
+        </thead>
+        <tbody id="tbody-bracket-tournament-list">
+          <tr><td colspan="4" class="text-center text-muted">Đang tải danh sách giải...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

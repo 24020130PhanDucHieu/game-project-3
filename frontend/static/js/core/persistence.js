@@ -1,0 +1,88 @@
+// KHỞI ĐỘNG ỨNG DỤNG KHI TẢI TRANG
+// =============================================================================
+async function restoreArenaSession() {
+  if (!sessionStorage.getItem("arenaSessionToken")) return;
+  try {
+    const response = await fetch(`${API_BASE}/api/session`, { cache: "no-store" });
+    if (!response.ok) return;
+    const session = await response.json();
+    currentAppRole = currentUserRole = session.role === "ADMIN" ? "ADMIN" : "TEAM";
+    currentTeamStudentId = session.student_id || (currentAppRole === "ADMIN" ? "ADMIN" : "");
+    currentTeamName = session.team_name || (currentAppRole === "ADMIN" ? "Ban Tổ Chức" : currentTeamName);
+    if (currentAppRole === "TEAM") {
+      if (!currentTournamentId) currentTournamentId = session.tournament_id;
+      if (!currentActiveMatchId && currentTournamentId === session.tournament_id) currentActiveMatchId = session.match_id;
+      currentStudioSide = session.side || currentStudioSide;
+    }
+    updateRoleUI();
+  } catch { console.warn("Chưa kiểm tra được phiên. Giữ phiên để thử lại khi kết nối trở lại."); }
+}
+async function loadArenaCapabilities() {
+  try {
+    const response = await fetch(`${API_BASE}/api/capabilities`);
+    if (!response.ok) return;
+    const capabilities = await response.json();
+    document.querySelectorAll('#studio-sel-lang option[value="CPP"]').forEach(option => {
+      option.disabled = !capabilities.languages.includes("CPP");
+      option.textContent = option.disabled ? "C++ 17 (máy chủ chưa hỗ trợ)" : "C++ 17 (.cpp)";
+    });
+  } catch {}
+}
+function arenaViewKey() { return `arena-view:${API_BASE}:${currentTeamStudentId || currentAppRole}:${currentTournamentId || "none"}:${currentActiveMatchId || "none"}`; }
+function readArenaViewState() { try { return JSON.parse(localStorage.getItem(arenaViewKey()) || "{}"); } catch { return {}; } }
+function saveArenaViewState(patch) { localStorage.setItem(arenaViewKey(), JSON.stringify({ ...readArenaViewState(), ...patch })); }
+function restoreMatchViewState() {
+  const state = readArenaViewState();
+  if (state.logTab) {
+    document.querySelectorAll(".log-tab-btn").forEach(button => button.classList.toggle("active", button.dataset.logTab === state.logTab));
+    document.querySelectorAll(".log-pane").forEach(pane => pane.classList.toggle("active", pane.id === state.logTab));
+  }
+}
+function inlineReplayRecord(match) {
+  const history = match?.rounds_history || [];
+  const state = readArenaViewState();
+  return history.find(round => round.round_number === state.inlineRound) || history[history.length - 1];
+}
+let currentEditorKey = "";
+let liveRoundTimer = null;
+let liveRoundKey = "";
+function syncLiveRoundBoard(match) {
+  const record = match.rounds_history?.[match.rounds_history.length - 1];
+  const key = `${currentTournamentId}:${currentActiveMatchId}:${match.round_status}:${record?.round_number}:${match.intermission_ends_at}`;
+  if (key === liveRoundKey) return;
+  liveRoundKey = key;
+  clearInterval(liveRoundTimer);
+  const draw = () => {
+    const badge = document.getElementById("realtime-battle-status-badge");
+    if (badge) badge.textContent = match.battle_running ? "Đang chạy hiệp đấu..." : (record ? `Hiệp ${record.round_number} hoàn tất` : "Chờ hai đội nộp code");
+    const countdown = document.getElementById("countdown-num");
+    if (countdown && match.intermission_ends_at) countdown.textContent = Math.max(0, Math.ceil(match.intermission_ends_at - Date.now() / 1000));
+    if (!record?.board_steps?.length) return;
+    const steps = record.board_steps;
+    const progress = match.round_status === "ROUND_FINISHED" ? Math.max(0, Math.min(1, (Date.now() / 1000 - (match.intermission_ends_at - 5)) / 5)) : 1;
+    const index = Math.min(steps.length - 1, Math.floor(progress * steps.length));
+    const step = steps[index];
+    if (currentAppRole === "ADMIN") renderRealtimeChessboard(step.red_pieces, step.blue_pieces, step.clash_event);
+    if (!readArenaViewState().inlineRound) renderChessboard(step.red_pieces, step.blue_pieces, step.clash_event);
+    const counter = document.getElementById("realtime-step-count");
+    if (counter) counter.textContent = `Nước ${index + 1} / ${steps.length}`;
+    const log = document.getElementById("realtime-moves-log");
+    if (log) log.textContent = steps.slice(0, index + 1).map(s => s.log || "").join("\n");
+    if (progress === 1) clearInterval(liveRoundTimer);
+  };
+  draw();
+  if (match.round_status === "ROUND_FINISHED" && match.intermission_ends_at > Date.now() / 1000) liveRoundTimer = setInterval(draw, 100);
+}
+function studioDraftKey() { return `${arenaViewKey()}:draft:${currentStudioSide || "none"}`; }
+function saveStudioDraft() {
+  const editor = document.getElementById("studio-code-editor");
+  const language = document.getElementById("studio-sel-lang");
+  if (!editor || !language || currentEditorKey !== studioDraftKey()) return;
+  localStorage.setItem(currentEditorKey, JSON.stringify({ code: editor.value, language: language.value, scroll: editor.scrollTop, selectionStart: editor.selectionStart, selectionEnd: editor.selectionEnd }));
+}
+function tabScrollKey(tab) { return `arena-scroll:${API_BASE}:${currentTeamStudentId || currentAppRole}:${tab}`; }
+function saveTabScroll() {
+  const tab = document.querySelector(".tab-pane.active")?.id;
+  if (tab) sessionStorage.setItem(tabScrollKey(tab), String(window.scrollY));
+  saveStudioDraft();
+}

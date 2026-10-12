@@ -1,6 +1,28 @@
 # Freshman Bot Arena
 
-Nền tảng tổ chức giải đấu bot Oẳn Tù Tì V2. Bản đang chạy sử dụng giao diện tĩnh (`frontend/index.html`, `frontend/app.js`, `frontend/styles.css`), Go API gateway và Python worker cho logic giải đấu.
+Nền tảng tổ chức giải đấu bot Oẳn Tù Tì V2. Frontend được chia thành HTML templates, JavaScript theo chức năng và CSS theo thành phần; Go API gateway phục vụ web và Python worker xử lý giải đấu.
+
+## Cấu trúc frontend
+
+```text
+frontend/
+├── templates/
+│   ├── index.html         # Khung trang, ghép các template bên dưới
+│   ├── pages/             # Tổng quan, bảng đấu, xếp hạng, trận đấu, đăng nhập...
+│   ├── partials/          # Sidebar, SVG icons, danh sách scripts/styles
+│   └── modals/            # Tạo/chọn giải, quản lý đội, replay, xem code...
+├── static/
+│   ├── js/                # core, auth, tournaments, arena, studio, history...
+│   └── css/               # Style riêng cho từng thành phần/trang
+├── assets/bots_sdk/        # Tài liệu và bot mẫu
+└── dist/                  # Bản tự sinh để đưa lên hosting tĩnh (git bỏ qua)
+```
+
+Go ghép templates khi khởi động, phục vụ JavaScript/CSS tại `/static/` và SDK tại `/assets/`. Chỉ sửa source trong `templates/` và `static/`; không sửa `dist/`. Icon SVG nằm trong project, không cần tải thư viện icon.
+
+`frontend/index.html` chỉ là trang tải nhỏ để các hosting cũ đang phục vụ trực tiếp thư mục `frontend/` vẫn hoạt động; nó ghép templates qua `static/js/template-loader.js`. Khi cấu hình hosting mới, dùng bản build `frontend/dist/` để trình duyệt nhận HTML hoàn chỉnh ngay từ đầu.
+
+JavaScript hiện dùng các script `defer` theo thứ tự trong `templates/partials/scripts.html`; các file tính năng dùng trạng thái chung từ `static/js/core/state.js`. File `static/js/app.js` khởi động sau khi toàn bộ tính năng đã tải. Cách này giữ luồng đăng nhập, realtime và dữ liệu trình duyệt hiện có trong lần tách cấu trúc này. Xem thêm [frontend/README.md](frontend/README.md).
 
 ## Chạy local
 
@@ -52,7 +74,9 @@ python -m py_compile main.py app/repository/database.py app/sandbox/runner.py
 docker build -t ottv2-arena -f deploy/Dockerfile .
 ```
 
-Đẩy source lên GitHub chỉ cập nhật repository. Muốn phát hành dịch vụ, cần kết nối repository với Render và cấu hình secrets/database ở trên. Render phục vụ luôn frontend tại URL web service. Nếu dùng thêm Cloudflare Workers để phục vụ assets, phải triển khai lại cả thư mục `frontend/`; bản này dùng URL assets `v=3.0` để tránh lấy JavaScript cũ từ cache.
+Đẩy source lên GitHub chỉ cập nhật repository. Muốn phát hành dịch vụ, cần kết nối repository với Render và cấu hình secrets/database ở trên. Docker/Render phục vụ trực tiếp templates và static, không cần build frontend riêng.
+
+Với Cloudflare Workers/Pages hoặc hosting tĩnh, chạy `python scripts/build_frontend.py` và đặt thư mục assets/publish là **`frontend/dist`**. Lệnh build ghép cùng các template mà Go sử dụng và chép JS, CSS, SDK sang thư mục này. Bản mới dùng URL assets `v=4.0`.
 
 Kết quả và phạm vi kiểm thử: [docs/VERIFICATION_RELIABILITY.md](docs/VERIFICATION_RELIABILITY.md).
 

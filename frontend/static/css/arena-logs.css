@@ -1,0 +1,11 @@
+:root {
+  --arena-log-border: #e5edf6;
+}
+.arena-code-monitor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
+.arena-code-monitor-grid pre { overflow: auto; max-height: 240px; white-space: pre; background: #f6f8fb; padding: 12px; border-radius: 8px; }
+.arena-log-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.log-pane { display: none; max-height: 260px; overflow: auto; font-size: 13px; line-height: 1.7; }
+.log-pane.active { display: block; }
+.log-tab-btn.active { background: #eff6ff; }
+.log-item-line { padding: 5px 0; border-bottom: 1px solid var(--arena-log-border); }
+@media (max-width: 800px) { .arena-code-monitor-grid { grid-template-columns: 1fr; } }

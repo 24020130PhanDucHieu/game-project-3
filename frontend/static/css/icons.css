@@ -1,0 +1,67 @@
+/* Local SVG icons and small color accents. Existing labels and layout stay usable. */
+.arena-icon-sprite { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+.arena-icon { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; vertical-align: middle; }
+.nav-tab-btn > .arena-icon { width: 19px; height: 19px; color: #6d84ab; }
+.nav-tab-btn.active > .arena-icon { color: var(--primary-blue); }
+.guest-avatar-circle { color: #7396c2; }
+.guest-avatar-circle .arena-icon, .auth-avatar-circle .arena-icon { width: 25px; height: 25px; }
+.auth-avatar-circle { color: var(--primary-blue); background: #eff6ff; }
+.btn, .btn-sidebar-login, .btn-logout-link { gap: 8px; }
+.btn-logout-link { display: inline-flex; align-items: center; }
+.btn-logout-link .arena-icon { width: 14px; height: 14px; }
+.btn .arena-icon, .btn-sidebar-login .arena-icon { width: 16px; height: 16px; }
+.card-title-group > .arena-icon { color: var(--primary-blue); }
+.hero-stat-card { display: flex; align-items: center; gap: 12px; }
+.stat-icon { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; flex: 0 0 auto; border-radius: 11px; }
+.stat-icon .arena-icon { width: 21px; height: 21px; }
+.stat-blue { color: #2563eb; background: #e5efff; }
+.stat-violet { color: #7c3aed; background: #f0eaff; }
+.stat-green { color: #16a34a; background: #e0f5e9; }
+.team-pill-box .arena-icon { width: 16px; height: 16px; }
+.team-avatar { display: inline-flex; align-items: center; justify-content: center; width: 29px; height: 29px; flex: 0 0 auto; border-radius: 50%; background: var(--avatar-bg); color: var(--avatar-color); }
+.team-avatar .arena-icon { width: 16px; height: 16px; }
+.team-avatar-small { width: 21px; height: 21px; }
+.team-avatar-small .arena-icon { width: 13px; height: 13px; }
+.color-red { --avatar-color: #e64a63; --avatar-bg: #fff0f3; }
+.color-blue { --avatar-color: #2563eb; --avatar-bg: #eaf1ff; }
+.color-green { --avatar-color: #12a663; --avatar-bg: #e4f8ed; }
+.color-yellow { --avatar-color: #a76b00; --avatar-bg: #fff5d6; }
+.color-purple { --avatar-color: #9333ea; --avatar-bg: #f3e8ff; }
+.color-orange { --avatar-color: #e57421; --avatar-bg: #fff0e3; }
+.color-pink { --avatar-color: #d94eaa; --avatar-bg: #fce7f6; }
+.color-cyan { --avatar-color: #0891b2; --avatar-bg: #e0f8ff; }
+.color-emerald { --avatar-color: #059669; --avatar-bg: #dff8f0; }
+.color-indigo { --avatar-color: #6366f1; --avatar-bg: #ededff; }
+.color-amber { --avatar-color: #b77907; --avatar-bg: #fff4db; }
+.color-rose { --avatar-color: #e11d48; --avatar-bg: #ffe7ed; }
+.color-pending { --avatar-color: #94a3b8; --avatar-bg: #f1f5f9; }
+.ranking-team { display: inline-flex; align-items: center; gap: 10px; }
+.ranking-position { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; }
+.ranking-position .arena-icon { width: 22px; height: 22px; }
+.podium-1 .arena-icon { color: #d39a16; fill: #fff4c7; }
+.podium-2 .arena-icon { color: #8a9cb5; fill: #edf2f9; }
+.podium-3 .arena-icon { color: #ba7754; fill: #fbeadf; }
+.compact-table .ranking-team { gap: 8px; }
+.compact-table .team-avatar { width: 24px; height: 24px; }
+.node-team-info { gap: 7px; min-width: 0; }
+.node-team-name { overflow-wrap: anywhere; }
+.final-round-header { display: flex; align-items: center; gap: 8px; background: #fffaf0; border-color: #f7e6b8; color: #946a16; }
+.bracket-connector-branch::before { content: ""; position: absolute; left: 0; right: 50%; top: 25%; bottom: 25%; border: 1px solid #c5d8fa; border-left: 0; border-radius: 0 5px 5px 0; }
+.bracket-connector-branch::after { content: ""; position: absolute; left: 50%; right: 0; top: 50%; border-top: 1px solid #c5d8fa; }
+.bracket-connector-branch .connector-status-badge { z-index: 1; font-size: 9px; left: 50%; }
+.toast-symbol { display: inline-flex; padding: 7px; border-radius: 9px; color: #2563eb; background: #eff6ff; }
+.toast-success .toast-symbol { color: #16a34a; background: #e8f8f0; }
+.toast-error .toast-symbol { color: #dc2626; background: #fef2f2; }
+.toast-warning .toast-symbol { color: #b77907; background: #fff5df; }
+.toast-title { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.page-title-icon { display: inline-flex; gap: 10px; align-items: center; }
+.page-title-icon .arena-icon { width: 25px; height: 25px; color: var(--primary-blue); }
+.tournament-hero-card { background: linear-gradient(120deg, #ffffff 70%, #f2f7ff); }
+@media (max-width: 700px) {
+  .hero-stats-grid, .guide-cards-grid, .overview-lower-grid { grid-template-columns: 1fr; }
+  .hero-stat-card { padding: 14px; }
+  .bracket-page-header { flex-wrap: wrap; gap: 16px; }
+  .bracket-header-right { flex-wrap: wrap; }
+  .table-responsive { overflow-x: auto; }
+  .ranking-team { min-width: 145px; }
+}

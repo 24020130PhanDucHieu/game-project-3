@@ -3,8 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -101,39 +99,12 @@ func main() {
 		}
 	})
 
-	findFrontendFile := func(subpath string) string {
-		cleanSubpath := filepath.Clean(subpath)
-		if cleanSubpath == ".." || strings.HasPrefix(cleanSubpath, ".."+string(filepath.Separator)) || filepath.IsAbs(cleanSubpath) {
-			return ""
-		}
-		candidates := []string{
-			filepath.Join("frontend", cleanSubpath),
-			filepath.Join("../frontend", cleanSubpath),
-			filepath.Join("../../frontend", cleanSubpath),
-		}
-		for _, cand := range candidates {
-			if _, err := os.Stat(cand); err == nil {
-				return cand
-			}
-		}
-		return ""
-	}
-
-	// Observability & Frontend Root
-	r.GET("/", func(c *gin.Context) {
-		if strings.Contains(c.GetHeader("Accept"), "text/html") || c.GetHeader("Accept") == "*/*" || c.GetHeader("Accept") == "" {
-			if htmlPath := findFrontendFile("index.html"); htmlPath != "" {
-				c.File(htmlPath)
-				return
-			}
-		}
-		c.JSON(http.StatusOK, gin.H{
-			"service":  "OTTV2 Freshman AI Arena Backend API",
-			"status":   "RUNNING",
-			"frontend": "https://game-project-3.phanhieu06hungyen.workers.dev",
-			"docs":     "/health",
+	// Serve organized frontend templates and their static assets.
+	if !httpHandler.RegisterFrontendRoutes(r) {
+		r.GET("/", func(c *gin.Context) {
+			c.JSON(http.StatusOK, gin.H{"service": "OTTV2 Freshman AI Arena Backend API", "status": "RUNNING"})
 		})
-	})
+	}
 	r.GET("/health", observability.HealthHandler)
 	r.GET("/metrics", observability.MetricsHandler)
 
@@ -198,19 +169,7 @@ func main() {
 		api.POST("/tournament/rule/set", adminOnly, tHandler.SetRule)
 	}
 
-	// Serve Frontend Static assets if present
 	r.NoRoute(func(c *gin.Context) {
-		if c.Request.Method == http.MethodGet {
-			cleanPath := strings.TrimPrefix(filepath.Clean(c.Request.URL.Path), "/")
-			cleanPath = strings.TrimPrefix(cleanPath, "\\")
-			if cleanPath == "" || cleanPath == "." {
-				cleanPath = "index.html"
-			}
-			if target := findFrontendFile(cleanPath); target != "" {
-				c.File(target)
-				return
-			}
-		}
 		c.JSON(http.StatusNotFound, gin.H{"detail": "Not found"})
 	})
 

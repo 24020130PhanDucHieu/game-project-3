@@ -1,0 +1,37 @@
+<section class="tab-pane" id="tab-guide">
+  <div class="content-header-row">
+    <div>
+      <h1 class="page-title page-title-icon"><svg class="arena-icon " aria-hidden="true" focusable="false"><use href="#icon-book"></use></svg>Hướng dẫn thi đấu</h1>
+      <p class="page-subtitle">Luật thi đấu Ô Ăn Tù Tì V2 trên bàn cờ 9×9 và tài liệu lập trình bot.</p>
+    </div>
+  </div>
+
+  <div class="guide-cards-grid">
+    <div class="content-card guide-card">
+      <h3 class="panel-title">1. Luật Ô Ăn Tù Tì V2 trên Bàn Cờ 9×9</h3>
+      <p class="guide-p">Mỗi bên điều khiển 9 quân cờ gồm: <strong>3 Búa, 3 Bao, 3 Kéo</strong>.</p>
+      <ul class="guide-list">
+        <li><strong>Bàn cờ:</strong> Kích thước 9×9. Đội Đỏ bắt đầu tại hàng 7, Đội Xanh bắt đầu tại hàng 1.</li>
+        <li><strong>Cứ điểm đích:</strong> Đội Đỏ cần chiếm cứ điểm đích tại ô <code>[col 8, row 0]</code>. Đội Xanh cần chiếm ô <code>[col 0, row 8]</code>.</li>
+        <li><strong>Quy tắc ăn quân:</strong> Búa ăn Kéo, Kéo ăn Bao, Bao ăn Búa. Khi hai quân cùng loại chạm nhau, quân tấn công (đi vào) sẽ chiến thắng hoặc hòa theo luật hiệp đấu.</li>
+        <li><strong>Điều kiện thắng:</strong> Chiếm cứ điểm đối phương trước, hoặc tiêu diệt toàn bộ quân đối phương.</li>
+      </ul>
+    </div>
+
+    <div class="content-card guide-card">
+      <h3 class="panel-title">2. Cấu trúc hàm lập trình Bot (Python 3.10)</h3>
+      <p class="guide-p">Bot nộp bài cần cung cấp hàm <code>decide_move(game_state)</code>:</p>
+      <pre class="guide-code-box"><code>def decide_move(game_state):
+    """
+    game_state bao gồm:
+    - my_pieces: danh sách tọa độ và loại quân của bạn
+    - opp_pieces: danh sách tọa độ quân đối phương
+    - board_size: 9
+    - turn_number: số thứ tự lượt đi
+    - remaining_cards: số thẻ còn lại
+    """
+    # Trả về nước đi hợp lệ: "ROCK", "PAPER", hoặc "SCISSORS"
+    return "ROCK"</code></pre>
+    </div>
+  </div>
+</section>

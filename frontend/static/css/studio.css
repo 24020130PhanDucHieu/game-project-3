@@ -1,0 +1,129 @@
+/* PHÒNG NỘP CODE (CODE SUBMISSION STUDIO) */
+.studio-card {
+  padding: 20px 24px;
+}
+
+.studio-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.ide-status-tag {
+  background: #f1f5f9;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 10px;
+}
+
+.ide-toolbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.toolbar-lang-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-label-sm {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-body);
+}
+
+.input-text-sm {
+  padding: 5px 10px;
+  font-size: 12.5px;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  background: #ffffff;
+  outline: none;
+  font-family: inherit;
+}
+
+.toolbar-btn-group {
+  display: flex;
+  gap: 6px;
+}
+
+.studio-code-editor {
+  width: 100%;
+  height: 240px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  background: #0f172a;
+  color: #f8fafc;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 14px;
+  outline: none;
+  resize: vertical;
+  margin-bottom: 14px;
+}
+
+.studio-bottom-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.trial-boss-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 220px;
+}
+
+.trial-boss-group .input-text-sm {
+  max-width: 140px;
+  font-size: 12px;
+  padding: 6px 8px;
+}
+
+#btn-studio-test-practice {
+  font-size: 12px;
+  padding: 6px 10px;
+  white-space: nowrap;
+}
+
+.btn-submit-code {
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  border-radius: 8px;
+}
+
+.match-submissions-subpanel {
+  border-top: 1px solid var(--border-divider);
+  padding-top: 14px;
+}
+
+.subpanel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.subpanel-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-heading);
+}

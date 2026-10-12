@@ -1,0 +1,233 @@
+<section class="tab-pane" id="tab-match-arena">
+
+  <div class="match-room-desktop-header">
+    <div class="match-room-header-left">
+      <button class="btn btn-outline btn-sm" id="btn-match-back-bracket">
+        &larr; Quay lại bảng đấu
+      </button>
+      <div class="match-room-titles" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <h2 class="room-title" id="match-room-title">Trận 1 - Tứ Kết</h2>
+        <span class="room-badge-stage" id="match-room-stage-badge">Bo6 (6 Round)</span>
+      </div>
+    </div>
+
+    <div class="match-room-header-right">
+      <span class="status-pill-green" id="match-room-status-badge">Đang diễn ra</span>
+
+      <button class="btn btn-green admin-only" id="btn-arena-start-match" style="display: none;">
+        ▶ Bắt Đầu Hiệp
+      </button>
+    </div>
+  </div>
+
+  <div class="match-teams-score-board">
+
+    <div class="match-team-col red" id="arena-card-red">
+      <div class="team-col-header">
+        <span class="team-circle-avatar red">
+
+        </span>
+        <div>
+          <strong class="team-col-name" id="arena-name-red">RedBot</strong>
+          <div class="team-col-sid" id="arena-sid-red">MSSV: K69A001</div>
+        </div>
+      </div>
+      <div class="team-status-pills">
+        <span class="piece-count-badge red" id="board-count-red">9/9 quân</span>
+        <span class="submission-state-badge" id="sub-state-red">Đã nộp code</span>
+      </div>
+    </div>
+
+    <div class="match-center-score-cluster">
+      <div class="center-score-number" id="match-score-summary">2 - 1</div>
+      <div class="center-round-step" id="arena-round-indicator">ROUND 1 / 6</div>
+
+      <div class="round-step-pills-row" id="round-step-pills">
+        <div class="step-pill current" data-round="1">Round 1</div>
+        <div class="step-pill" data-round="2">Round 2</div>
+        <div class="step-pill" data-round="3">Round 3</div>
+        <div class="step-pill" data-round="4">Round 4</div>
+        <div class="step-pill" data-round="5">Round 5</div>
+        <div class="step-pill" data-round="6">Round 6</div>
+      </div>
+    </div>
+
+    <div class="match-team-col blue" id="arena-card-blue">
+      <div class="team-col-header">
+        <div>
+          <strong class="team-col-name" id="arena-name-blue">BlueBot</strong>
+          <div class="team-col-sid" id="arena-sid-blue">MSSV: K69A002</div>
+        </div>
+        <span class="team-circle-avatar blue">
+
+        </span>
+      </div>
+      <div class="team-status-pills" style="justify-content: flex-end;">
+        <span class="submission-state-badge" id="sub-state-blue">Đã nộp code</span>
+        <span class="piece-count-badge blue" id="board-count-blue">9/9 quân</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="match-arena-2col-layout">
+
+    <div class="arena-board-column">
+      <div class="content-card board-card">
+        <div class="board-top-status-bar">
+          <span class="board-title-label" id="board-card-title-label">BÀN ĐẤU CHIẾN THUẬT 9×9</span>
+          <span class="board-legend-label">Búa ăn Kéo • Kéo ăn Bao • Bao ăn Búa</span>
+        </div>
+
+        <div class="board-wrapper">
+          <div class="chessboard-9x9" id="chessboard-9x9">
+
+          </div>
+        </div>
+
+        <div class="live-commentary-ticker" id="arena-commentary-ticker">
+          Trận đấu đang ở trạng thái sẵn sàng. Hãy nộp code và bắt đầu hiệp đấu!
+        </div>
+
+        <div class="replay-controls-inline" id="match-playback-bar">
+          <button class="btn btn-sm btn-outline" id="btn-playback-step-prev">◀ Nước trước</button>
+          <button class="btn btn-sm btn-primary" id="btn-playback-play">▶ Phát lại</button>
+          <button class="btn btn-sm btn-outline" id="btn-playback-step-next">Nước sau ▶</button>
+          <span class="playback-step-text" id="playback-step-indicator">Hiệp 1: Bước 0 / 0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="arena-studio-column" id="arena-studio-col">
+      <div class="content-card studio-card">
+        <div class="studio-card-header">
+          <div>
+            <h3 class="panel-title" id="studio-round-target-title">Phòng nộp code bot</h3>
+            <p class="panel-subtitle">Soạn thuật toán Oẳn Tù Tì V2 cho round hiện tại</p>
+          </div>
+          <div class="ide-status-tag" id="studio-submission-status">Chưa nộp code</div>
+        </div>
+
+        <div class="ide-toolbar-row">
+          <div class="toolbar-lang-group">
+            <label class="control-label-sm">Ngôn ngữ:</label>
+            <select class="input-text-sm" id="studio-sel-lang">
+              <option value="PYTHON">Python 3.10 (.py)</option>
+              <option value="CPP">C++ 17 (.cpp)</option>
+            </select>
+          </div>
+          <div class="toolbar-btn-group">
+            <button class="btn btn-sm btn-outline" id="btn-studio-load-template">
+<svg class="arena-icon " aria-hidden="true" focusable="false"><use href="#icon-code"></use></svg>Nạp mẫu code</button>
+            <button class="btn btn-sm btn-outline" id="btn-studio-dryrun">
+<svg class="arena-icon " aria-hidden="true" focusable="false"><use href="#icon-play"></use></svg>Kiểm tra cú pháp (Dry-run)</button>
+          </div>
+        </div>
+
+        <textarea class="studio-code-editor" id="studio-code-editor" spellcheck="false" placeholder="# Viết hàm decide_move(game_state) tại đây..."></textarea>
+
+        <div class="studio-bottom-actions">
+          <div class="trial-boss-group">
+            <select class="input-text-sm" id="sel-trial-boss-bot">
+              <option value="RANDOM">Boss 1: Random Bot</option>
+              <option value="AGGRESSIVE">Boss 2: Aggressive Bot</option>
+              <option value="ADAPTIVE">Boss 3: Adaptive Counter</option>
+            </select>
+            <button class="btn btn-sm btn-outline" id="btn-studio-test-practice">
+<svg class="arena-icon " aria-hidden="true" focusable="false"><use href="#icon-swords"></use></svg>Chạy thử với Boss</button>
+          </div>
+          <button class="btn btn-green btn-submit-code" id="btn-studio-submit-bot" title="Nộp thuật toán bot cho round đấu hiện tại">
+
+            <svg class="arena-icon" aria-hidden="true" focusable="false"><use href="#icon-upload"></use></svg>
+            <span id="btn-submit-bot-text">Nộp mã lệnh</span>
+          </button>
+        </div>
+
+        <div class="match-submissions-subpanel">
+          <div class="subpanel-header">
+            <h4 class="subpanel-title">Lịch sử bài nộp trận này</h4>
+            <button class="btn-clean text-primary" id="btn-refresh-submissions">Làm mới</button>
+          </div>
+          <div class="table-responsive" style="max-height: 140px; overflow-y: auto;">
+            <table class="table-clean compact-table" id="table-kaggle-submissions">
+              <thead>
+                <tr>
+                  <th>Mã nộp</th>
+                  <th>Thời gian</th>
+                  <th>Round</th>
+                  <th>Trạng thái Sandbox</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-kaggle-submissions">
+                <tr><td colspan="5" class="text-center text-muted">Chưa có bài nộp nào.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="arena-admin-realtime-column" id="arena-admin-realtime-col" style="display: none;">
+      <div class="content-card board-card" style="border: 1px solid rgba(59, 130, 246, 0.3); background: #0b1329; border-radius: 12px;">
+        <div class="board-top-status-bar" style="border-bottom: 1px solid #1e293b; padding-bottom: 8px;">
+          <span class="board-title-label" style="color: #60a5fa; font-weight: 700; font-size: 13px; letter-spacing: 0.5px;">BÀN ĐẤU THỜI GIAN THỰC (REALTIME DUEL)</span>
+          <span class="status-pill-green" id="realtime-battle-status-badge">Sẵn sàng khai hỏa</span>
+        </div>
+
+        <div class="board-wrapper" style="margin-top: 10px;">
+          <div class="chessboard-9x9" id="realtime-chessboard-9x9">
+
+          </div>
+        </div>
+
+        <div class="live-commentary-ticker" id="realtime-commentary-ticker" style="margin-top: 10px; background: rgba(30, 41, 59, 0.95); color: #38bdf8; font-weight: 600;">
+          Nhấn Bắt Đầu Hiệp để kích hoạt mô phỏng trực tiếp giữa hai đội...
+        </div>
+
+        <div style="margin-top: 12px; background: #020617; border-radius: 8px; border: 1px solid #1e293b; padding: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #1e293b; padding-bottom: 6px;">
+            <strong style="font-size: 13px; color: #f8fafc; font-weight: 700;">
+              Nhật Ký Nước Đi Hai Đội (Live Action Log)
+            </strong>
+            <span id="realtime-step-count" style="font-size: 11px; color: #94a3b8; font-family: monospace;">Chưa diễn ra</span>
+          </div>
+          <div class="realtime-moves-log" id="realtime-moves-log" style="height: 150px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.7; color: #cbd5e1; padding-right: 4px;">
+            <div class="text-muted" style="padding: 10px 0; text-align: center;">Đang chờ Quản Trị Viên phát lệnh bắt đầu hiệp đấu...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-card" id="round-intermission-banner" style="display:none; margin-top:16px; align-items:center; gap:12px;">
+    <strong id="intermission-title">Hiệp đã hoàn tất. Chuẩn bị hiệp tiếp theo.</strong>
+    <span id="countdown-num">5</span><span>giây</span>
+  </div>
+
+  <details class="content-card" id="admin-live-code-monitor" style="display:none; margin-top:16px;">
+    <summary>Mã lệnh hai đội — cập nhật trực tiếp</summary>
+    <div class="arena-code-monitor-grid">
+      <div><strong id="monitor-team-a-name">Đội Đỏ</strong> <span id="monitor-team-a-lang"></span><pre id="monitor-code-a"></pre></div>
+      <div><strong id="monitor-team-b-name">Đội Xanh</strong> <span id="monitor-team-b-lang"></span><pre id="monitor-code-b"></pre></div>
+    </div>
+  </details>
+
+  <div class="content-card" style="margin-top:16px;">
+    <div class="arena-log-tabs">
+      <button class="btn btn-sm btn-outline log-tab-btn active" data-log-tab="log-moves">Nước đi</button>
+      <button class="btn btn-sm btn-outline log-tab-btn" data-log-tab="log-bots">Thực thi bot</button>
+      <button class="btn btn-sm btn-outline log-tab-btn" data-log-tab="log-system">Hệ thống</button>
+    </div>
+    <div class="log-pane active" id="log-moves"><div id="move-log-list"></div></div>
+    <div class="log-pane" id="log-bots"><div id="bot-log-list"></div></div>
+    <div class="log-pane" id="log-system"><div id="system-log-list"></div></div>
+  </div>
+
+  <details class="content-card" style="margin-top:16px;">
+    <summary>Lịch sử hiệp đấu và phát lại</summary>
+    <div class="table-responsive">
+      <table class="table-clean"><thead><tr><th>Hiệp</th><th>Đỏ</th><th>Xanh</th><th>Kết quả</th><th>Diễn biến</th><th>Phát lại</th></tr></thead><tbody id="tbody-round-history"></tbody></table>
+    </div>
+  </details>
+
+</section>
