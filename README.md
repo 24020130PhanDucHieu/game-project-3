@@ -2,6 +2,35 @@
 
 Nền tảng tổ chức giải đấu bot Oẳn Tù Tì V2. Frontend được chia thành HTML templates, JavaScript theo chức năng và CSS theo thành phần; Go API gateway phục vụ web và Python worker xử lý giải đấu.
 
+## Cấu trúc thư mục dự án
+
+```text
+project-tuan3/
+├── backend/               # Go API gateway, WebSocket, service và migration
+│   ├── cmd/server/        # Điểm khởi động HTTP server
+│   ├── internal/          # Handler, middleware, model, repository và service
+│   └── migrations/        # Migration cơ sở dữ liệu PostgreSQL
+├── bot-runner/            # Python worker và engine chạy các trận đấu bot
+│   └── app/               # API, engine, matchmaker, repository và sandbox
+├── frontend/              # Giao diện web HTML, JavaScript, CSS và SDK
+│   ├── templates/         # Các template trang, partials và modal
+│   ├── static/            # JavaScript, CSS và hình ảnh nguồn
+│   ├── assets/            # SDK và tài nguyên frontend
+│   └── dist/              # Bản build frontend để triển khai tĩnh
+├── config/                # Cấu hình môi trường, reverse proxy và tunnel
+├── database/              # Schema và dữ liệu JSON dùng khi phát triển local
+├── deploy/                # Docker Compose, Dockerfile và cấu hình Render
+├── docs/                  # Tài liệu API, kiến trúc, triển khai và báo cáo
+├── scripts/               # Script build, backup, benchmark và vận hành
+├── tests/                 # Test unit, integration, e2e, load và security
+├── data/                  # Tài nguyên và script phục vụ phát triển giao diện
+├── Dockerfile             # Dockerfile ở cấp dự án
+├── Makefile               # Các lệnh build, test và vận hành
+└── README.md              # Tài liệu hướng dẫn dự án
+```
+
+> Các thư mục `dist/`, file thực thi và dữ liệu tạm có thể được sinh tự động. Nên chỉnh sửa mã nguồn trong `backend/`, `bot-runner/` và `frontend/` thay vì các bản build.
+
 ## Cấu trúc frontend
 
 ```text
