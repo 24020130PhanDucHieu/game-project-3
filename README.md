@@ -31,6 +31,199 @@ project-tuan3/
 
 > Các thư mục `dist/`, file thực thi và dữ liệu tạm có thể được sinh tự động. Nên chỉnh sửa mã nguồn trong `backend/`, `bot-runner/` và `frontend/` thay vì các bản build.
 
+---
+
+## Phân tích hệ thống chi tiết
+
+### 1. Tổng quan về kiến trúc hệ thống
+
+Hệ thống được thiết kế theo mô hình **client-server** phân tán với ba tầng chính:
+
+- **Tầng Backend (Go)**: Xử lý API, WebSocket, quản lý tornei, authentication, và logic game core
+- **Tầng Bot Runner (Python)**: Chạy các bot trong môi trường sandbox, thực thi code, quản lý trận đấu
+- **Tầng Frontend (HTML/JS/CSS)**: Giao diện người dùng, quản lý torneio, xem kết quả, tương tác realtime
+
+### 2. Phân tích từng thành phần
+
+#### a) Backend (`backend/`)
+
+**Mục đích**: Lớp trung gian và logic chủ yếu
+
+- **`cmd/server/`**: Điểm khởi động HTTP server Go, cấu hình routes và middleware
+- **`internal/`**: Chứa các module quan trọng:
+  - **Handler**: Xử lý HTTP requests, validation
+  - **Middleware**: Logging, recovery, CORS, authentication
+  - **Model**: Dữ liệu structure, DTOs
+  - **Repository**: Abstract layer cho data access
+  - **Service**: Business logic (tournament management, matchmaking)
+- **`migrations/`**: SQL migrations cho PostgreSQL schema evolution
+
+**Luồng xử lý chính**:
+1. Client request -> Go Gateway -> Middleware (auth, CORS) -> Handler -> Service/Repository -> Database
+2. WebSocket connections maintained for real-time updates
+3. Tournament bracket management với auto-progression
+
+#### b) Bot Runner (`bot-runner/`)
+
+**Mục đích**: Chạy và quản lý bot trong các trận đấu
+
+- **`app/main.py`**: Entry point, khởi động worker
+- **`app/core/`**: Cấu hình, cache, rate limiting
+- **`app/api/`**: API endpoints cho bot-runner communication
+- **`app/engine/`**: Game logic - rules engine, FSM matching
+- **`app/matchmaker/`**: Matchmaking algorithms, ranking systems
+- **`app/models/`**: Data schemas (Pydantic)
+
+**Quá trình chạy bot**:
+1. Submit bot code -> Sandbox execution với timeout/resources limit
+2. Matchmaking: pairing bots dựa trên ranking
+3. Game engine: FSM (Finite State Machine) matching giữa hai bots
+4. Result collection và storage
+
+#### c) Frontend (`frontend/`)
+
+**Mục đích**: Giao diện người dùng
+
+- **Templates (`templates/`)**: HTML structure, được Go merge khi khởi động
+- **Static assets (`static/`)**: JS, CSS - được serve dynamically, hot-reload durante development
+- **Assets (`assets/`)**: Bot SDK, mẫu code
+- **Dist (`dist/`)**: Build sản phẩm - chứa HTML/CSS/JS tối ưu cho production
+
+**Các module chính**:
+- `core/state.js`: Shared state management
+- `auth/`: Login, authorization
+- `tournaments/`: Tournament management UI
+- `arena/`: Battle interface
+- `realtime/`: WebSocket synchronization
+- `studio/`: Bot code editor
+- `history/`: Replays, match history
+
+#### d) Database & Storage
+
+- **PostgreSQL**: Production schema (quando có DATABASE_URL)
+- **JSON Store (`database/tournaments_store.json`)**: Local development fallback
+- **Go summaries (`backend/go.mod`, `backend/go.sum`)**: Dependencies management
+
+### 3. Luồng dữ liệu và giao tiếp
+
+#### a) HTTP API Flow
+
+```
+Client → Go Backend (REST API)
+  ↓
+Authentication (ADMIN_PASSWORD / JWT-like session)
+  ↓
+Route handling (tournaments, matches, bots, auth)
+  ↓
+Business logic (matchmaking, bracket management)
+  ↓
+Database operations (PostgreSQL / JSON store)
+  ↓
+Response → Client
+```
+
+#### b) WebSocket Real-time Flow
+
+```
+Client ↔ Go Backend (WebSocket)
+  │
+  ├── Tournament state updates
+  ├── Match progress notifications
+  ├── Bot result streaming
+  └── Snapshot reload on reconnect
+```
+
+#### c) Bot Execution Flow
+
+```
+Bot Code Submit → Python Bot Runner
+  ↓
+Sandbox Execution (Python subprocess với timeout)
+  ↓
+Game Engine (FSM matching)
+  ↓
+Result: Win/Loss/Draw → Backend → Frontend update
+```
+
+### 4. Chi tiết kỹ thuật
+
+#### a) Go Backend
+
+- Sử dụng **Chi router** cho routing
+- **WebSocket** cho real-time updates
+- **SQL migrations** cho schema management
+- **Middleware chain**: logging → recovery → CORS → auth
+- **Session management**: 7-day session với SESSION_SECRET
+
+#### b) Python Bot Runner
+
+- **Subprocess execution** với resource limits
+- **Pydantic schemas** cho data validation
+- **Rule engine** cho game logic
+- **Ranking system** cho matchmaking
+- **Cache layer** cho performance
+
+#### c) Frontend Architecture
+
+- **Vanilla JS** (không framework) - maintain lightweight
+- **Deferred scripts loading** theo order trong partials
+- **Shared state** qua `state.js`
+- **Template merging** bởi Go server
+- **SVG icons** inline (không dependencies)
+
+### 5. Luồng triển khai tournament
+
+1. **Tournament Creation**: Admin creates tournament → Bracket generated
+2. **Team Registration**: Teams sign up với MSSV/SBD accounts
+3. **Match Scheduling**: System pairs teams dựa trên ranking
+4. **Bot Execution**: Python runner executes bot code trong sandbox
+5. **Result Processing**: Winner determined → Bracket advances
+6. **Final Determination**: Champion declared → Awards distributed
+
+### 6. Khối quan trọng cần lưu ý
+
+- **Authentication**: ADMIN_PASSWORD cho admin access, MSSV/SBD cho teams
+- **Sandbox**: Python bot execution có timeout, C++ disabled ở production
+- **Sessions**: 7-day expiry, phụ thuộc SESSION_SECRET
+- **CORS**: Phải cấu hình chính xác domain frontend
+- **Database**: Local development dùng JSON store, production cần PostgreSQL
+
+### 7. Gợi ý cải tiến
+
+1. **Add Docker health checks** cho các service
+2. **Implement circuit breaker** cho external API calls
+3. **Add more comprehensive unit tests** cho edge cases
+4. **Optimize WebSocket reconnection logic** cho unstable networks
+5. **Add API versioning** cho backward compatibility
+6. **Implement proper error logging** và monitoring
+7. **Add CI/CD pipeline** tự động cho deploy
+8. **Document API endpoints** chi tiết hơn trong docs/API.md
+
+---
+
+## Cấu trúc bên trong các module quan trọng
+
+*(Chi tiết có thể xem tại docs/ARCHITECTURE.md và docs/API.md)*
+
+### Backend Routes (quantité):
+- `/api/v1/auth` - Authentication
+- `/api/v1/tournaments` - Tournament management
+- `/api/v1/matches` - Match management
+- `/api/v1/bots` - Bot submission and execution
+- `/api/v1/arena` - Arena/ battle interface
+
+### Frontend Pages:
+- Trang đăng nhập, tạo/rejoin tournament
+- Bảng đấu (bracket view)
+- Trang trận đấu live
+- History và replays
+- Admin panel
+
+### Bot Runner APIs:
+- Submit code execution
+- Matchmaking requests
+- Result polling
+
 ## Cấu trúc frontend
 
 ```text
@@ -95,15 +288,16 @@ cd bot-runner
 python -m py_compile main.py app/repository/database.py app/sandbox/runner.py
 ```
 
-## Đóng gói và triển khai
+## Đóng gói và triển khai — Bản tin triển khai
 
-`deploy/render.yaml` mô tả dịch vụ Render. Cần cấu hình `DATABASE_URL` và `ADMIN_PASSWORD` trong Render trước khi deploy; các biến này không được lưu trong repository. Có thể build container bằng:
+
+LẤY_DÒNG_MỚI
 
 ```powershell
 docker build -t ottv2-arena -f deploy/Dockerfile .
 ```
 
-Đẩy source lên GitHub chỉ cập nhật repository. Muốn phát hành dịch vụ, cần kết nối repository với Render và cấu hình secrets/database ở trên. Docker/Render phục vụ trực tiếp templates và static, không cần build frontend riêng.
+TESTLINE_MARKER
 
 Với Cloudflare Workers/Pages hoặc hosting tĩnh, chạy `python scripts/build_frontend.py` và đặt thư mục assets/publish là **`frontend/dist`**. Lệnh build ghép cùng các template mà Go sử dụng và chép JS, CSS, SDK sang thư mục này. Bản mới dùng URL assets `v=4.1`.
 
