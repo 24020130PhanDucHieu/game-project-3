@@ -2,6 +2,7 @@
 // QUẢN LÝ MÀN HÌNH ĐĂNG NHẬP RIÊNG BIỆT (MOCKUP 4 REPLICATION)
 // =============================================================================
 function showLoginPage(targetMatchId = null) {
+  closeRegistrationPage();
   const matches = currentTournamentData?.matches || {};
   const savedMatchId = sessionStorage.getItem("activeMatchId");
   pendingLoginMatchId = [targetMatchId, currentActiveMatchId, savedMatchId]
@@ -60,7 +61,7 @@ function setupLoginPageHandlers() {
 
 async function handleLoginPageSubmit() {
   const username = document.getElementById("inp-login-user")?.value.trim() || "";
-  const password = document.getElementById("inp-login-pass")?.value.trim() || "";
+  const password = document.getElementById("inp-login-pass")?.value || "";
   const isAdminLogin = username.toLowerCase() === "admin";
   const error = document.getElementById("login-error-msg");
   const button = document.getElementById("btn-login-submit");
@@ -97,6 +98,13 @@ async function handleLoginPageSubmit() {
     if (isAdminLogin) {
       pendingLoginMatchId = null;
       switchToTab("tab-admin-console");
+      return;
+    }
+    if (!data.tournament_id) {
+      resetSelectedMatch();
+      pendingLoginMatchId = null;
+      switchToTab('tab-bracket');
+      notifySuccess('Đăng nhập thành công', 'Chọn giải và trận của đội trong Bảng đấu. Nếu đội chưa có trong giải, hãy chờ Ban tổ chức thêm đội.');
       return;
     }
     currentTournamentId = data.tournament_id;

@@ -41,15 +41,34 @@
           Đăng nhập
         </button>
 
+        <button class="btn-login-back-home" id="btn-open-register" type="button" onclick="showRegistrationPage()">Đăng ký đội thi</button>
+
         <button class="btn-login-back-home" id="btn-login-back-home">
 
           <span>Quay về trang chủ</span>
         </button>
 
         <div class="login-hints-box">
-          <span>Ban Tổ Chức dùng mật khẩu quản trị. Đội thi dùng MSSV/SBD làm tài khoản và mật khẩu k69 + MSSV/SBD.</span>
+          <span>Đội thi đăng nhập bằng mã sinh viên và mật khẩu đã đăng ký. Ban Tổ Chức dùng tài khoản quản trị.</span>
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<div class="login-page-view" id="view-register" style="display:none;">
+  <div class="login-page-container" style="justify-content:center;">
+    <form id="form-register" class="login-card-floating" style="width:min(100%,540px);" onsubmit="submitRegistration(event)">
+      <h2 class="login-card-title">Đăng ký đội thi</h2>
+      <p class="login-card-subtitle">Tạo tài khoản trước. Ban tổ chức sẽ thêm đội vào giải đấu.</p>
+      <div id="register-error" class="login-alert-banner" role="alert" hidden></div>
+      <div class="login-input-group"><label for="register-sid">Mã sinh viên</label><input class="login-input-field" id="register-sid" autocomplete="username" required minlength="4" maxlength="32" pattern="[A-Za-z0-9][A-Za-z0-9_-]{3,31}" placeholder="Ví dụ: 24020001"></div>
+      <div class="login-input-group"><label for="register-name">Tên đội</label><input class="login-input-field" id="register-name" autocomplete="organization" required minlength="2" maxlength="80" placeholder="Tên đội thi đấu"></div>
+      <div class="login-input-group"><label for="register-password">Mật khẩu</label><input class="login-input-field" id="register-password" autocomplete="new-password" type="password" required minlength="6" maxlength="72" placeholder="Ít nhất 6 ký tự"></div>
+      <p class="text-muted">Ban tổ chức có thể xem mật khẩu tài khoản thi đấu để hỗ trợ đội.</p>
+      <button class="btn-login-submit" id="btn-register-submit" type="submit">Đăng ký</button>
+      <button class="btn-login-back-home" type="button" onclick="closeRegistrationPage(); showLoginPage()">Đã có tài khoản? Đăng nhập</button>
+      <button class="btn-login-back-home" type="button" onclick="closeRegistrationPage()">Quay về trang chủ</button>
+    </form>
   </div>
 </div>

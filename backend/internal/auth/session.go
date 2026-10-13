@@ -24,9 +24,10 @@ type Session struct {
 }
 
 type Manager struct {
-	mu      sync.RWMutex
-	key     []byte
-	revoked map[string]time.Time
+	ValidateStudent func(string) bool
+	mu              sync.RWMutex
+	key             []byte
+	revoked         map[string]time.Time
 }
 
 // A stable signing key keeps browser sessions valid across service restarts.
@@ -93,6 +94,9 @@ func (m *Manager) Get(token string) (Session, bool) {
 	m.mu.RLock()
 	_, revoked := m.revoked[token]
 	m.mu.RUnlock()
+	if !revoked && session.Role == "TEAM" && m.ValidateStudent != nil && !m.ValidateStudent(session.StudentID) {
+		return Session{}, false
+	}
 	return session, !revoked
 }
 

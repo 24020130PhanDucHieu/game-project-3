@@ -11,20 +11,36 @@
       <h3 class="panel-title">Tài khoản và mật khẩu đội thi</h3>
       <span class="badge-tag highlight" id="admin-credentials-status">Đang tải đội...</span>
     </div>
-    <p class="page-subtitle" style="margin-top: 10px;">Tên đăng nhập là MSSV/SBD. Mật khẩu mặc định của mỗi đội là k69 ghép với MSSV/SBD.</p>
+    <p class="page-subtitle" style="margin-top: 10px;">Tất cả tài khoản đã đăng ký. Chọn “Thêm vào giải đấu” để ghi danh đội vào giải.</p>
+    <div class="card-head-compact" style="margin-top:16px;gap:12px;flex-wrap:wrap;">
+      <input id="account-search" class="login-input-field" style="max-width:360px;" placeholder="Tìm mã sinh viên hoặc tên đội" aria-label="Tìm tài khoản" oninput="renderAccountRows()">
+      <button class="btn-outline" type="button" onclick="renderTeamCredentialsTable()">Làm mới</button>
+    </div>
     <div class="table-responsive" style="margin-top: 16px;">
       <table class="table-clean ranking-full-table" id="table-team-credentials">
         <thead>
           <tr>
             <th>ĐỘI</th>
             <th>MSSV / TÊN ĐĂNG NHẬP</th>
-            <th>MẬT KHẨU MẶC ĐỊNH</th>
+            <th>MẬT KHẨU</th>
+            <th>THAO TÁC</th>
           </tr>
         </thead>
         <tbody id="tbody-team-credentials">
-          <tr><td colspan="3" class="text-center text-muted">Đang tải danh sách đội...</td></tr>
+          <tr><td colspan="4" class="text-center text-muted">Đang tải danh sách đội...</td></tr>
         </tbody>
       </table>
     </div>
   </div>
 </section>
+
+<dialog id="dialog-enroll-account" style="border:0;border-radius:20px;padding:28px;width:min(520px,90vw);">
+  <form id="form-enroll-account" onsubmit="enrollAccount(event)">
+    <div class="card-head-compact"><h3>Thêm đội vào giải đấu</h3><button class="btn-outline" type="button" aria-label="Đóng hộp thoại" onclick="document.getElementById('dialog-enroll-account').close()">×</button></div>
+    <p id="enroll-account-name"></p>
+    <label for="enroll-tournament">Giải đấu</label>
+    <select id="enroll-tournament" class="login-input-field" required></select>
+    <p id="enroll-error" role="alert" class="text-muted"></p>
+    <button id="btn-enroll-submit" class="btn-login-submit" type="submit">Thêm vào giải đấu</button>
+  </form>
+</dialog>

@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -61,6 +62,17 @@ func main() {
 	teamHandler := httpHandler.NewTeamHandler(tournamentService)
 	sessions := auth.NewManager()
 	mHandler := httpHandler.NewMatchHandler(tournamentService, sessions)
+	accounts, err := repository.NewAccounts(tournamentRepo, filepath.Join(filepath.Dir(cfg.DBPath), "accounts_store.json"))
+	if err != nil {
+		log.Fatalf("Could not initialize accounts: %v", err)
+	}
+	aHandler := &httpHandler.AccountsHandler{Store: accounts, Service: tournamentService}
+	if err := aHandler.ImportLegacy(); err != nil {
+		log.Fatalf("Could not import team accounts: %v", err)
+	}
+	mHandler.Accounts = accounts
+	mHandler.AccountSync = aHandler.ImportLegacy
+	sessions.ValidateStudent = func(id string) bool { a, err := accounts.Get(id); return err == nil && !a.Deleted }
 
 	// 4. WebSocket Hub for Live Stream
 	wsHub := wsHandler.NewHub()
@@ -85,6 +97,12 @@ func main() {
 			return
 		}
 		parts := strings.Split(strings.Trim(c.Request.URL.Path, "/"), "/")
+		if c.Request.URL.Path == "/api/teams/register" || strings.HasPrefix(c.Request.URL.Path, "/api/admin/accounts") {
+			id := c.GetString("eventTournamentID")
+			if id != "" {
+				wsHub.BroadcastTournamentJSON(id, "", gin.H{"type": "TOURNAMENT_UPDATED", "tournament_id": id, "action": "add-team"})
+			}
+		}
 		if c.Request.URL.Path == "/api/tournament/rule/set" {
 			wsHub.BroadcastTournamentJSON(c.Query("tournament_id"), "", gin.H{"type": "TOURNAMENT_UPDATED", "tournament_id": c.Query("tournament_id"), "action": "set-rule"})
 		}
@@ -127,6 +145,10 @@ func main() {
 			c.JSON(http.StatusOK, gin.H{"languages": languages})
 		})
 		adminOnly := requireSession(sessions, true, false)
+		api.POST("/teams/register", aHandler.Register)
+		api.GET("/admin/accounts", adminOnly, aHandler.List)
+		api.DELETE("/admin/accounts/:studentId", adminOnly, aHandler.Delete)
+		api.POST("/admin/accounts/:studentId/enroll", adminOnly, aHandler.Enroll)
 		matchSession := requireSession(sessions, false, true)
 		matchAdmin := requireSession(sessions, true, true)
 		// Tournaments

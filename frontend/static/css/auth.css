@@ -26,6 +26,13 @@
 }
 
 /* CỘT TRÁI ĐĂNG NHẬP */
+#view-register .login-page-container { display: flex; justify-content: center; }
+#view-register .login-input-group label { display: block; margin-bottom: 8px; font-weight: 600; }
+#view-register .login-card-floating { margin-block: auto; }
+#dialog-enroll-account::backdrop { background: rgb(15 23 42 / 45%); backdrop-filter: blur(3px); }
+#dialog-enroll-account select { margin-top: 8px; }
+#view-register { align-items: safe center; }
+
 .login-left-col {
   display: flex;
   flex-direction: column;

@@ -10,12 +10,15 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"project-tuan3/internal/auth"
+	"project-tuan3/internal/repository"
 	"project-tuan3/internal/service"
 )
 
 type MatchHandler struct {
-	service  *service.TournamentService
-	sessions *auth.Manager
+	Accounts    *repository.Accounts
+	AccountSync func() error
+	service     *service.TournamentService
+	sessions    *auth.Manager
 }
 
 func NewMatchHandler(service *service.TournamentService, sessions *auth.Manager) *MatchHandler {
@@ -128,6 +131,9 @@ func (h *MatchHandler) Login(c *gin.Context) {
 		c.JSON(http.StatusOK, result)
 		return
 	}
+	if !h.accountPassword(c, req) {
+		return
+	}
 	req["match_id"] = matchID
 
 	res, err := h.service.MutateTournament(id, "login", req)
@@ -166,6 +172,22 @@ func (h *MatchHandler) TeamLogin(c *gin.Context) {
 		return
 	}
 	preferredTournament, _ := req["tournament_id"].(string)
+	originalPassword := password
+	if h.Accounts != nil {
+		if h.AccountSync != nil {
+			if err := h.AccountSync(); err != nil {
+				c.JSON(503, gin.H{"detail": "Không thể tải tài khoản."})
+				return
+			}
+		}
+		a, err := h.Accounts.Authenticate(username, password)
+		if err != nil {
+			c.JSON(401, gin.H{"detail": "Mã sinh viên hoặc mật khẩu không đúng, hoặc tài khoản đã bị xóa."})
+			return
+		}
+		username = a.StudentID
+		password = "k69" + a.StudentID
+	}
 	type loginCandidate struct {
 		tournamentID string
 		matchID      string
@@ -267,7 +289,11 @@ func (h *MatchHandler) TeamLogin(c *gin.Context) {
 			return
 		}
 	}
-	c.JSON(http.StatusUnauthorized, gin.H{"detail": "Không tìm thấy đội với MSSV và mật khẩu này. Hãy kiểm tra MSSV, mã k69+MSSV và việc đội đã được thêm vào giải."})
+	if h.Accounts != nil {
+		h.accountLogin(c, username, originalPassword)
+		return
+	}
+	c.JSON(http.StatusUnauthorized, gin.H{"detail": "Không tìm thấy đội với MSSV và mật khẩu này."})
 }
 
 func (h *MatchHandler) SelectTeamMatch(c *gin.Context) {
@@ -439,6 +465,9 @@ func (h *MatchHandler) Auth(c *gin.Context) {
 	_ = c.ShouldBindJSON(&req)
 	if req == nil {
 		req = make(map[string]interface{})
+	}
+	if !h.accountPassword(c, req) {
+		return
 	}
 	req["match_id"] = matchID
 

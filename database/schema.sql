@@ -3,6 +3,13 @@
 -- Dành cho mở rộng cụm Multi-Node trong tương lai nếu cần chuyển đổi khỏi file JSON
 -- =============================================================================
 
+-- Kho tài khoản độc lập được gateway tạo tự động trên PostgreSQL.
+-- data chứa tên đội, bcrypt hash, mật khẩu mã hóa AES-GCM và dấu xóa.
+CREATE TABLE IF NOT EXISTS arena_accounts (
+    student_id TEXT PRIMARY KEY,
+    data JSONB NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS users (
     student_id VARCHAR(32) PRIMARY KEY,
     full_name VARCHAR(128) NOT NULL,

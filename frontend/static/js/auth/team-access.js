@@ -210,7 +210,7 @@ function openRoleModal(preferredRole = null) {
       openMatchLoginModal(currentActiveMatchId);
     } else {
       showLoginPage();
-      notifyInfo("Đăng nhập đội", "Dùng MSSV/SBD làm tài khoản và k69 + MSSV/SBD làm mật khẩu. Hệ thống tự tìm giải; sau khi đăng nhập, hãy chọn trận của đội trên bảng đấu.");
+      notifyInfo("Đăng nhập đội", "Dùng mã sinh viên và mật khẩu đã đăng ký. Sau khi đăng nhập, hãy chọn trận của đội trên bảng đấu.");
     }
     return;
   }

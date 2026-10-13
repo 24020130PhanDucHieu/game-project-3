@@ -80,7 +80,7 @@ function openMatchLoginModal(matchId) {
   if (guideTeams) {
     const nameA = teamA ? `${teamA.team_name} (${teamA.student_id})` : "Chưa xác định";
     const nameB = teamB ? `${teamB.team_name} (${teamB.student_id})` : "Chưa xác định";
-    guideTeams.textContent = `Đội Đỏ: ${nameA} | Đội Xanh: ${nameB}. Tài khoản là MSSV/SBD, mật khẩu là k69 ghép với MSSV/SBD.`;
+    guideTeams.textContent = `Đội Đỏ: ${nameA} | Đội Xanh: ${nameB}. Đăng nhập bằng mã sinh viên và mật khẩu đã đăng ký.`;
   }
 
   modal.style.display = "flex";
@@ -101,7 +101,7 @@ async function handleUnifiedLogin() {
   const btnSubmit = document.getElementById("btn-submit-unified-login");
 
   const username = userInp ? userInp.value.trim() : "";
-  const password = passInp ? passInp.value.trim() : "";
+  const password = passInp ? passInp.value : "";
 
   if (!username) {
     if (alertEl) {
@@ -206,10 +206,10 @@ async function handleUnifiedLogin() {
       openMatchRoom(matchId);
     } else {
       currentStudioSide = data.side || null;
-      await loadActiveTournament(currentTournamentId);
+      if (currentTournamentId) await loadActiveTournament(currentTournamentId);
       currentActiveMatchId = matchId;
       switchToTab("tab-bracket");
-      notifySuccess("Đăng nhập thành công", "Đã tự tìm giải đấu và trận của đội. Chọn trận trên bảng đấu để mở tab Trận đấu.");
+      notifySuccess("Đăng nhập thành công", "Chọn trận của đội trong Bảng đấu. Nếu chưa có giải, hãy chờ Ban tổ chức thêm đội.");
     }
 
   } catch (err) {

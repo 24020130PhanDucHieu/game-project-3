@@ -83,25 +83,7 @@ function setupAdminControls() {
 }
 
 function renderTeamCredentialsTable() {
-  const body = document.getElementById("tbody-team-credentials");
-  const status = document.getElementById("admin-credentials-status");
-  if (!body) return;
-
-  const teams = currentTournamentData?.teams || [];
-  if (status) status.textContent = `${teams.length} đội trong giải đang chọn`;
-  if (teams.length === 0) {
-    body.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Giải này chưa có đội nào.</td></tr>';
-    return;
-  }
-
-  body.innerHTML = teams.map((team) => {
-    const studentId = String(team.student_id || "");
-    return `<tr>
-      <td><strong>${escapeHtml(team.team_name || "Đội chưa đặt tên")}</strong></td>
-      <td>${escapeHtml(studentId || "—")}</td>
-      <td><code>${escapeHtml(`k69${studentId}`)}</code></td>
-    </tr>`;
-  }).join("");
+  return loadRegisteredAccounts();
 }
 
 function switchToBracketView() {

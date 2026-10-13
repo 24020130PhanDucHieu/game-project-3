@@ -116,7 +116,7 @@ async function handleAddTeamSubmit() {
       btn.textContent = "+ Thêm Đội";
     }
 
-    notifySuccess("Đã thêm đội", `${data.message || name}. Mật khẩu mặc định: k69${sid}`);
+    notifySuccess("Đã thêm đội", `${data.message || name}. Xem tài khoản và mật khẩu tại Bàn Quản Trị.`);
     await loadActiveTournament(currentTournamentId);
     renderTeamManagerTable();
 

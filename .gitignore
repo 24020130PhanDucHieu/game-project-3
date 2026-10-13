@@ -35,6 +35,8 @@ bin/
 backend/server.exe
 
 # Database & Runtime Data
+**/accounts_store.json
+**/accounts_store.json.key
 database/backups/*.gz
 data/
 *.log

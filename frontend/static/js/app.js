@@ -11,7 +11,7 @@ async function initApp() {
   const rawSid = hasSession ? (sessionStorage.getItem("ARENA_STUDENT_ID") || localStorage.getItem("ARENA_STUDENT_ID") || "").trim() : "";
   const rawName = hasSession ? (sessionStorage.getItem("ARENA_TEAM_NAME") || localStorage.getItem("ARENA_TEAM_NAME") || "").trim() : "";
 
-  if (rawRole === "ADMIN" || rawSid.toUpperCase() === "ADMIN" || rawName.includes("Ban Tổ Chức") || rawName.toLowerCase().includes("admin")) {
+  if (rawRole === "ADMIN") {
     currentAppRole = "ADMIN";
     currentUserRole = "ADMIN";
     currentTeamStudentId = "ADMIN";

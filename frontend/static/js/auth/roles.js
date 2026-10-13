@@ -2,6 +2,12 @@
 // HỆ THỐNG XÁC THỰC VAI TRÒ & PHÂN QUYỀN (ROLE-BASED ACCESS CONTROL)
 // =============================================================================
 function updateRoleUI() {
+  if (currentAppRole !== 'ADMIN') {
+    registeredAccounts = [];
+    enrollingAccount = null;
+    document.getElementById('tbody-team-credentials')?.replaceChildren();
+    document.getElementById('dialog-enroll-account')?.close();
+  }
   document.body.className = "role-" + currentAppRole.toLowerCase();
 
   const pill = document.getElementById("user-role-pill");
