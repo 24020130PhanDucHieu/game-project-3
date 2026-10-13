@@ -198,6 +198,23 @@ func (h *TournamentHandler) AutoSchedule(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
+func (h *TournamentHandler) SetStageSchedule(c *gin.Context) {
+	var req struct {
+		Windows []service.StageWindow `json:"windows"`
+	}
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 16384)
+	if c.ShouldBindJSON(&req) != nil || req.Windows == nil {
+		c.JSON(400, gin.H{"detail": "Dữ liệu lịch không hợp lệ."})
+		return
+	}
+	result, err := h.service.SetStageSchedule(c.Param("id"), req.Windows)
+	if err != nil {
+		c.JSON(400, gin.H{"detail": err.Error()})
+		return
+	}
+	c.JSON(200, result)
+}
+
 func (h *TournamentHandler) GetRanking(c *gin.Context) {
 	allTournaments := h.service.GetAllTournaments()
 	// Track stats per student across all tournaments

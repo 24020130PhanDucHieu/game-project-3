@@ -46,7 +46,7 @@ function renderMatchRoomData(match) {
   if (titleEl) titleEl.textContent = match.title ? match.title.toUpperCase() : "TRẬN ĐẤU";
 
   const stageBadge = document.getElementById("match-room-stage-badge");
-  if (stageBadge) stageBadge.textContent = `${match.round_name || 'Vòng Đấu'} • Bo6`;
+  if (stageBadge) stageBadge.textContent = `${match.round_name || 'Vòng Đấu'} • Bo5`;
 
   const statusBadge = document.getElementById("match-room-status-badge");
   if (statusBadge) {
@@ -123,7 +123,7 @@ function renderMatchRoomData(match) {
     const victoryTeam = document.getElementById("victory-team-text");
     if (victoryTeam) victoryTeam.textContent = `${match.winner_name} CHIẾN THẮNG TRẬN ĐẤU!`;
   } else {
-    if (roundBannerText) roundBannerText.textContent = `ROUND ${match.current_round_idx || 1} / ${match.max_rounds || 6}`;
+    if (roundBannerText) roundBannerText.textContent = `ROUND ${match.current_round_idx || 1} / ${match.max_rounds || 5}`;
     const victoryBanner = document.getElementById("match-victory-banner");
     if (victoryBanner) victoryBanner.style.display = "none";
 

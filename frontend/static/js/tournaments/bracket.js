@@ -26,7 +26,7 @@ function renderBracketTree(tourn) {
 
   const formatEl = document.getElementById("bracket-tourn-format-display");
   if (formatEl) {
-    const maxRounds = Object.values(tourn?.matches || {}).reduce((limit, match) => Math.max(limit, match.max_rounds || 6), 0) || 6;
+    const maxRounds = 5;
     formatEl.textContent = `Thể thức: ${firstRoundTitle} → Chung Kết · Tối đa ${maxRounds} hiệp/trận`;
   }
 

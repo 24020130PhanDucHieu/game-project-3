@@ -77,6 +77,8 @@ async function handleRefereeStartBattle() {
   if (!currentTournamentId || !currentActiveMatchId || isMatchRunning) return;
   if (currentAppRole !== "ADMIN") { notifyWarning("Không đủ quyền", "Chỉ Ban Tổ Chức mới được bắt đầu hiệp."); return; }
   const match=currentTournamentData?.matches?.[currentActiveMatchId];
+  const blocked = match && stageBlockReason(match);
+  if (blocked) { notifyWarning('Chưa thể bắt đầu', blocked); return; }
   if (!match?.team_a?.code_valid || !match?.team_b?.code_valid) { notifyWarning("Chưa sẵn sàng","Cả hai đội phải nộp mã hợp lệ trước khi bắt đầu."); return; }
   const tournamentId=currentTournamentId, matchId=currentActiveMatchId;
   isMatchRunning=true; renderVisualBattleArena(match);

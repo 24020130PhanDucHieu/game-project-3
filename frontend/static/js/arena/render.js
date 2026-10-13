@@ -30,7 +30,7 @@ function renderVisualBattleArena(match) {
   // Round indicator
   const roundEl = document.getElementById("arena-round-indicator");
   if (roundEl) {
-    roundEl.textContent = match.status === "COMPLETED" ? "CHUNG CUỘC" : `ROUND ${match.current_round_idx || 1} / ${match.max_rounds || 6}`;
+    roundEl.textContent = match.status === "COMPLETED" ? "CHUNG CUỘC" : `ROUND ${match.current_round_idx || 1} / ${match.max_rounds || 5}`;
   }
 
   // Tên Đội Đỏ và Đội Xanh
@@ -134,7 +134,9 @@ function renderVisualBattleArena(match) {
     if (currentAppRole === "ADMIN") {
       btnAdminStart.style.display = "inline-flex";
       const allReady = Boolean(match.all_teams_ready || (teamA?.code_valid && teamB?.code_valid));
-      btnAdminStart.disabled = !allReady || match.status === "COMPLETED" || match.round_status === "ROUND_FINISHED" || match.battle_running || isMatchRunning;
+      const blocked = stageBlockReason(match);
+      btnAdminStart.disabled = Boolean(blocked) || !allReady || match.status === "COMPLETED" || match.round_status === "ROUND_FINISHED" || match.battle_running || isMatchRunning;
+      btnAdminStart.title = blocked;
       if (allReady) {
         btnAdminStart.textContent = `Bắt Đầu Hiệp ${match.current_round_idx || 1}`;
         btnAdminStart.className = "btn btn-green admin-only";
@@ -172,7 +174,7 @@ function renderRoundStepPills(currentIdx, history, isFinished) {
   if (!container) return;
   container.innerHTML = "";
 
-  const maxR = currentMatchData?.max_rounds || 6;
+  const maxR = currentMatchData?.max_rounds || 5;
   for (let r = 1; r <= maxR; r++) {
     const pill = document.createElement("div");
     pill.className = "step-pill";

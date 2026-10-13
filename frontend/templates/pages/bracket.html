@@ -15,6 +15,7 @@
 
         <span>Tạo giải đấu</span>
       </button>
+      <button class="btn btn-outline btn-sm" id="btn-stage-schedule" type="button" onclick="openStageSchedule()">Đặt thời gian các vòng</button>
 
       <button class="btn btn-outline btn-sm" id="btn-open-tournament-list" type="button">
 <svg class="arena-icon " aria-hidden="true" focusable="false"><use href="#icon-trophy"></use></svg>
@@ -31,12 +32,13 @@
         <div class="meta-line">
           <span>Giải: <strong id="bracket-tourn-name-display">Giải Đấu Tân Sinh Viên K69</strong></span>
         </div>
-        <div class="meta-subline" id="bracket-tourn-format-display">Thể thức: Tứ Kết → Chung Kết (Bo6)</div>
+        <div class="meta-subline" id="bracket-tourn-format-display">Thể thức: Tứ Kết → Chung Kết (Bo5)</div>
       </div>
     </div>
   </div>
 
   <div class="bracket-main-card">
+    <div id="stage-timeline" class="stage-timeline" aria-label="Lịch các vòng đấu"></div>
     <div class="bracket-card-top-bar">
       <div class="card-title-group"><svg class="arena-icon " aria-hidden="true" focusable="false"><use href="#icon-bracket"></use></svg>
 
@@ -63,3 +65,15 @@
     <span id="tourn-champion-pill"></span>
   </div>
 </section>
+
+<dialog id="dialog-stage-schedule" class="stage-schedule-dialog">
+  <form onsubmit="saveStageSchedule(event)">
+    <div class="card-head-compact"><h3>Đặt thời gian các vòng</h3><button type="button" class="btn-outline" aria-label="Đóng hộp thoại" onclick="document.getElementById('dialog-stage-schedule').close()">×</button></div>
+    <p id="stage-schedule-tournament"></p>
+    <p class="text-muted">Đặt giờ mở và đóng từng vòng, theo giờ trên thiết bị của bạn. Khoảng trống giữa hai vòng là thời gian nghỉ. Để trống cả hai ô nếu chưa đặt lịch.</p>
+    <p class="text-muted">Sau giờ đóng, không bắt đầu hiệp mới. Hiệp đang chạy tiếp tục hoàn tất. Vòng đã thi đấu chỉ được gia hạn giờ đóng.</p>
+    <div id="stage-schedule-fields"></div>
+    <p id="stage-schedule-error" role="alert"></p>
+    <button class="btn btn-primary" type="submit" id="btn-save-stage-schedule">Lưu lịch</button>
+  </form>
+</dialog>

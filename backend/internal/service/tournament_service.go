@@ -57,8 +57,12 @@ func (s *TournamentService) RecoverInterruptedRounds() error {
 		tournament, _ := raw.(map[string]interface{})
 		matches, _ := tournament["matches"].(map[string]interface{})
 		changed := false
+		legacy := false
 		for _, rawMatch := range matches {
 			match, _ := rawMatch.(map[string]interface{})
+			if match["status"] != "COMPLETED" && match["max_rounds"] != nil && match["max_rounds"] != float64(5) {
+				legacy = true
+			}
 			if match["round_status"] != "BATTLE_RUNNING" {
 				continue
 			}
@@ -70,6 +74,17 @@ func (s *TournamentService) RecoverInterruptedRounds() error {
 			match["round_status"] = "AWAITING_SUBMISSIONS"
 			if ready {
 				match["round_status"] = "READY_FOR_BATTLE"
+			}
+			changed = true
+		}
+		if legacy {
+			result, err := s.adapter.Mutate(tournament, "upgrade-rules", map[string]interface{}{})
+			if err != nil {
+				return fmt.Errorf("migrate match rules: %w", err)
+			}
+			tournament, _ = result["tournament"].(map[string]interface{})
+			if tournament == nil {
+				return errors.New("worker returned no tournament during rules migration")
 			}
 			changed = true
 		}
@@ -188,6 +203,9 @@ func (s *TournamentService) MutateTournament(tournamentID, action string, params
 		runningMatch, _ = matches[matchID].(map[string]interface{})
 		if runningMatch == nil {
 			return nil, errors.New("không tìm thấy trận đấu")
+		}
+		if err := CanStartStage(current, runningMatch, time.Now()); err != nil {
+			return nil, err
 		}
 		if runningMatch["status"] == "COMPLETED" || runningMatch["round_status"] == "ROUND_FINISHED" || runningMatch["battle_running"] == true {
 			return nil, errors.New("hiệp đã kết thúc hoặc đang chạy; hãy chờ trạng thái mới")

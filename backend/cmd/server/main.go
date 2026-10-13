@@ -158,6 +158,7 @@ func main() {
 		api.POST("/tournaments/create", adminOnly, tHandler.Create)
 		api.DELETE("/tournaments/:id", adminOnly, tHandler.Delete)
 		api.POST("/tournaments/:id/auto-schedule", adminOnly, tHandler.AutoSchedule)
+		api.PUT("/tournaments/:id/stage-schedule", adminOnly, tHandler.SetStageSchedule)
 
 		// Teams
 		api.GET("/tournaments/:id/teams", optionalSession(sessions), teamHandler.GetTeams)

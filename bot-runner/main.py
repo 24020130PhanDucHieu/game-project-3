@@ -46,6 +46,8 @@ def mutate_tournament(req: MutateRequest):
     
     action_res = {}
     try:
+        if t_id:
+            stateless_db.upgrade_tournament_rules(t_id)
         if action in {"submit-draft", "submit-code"} and t_id:
             match = stateless_db.tournaments[t_id].get("matches", {}).get(p.get("match_id"))
             if not match:
@@ -61,6 +63,8 @@ def mutate_tournament(req: MutateRequest):
         elif action == "create-tournament":
             new_t = stateless_db.create_tournament(p.get("name"), p.get("num_teams", 8))
             return {"status": "SUCCESS", "tournament": new_t}
+        elif action == "upgrade-rules":
+            pass
         elif action == "auto-schedule":
             stateless_db.auto_schedule_tournament(t_id)
         elif action == "set-rule":

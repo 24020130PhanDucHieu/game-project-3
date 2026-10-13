@@ -114,7 +114,7 @@ function populateStudioEditor(team) {
     if (draft) editor.setSelectionRange(draft.selectionStart || 0, draft.selectionEnd || 0);
     currentEditorKey = key;
   }
-  const round = currentMatchData?.current_round_idx || 1, maxR = currentMatchData?.max_rounds || 6;
+  const round = currentMatchData?.current_round_idx || 1, maxR = currentMatchData?.max_rounds || 5;
   if (statusTag) {
     statusTag.textContent = team.code_submitted ? (team.code_valid ? `Đã nộp mã lệnh cho Round ${round} (Sẵn sàng)` : `Mã lỗi cho Round ${round} — hãy sửa và nộp lại`) : `Chưa nộp mã cho Round ${round}`;
     statusTag.className = team.code_submitted && team.code_valid ? "ide-status-tag submitted" : "ide-status-tag";

@@ -121,3 +121,15 @@
   gap: 8px;
   line-height: 1.45;
 }
+/* Stage schedule and public timeline. */
+.stage-schedule-dialog { border:0; border-radius:20px; padding:28px; width:min(760px,94vw); max-height:90vh; overflow:auto; }
+.stage-schedule-dialog::backdrop { background:rgb(15 23 42 / 45%); backdrop-filter:blur(3px); }
+#stage-schedule-fields fieldset { display:grid; grid-template-columns:1fr 1fr; gap:16px; border:1px solid #dbe5f1; border-radius:12px; margin:16px 0; padding:16px; }
+#stage-schedule-fields legend { font-weight:700; padding:0 8px; }
+#stage-schedule-fields label input { display:block; width:100%; margin-top:8px; }
+.stage-timeline { display:flex; gap:12px; overflow-x:auto; margin-bottom:24px; }
+.stage-timeline-item { display:flex; flex-direction:column; gap:8px; min-width:220px; border:1px solid #dbeafe; background:#f0f7ff; border-radius:12px; padding:14px; }
+.stage-timeline-item span { color:#64748b; font-size:12px; }
+.stage-timeline-item small { color:#2563eb; font-weight:600; }
+#stage-schedule-error { color:#dc2626; }
+@media(max-width:600px) { #stage-schedule-fields fieldset { grid-template-columns:1fr; } }

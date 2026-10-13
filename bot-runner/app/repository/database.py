@@ -630,7 +630,8 @@ class Database:
                     "battle_running": False,
                     "intermission_ends_at": None,
                     "current_round_idx": 1,
-                    "max_rounds": 6,
+                    "max_rounds": 5,
+                    "tie_break_seed": uuid.uuid4().hex,
                     "rounds_history": [],
                     "submissions_history": [],
                     "winner": None,
@@ -1048,9 +1049,9 @@ def decide_move(game_state):
         winner = sim_res["winner_side"]
         
         if side == "team_a":
-            user_result = "WIN" if winner == "team_a" else ("LOSS" if winner == "team_b" else "DRAW")
+            user_result = "WIN" if winner == "team_a" else "LOSS"
         else:
-            user_result = "WIN" if winner == "team_b" else ("LOSS" if winner == "team_a" else "DRAW")
+            user_result = "WIN" if winner == "team_b" else "LOSS"
             
         return {
             "status": "SUCCESS",
@@ -1253,6 +1254,7 @@ def decide_move(game_state):
             raise ValueError("Không tìm thấy trận đấu.")
         
         match["current_round_idx"] = 1
+        match["max_rounds"] = 5
         match["status"] = "READY"
         match["round_status"] = "AWAITING_SUBMISSIONS"
         match["rounds_history"] = []
@@ -1370,411 +1372,68 @@ def decide_move(game_state):
         raise ValueError(f"Không tìm thấy dữ liệu replay cho Round {round_idx}")
 
     @staticmethod
-    def simulate_9x9_board_match(team_a_code: str, team_b_code: str, team_a_lang: str = "PYTHON", team_b_lang: str = "PYTHON", round_num: int = 1, stage_rule: str = "STAGE_1_STANDARD") -> dict:
-        from app.sandbox.runner import BotRunner
-        from app.engine.rules import GameRulesEngine
+    def simulate_9x9_board_match(team_a_code: str, team_b_code: str, team_a_lang: str = "PYTHON", team_b_lang: str = "PYTHON", round_num: int = 1, stage_rule: str = "STAGE_1_STANDARD", tie_seed: str = None) -> dict:
+        from app.engine.board import simulate_board
+        return simulate_board(team_a_code, team_b_code, team_a_lang, team_b_lang, round_num, stage_rule, tie_seed)
 
-        if stage_rule == "STAGE_2_MUTATED":
-            types_pattern = ["ROCK"] * 5 + ["PAPER"] * 2 + ["SCISSORS"] * 2
-        elif stage_rule == "STAGE_4_FINALS":
-            types_pattern = ["ROCK"] * 2 + ["PAPER"] * 4 + ["SCISSORS"] * 3
+    @staticmethod
+    def complete_bracket_match(tourn, match):
+        team_a, team_b = match["team_a"], match["team_b"]
+        match["status"] = "COMPLETED"
+        match["round_status"] = "COMPLETED"
+        if team_a["rounds_won"] > team_b["rounds_won"]:
+            match["winner"] = "team_a"
+            match["winner_name"] = team_a["team_name"]
+            win_team = team_a
+        elif team_b["rounds_won"] > team_a["rounds_won"]:
+            match["winner"] = "team_b"
+            match["winner_name"] = team_b["team_name"]
+            win_team = team_b
         else:
-            types_pattern = ["ROCK", "PAPER", "SCISSORS", "ROCK", "PAPER", "SCISSORS", "ROCK", "PAPER", "SCISSORS"]
-        # Khởi tạo 9 quân Đỏ ở hàng 7 (cols 0..8)
-        red_pieces = [
-            {"id": f"r_{i}", "col": i, "row": 7, "type": types_pattern[i], "alive": True}
-            for i in range(9)
-        ]
-        # Khởi tạo 9 quân Xanh ở hàng 1 (cols 0..8)
-        blue_pieces = [
-            {"id": f"b_{i}", "col": i, "row": 1, "type": types_pattern[i], "alive": True}
-            for i in range(9)
-        ]
-
-        # Ô cứ điểm đích: Đỏ cần đến [8, 0], Xanh cần đến [0, 8]
-        red_target = [8, 0]
-        blue_target = [0, 8]
-
-        history_a = []
-        history_b = []
-
-        steps = []
-        steps.append({
-            "step_idx": 0,
-            "turn_label": "Bắt đầu hiệp đấu",
-            "red_pieces": copy.deepcopy(red_pieces),
-            "blue_pieces": copy.deepcopy(blue_pieces),
-            "clash_event": None,
-            "log": "Khởi tạo bàn cờ 9x9. Chuẩn bị xuất quân cho cả hai đội!",
-            "red_alive": 9,
-            "blue_alive": 9
-        })
-
-        winner_side = None
-        win_reason = ""
-        max_turns = 16
-        cpp_exe_a = BotRunner.compile_cpp_code(team_a_code)[0] if team_a_lang == "CPP" else None
-        cpp_exe_b = BotRunner.compile_cpp_code(team_b_code)[0] if team_b_lang == "CPP" else None
-
-        for t in range(1, max_turns + 1):
-            clash_event = None
-            alive_r = [p for p in red_pieces if p["alive"]]
-            alive_b = [p for p in blue_pieces if p["alive"]]
-            if not alive_r or not alive_b:
-                break
-
-            # Gọi thuật toán quyết định nước đi của 2 bên cho lượt t
-            types_r = [p["type"] for p in alive_r]
-            types_b = [p["type"] for p in alive_b]
-            cards_r = {"ROCK": types_r.count("ROCK"), "PAPER": types_r.count("PAPER"), "SCISSORS": types_r.count("SCISSORS")}
-            cards_b = {"ROCK": types_b.count("ROCK"), "PAPER": types_b.count("PAPER"), "SCISSORS": types_b.count("SCISSORS")}
-            
-            state_a = {
-                "my_hp": 100,
-                "remaining_cards": cards_r,
-                "turn_number": t,
-                "history": copy.deepcopy(history_a)
-            }
-            state_b = {
-                "my_hp": 100,
-                "remaining_cards": cards_b,
-                "turn_number": t,
-                "history": copy.deepcopy(history_b)
-            }
-            fog_of_war = stage_rule in ("STAGE_3_REVERSE_FOG", "STAGE_4_FINALS")
-            if fog_of_war:
-                for state in (state_a, state_b):
-                    for prior_turn in state["history"]:
-                        prior_turn.pop("opponent_move", None)
-                        prior_turn.pop("their_move", None)
-            reverse_rule = (stage_rule == "STAGE_3_REVERSE_FOG" and t % 2 == 1) or (stage_rule == "STAGE_4_FINALS" and t % 3 == 0)
-
-            turn_move_a = "ROCK"
-            turn_move_b = "ROCK"
-            try:
-                if team_a_lang == "CPP":
-                    if cpp_exe_a: turn_move_a, _ = BotRunner.run_cpp_binary(cpp_exe_a, state_a)
-                else:
-                    turn_move_a, _ = BotRunner.run_python_code(team_a_code, state_a)
-            except Exception:
-                turn_move_a = [c for c, n in cards_r.items() if n > 0][0] if any(cards_r.values()) else "ROCK"
-
-            try:
-                if team_b_lang == "CPP":
-                    if cpp_exe_b: turn_move_b, _ = BotRunner.run_cpp_binary(cpp_exe_b, state_b)
-                else:
-                    turn_move_b, _ = BotRunner.run_python_code(team_b_code, state_b)
-            except Exception:
-                turn_move_b = [c for c, n in cards_b.items() if n > 0][0] if any(cards_b.values()) else "ROCK"
-
-            if turn_move_a not in ["ROCK", "PAPER", "SCISSORS"]:
-                turn_move_a = "ROCK"
-            if turn_move_b not in ["ROCK", "PAPER", "SCISSORS"]:
-                turn_move_b = "ROCK"
-
-            history_a.append({"turn": t, "my_move": turn_move_a, "opponent_move": turn_move_b, "their_move": turn_move_b})
-            history_b.append({"turn": t, "my_move": turn_move_b, "opponent_move": turn_move_a, "their_move": turn_move_a})
-
-            icon_a = {"ROCK": "✊ Búa", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(turn_move_a, turn_move_a)
-            icon_b = {"ROCK": "✊ Búa", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(turn_move_b, turn_move_b)
-            log_step = f"Lượt {t}: Đỏ ra lệnh [{icon_a}] • Xanh ra lệnh [{icon_b}]."
-
-            # 1. Đội ĐỎ di chuyển / tấn công
-            best_red_capture = None
-            for pr in alive_r:
-                if pr["type"] == turn_move_a:
-                    for pb in alive_b:
-                        if abs(pr["col"] - pb["col"]) <= 1 and abs(pr["row"] - pb["row"]) <= 1:
-                            if GameRulesEngine.check_clash(pr["type"], pb["type"], is_reverse=reverse_rule) == 1:
-                                best_red_capture = (pr, pb)
-                                break
-                if best_red_capture: break
-
-            if not best_red_capture:
-                for pr in alive_r:
-                    for pb in alive_b:
-                        if abs(pr["col"] - pb["col"]) <= 1 and abs(pr["row"] - pb["row"]) <= 1:
-                            if GameRulesEngine.check_clash(pr["type"], pb["type"], is_reverse=reverse_rule) == 1:
-                                best_red_capture = (pr, pb)
-                                break
-                    if best_red_capture: break
-
-            if best_red_capture:
-                pr, pb = best_red_capture
-                pb["alive"] = False
-                pr["col"] = pb["col"]
-                pr["row"] = pb["row"]
-                icon_r = {"ROCK": "✊ Búa", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(pr["type"], pr["type"])
-                icon_b_loss = {"ROCK": "✊ Búa", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(pb["type"], pb["type"])
-                clash_event = {
-                    "type": "CLASH",
-                    "col": pr["col"], "row": pr["row"],
-                    "winner": "red",
-                    "winner_type": pr["type"], "loser_type": pb["type"],
-                    "log": f"Lượt {t}: Quân Đỏ ({icon_r}) đụng độ và ĂN GỌN Quân Xanh ({icon_b_loss}) tại ô [{pr['col']},{pr['row']}]!"
-                }
-                log_step = clash_event["log"]
+            if (team_a["hp"] > team_b["hp"] or (team_a["hp"] == team_b["hp"] and int(hashlib.sha256(match["tie_break_seed"].encode()).hexdigest(), 16) % 2 == 0)):
+                match["winner"] = "team_a"
+                match["winner_name"] = team_a["team_name"]
+                win_team = team_a
             else:
-                candidates = sorted(alive_r, key=lambda p: (
-                    0 if p["type"] == turn_move_a else 1,
-                    abs(p["col"] - red_target[0]) + abs(p["row"] - red_target[1])
-                ))
-                p_red = None
-                target_cell = None
-                for cand in candidates:
-                    curr_c, curr_r = cand["col"], cand["row"]
-                    moves = []
-                    if curr_r > 0:
-                        moves.append((curr_c, curr_r - 1))
-                    if curr_c < 8 and (curr_r == 0 or t % 2 == 0):
-                        moves.append((curr_c + 1, curr_r))
-                    if curr_r > 0 and curr_c < 8:
-                        moves.append((curr_c + 1, curr_r - 1))
+                match["winner"] = "team_b"
+                match["winner_name"] = team_b["team_name"]
+                win_team = team_b
 
-                    valid_moves = [
-                        m for m in moves
-                        if not any(rp["alive"] and rp["col"] == m[0] and rp["row"] == m[1] for rp in alive_r if rp["id"] != cand["id"])
-                    ]
-                    if valid_moves:
-                        valid_moves.sort(key=lambda m: abs(m[0] - red_target[0]) + abs(m[1] - red_target[1]))
-                        p_red = cand
-                        target_cell = valid_moves[0]
-                        break
+        next_m_id = match.get("next_match_id")
+        if next_m_id and next_m_id in tourn["matches"]:
+            next_m = tourn["matches"][next_m_id]
+            slot = match.get("next_slot", "team_a")
+            advanced_team = copy.deepcopy(win_team)
+            advanced_team["authenticated"] = True
+            advanced_team["rounds_won"] = 0
+            advanced_team["hp"] = 100
+            advanced_team["code_submitted"] = False
+            advanced_team["code_valid"] = False
+            advanced_team["validation_error"] = None
+            advanced_team["active_submission_id"] = None
+            next_m["all_teams_ready"] = False
+            next_m[slot] = advanced_team
+            if next_m["team_a"] and next_m["team_b"]:
+                next_m["status"] = "READY"
+        else:
+            tourn["champion"] = match["winner_name"]
+            tourn["status"] = "FINISHED"
 
-                if p_red and target_cell:
-                    p_red["col"], p_red["row"] = target_cell
-                    collided_b = next((pb for pb in alive_b if pb["col"] == p_red["col"] and pb["row"] == p_red["row"]), None)
-                    if collided_b:
-                        clash = GameRulesEngine.check_clash(p_red["type"], collided_b["type"])
-                        icon_r = {"ROCK": "✊ Đấm", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(p_red["type"], p_red["type"])
-                        icon_b = {"ROCK": "✊ Đấm", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(collided_b["type"], collided_b["type"])
-                        if clash == 1:
-                            collided_b["alive"] = False
-                            clash_event = {
-                                "type": "CLASH", "col": p_red["col"], "row": p_red["row"],
-                                "winner": "red", "winner_type": p_red["type"], "loser_type": collided_b["type"],
-                                "log": f"Lượt {t}: Đỏ ({icon_r}) đụng độ và ĂN ĐỨT Xanh ({icon_b}) tại [{p_red['col']},{p_red['row']}]!"
-                            }
-                            log_step = clash_event["log"]
-                        elif clash == -1:
-                            p_red["alive"] = False
-                            clash_event = {
-                                "type": "CLASH", "col": p_red["col"], "row": p_red["row"],
-                                "winner": "blue", "winner_type": collided_b["type"], "loser_type": p_red["type"],
-                                "log": f"Lượt {t}: Xanh ({icon_b}) phản công ĂN ĐỨT Đỏ ({icon_r}) tại [{p_red['col']},{p_red['row']}]!"
-                            }
-                            log_step = clash_event["log"]
-                        else:
-                            p_red["alive"] = False
-                            collided_b["alive"] = False
-                            clash_event = {
-                                "type": "CLASH", "col": p_red["col"], "row": p_red["row"],
-                                "winner": "draw", "winner_type": p_red["type"], "loser_type": collided_b["type"],
-                                "log": f"Lượt {t}: Hai bên cùng ({icon_r}) đụng độ - Cùng bị loại tại [{p_red['col']},{p_red['row']}]!"
-                            }
-                            log_step = clash_event["log"]
-                    else:
-                        log_step = f"Lượt {t}: Đội Đỏ điều quân ({p_red['type']}) áp sát tọa độ [{p_red['col']},{p_red['row']}]."
-
-            # Kiểm tra xem Đỏ đã vào cứ điểm đích [8, 0] chưa
-            if any(pr["alive"] and pr["col"] == red_target[0] and pr["row"] == red_target[1] for pr in red_pieces):
-                winner_side = "team_a"
-                win_reason = "ĐỘI ĐỎ CHIẾN THẮNG! Đột kích thành công vào Căn Cứ Đích [8, 0] của đối phương!"
-                steps.append({
-                    "step_idx": len(steps),
-                    "turn_label": f"Lượt {t}: Đột kích Cứ điểm!",
-                    "red_pieces": copy.deepcopy(red_pieces),
-                    "blue_pieces": copy.deepcopy(blue_pieces),
-                    "clash_event": {"type": "GOAL", "side": "red", "col": 8, "row": 0, "log": win_reason},
-                    "log": win_reason,
-                    "red_alive": sum(1 for p in red_pieces if p["alive"]),
-                    "blue_alive": sum(1 for p in blue_pieces if p["alive"])
-                })
-                break
-
-            # Kiểm tra quét sạch quân Xanh
-            alive_b = [p for p in blue_pieces if p["alive"]]
-            if not alive_b:
-                winner_side = "team_a"
-                win_reason = "ĐỘI ĐỎ CHIẾN THẮNG! Đã QUÉT SẠCH toàn bộ quân cờ của Đội Xanh!"
-                steps.append({
-                    "step_idx": len(steps),
-                    "turn_label": f"Lượt {t}: Quét sạch đối thủ!",
-                    "red_pieces": copy.deepcopy(red_pieces),
-                    "blue_pieces": copy.deepcopy(blue_pieces),
-                    "clash_event": clash_event,
-                    "log": win_reason,
-                    "red_alive": sum(1 for p in red_pieces if p["alive"]),
-                    "blue_alive": 0
-                })
-                break
-
-            # 2. Đội XANH di chuyển / tấn công
-            best_blue_capture = None
-            alive_r = [p for p in red_pieces if p["alive"]]
-            # Ưu tiên quân Xanh có cùng hệ turn_move_b ăn trước
-            for pb in alive_b:
-                if pb["type"] == turn_move_b:
-                    for pr in alive_r:
-                        if abs(pb["col"] - pr["col"]) <= 1 and abs(pb["row"] - pr["row"]) <= 1:
-                            if GameRulesEngine.check_clash(pb["type"], pr["type"]) == 1:
-                                best_blue_capture = (pb, pr)
-                                break
-                if best_blue_capture: break
-
-            if not best_blue_capture:
-                for pb in alive_b:
-                    for pr in alive_r:
-                        if abs(pb["col"] - pr["col"]) <= 1 and abs(pb["row"] - pr["row"]) <= 1:
-                            if GameRulesEngine.check_clash(pb["type"], pr["type"]) == 1:
-                                best_blue_capture = (pb, pr)
-                                break
-                    if best_blue_capture: break
-
-            if best_blue_capture:
-                pb, pr = best_blue_capture
-                pr["alive"] = False
-                pb["col"] = pr["col"]
-                pb["row"] = pr["row"]
-                icon_b = {"ROCK": "✊ Búa", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(pb["type"], pb["type"])
-                icon_r_loss = {"ROCK": "✊ Búa", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(pr["type"], pr["type"])
-                clash_event = {
-                    "type": "CLASH",
-                    "col": pb["col"], "row": pb["row"],
-                    "winner": "blue",
-                    "winner_type": pb["type"], "loser_type": pr["type"],
-                    "log": f"Lượt {t}: Quân Xanh ({icon_b}) phản kích ĂN GỌN Quân Đỏ ({icon_r_loss}) tại ô [{pb['col']},{pb['row']}]!"
-                }
-                log_step = clash_event["log"]
-            else:
-                # Chọn quân Xanh tiến về phía trước và mục tiêu [0, 8]
-                candidates = sorted(alive_b, key=lambda p: (
-                    0 if p["type"] == turn_move_b else 1,
-                    abs(p["col"] - blue_target[0]) + abs(p["row"] - blue_target[1])
-                ))
-                p_blue = None
-                target_cell = None
-                for cand in candidates:
-                    curr_c, curr_r = cand["col"], cand["row"]
-                    moves = []
-                    if curr_r < 8:
-                        moves.append((curr_c, curr_r + 1))
-                    if curr_c > 0 and (curr_r == 8 or t % 2 == 1):
-                        moves.append((curr_c - 1, curr_r))
-                    if curr_r < 8 and curr_c > 0:
-                        moves.append((curr_c - 1, curr_r + 1))
-
-                    valid_moves = [
-                        m for m in moves
-                        if not any(bp["alive"] and bp["col"] == m[0] and bp["row"] == m[1] for bp in alive_b if bp["id"] != cand["id"])
-                    ]
-                    if valid_moves:
-                        valid_moves.sort(key=lambda m: abs(m[0] - blue_target[0]) + abs(m[1] - blue_target[1]))
-                        p_blue = cand
-                        target_cell = valid_moves[0]
-                        break
-
-                if p_blue and target_cell:
-                    p_blue["col"], p_blue["row"] = target_cell
-                    collided_r = next((pr for pr in alive_r if pr["col"] == p_blue["col"] and pr["row"] == p_blue["row"]), None)
-                    if collided_r:
-                        clash = GameRulesEngine.check_clash(p_blue["type"], collided_r["type"])
-                        icon_b = {"ROCK": "✊ Đấm", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(p_blue["type"], p_blue["type"])
-                        icon_r = {"ROCK": "✊ Đấm", "PAPER": "✋ Bao", "SCISSORS": "✌️ Kéo"}.get(collided_r["type"], collided_r["type"])
-                        if clash == 1:
-                            collided_r["alive"] = False
-                            clash_event = {
-                                "type": "CLASH", "col": p_blue["col"], "row": p_blue["row"],
-                                "winner": "blue", "winner_type": p_blue["type"], "loser_type": collided_r["type"],
-                                "log": f"Lượt {t}: Xanh ({icon_b}) đụng độ và ĂN ĐỨT Đỏ ({icon_r}) tại [{p_blue['col']},{p_blue['row']}]!"
-                            }
-                            log_step = clash_event["log"]
-                        elif clash == -1:
-                            p_blue["alive"] = False
-                            clash_event = {
-                                "type": "CLASH", "col": p_blue["col"], "row": p_blue["row"],
-                                "winner": "red", "winner_type": collided_r["type"], "loser_type": p_blue["type"],
-                                "log": f"Lượt {t}: Đỏ ({icon_r}) phản công ĂN ĐỨT Xanh ({icon_b}) tại [{p_blue['col']},{p_blue['row']}]!"
-                            }
-                            log_step = clash_event["log"]
-                        else:
-                            p_blue["alive"] = False
-                            collided_r["alive"] = False
-                            clash_event = {
-                                "type": "CLASH", "col": p_blue["col"], "row": p_blue["row"],
-                                "winner": "draw", "winner_type": p_blue["type"], "loser_type": collided_r["type"],
-                                "log": f"Lượt {t}: Hai bên cùng ({icon_b}) đụng độ - Cùng bị loại tại [{p_blue['col']},{p_blue['row']}]!"
-                            }
-                            log_step = clash_event["log"]
-                    else:
-                        log_step = f"Lượt {t}: Đội Xanh điều quân ({p_blue['type']}) áp sát tọa độ [{p_blue['col']},{p_blue['row']}]."
-
-            # Kiểm tra xem Xanh đã vào cứ điểm đích [0, 8] chưa
-            if any(pb["alive"] and pb["col"] == blue_target[0] and pb["row"] == blue_target[1] for pb in blue_pieces):
-                winner_side = "team_b"
-                win_reason = "ĐỘI XANH CHIẾN THẮNG! Đột kích thành công vào Căn Cứ Đích [0, 8] của đối phương!"
-                steps.append({
-                    "step_idx": len(steps),
-                    "turn_label": f"Lượt {t}: Đột kích Cứ điểm!",
-                    "red_pieces": copy.deepcopy(red_pieces),
-                    "blue_pieces": copy.deepcopy(blue_pieces),
-                    "clash_event": {"type": "GOAL", "side": "blue", "col": 0, "row": 8, "log": win_reason},
-                    "log": win_reason,
-                    "red_alive": sum(1 for p in red_pieces if p["alive"]),
-                    "blue_alive": sum(1 for p in blue_pieces if p["alive"])
-                })
-                break
-
-            cur_r = sum(1 for p in red_pieces if p["alive"])
-            cur_b = sum(1 for p in blue_pieces if p["alive"])
-            steps.append({
-                "step_idx": len(steps),
-                "turn_label": f"Lượt {t}",
-                "red_pieces": copy.deepcopy(red_pieces),
-                "blue_pieces": copy.deepcopy(blue_pieces),
-                "clash_event": clash_event,
-                "log": log_step,
-                "red_alive": cur_r,
-                "blue_alive": cur_b
-            })
-
-            if cur_r == 0 or cur_b == 0:
-                break
-
-        final_r = sum(1 for p in red_pieces if p["alive"])
-        final_b = sum(1 for p in blue_pieces if p["alive"])
-
-        if not winner_side:
-            if final_r == 0 and final_b > 0:
-                winner_side = "team_b"
-                win_reason = f"ĐỘI XANH CHIẾN THẮNG! Đã QUÉT SẠCH toàn bộ quân Đỏ ({final_b}/9 quân sống sót)!"
-            elif final_b == 0 and final_r > 0:
-                winner_side = "team_a"
-                win_reason = f"ĐỘI ĐỎ CHIẾN THẮNG! Đã QUÉT SẠCH toàn bộ quân Xanh ({final_r}/9 quân sống sót)!"
-            elif final_r > final_b:
-                winner_side = "team_a"
-                win_reason = f"ĐỘI ĐỎ CHIẾN THẮNG! Chiếm ưu thế quân số ({final_r} quân Đỏ vs {final_b} quân Xanh)!"
-            elif final_b > final_r:
-                winner_side = "team_b"
-                win_reason = f"ĐỘI XANH CHIẾN THẮNG! Chiếm ưu thế quân số ({final_b} quân Xanh vs {final_r} quân Đỏ)!"
-            else:
-                winner_side = "draw"
-                win_reason = f"HÒA CỜ! Cả hai bên đều còn {final_r} quân trên bàn đấu."
-
-        for exe_path in (cpp_exe_a, cpp_exe_b):
-            if exe_path and os.path.exists(exe_path):
-                try: os.remove(exe_path)
-                except OSError: pass
-
-        return {
-            "winner_side": winner_side,
-            "win_reason": win_reason,
-            "board_steps": steps,
-            "final_red_alive": final_r,
-            "final_blue_alive": final_b,
-            "pref_move_a": history_a[0]["my_move"] if history_a else "ROCK",
-            "pref_move_b": history_b[0]["my_move"] if history_b else "ROCK"
-        }
+    def upgrade_tournament_rules(self, tournament_id):
+        tourn = self.tournaments[tournament_id]
+        matches = sorted(tourn.get("matches", {}).values(), key=lambda m: m.get("round_level", 1))
+        for match in matches:
+            if match.get("status") == "COMPLETED":
+                continue
+            match["max_rounds"] = 5
+            match.setdefault("tie_break_seed", uuid.uuid4().hex)
+            history = match.get("rounds_history", [])
+            if not history or not match.get("team_a") or not match.get("team_b"):
+                continue
+            for side in ("team_a", "team_b"):
+                match[side]["rounds_won"] = sum(record.get("winner") == side for record in history[:5])
+            if len(history) >= 5 or max(match["team_a"]["rounds_won"], match["team_b"]["rounds_won"]) >= 3:
+                self.complete_bracket_match(tourn, match)
 
     def play_match_round(self, tournament_id: str, match_id: str) -> dict:
         tourn = self.tournaments.get(tournament_id)
@@ -1819,7 +1478,8 @@ def decide_move(game_state):
             team_a.get("current_lang", "PYTHON"),
             team_b.get("current_lang", "PYTHON"),
             r_num,
-            tourn.get("stage_rule", "STAGE_1_STANDARD")
+            tourn.get("stage_rule", "STAGE_1_STANDARD"),
+            uuid.uuid4().hex
         )
 
         winner_side = sim_res["winner_side"]
@@ -1852,19 +1512,21 @@ def decide_move(game_state):
                 "side": "team_a",
                 "team_name": team_a["team_name"],
                 "lang": team_a.get("current_lang", "PYTHON"),
-                "status": "EXECUTED",
+                "status": "FAILED" if sim_res["bot_errors"]["team_a"] else "EXECUTED",
+                "error": sim_res["bot_errors"]["team_a"],
                 "preferred_move": sim_res["pref_move_a"],
                 "submission_id": sub_a_id,
-                "log": f"Bot {team_a['team_name']} (Đỏ) thực thi thành công trong Sandbox: Nước cờ ưu tiên [{sim_res['pref_move_a']}]."
+                "log": f"Bot {team_a['team_name']} (Đỏ): lỗi thực thi, bị xử thua." if sim_res["bot_errors"]["team_a"] else f"Bot {team_a['team_name']} (Đỏ) thực thi thành công: [{sim_res['pref_move_a']}]."
             },
             {
                 "side": "team_b",
                 "team_name": team_b["team_name"],
                 "lang": team_b.get("current_lang", "PYTHON"),
-                "status": "EXECUTED",
+                "status": "FAILED" if sim_res["bot_errors"]["team_b"] else "EXECUTED",
+                "error": sim_res["bot_errors"]["team_b"],
                 "preferred_move": sim_res["pref_move_b"],
                 "submission_id": sub_b_id,
-                "log": f"Bot {team_b['team_name']} (Xanh) thực thi thành công trong Sandbox: Nước cờ ưu tiên [{sim_res['pref_move_b']}]."
+                "log": f"Bot {team_b['team_name']} (Xanh): lỗi thực thi, bị xử thua." if sim_res["bot_errors"]["team_b"] else f"Bot {team_b['team_name']} (Xanh) thực thi thành công: [{sim_res['pref_move_b']}]."
             }
         ]
 
@@ -1891,9 +1553,11 @@ def decide_move(game_state):
             "team_a_move": sim_res["pref_move_a"],
             "team_b_move": sim_res["pref_move_b"],
             "winner": winner_side,
-            "winner_name": team_a["team_name"] if winner_side == "team_a" else (team_b["team_name"] if winner_side == "team_b" else "Hòa"),
+            "winner_name": team_a["team_name"] if winner_side == "team_a" else team_b["team_name"],
             "win_reason": win_reason,
-            "damage": damage if winner_side != "draw" else 0,
+            "damage": damage,
+            "first_side": sim_res["first_side"],
+            "tie_break_seed": sim_res["tie_break_seed"],
             "final_red_alive": sim_res["final_red_alive"],
             "final_blue_alive": sim_res["final_blue_alive"],
             "board_steps": sim_res["board_steps"],
@@ -1907,48 +1571,9 @@ def decide_move(game_state):
         match["battle_running"] = False
 
         is_completed = False
-        if team_a["rounds_won"] >= 4 or team_b["rounds_won"] >= 4 or r_num >= match["max_rounds"]:
+        if team_a["rounds_won"] >= 3 or team_b["rounds_won"] >= 3 or r_num >= match["max_rounds"]:
             is_completed = True
-            match["status"] = "COMPLETED"
-            match["round_status"] = "COMPLETED"
-            if team_a["rounds_won"] > team_b["rounds_won"]:
-                match["winner"] = "team_a"
-                match["winner_name"] = team_a["team_name"]
-                win_team = team_a
-            elif team_b["rounds_won"] > team_a["rounds_won"]:
-                match["winner"] = "team_b"
-                match["winner_name"] = team_b["team_name"]
-                win_team = team_b
-            else:
-                if team_a["hp"] >= team_b["hp"]:
-                    match["winner"] = "team_a"
-                    match["winner_name"] = team_a["team_name"]
-                    win_team = team_a
-                else:
-                    match["winner"] = "team_b"
-                    match["winner_name"] = team_b["team_name"]
-                    win_team = team_b
-
-            next_m_id = match.get("next_match_id")
-            if next_m_id and next_m_id in tourn["matches"]:
-                next_m = tourn["matches"][next_m_id]
-                slot = match.get("next_slot", "team_a")
-                advanced_team = copy.deepcopy(win_team)
-                advanced_team["authenticated"] = True
-                advanced_team["rounds_won"] = 0
-                advanced_team["hp"] = 100
-                advanced_team["code_submitted"] = False
-                advanced_team["code_valid"] = False
-                advanced_team["validation_error"] = None
-                advanced_team["active_submission_id"] = None
-                next_m["all_teams_ready"] = False
-                next_m[slot] = advanced_team
-                if next_m["team_a"] and next_m["team_b"]:
-                    next_m["status"] = "READY"
-            else:
-                tourn["champion"] = match["winner_name"]
-                tourn["status"] = "FINISHED"
-
+            self.complete_bracket_match(tourn, match)
         else:
             # Round hoàn tất, chuẩn bị thời gian hiển thị kết quả 5 giây
             match["status"] = "IN_PROGRESS"

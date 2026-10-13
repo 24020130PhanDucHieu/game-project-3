@@ -172,7 +172,7 @@ function applyTournamentSnapshot(data) {
   if (champPill) champPill.style.display = data.champion ? "flex" : "none";
   const modalMgr = document.getElementById("modal-manage-teams");
   if (modalMgr && modalMgr.style.display !== "none") renderTeamManagerTable();
-  renderBracketTree(data); renderDashboardOverview();
+  renderBracketTree(data); renderDashboardOverview(); renderStageTimeline(data);
   const stages = { STAGE_1_STANDARD: "Luật Chuẩn", STAGE_2_MUTATED: "Luật Biến Đổi", STAGE_3_REVERSE_FOG: "Luật Sương Mù", STAGE_4_FINALS: "Luật Chung Kết" };
   const stageLabel = document.getElementById("sidebar-stage-text");
   if (stageLabel) stageLabel.textContent = `Hiệp ${data.matches?.[currentActiveMatchId]?.current_round_idx || 1} · ${stages[data.stage_rule] || stages.STAGE_1_STANDARD}`;
