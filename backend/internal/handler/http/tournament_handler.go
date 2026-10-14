@@ -36,7 +36,11 @@ func (h *TournamentHandler) GetAll(c *gin.Context) {
 }
 
 func (h *TournamentHandler) GetList(c *gin.Context) {
-	list := h.service.GetTournamentList()
+	list, err := h.service.GetTournamentListChecked()
+	if err != nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"code": "DATABASE_UNAVAILABLE", "detail": "Không thể tải danh sách giải. Vui lòng thử lại."})
+		return
+	}
 	c.JSON(http.StatusOK, list)
 }
 
@@ -47,6 +51,8 @@ func (h *TournamentHandler) GetByID(c *gin.Context) {
 		status := http.StatusServiceUnavailable
 		if errors.Is(err, repository.ErrTournamentNotFound) {
 			status = http.StatusNotFound
+			c.JSON(status, gin.H{"code": "TOURNAMENT_NOT_FOUND", "tournament_id": id, "detail": err.Error()})
+			return
 		}
 		c.JSON(status, gin.H{"detail": err.Error()})
 		return

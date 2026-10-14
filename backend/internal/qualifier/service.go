@@ -124,6 +124,13 @@ func (s *Service) Events() ([]Event, error) {
 }
 func (s *Service) Participants(id string) (map[string]Participant, error) {
 	rows, err := s.Store.List("participant:" + id + ":")
+	return decodeParticipants(rows, err)
+}
+func (s *Service) ParticipantSummaries(id string) (map[string]Participant, error) {
+	rows, err := s.Store.ListMetadata("participant:"+id+":", "")
+	return decodeParticipants(rows, err)
+}
+func decodeParticipants(rows map[string]json.RawMessage, err error) (map[string]Participant, error) {
 	if err != nil {
 		return nil, err
 	}
@@ -352,7 +359,7 @@ func (s *Service) Ranked(id string) ([]Participant, error) {
 	if err != nil {
 		return nil, err
 	}
-	people, err := s.Participants(id)
+	people, err := s.ParticipantSummaries(id)
 	if err != nil {
 		return nil, err
 	}

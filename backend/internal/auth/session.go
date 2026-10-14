@@ -25,6 +25,7 @@ type Session struct {
 
 type Manager struct {
 	ValidateStudent func(string) bool
+	CheckStudent    func(string) (bool, error)
 	mu              sync.RWMutex
 	key             []byte
 	revoked         map[string]time.Time
@@ -72,32 +73,46 @@ func (m *Manager) Create(session Session) (string, error) {
 }
 
 func (m *Manager) Get(token string) (Session, bool) {
+	session, ok, _ := m.GetChecked(token)
+	return session, ok
+}
+
+func (m *Manager) GetChecked(token string) (Session, bool, error) {
 	parts := strings.Split(token, ".")
 	if len(parts) != 2 {
-		return Session{}, false
+		return Session{}, false, nil
 	}
 	sig, err := base64.RawURLEncoding.DecodeString(parts[1])
 	if err != nil || !hmac.Equal(sig, m.signature(parts[0])) {
-		return Session{}, false
+		return Session{}, false, nil
 	}
 	data, err := base64.RawURLEncoding.DecodeString(parts[0])
 	if err != nil {
-		return Session{}, false
+		return Session{}, false, nil
 	}
 	var session Session
 	if json.Unmarshal(data, &session) != nil || session.Nonce == "" || !time.Now().Before(session.ExpiresAt) {
-		return Session{}, false
+		return Session{}, false, nil
 	}
 	if session.Role != "ADMIN" && (session.Role != "TEAM" || session.StudentID == "") {
-		return Session{}, false
+		return Session{}, false, nil
 	}
 	m.mu.RLock()
 	_, revoked := m.revoked[token]
 	m.mu.RUnlock()
 	if !revoked && session.Role == "TEAM" && m.ValidateStudent != nil && !m.ValidateStudent(session.StudentID) {
-		return Session{}, false
+		return Session{}, false, nil
 	}
-	return session, !revoked
+	if !revoked && session.Role == "TEAM" && m.CheckStudent != nil {
+		valid, err := m.CheckStudent(session.StudentID)
+		if err != nil {
+			return Session{}, false, err
+		}
+		if !valid {
+			return Session{}, false, nil
+		}
+	}
+	return session, !revoked, nil
 }
 
 func (m *Manager) Revoke(token string) {

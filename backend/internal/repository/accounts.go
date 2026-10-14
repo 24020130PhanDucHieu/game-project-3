@@ -55,7 +55,7 @@ func NewAccounts(repo TournamentRepository, path string) (*Accounts, error) {
 		if secret == "" {
 			return nil, errors.New("Configure ACCOUNT_ENCRYPTION_KEY or SESSION_SECRET or ADMIN_PASSWORD")
 		}
-		if _, err := s.db.Exec(`CREATE TABLE IF NOT EXISTS arena_accounts (student_id TEXT PRIMARY KEY, data JSONB NOT NULL)`); err != nil {
+		if _, err := s.db.Exec(`CREATE TABLE IF NOT EXISTS arena_accounts (student_id TEXT PRIMARY KEY, data JSONB NOT NULL); ALTER TABLE arena_accounts ENABLE ROW LEVEL SECURITY`); err != nil {
 			return nil, err
 		}
 	} else {

@@ -48,6 +48,13 @@ func (s *TournamentService) GetTournamentList() []model.TournamentSummary {
 	return s.repo.GetList()
 }
 
+func (s *TournamentService) GetTournamentListChecked() ([]model.TournamentSummary, error) {
+	if pg, ok := s.repo.(*repository.PostgresTournamentRepository); ok {
+		return pg.GetListChecked()
+	}
+	return s.repo.GetList(), nil
+}
+
 func (s *TournamentService) ValidateCode(params map[string]interface{}) (map[string]interface{}, error) {
 	return s.adapter.Mutate(nil, "validate-code", params)
 }

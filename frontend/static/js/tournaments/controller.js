@@ -136,6 +136,10 @@ async function refreshTournamentSnapshot(tournamentId, showErrors = false) {
         const response = await fetch(`${API_BASE}/api/tournaments/${encodeURIComponent(tournamentId)}`, { cache: "no-store" });
         if (tournamentId !== currentTournamentId) return null;
         if (response.status === 404) {
+          const missing = await response.json().catch(() => null);
+          if (missing?.code !== "TOURNAMENT_NOT_FOUND" || missing.tournament_id !== tournamentId) {
+            throw new Error("Máy chủ tạm thời không phản hồi đúng. Giữ nguyên giải đang chọn; hãy thử lại.");
+          }
           resetSelectedMatch(); currentTournamentId = currentTournamentData = null;
           sessionStorage.removeItem("activeTournamentId"); localStorage.removeItem("activeTournamentId");
           document.getElementById("bracket-tree-canvas").textContent = "Giải đã được xóa. Hãy chọn giải khác.";

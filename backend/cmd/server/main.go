@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -27,10 +28,10 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// 1. Data Repository & External Adapters (Tự động hỗ trợ Neon PostgreSQL trên Render hoặc JSON cục bộ)
+	// 1. Data Repository & External Adapters (Tự động hỗ trợ PostgreSQL (Supabase compatible) trên Render hoặc JSON cục bộ)
 	var tournamentRepo repository.TournamentRepository
 	if cfg.DatabaseURL != "" {
-		log.Println("[Database] Phát hiện cấu hình DATABASE_URL, đang kết nối Neon PostgreSQL...")
+		log.Println("[Database] Phát hiện cấu hình DATABASE_URL, đang kết nối PostgreSQL (Supabase compatible)...")
 		pgRepo, err := repository.NewPostgresTournamentRepository(cfg.DatabaseURL)
 		if err != nil {
 			if cfg.Environment == "production" {
@@ -39,7 +40,7 @@ func main() {
 			log.Printf("[Database Cảnh Báo] Lỗi kết nối PostgreSQL (%v), tự động chuyển về JSON store", err)
 			tournamentRepo = repository.NewJSONTournamentRepository(cfg.DBPath)
 		} else {
-			log.Println("[Database] Kết nối thành công Neon PostgreSQL Database (Hiệu năng cao + In-memory Cache)!")
+			log.Println("[Database] Kết nối thành công PostgreSQL (Supabase compatible) Database (Hiệu năng cao + In-memory Cache)!")
 			tournamentRepo = pgRepo
 		}
 	} else {
@@ -73,7 +74,13 @@ func main() {
 	}
 	mHandler.Accounts = accounts
 	mHandler.AccountSync = aHandler.ImportLegacy
-	sessions.ValidateStudent = func(id string) bool { a, err := accounts.Get(id); return err == nil && !a.Deleted }
+	sessions.CheckStudent = func(id string) (bool, error) {
+		a, err := accounts.Get(id)
+		if errors.Is(err, repository.ErrAccountMissing) {
+			return false, nil
+		}
+		return err == nil && !a.Deleted, err
+	}
 	qualifierStore, err := repository.NewQualifierRecords(tournamentRepo, filepath.Join(filepath.Dir(cfg.DBPath), "qualifier_store"))
 	if err != nil {
 		log.Fatalf("Could not initialize qualifier storage: %v", err)
@@ -233,7 +240,16 @@ func optionalSession(manager *auth.Manager) gin.HandlerFunc {
 		if token == "" {
 			token = c.Query("token")
 		}
-		if session, ok := manager.Get(token); ok {
+		if _, exists := c.Get("session"); exists {
+			c.Next()
+			return
+		}
+		session, ok, err := manager.GetChecked(token)
+		if err != nil {
+			c.AbortWithStatusJSON(503, gin.H{"code": "DATABASE_UNAVAILABLE", "detail": "Session verification temporarily unavailable"})
+			return
+		}
+		if ok {
 			c.Set("session", session)
 		}
 		c.Next()
@@ -246,7 +262,16 @@ func requireSession(manager *auth.Manager, adminOnly, matchScoped bool) gin.Hand
 		if token == "" {
 			token = c.Query("token")
 		}
-		session, ok := manager.Get(token)
+		value, exists := c.Get("session")
+		session, ok := value.(auth.Session)
+		if !exists || !ok {
+			var err error
+			session, ok, err = manager.GetChecked(token)
+			if err != nil {
+				c.AbortWithStatusJSON(503, gin.H{"code": "DATABASE_UNAVAILABLE", "detail": "Session verification temporarily unavailable"})
+				return
+			}
+		}
 		if !ok {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"detail": "A valid tournament session is required"})
 			return

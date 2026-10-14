@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 )
 
 // Separate records keep source code and job results out of tournament snapshots.
@@ -23,7 +24,23 @@ type QualifierRecords struct {
 	dir    string
 	items  map[string]json.RawMessage
 	failed error
+	views  map[string]qualifierView
 }
+type qualifierView struct {
+	prefix  string
+	expires time.Time
+	rows    map[string]json.RawMessage
+	size    int
+}
+
+func cloneQualifierRows(rows map[string]json.RawMessage) map[string]json.RawMessage {
+	result := make(map[string]json.RawMessage, len(rows))
+	for key, raw := range rows {
+		result[key] = append(json.RawMessage(nil), raw...)
+	}
+	return result
+}
+
 type recordFile struct {
 	Key  string          `json:"key"`
 	Data json.RawMessage `json:"data"`
@@ -33,7 +50,10 @@ func NewQualifierRecords(repo TournamentRepository, dir string) (*QualifierRecor
 	s := &QualifierRecords{dir: dir, items: map[string]json.RawMessage{}}
 	if pg, ok := repo.(*PostgresTournamentRepository); ok {
 		s.db = pg.db
-		_, err := s.db.Exec(`CREATE TABLE IF NOT EXISTS arena_qualifier_records (key TEXT PRIMARY KEY, data JSONB NOT NULL)`)
+		_, err := s.db.Exec(`CREATE TABLE IF NOT EXISTS arena_qualifier_records (key TEXT PRIMARY KEY, data JSONB NOT NULL); ALTER TABLE arena_qualifier_records ENABLE ROW LEVEL SECURITY`)
+		if err == nil {
+			_, err = s.db.Exec(`CREATE INDEX IF NOT EXISTS idx_qualifier_prefix ON arena_qualifier_records(key text_pattern_ops); CREATE INDEX IF NOT EXISTS idx_qualifier_job_a ON arena_qualifier_records ((data->>'a')); CREATE INDEX IF NOT EXISTS idx_qualifier_job_b ON arena_qualifier_records ((data->>'b'))`)
+		}
 		return s, err
 	}
 	if err := os.MkdirAll(dir, 0700); err != nil {
@@ -90,11 +110,69 @@ func (s *QualifierRecords) Get(key string, target interface{}) error {
 	return json.Unmarshal(raw, target)
 }
 func (s *QualifierRecords) List(prefix string) (map[string]json.RawMessage, error) {
+	return s.list(prefix, false, "")
+}
+
+// ListMetadata projects source code out inside PostgreSQL, before network transfer.
+// studentID restricts job results to the requesting team.
+func (s *QualifierRecords) ListMetadata(prefix, studentID string) (map[string]json.RawMessage, error) {
+	return s.list(prefix, true, studentID)
+}
+
+func (s *QualifierRecords) list(prefix string, metadata bool, studentID string) (map[string]json.RawMessage, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	cacheKey := prefix + "\x00" + studentID
+	if metadata {
+		if view, ok := s.views[cacheKey]; ok && time.Now().Before(view.expires) {
+			return cloneQualifierRows(view.rows), nil
+		}
+	}
+	cacheResult := func(rows map[string]json.RawMessage, err error) (map[string]json.RawMessage, error) {
+		if err != nil {
+			return nil, err
+		}
+		if metadata {
+			size := 0
+			for key, raw := range rows {
+				size += len(key) + len(raw)
+			}
+			if size <= 4*1024*1024 {
+				if s.views == nil {
+					s.views = map[string]qualifierView{}
+				}
+				total := size
+				for key, view := range s.views {
+					if time.Now().After(view.expires) {
+						delete(s.views, key)
+					} else {
+						total += view.size
+					}
+				}
+				if total > 16*1024*1024 || len(s.views) >= 128 {
+					s.views = map[string]qualifierView{}
+				}
+				s.views[cacheKey] = qualifierView{prefix, time.Now().Add(5 * time.Second), cloneQualifierRows(rows), size}
+			}
+		}
+		return rows, nil
+	}
 	result := map[string]json.RawMessage{}
 	if s.db != nil {
-		rows, err := s.db.Query(`SELECT key,data FROM arena_qualifier_records WHERE starts_with(key,$1)`, prefix)
+		projection := "data"
+		if metadata {
+			projection = "data - 'code'"
+		}
+		query := "SELECT key," + projection + " FROM arena_qualifier_records WHERE key LIKE $1"
+		pattern := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(prefix) + "%"
+		args := []interface{}{pattern}
+		if studentID != "" {
+			query += " AND (data->>'a'=$2 OR data->>'b'=$2)"
+			args = append(args, studentID)
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
+		defer cancel()
+		rows, err := s.db.QueryContext(ctx, query, args...)
 		if err != nil {
 			return nil, err
 		}
@@ -107,18 +185,47 @@ func (s *QualifierRecords) List(prefix string) (map[string]json.RawMessage, erro
 			}
 			result[key] = raw
 		}
-		return result, rows.Err()
+		return cacheResult(result, rows.Err())
 	}
 	for key, raw := range s.items {
 		if strings.HasPrefix(key, prefix) {
+			if metadata {
+				var value map[string]json.RawMessage
+				if err := json.Unmarshal(raw, &value); err != nil {
+					return nil, err
+				}
+				if studentID != "" {
+					var a, b string
+					json.Unmarshal(value["a"], &a)
+					json.Unmarshal(value["b"], &b)
+					if a != studentID && b != studentID {
+						continue
+					}
+				}
+				delete(value, "code")
+				var err error
+				raw, err = json.Marshal(value)
+				if err != nil {
+					return nil, err
+				}
+			}
 			result[key] = append(json.RawMessage(nil), raw...)
 		}
 	}
-	return result, nil
+	return cacheResult(result, nil)
 }
 func (s *QualifierRecords) Batch(values map[string]interface{}) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	// Invalidate before writing: an uncertain commit must never leave stale views.
+	for cacheKey, view := range s.views {
+		for key := range values {
+			if strings.HasPrefix(key, view.prefix) {
+				delete(s.views, cacheKey)
+				break
+			}
+		}
+	}
 	if s.failed != nil {
 		return s.failed
 	}

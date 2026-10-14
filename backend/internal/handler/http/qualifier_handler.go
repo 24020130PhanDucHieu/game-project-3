@@ -1,7 +1,9 @@
 package http
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"project-tuan3/internal/qualifier"
@@ -63,12 +65,13 @@ func (h *QualifierHandler) Detail(c *gin.Context) {
 		sid = c.Query("student_id")
 	}
 	if sid != "" {
-		people, err := h.Service.Participants(id)
-		if err != nil {
+		var participant qualifier.Participant
+		err := h.Service.Store.Get("participant:"+id+":"+sid, &participant)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
 			qualifierError(c, err)
 			return
 		}
-		response["participant"] = people[sid]
+		response["participant"] = participant
 		records, err := h.Service.Store.List("submission:" + id + ":" + sid + ":")
 		if err != nil {
 			qualifierError(c, err)
@@ -85,7 +88,7 @@ func (h *QualifierHandler) Detail(c *gin.Context) {
 		}
 		sort.Slice(history, func(i, j int) bool { return history[i].At > history[j].At })
 		response["history"] = history
-		jobs, err := h.Service.Store.List("job:" + id + ":")
+		jobs, err := h.Service.Store.ListMetadata("job:"+id+":", sid)
 		if err != nil {
 			qualifierError(c, err)
 			return
@@ -173,7 +176,7 @@ func (h *QualifierHandler) Teams(c *gin.Context) {
 		qualifierError(c, err)
 		return
 	}
-	people, err := h.Service.Participants(id)
+	people, err := h.Service.ParticipantSummaries(id)
 	if err != nil {
 		qualifierError(c, err)
 		return

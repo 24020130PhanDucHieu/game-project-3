@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -21,18 +23,25 @@ type PostgresTournamentRepository struct {
 }
 
 func NewPostgresTournamentRepository(databaseURL string) (*PostgresTournamentRepository, error) {
+	parsed, parseErr := url.Parse(databaseURL)
+	if parseErr == nil && strings.HasSuffix(parsed.Hostname(), ".pooler.supabase.com") && parsed.Port() == "6543" {
+		return nil, fmt.Errorf("Supabase requires the Session pooler on port 5432: qualifier coordination uses session advisory locks")
+	}
 	db, err := sql.Open("postgres", databaseURL)
 	if err != nil {
 		return nil, fmt.Errorf("lỗi kết nối postgres: %w", err)
 	}
 
-	// Cấu hình Connection Pool cho Neon Serverless
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(5)
+	// Cấu hình Connection Pool cho PostgreSQL / Supabase
+	db.SetMaxOpenConns(8)
+	db.SetMaxIdleConns(2)
 	db.SetConnMaxLifetime(5 * time.Minute)
 
-	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("lỗi ping cơ sở dữ liệu Neon Postgres: %w", err)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	if err := db.PingContext(ctx); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("lỗi ping cơ sở dữ liệu PostgreSQL: %w", err)
 	}
 
 	repo := &PostgresTournamentRepository{
@@ -41,6 +50,7 @@ func NewPostgresTournamentRepository(databaseURL string) (*PostgresTournamentRep
 	}
 
 	if err := repo.migrateSchema(); err != nil {
+		db.Close()
 		return nil, fmt.Errorf("lỗi khởi tạo bảng postgres: %w", err)
 	}
 
@@ -63,6 +73,7 @@ func (r *PostgresTournamentRepository) migrateSchema() error {
 		updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 	);
 	CREATE INDEX IF NOT EXISTS idx_tournaments_updated_at ON tournaments(updated_at DESC);
+	ALTER TABLE tournaments ENABLE ROW LEVEL SECURITY;
 	`
 	_, err := r.db.Exec(query)
 	return err

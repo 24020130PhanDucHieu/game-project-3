@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"sync"
+	"sync/atomic"
 )
 
 func (s *Service) launch(id string) {
@@ -198,13 +199,19 @@ func (s *Service) run(id string) error {
 		queue := make(chan Job, len(jobs))
 		failures := make(chan error, len(jobs))
 		var wg sync.WaitGroup
+		var stopped atomic.Bool
 		for n := 0; n < workers; n++ {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
 				for job := range queue {
+					if stopped.Load() {
+						return
+					}
 					if err := s.play(id, job, people); err != nil {
+						stopped.Store(true)
 						failures <- err
+						return
 					}
 				}
 			}()
