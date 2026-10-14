@@ -16,6 +16,8 @@ Nút **Tạo bot thử nghiệm** riêng cạnh nút tạo vòng loại cho phé
 
 Khóa bài → bắt đầu. Chỉ chạy khi có ít nhất K bot hợp lệ, tài khoản chưa bị xóa tại thời điểm khóa. Nếu máy chủ worker gặp lỗi truyền tải, mỗi trận thử tối đa 3 lần rồi vòng loại tạm dừng; Admin dùng nút Bắt đầu / tiếp tục sau khi sửa worker. Kết quả đã xong được giữ lại.
 
+Nếu vòng loại đã khóa nhưng bộ đếm không khớp với các bài hợp lệ đã lưu, máy chủ đối soát lại khi khởi động. Admin cũng có nút **Kiểm tra lại bài đã khóa** khi chưa đủ K bot. Chỉ giải chưa có lượt đấu, tiến độ hoặc bản ghi ghép cặp mới được đối soát; bài đã khóa được giữ nguyên, bộ đếm được tính lại không cộng dồn. Thao tác tạo bot mẫu và khóa bài dùng cùng khóa PostgreSQL để không chạy đồng thời giữa nhiều tiến trình.
+
 Mỗi lượt mỗi đội được ghép với một đối thủ bằng seed đã lưu, hạn chế gặp lại đối thủ. Một cặp đấu **một hiệp bàn cờ** với luật thắng/thua đã áp dụng; ưu tiên cân bằng số lần đi trước. Số đội lẻ có một lượt nghỉ, ưu tiên đội ít nghỉ nhất; lượt nghỉ không cộng thắng/ELO. Lượt vòng loại khác với hiệp Bo5 của giải chính.
 
 ELO khởi đầu 1200; K=32, `R mới = R cũ + 32 × (kết quả - xác suất thắng)`. Mỗi lượt dùng rating ở đầu lượt cho mọi trận; sau khi tất cả trận xong mới cập nhật rating bằng một giao dịch. Thứ tự worker hoàn tất không thay đổi ELO. Đồng ELO xét số trận thắng, ELO trung bình đối thủ, cuối cùng thứ tự bốc thăm cố định theo seed. Mỗi vòng loại có BXH riêng.

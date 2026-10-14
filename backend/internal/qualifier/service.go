@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"sort"
 	"strings"
@@ -224,19 +225,43 @@ func (s *Service) Submit(id, sid, code, language string) (Submission, error) {
 func (s *Service) Freeze(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	// Serialize against bot generation on other gateway processes as well.
+	release, err := s.Store.Lease(id)
+	if err != nil {
+		return err
+	}
+	defer release()
 	e, err := s.Event(id)
 	if err != nil {
 		return err
 	}
-	if e.Status != "OPEN" {
-		return errors.New("Vòng loại đã khóa.")
+	if e.Status != "OPEN" && e.Status != "LOCKED" {
+		return errors.New("Không thể khóa lại vòng loại đã bắt đầu thi đấu.")
 	}
+	if e.CurrentRound != 0 || e.AppliedRound != 0 || e.Completed != 0 || e.Total != 0 {
+		return errors.New("Vòng loại đã có tiến độ thi đấu; không thay đổi bài đã khóa.")
+	}
+	jobs, err := s.Store.List("job:" + id + ":")
+	if err != nil {
+		return err
+	}
+	if len(jobs) != 0 {
+		return errors.New("Vòng loại đã được ghép cặp; không thay đổi bài đã khóa.")
+	}
+	wasLocked, previousEligible := e.Status == "LOCKED", e.Eligible
+	// Derive the count from saved participants, never from a previous counter.
+	e.Eligible = 0
+	e.Error = ""
 	people, err := s.Participants(id)
 	if err != nil {
 		return err
 	}
 	rows := map[string]interface{}{}
 	for sid, p := range people {
+		if p.LockedID != "" {
+			e.Eligible++
+			continue
+		}
 		active := p.TestBot
 		if !p.TestBot {
 			a, err := s.Accounts.Get(sid)
@@ -256,7 +281,13 @@ func (s *Service) Freeze(id string) error {
 		e.Error = fmt.Sprintf("Chỉ có %d bot hợp lệ; cần ít nhất %d để chọn top.", e.Eligible, e.TopK)
 	}
 	rows[metaKey(id)] = e
-	return s.Store.Batch(rows)
+	if err := s.Store.Batch(rows); err != nil {
+		return err
+	}
+	if wasLocked && previousEligible != e.Eligible {
+		log.Printf("[Qualifier] Reconciled frozen entrants event=%s previous=%d eligible=%d registered=%d", id, previousEligible, e.Eligible, len(people))
+	}
+	return nil
 }
 func (s *Service) Start(id string) error {
 	s.mu.Lock()
@@ -284,6 +315,11 @@ func (s *Service) Recover() error {
 		return err
 	}
 	for _, e := range events {
+		if e.Status == "LOCKED" && e.CurrentRound == 0 && e.AppliedRound == 0 && e.Completed == 0 && e.Total == 0 {
+			if err := s.Freeze(e.ID); err != nil {
+				log.Printf("[Qualifier] Cannot reconcile frozen event=%s: %v", e.ID, err)
+			}
+		}
 		if e.Status == "RUNNING" {
 			s.launch(e.ID)
 		}

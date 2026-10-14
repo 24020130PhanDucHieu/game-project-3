@@ -46,7 +46,9 @@ async function loadQualifierPage() {
     document.getElementById('qualifier-summary').textContent=`${qualifierPhaseLabels[e.status]} · Hạn: ${new Date(e.deadline*1000).toLocaleString('vi-VN')} · ${e.eligible} bot đã khóa · Lượt ${e.current_round}/${e.rounds} · ${e.completed}/${e.total} trận · Top ${e.top_k}${e.error?' · '+e.error:''}`;
     const progress=document.getElementById('qualifier-progress');progress.max=Math.max(1,e.total);progress.value=e.completed;
     document.getElementById('qualifier-config').disabled=e.status!=='OPEN';
-    document.getElementById('qualifier-freeze').disabled=e.status!=='OPEN';
+    const repairLock=e.status==='LOCKED'&&e.current_round===0&&e.applied_round===0&&e.completed===0&&e.total===0&&e.eligible<e.top_k;
+    document.getElementById('qualifier-freeze').disabled=e.status!=='OPEN'&&!repairLock;
+    document.getElementById('qualifier-freeze').textContent=repairLock?'Kiểm tra lại bài đã khóa':'Khóa bài nộp';
     document.getElementById('qualifier-start').disabled=!['LOCKED','PAUSED'].includes(e.status)||e.eligible<e.top_k;
     document.getElementById('qualifier-promote').disabled=e.status!=='FINISHED';
     renderQualifierOwn(data);

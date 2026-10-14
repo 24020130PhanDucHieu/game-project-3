@@ -173,8 +173,12 @@ func TestLastValidSubmissionDeadlineAndFreeze(t *testing.T) {
 	if people["12340001"].LockedID != good.ID {
 		t.Fatal("wrong snapshot frozen")
 	}
-	if s.Freeze(e.ID) == nil {
-		t.Fatal("re-froze snapshot")
+	if err := s.Freeze(e.ID); err != nil {
+		t.Fatal(err)
+	}
+	locked, _ := s.Event(e.ID)
+	if locked.Eligible != 1 {
+		t.Fatal("duplicate frozen count", locked.Eligible)
 	}
 	if s.Start(e.ID) == nil {
 		t.Fatal("started with fewer than K entrants")
@@ -206,6 +210,14 @@ func TestExplicitTestBotsAndCapacity(t *testing.T) {
 	if s.GenerateTestBots(e.ID, 1) == nil {
 		t.Fatal("capacity exceeded")
 	}
+	// Reproduce the reported persisted state: 2,000 valid test bots but
+	// metadata says LOCKED with zero eligible and no jobs ever scheduled.
+	e.Status = "LOCKED"
+	e.Eligible = 0
+	e.Error = "Chỉ có 0 bot hợp lệ"
+	if err := s.Store.Batch(map[string]interface{}{metaKey(e.ID): e}); err != nil {
+		t.Fatal(err)
+	}
 	if err := s.Freeze(e.ID); err != nil {
 		t.Fatal(err)
 	}
@@ -215,5 +227,28 @@ func TestExplicitTestBotsAndCapacity(t *testing.T) {
 	e, _ = s.Event(e.ID)
 	if e.Eligible != 2000 {
 		t.Fatal(e.Eligible)
+	}
+	if e.Error != "" {
+		t.Fatal(e.Error)
+	}
+	people, _ = s.Participants(e.ID)
+	for _, p := range people {
+		if p.LockedID != p.ValidID || p.LockedID == "" {
+			t.Fatal("bot not frozen", p.SID)
+		}
+	}
+	if err := s.Freeze(e.ID); err != nil {
+		t.Fatal(err)
+	}
+	e, _ = s.Event(e.ID)
+	if e.Eligible != 2000 {
+		t.Fatal("double counted", e.Eligible)
+	}
+	// Existing pairing records prohibit any replacement of snapshots.
+	if err := s.Store.Batch(map[string]interface{}{jobPrefix(e.ID, 1) + "0001": Job{ID: "existing", Status: "PENDING"}}); err != nil {
+		t.Fatal(err)
+	}
+	if s.Freeze(e.ID) == nil {
+		t.Fatal("re-froze already paired event")
 	}
 }

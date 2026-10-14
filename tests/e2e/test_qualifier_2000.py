@@ -141,14 +141,30 @@ def run_ui(server, admin):
         expect(organizer.locator('#qualifier-test-dialog')).not_to_be_visible()
         bots=api('GET',f"/api/qualifiers/{demo['id']}/teams",token=admin)
         assert bots['total']==8 and all(p['test_bot'] for p in bots['items'])
+        # Reproduce persisted LOCKED/zero eligible despite valid test bots,
+        # then verify startup repairs the same participants without recreating.
+        server.gateway.terminate()
+        server.gateway.wait(timeout=10)
+        demo['status']='LOCKED'
+        demo['eligible']=0
+        demo['error']='Chỉ có 0 bot hợp lệ; cần ít nhất 8 để chọn top.'
+        write_record(server.directory/'qualifier_store',f"event:{demo['id']}",demo)
+        server.start_gateway()
+        repaired=api('GET',f"/api/qualifiers/{demo['id']}")['event']
+        assert repaired['status']=='LOCKED' and repaired['eligible']==8 and not repaired.get('error'),repaired
+        frozen=api('GET',f"/api/qualifiers/{demo['id']}/teams",token=admin)
+        assert frozen['total']==8 and all(p['status']=='LOCKED' for p in frozen['items'])
         api('POST',f"/api/qualifiers/{demo['id']}/actions/freeze",{},admin)
-        api('POST',f"/api/qualifiers/{demo['id']}/actions/start",{},admin)
+        assert api('GET',f"/api/qualifiers/{demo['id']}")['event']['eligible']==8
+        expect(organizer.locator('#qualifier-start')).to_be_enabled(timeout=15000)
+        organizer.locator('#qualifier-start').click()
         limit=time.time()+60
         while time.time()<limit:
             demo_state=api('GET',f"/api/qualifiers/{demo['id']}")['event']
             if demo_state['status'] in ('FINISHED','PAUSED'):break
             time.sleep(1)
         assert demo_state['status']=='FINISHED',demo_state
+        api('POST',f"/api/qualifiers/{demo['id']}/actions/freeze",{},admin,expected=400)
         # All five stages of a 32-team tournament accept schedules.
         cup32=api('POST','/api/tournaments/create',{'name':'Schedule 32','num_teams':32},admin)['tournament']
         organizer.evaluate('(id)=>{currentTournamentId=id;return loadActiveTournament(id)}',cup32['tournament_id'])

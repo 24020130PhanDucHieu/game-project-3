@@ -37,6 +37,11 @@ func (s *Service) Register(id, sid string) error {
 func (s *Service) GenerateTestBots(id string, count int) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	release, err := s.Store.Lease(id)
+	if err != nil {
+		return err
+	}
+	defer release()
 	e, err := s.Event(id)
 	if err != nil {
 		return err
