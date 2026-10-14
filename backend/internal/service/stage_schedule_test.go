@@ -54,3 +54,24 @@ func TestStageScheduleValidatesPersistsAndGuards(t *testing.T) {
 		t.Fatal("accepted invalid end")
 	}
 }
+
+func TestAddMissingScheduleToPlayedRoundOf32(t *testing.T) {
+	repo := repository.NewJSONTournamentRepository(filepath.Join(t.TempDir(), "tournaments.json"))
+	repo.Save("cup32", map[string]interface{}{"matches": map[string]interface{}{
+		"round32": map[string]interface{}{"round_level": 1, "round_name": "Vòng 1/16", "rounds_history": []interface{}{map[string]interface{}{"winner": "team_a"}}},
+	}})
+	svc := NewTournamentService(repo, nil)
+	now := float64(time.Now().Unix())
+	if _, err := svc.SetStageSchedule("cup32", []StageWindow{{1, now + 10, now + 100}}); err == nil {
+		t.Fatal("future start on played stage")
+	}
+	if _, err := svc.SetStageSchedule("cup32", []StageWindow{{1, now - 100, now + 100}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.SetStageSchedule("cup32", []StageWindow{{1, now - 50, now + 200}}); err == nil {
+		t.Fatal("changed established start")
+	}
+	if _, err := svc.SetStageSchedule("cup32", []StageWindow{{1, now - 100, now + 200}}); err != nil {
+		t.Fatal(err)
+	}
+}

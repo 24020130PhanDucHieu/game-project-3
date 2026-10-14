@@ -59,10 +59,15 @@ function openStageSchedule() {
       const wrapper = document.createElement('label'); wrapper.textContent = label;
       const input = document.createElement('input'); input.type = 'datetime-local'; input.className = 'login-input-field';
       input.dataset.time = key; input.value = localDatetime(window?.[key]);
-      input.disabled = currentTournamentData.status === 'FINISHED' || (played && (key === 'starts_at' || !window));
+      input.disabled = currentTournamentData.status === 'FINISHED' || (played && window && key === 'starts_at');
       wrapper.appendChild(input); row.appendChild(wrapper);
     }
     fields.appendChild(row);
+    if (played) {
+      const note = document.createElement('p'); note.className = 'stage-schedule-note';
+      note.textContent = window ? 'Vòng đã thi đấu: giữ giờ mở, chỉ gia hạn giờ đóng.' : 'Vòng đã thi đấu nhưng chưa đặt lịch: chọn giờ mở trong quá khứ và giờ đóng trong tương lai.';
+      row.appendChild(note);
+    }
   }
   document.getElementById('btn-save-stage-schedule').disabled = currentTournamentData.status === 'FINISHED';
   document.getElementById('dialog-stage-schedule').showModal();

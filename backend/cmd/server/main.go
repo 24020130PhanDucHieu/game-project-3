@@ -167,6 +167,7 @@ func main() {
 		api.PUT("/qualifiers/:qid", adminOnly, qHandler.Configure)
 		api.GET("/qualifiers/:qid/teams", adminOnly, qHandler.Teams)
 		api.GET("/qualifiers/:qid/ranking", qHandler.Ranking)
+		api.POST("/qualifiers/:qid/register", requireSession(sessions, false, false), qHandler.Register)
 		api.POST("/qualifiers/:qid/submissions", requireSession(sessions, false, false), qHandler.Submit)
 		api.POST("/qualifiers/:qid/actions/:action", adminOnly, qHandler.Action)
 		// Tournaments

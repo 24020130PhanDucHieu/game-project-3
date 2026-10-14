@@ -1,0 +1,65 @@
+/* Shared native dialogs must override the global margin reset. */
+dialog.stage-schedule-dialog, #dialog-enroll-account {
+  position: fixed; inset: 0; margin: auto; width: min(640px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px); padding: 28px; border: 1px solid var(--border-light);
+  border-radius: 20px; color: var(--text-body); background: white;
+  box-shadow: 0 24px 80px #0f172a33; overflow: auto;
+}
+dialog::backdrop { background: #0f172a66; backdrop-filter: blur(4px); }
+#dialog-stage-schedule { width: min(760px, calc(100vw - 32px)); }
+dialog .card-head-compact { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:20px; }
+dialog h3 { font-size:19px; color:var(--text-heading); }
+dialog label { display:block; font-size:13px; font-weight:600; margin:14px 0 6px; }
+dialog .login-input-field, #account-search, #tab-qualifier .input-text-sm {
+  border:1px solid #dbe4f0; border-radius:10px; padding:10px 12px; background:#f8fafc;
+  color:var(--text-heading); min-height:40px; font:inherit; width:100%; min-width:0;
+}
+dialog .login-input-field { display:block; margin-top:6px; }
+dialog input:focus, dialog select:focus, #tab-qualifier input:focus, #tab-qualifier select:focus { outline:2px solid #93c5fd; outline-offset:2px; }
+dialog input:disabled { opacity:.65; cursor:not-allowed; }
+dialog [role=alert] { color:#dc2626; margin-top:12px; }
+dialog .text-muted { font-size:12px; line-height:1.65; margin:12px 0; }
+dialog button[type=submit] { margin-top:18px; }
+dialog button[aria-label="Đóng hộp thoại"] { width:34px; min-width:34px; height:34px; padding:0; border:0; background:#f1f5f9; color:#64748b; font-size:22px; border-radius:9px; }
+.btn-outline:not(.btn) { display:inline-flex; align-items:center; justify-content:center; gap:6px; padding:8px 13px; min-height:36px; border:1px solid #dbe4f0; border-radius:9px; background:white; color:var(--primary-blue); font:600 12px var(--font-sans); cursor:pointer; text-decoration:none; }
+.btn-outline:not(.btn):hover { background:#eff6ff; border-color:#93c5fd; }
+:is(dialog.stage-schedule-dialog, #dialog-enroll-account) button[aria-label="Đóng hộp thoại"] { padding:0; min-height:34px; font-size:22px; border:0; color:#64748b; background:#f1f5f9; }
+button:disabled { cursor:not-allowed; opacity:.55; }
+#tbody-team-credentials td:last-child { white-space:nowrap; }
+#btn-enroll-submit { width:auto; min-height:40px; font-size:13px; padding:10px 18px; margin-left:auto; display:block; }
+#enroll-account-name { padding:12px 14px; background:#eff6ff; color:#1d4ed8; border-radius:10px; margin-bottom:18px; }
+.stage-schedule-note { grid-column:1/-1; color:#64748b; font-size:12px; }
+#stage-schedule-fields label { margin:0; }
+#stage-schedule-fields fieldset { margin:10px 0; padding:12px; gap:10px; }
+.qualifier-header-actions, .qualifier-actions, .qualifier-pagination { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+#tab-qualifier .content-card { margin-bottom:20px; padding:24px; }
+#tab-qualifier .btn { font-size:13px; padding:9px 15px; min-height:38px; }
+.qualifier-intro { display:flex; justify-content:space-between; align-items:center; gap:20px; }
+.qualifier-intro h3 { margin-bottom:6px; color:var(--text-heading); }
+.qualifier-intro p, #qualifier-summary, #qualifier-my-status { color:var(--text-muted); font-size:13px; line-height:1.7; }
+#qualifier-select { max-width:320px; }
+#qualifier-summary { margin:16px 0 10px; }
+#qualifier-progress { width:100%; height:7px; accent-color:var(--primary-blue); margin-bottom:16px; }
+.qualifier-steps { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 20px; }
+.qualifier-steps span { padding:6px 12px; border-radius:20px; color:#64748b; background:#f1f5f9; font-size:12px; }
+.qualifier-steps span:first-child { color:#2563eb; background:#eff6ff; }
+#tab-qualifier .ide-toolbar-row { display:flex; flex-wrap:wrap; gap:10px; margin:16px 0; }
+#tab-qualifier .ide-toolbar-row .input-text-sm { width:auto; flex:1; }
+#tab-qualifier .ide-editor { height:280px; border-radius:12px; padding:16px; font:13px/1.7 var(--font-mono); margin-bottom:14px; resize:vertical; }
+#tab-qualifier details { margin-top:20px; padding-top:16px; border-top:1px solid var(--border-light); }
+#tab-qualifier summary { cursor:pointer; font-weight:600; }
+#qualifier-my-history p, #qualifier-my-results p { padding:12px 0; border-bottom:1px solid #eef2f6; font-size:12px; }
+#qualifier-my-history button { margin-left:12px; }
+.qualifier-pagination { justify-content:flex-end; font-size:12px; color:#64748b; }
+#qualifier-events-list { display:grid; gap:12px; }
+.qualifier-event-option { border:1px solid #e2e8f0; padding:16px; border-radius:12px; }
+.qualifier-event-option p { margin:6px 0 12px; color:#64748b; font-size:12px; }
+.qualifier-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 16px; }
+[hidden] { display:none !important; }
+@media(max-width:600px) {
+  dialog.stage-schedule-dialog, #dialog-enroll-account { padding:20px; }
+  .qualifier-intro { align-items:flex-start; flex-direction:column; }
+  .qualifier-form-grid { grid-template-columns:1fr; }
+  #tab-qualifier .content-card { padding:16px; }
+  #tab-qualifier .content-header-row { flex-wrap:wrap; gap:16px; }
+}

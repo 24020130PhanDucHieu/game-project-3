@@ -21,11 +21,18 @@ import test_reliability as arena
 
 CODE = "def decide_move(game_state):\n    return 'ROCK'\n"
 
+def assert_centered(page, selector):
+    rect = page.locator(selector).bounding_box()
+    viewport = page.viewport_size
+    assert abs(rect['x'] + rect['width']/2 - viewport['width']/2) < 3, rect
+    assert abs(rect['y'] + rect['height']/2 - viewport['height']/2) < 3, rect
+
 
 def run_ui(server, admin):
     api = arena.api
     event = api('POST', '/api/qualifiers', {'name': 'UI Qualifier', 'deadline': time.time()+3600, 'rounds': 2, 'top_k': 8}, admin)
     qid = event['id']
+    assert api('GET', f'/api/qualifiers/{qid}/teams', token=admin)['total'] == 0
     tokens = []
     for n in range(8):
         sid = str(26000001+n)
@@ -33,7 +40,11 @@ def run_ui(server, admin):
         token = api('POST', '/api/teams/login', {'username': sid, 'password': 'qualifier123'})['session_token']
         tokens.append(token)
         if n:
+            api('POST', f'/api/qualifiers/{qid}/register', token=token)
             api('POST', f'/api/qualifiers/{qid}/submissions', {'code': CODE, 'language': 'PYTHON'}, token)
+    api('POST', f'/api/qualifiers/{qid}/submissions', {'code':CODE,'language':'PYTHON'}, tokens[0], expected=400)
+    api('POST', f'/api/qualifiers/{qid}/actions/test-bots', {'count':8}, tokens[0], expected=403)
+    assert api('GET', f'/api/qualifiers/{qid}/teams', token=admin)['total'] == 7
     errors = []
     with sync_playwright() as p:
         browser = p.chromium.launch(channel='chrome', headless=True)
@@ -45,7 +56,14 @@ def run_ui(server, admin):
         team.locator('#btn-login-submit').click()
         team.wait_for_function("currentAppRole === 'TEAM'")
         arena.tab(team, 'tab-qualifier')
+        expect(team.locator('#qualifier-team-card')).not_to_be_visible()
+        team.locator('#qualifier-register').click()
+        expect(team.locator('#qualifier-events-dialog')).to_be_visible()
+        assert_centered(team, '#qualifier-events-dialog')
+        team.locator('#qualifier-events-list button').first.click()
         team.wait_for_function("qualifierData !== null")
+        team.locator('#qualifier-register').click()
+        expect(team.locator('#qualifier-team-card')).to_be_visible(timeout=10000)
         team.locator('#qualifier-file').set_input_files({'name':'qualifier_bot.py','mimeType':'text/x-python','buffer':CODE.encode()})
         expect(team.locator('#qualifier-code')).to_have_value(CODE)
         team.locator('#qualifier-check').click()
@@ -79,6 +97,10 @@ def run_ui(server, admin):
         organizer.wait_for_function("currentAppRole === 'ADMIN' && qualifierData !== null")
         expect(organizer.locator('#qualifier-search')).to_have_value('26000001')
         organizer.locator('#qualifier-config').click()
+        assert_centered(organizer, '#qualifier-config-dialog')
+        organizer.set_viewport_size({'width':390,'height':844})
+        assert_centered(organizer, '#qualifier-config-dialog')
+        organizer.set_viewport_size({'width':1440,'height':1000})
         organizer.locator('#qualifier-config-name').fill('UI Qualifier Updated')
         organizer.locator('#qualifier-config-save').click()
         expect(organizer.locator('#qualifier-config-dialog')).not_to_be_visible()
@@ -107,6 +129,46 @@ def run_ui(server, admin):
         main=api('GET',f"/api/tournaments/{cup['tournament_id']}")
         assert len(main['teams'])==8 and all(m['max_rounds']==5 for m in main['matches'].values())
         api('POST',f'/api/qualifiers/{qid}/actions/promote',{'tournament_id':cup['tournament_id']},admin)
+        # Explicit test-bot creation does not enroll all site accounts.
+        demo = api('POST','/api/qualifiers',{'name':'Test bots only','deadline':time.time()+3600,'rounds':1,'top_k':8},admin)
+        assert api('GET',f"/api/qualifiers/{demo['id']}/teams",token=admin)['total']==0
+        organizer.evaluate('(id)=>selectQualifier(id)',demo['id'])
+        expect(organizer.locator('#qualifier-test-bots')).to_be_enabled(timeout=10000)
+        organizer.locator('#qualifier-test-bots').click()
+        assert_centered(organizer,'#qualifier-test-dialog')
+        organizer.locator('#qualifier-test-count').fill('8')
+        organizer.locator('#qualifier-test-save').click()
+        expect(organizer.locator('#qualifier-test-dialog')).not_to_be_visible()
+        bots=api('GET',f"/api/qualifiers/{demo['id']}/teams",token=admin)
+        assert bots['total']==8 and all(p['test_bot'] for p in bots['items'])
+        api('POST',f"/api/qualifiers/{demo['id']}/actions/freeze",{},admin)
+        api('POST',f"/api/qualifiers/{demo['id']}/actions/start",{},admin)
+        limit=time.time()+60
+        while time.time()<limit:
+            demo_state=api('GET',f"/api/qualifiers/{demo['id']}")['event']
+            if demo_state['status'] in ('FINISHED','PAUSED'):break
+            time.sleep(1)
+        assert demo_state['status']=='FINISHED',demo_state
+        # All five stages of a 32-team tournament accept schedules.
+        cup32=api('POST','/api/tournaments/create',{'name':'Schedule 32','num_teams':32},admin)['tournament']
+        organizer.evaluate('(id)=>{currentTournamentId=id;return loadActiveTournament(id)}',cup32['tournament_id'])
+        organizer.evaluate('openStageSchedule()')
+        assert_centered(organizer,'#dialog-stage-schedule')
+        organizer.screenshot(path=str(arena.ROOT/'data'/'schedule-dialog-review.png'))
+        assert organizer.locator('#stage-schedule-fields fieldset').count()==5
+        start=int(time.time()/60)*60+600
+        for i,row in enumerate(organizer.locator('#stage-schedule-fields fieldset').all()):
+            for key,stamp in [('starts_at',start+i*1200),('ends_at',start+i*1200+600)]:
+                field=row.locator(f'[data-time="{key}"]')
+                expect(field).to_be_enabled()
+                field.fill(organizer.evaluate('(t)=>localDatetime(t)',stamp))
+        organizer.locator('#btn-save-stage-schedule').click()
+        expect(organizer.locator('#dialog-stage-schedule')).not_to_be_visible()
+        stored=api('GET',f"/api/tournaments/{cup32['tournament_id']}")
+        assert len(stored['stage_schedule'])==5 and stored['stage_schedule']['1']['starts_at']==start
+        organizer.evaluate("openAccountEnrollment({student_id:'26000001',team_name:'UI Team 0'})")
+        assert_centered(organizer,'#dialog-enroll-account')
+        organizer.locator('#dialog-enroll-account button[aria-label]').click()
         assert not errors,errors
         browser.close()
     print('PASS qualifier UI, direct submission, last-valid preservation, privacy, tab/F5 draft, freeze, 2 rounds, ranking and idempotent promotion',flush=True)

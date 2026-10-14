@@ -2,7 +2,7 @@
 
 ## Đội thi đấu
 
-Đăng ký/đăng nhập tài khoản đội rồi vào tab **Vòng loại**, chọn đợt vòng loại. Không cần chọn giải chính hay trận đấu. Đội có thể soạn code, tải `.py`/`.cpp`, nạp mẫu, kiểm tra sandbox và nộp lại trước hạn. Python được hỗ trợ trên máy chủ production; C++ cần máy chủ hỗ trợ biên dịch như chế độ local hiện tại.
+Đăng ký/đăng nhập tài khoản đội rồi vào tab **Vòng loại**, bấm **Các giải đấu vòng loại**, chọn giải và bấm **Đăng ký thi**. Chỉ sau khi đăng ký, khu vực nộp bot mới mở. Không cần chọn giải chính hay trận đấu. Đội có thể soạn code, tải `.py`/`.cpp`, nạp mẫu, kiểm tra sandbox và nộp lại trước hạn. Python được hỗ trợ trên máy chủ production; C++ cần máy chủ hỗ trợ biên dịch như chế độ local hiện tại. Đội đã nộp bài từ phiên bản trước được giữ nguyên tư cách tham gia.
 
 Bài nộp lỗi được lưu trong lịch sử nhưng không thay thế bản hợp lệ trước. Hạn nộp được kiểm tra trước và sau kiểm tra sandbox: bài kiểm tra xong sau hạn không được nhận. Hết hạn hệ thống tự khóa; Admin có thể khóa sớm. Bản code của mỗi đội tại thời điểm khóa giữ nguyên trong tất cả lượt vòng loại.
 
@@ -10,7 +10,9 @@ Tab hiển thị hạn nộp, trạng thái, ELO, lịch sử bài nộp và t�
 
 ## Admin
 
-Tạo đợt vòng loại với tên, hạn nộp, số lượt ghép cặp 1–100 và top 8/16/32. Danh sách đội dùng tài khoản đã đăng ký, có tìm kiếm, lọc trạng thái và phân trang 50 đội/trang; tối đa 2.000 đội nộp bài trong mỗi đợt.
+Tạo đợt vòng loại với tên, hạn nộp, số lượt ghép cặp 1–100 và top 8/16/32. Giải mới có danh sách đội trống. Danh sách chỉ hiển thị đội đã đăng ký tham gia đợt đó, có tìm kiếm, lọc trạng thái và phân trang 50 đội/trang; tối đa 2.000 đội đăng ký trong mỗi đợt.
+
+Nút **Tạo bot thử nghiệm** riêng cạnh nút tạo vòng loại cho phép thêm số bot mẫu chỉ định vào giải đang chọn, tối đa tổng cộng 2.000 đội. Bot có nhãn thử nghiệm và mã nguồn hợp lệ sẵn, không tạo tài khoản đăng nhập tại thao tác này. Chỉ thêm khi còn nhận đăng ký; nên tạo một giải riêng để thử. Các bot này thực sự tham gia ghép cặp và tính ELO như đội thường.
 
 Khóa bài → bắt đầu. Chỉ chạy khi có ít nhất K bot hợp lệ, tài khoản chưa bị xóa tại thời điểm khóa. Nếu máy chủ worker gặp lỗi truyền tải, mỗi trận thử tối đa 3 lần rồi vòng loại tạm dừng; Admin dùng nút Bắt đầu / tiếp tục sau khi sửa worker. Kết quả đã xong được giữ lại.
 
@@ -31,7 +33,7 @@ Khi hoàn tất, tạo giải chính **trống** tại Bảng đấu, đúng s�
 
 ## API
 
-`GET/POST /api/qualifiers`, `GET/PUT /api/qualifiers/:qid`, `POST .../submissions`, `GET .../teams`, `GET .../ranking`, `POST .../actions/freeze|start|promote`.
+`GET/POST /api/qualifiers`, `GET/PUT /api/qualifiers/:qid`, `POST .../register`, `POST .../submissions`, `GET .../teams`, `GET .../ranking`, `POST .../actions/freeze|start|promote|test-bots`. Tạo bot nhận `{ "count": 8 }`; chỉ Admin được gọi. Đăng ký lấy mã sinh viên từ phiên đăng nhập, gọi lại không thêm đội trùng.
 
 Tạo/sửa, danh sách đội, khóa/chạy/chốt chỉ dành cho Admin. Nộp bài chỉ dành cho TEAM, định danh lấy từ signed session. Đội không được nộp thay mã sinh viên khác qua request body.
 

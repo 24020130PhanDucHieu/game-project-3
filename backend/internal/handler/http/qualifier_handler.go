@@ -12,6 +12,19 @@ import (
 
 type QualifierHandler struct{ Service *qualifier.Service }
 
+func (h *QualifierHandler) Register(c *gin.Context) {
+	session := requestSession(c)
+	if session.Role != "TEAM" {
+		c.JSON(403, gin.H{"detail": "Chỉ tài khoản đội được đăng ký."})
+		return
+	}
+	if err := h.Service.Register(c.Param("qid"), session.StudentID); err != nil {
+		qualifierError(c, err)
+		return
+	}
+	c.JSON(200, gin.H{"status": "SUCCESS"})
+}
+
 func qualifierError(c *gin.Context, err error) { c.JSON(400, gin.H{"detail": err.Error()}) }
 func (h *QualifierHandler) List(c *gin.Context) {
 	items, err := h.Service.Events()
@@ -122,6 +135,15 @@ func (h *QualifierHandler) Action(c *gin.Context) {
 	id := c.Param("qid")
 	var err error
 	switch c.Param("action") {
+	case "test-bots":
+		var req struct {
+			Count int `json:"count"`
+		}
+		if c.ShouldBindJSON(&req) != nil {
+			c.JSON(400, gin.H{"detail": "Số bot không hợp lệ."})
+			return
+		}
+		err = h.Service.GenerateTestBots(id, req.Count)
 	case "freeze":
 		err = h.Service.Freeze(id)
 	case "start":
@@ -156,18 +178,12 @@ func (h *QualifierHandler) Teams(c *gin.Context) {
 		qualifierError(c, err)
 		return
 	}
-	accounts, err := h.Service.Accounts.List()
-	if err != nil {
-		qualifierError(c, err)
-		return
-	}
 	items := []gin.H{}
 	query := strings.ToLower(strings.TrimSpace(c.Query("q")))
 	filter := c.Query("filter")
-	for _, account := range accounts {
-		p := people[account.StudentID]
+	for _, p := range people {
 		status := "NOT_SUBMITTED"
-		if p.SID != "" {
+		if p.SubmittedAt > 0 {
 			status = "INVALID"
 		}
 		if p.ValidID != "" {
@@ -176,13 +192,13 @@ func (h *QualifierHandler) Teams(c *gin.Context) {
 		if p.LockedID != "" {
 			status = "LOCKED"
 		}
-		if query != "" && !strings.Contains(strings.ToLower(account.StudentID+" "+account.TeamName), query) {
+		if query != "" && !strings.Contains(strings.ToLower(p.SID+" "+p.Name), query) {
 			continue
 		}
 		if filter != "" && filter != status {
 			continue
 		}
-		items = append(items, gin.H{"student_id": account.StudentID, "team_name": account.TeamName, "status": status, "elo": p.Elo, "wins": p.Wins, "played": p.Played})
+		items = append(items, gin.H{"student_id": p.SID, "team_name": p.Name, "test_bot": p.TestBot, "status": status, "elo": p.Elo, "wins": p.Wins, "played": p.Played})
 	}
 	sort.Slice(items, func(i, j int) bool { return items[i]["student_id"].(string) < items[j]["student_id"].(string) })
 	page := qualifierPage(c)

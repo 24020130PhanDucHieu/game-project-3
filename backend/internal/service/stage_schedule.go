@@ -94,7 +94,11 @@ func (s *TournamentService) SetStageSchedule(id string, windows []StageWindow) (
 		window := map[string]interface{}{"starts_at": w.StartsAt, "ends_at": w.EndsAt}
 		if played[w.Level] && !reflect.DeepEqual(window, old[key]) {
 			oldWindow, _ := old[key].(map[string]interface{})
-			if oldWindow == nil || w.StartsAt != number(oldWindow["starts_at"]) || w.EndsAt < number(oldWindow["ends_at"]) || w.EndsAt <= now {
+			if oldWindow == nil {
+				if w.StartsAt > now || w.EndsAt <= now {
+					return nil, errors.New("Vòng đang thi đấu: giờ mở phải ở quá khứ và giờ đóng ở tương lai.")
+				}
+			} else if w.StartsAt != number(oldWindow["starts_at"]) || w.EndsAt < number(oldWindow["ends_at"]) || w.EndsAt <= now {
 				return nil, fmt.Errorf("Vòng %d đã thi đấu. Chỉ có thể gia hạn giờ kết thúc, giữ giờ bắt đầu.", w.Level)
 			}
 		}

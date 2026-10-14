@@ -35,6 +35,7 @@ type Event struct {
 	Target       string  `json:"target,omitempty"`
 }
 type Participant struct {
+	TestBot     bool     `json:"test_bot,omitempty"`
 	SID         string   `json:"student_id"`
 	Name        string   `json:"team_name"`
 	Code        string   `json:"code,omitempty"`
@@ -179,6 +180,10 @@ func (s *Service) Submit(id, sid, code, language string) (Submission, error) {
 	if err != nil || account.Deleted {
 		return Submission{}, errors.New("Tài khoản không hợp lệ.")
 	}
+	var registered Participant
+	if err := s.Store.Get(participantKey(id, sid), &registered); err != nil || registered.SID == "" {
+		return Submission{}, errors.New("Hãy đăng ký tham gia vòng loại trước khi nộp bot.")
+	}
 	result, err := s.Engine.Mutate(nil, "validate-code", map[string]interface{}{"code_content": code, "language": language})
 	if err != nil {
 		return Submission{}, err
@@ -204,8 +209,9 @@ func (s *Service) Submit(id, sid, code, language string) (Submission, error) {
 		if len(people) >= 2000 {
 			return sub, errors.New("Vòng loại đã đủ 2.000 đội.")
 		}
-		p = Participant{SID: sid, Name: account.TeamName, Elo: 1200}
+		return sub, errors.New("Hãy đăng ký tham gia vòng loại trước khi nộp bot.")
 	}
+	p.SubmittedAt = sub.At
 	if valid {
 		p.Code = code
 		p.Language = language
@@ -231,11 +237,15 @@ func (s *Service) Freeze(id string) error {
 	}
 	rows := map[string]interface{}{}
 	for sid, p := range people {
-		a, err := s.Accounts.Get(sid)
-		if err != nil {
-			return err
+		active := p.TestBot
+		if !p.TestBot {
+			a, err := s.Accounts.Get(sid)
+			if err != nil {
+				return err
+			}
+			active = !a.Deleted
 		}
-		if p.ValidID != "" && !a.Deleted {
+		if p.ValidID != "" && active {
 			p.LockedID = p.ValidID
 			rows[participantKey(id, sid)] = p
 			e.Eligible++

@@ -13,6 +13,8 @@ function saveQualifierState() { localStorage.setItem(qualifierStateKey(), JSON.s
 function selectQualifier(id) {
   qualifierId = id; localStorage.setItem('qualifier-id', id); qualifierDraftKeyLoaded = '';
   qualifierData=null;
+  renderQualifierRegistration(null);
+  document.getElementById('qualifier-test-bots').disabled=true;
   for(const key of ['config','freeze','start','promote'])document.getElementById(`qualifier-${key}`).disabled=true;
   document.getElementById('qualifier-submit').disabled=true;
   let state={};try {state=JSON.parse(localStorage.getItem(qualifierStateKey())||'{}');}catch{}
@@ -28,7 +30,7 @@ async function loadQualifierPage() {
     const list=await qualifierAPI('');
     const select=document.getElementById('qualifier-select');
     select.replaceChildren(new Option('Chọn vòng loại',''));for(const event of list) select.add(new Option(event.name,event.id));
-    if(!list.some(event=>event.id===qualifierId)) qualifierId=list[0]?.id||'';
+    if(!list.some(event=>event.id===qualifierId)) qualifierId=currentAppRole==='ADMIN'?(list[0]?.id||''):'';
     select.value=qualifierId;
     if(qualifierViewLoadedKey!==qualifierStateKey()){
       let saved={};try{saved=JSON.parse(localStorage.getItem(qualifierStateKey())||'{}');}catch{}
@@ -36,9 +38,11 @@ async function loadQualifierPage() {
       document.getElementById('qualifier-search').value=saved.q||'';document.getElementById('qualifier-filter').value=saved.filter||'';
       qualifierViewLoadedKey=qualifierStateKey();
     }
-    if(!qualifierId){qualifierData=null;document.getElementById('qualifier-submit').disabled=true;document.getElementById('qualifier-summary').textContent='Chưa có vòng loại. Admin có thể tạo vòng loại mới.';return;}
+    if(!qualifierId){qualifierData=null;renderQualifierRegistration(null);document.getElementById('qualifier-submit').disabled=true;document.getElementById('qualifier-summary').textContent=list.length?'Chọn một giải vòng loại để xem thông tin.':'Chưa có vòng loại. Admin có thể tạo vòng loại mới.';for(const key of ['config','freeze','start','promote','test-bots'])document.getElementById(`qualifier-${key}`).disabled=true;renderQualifierTable('qualifier-ranking',[]);renderQualifierTable('qualifier-teams',[]);return;}
     const requested=qualifierId;const data=await qualifierAPI(`/${requested}`);if(requested!==qualifierId||identity!==`${currentAppRole}:${currentTeamStudentId}`)return;qualifierData=data;
     const e=data.event;
+    renderQualifierRegistration(data);
+    document.getElementById('qualifier-test-bots').disabled=e.status!=='OPEN'||Date.now()/1000>=e.deadline;
     document.getElementById('qualifier-summary').textContent=`${qualifierPhaseLabels[e.status]} · Hạn: ${new Date(e.deadline*1000).toLocaleString('vi-VN')} · ${e.eligible} bot đã khóa · Lượt ${e.current_round}/${e.rounds} · ${e.completed}/${e.total} trận · Top ${e.top_k}${e.error?' · '+e.error:''}`;
     const progress=document.getElementById('qualifier-progress');progress.max=Math.max(1,e.total);progress.value=e.completed;
     document.getElementById('qualifier-config').disabled=e.status!=='OPEN';
@@ -53,7 +57,7 @@ async function loadQualifierPage() {
       const query=encodeURIComponent(document.getElementById('qualifier-search').value);const filter=encodeURIComponent(document.getElementById('qualifier-filter').value);
       const teams=await qualifierAPI(`/${requested}/teams?page=${qualifierTeamsPage}&q=${query}&filter=${filter}`);if(requested!==qualifierId)return;
       qualifierTeamsTotal=teams.total;const labels={NOT_SUBMITTED:'Chưa nộp',INVALID:'Chưa có bản hợp lệ',VALID:'Có bản hợp lệ',LOCKED:'Đã khóa'};
-      renderQualifierTable('qualifier-teams',teams.items.map(p=>[p.student_id,p.team_name,labels[p.status],p.elo||1200]));
+      renderQualifierTable('qualifier-teams',teams.items.map(p=>[p.test_bot?'Thử nghiệm':p.student_id,p.team_name,labels[p.status],p.elo||1200]));
       document.getElementById('qualifier-teams-page').textContent=`Trang ${qualifierTeamsPage} / ${Math.max(1,Math.ceil(teams.total/50))} · ${teams.total} đội`;
       const response=await fetch(`${API_BASE}/api/tournaments/list`);if(!response.ok)throw new Error('Không tải được giải chính.');const tournaments=await response.json();
       const target=document.getElementById('qualifier-target');const selected=target.value;target.replaceChildren(new Option(`Chọn giải chính ${e.top_k} đội`,''));

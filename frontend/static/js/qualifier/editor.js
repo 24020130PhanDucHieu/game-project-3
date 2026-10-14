@@ -1,7 +1,8 @@
 function qualifierDraftKey(){return `qualifier-draft:${API_BASE}:${qualifierId}:${currentTeamStudentId||'guest'}`;}
 function saveQualifierDraft(){if(currentAppRole!=='TEAM'||!qualifierId)return;localStorage.setItem(qualifierDraftKey(),JSON.stringify({code:document.getElementById('qualifier-code').value,language:document.getElementById('qualifier-language').value}));}
 function renderQualifierOwn(data){
-  const e=data.event,p=data.participant||{};const canSubmit=currentAppRole==='TEAM'&&e.status==='OPEN'&&Date.now()/1000<e.deadline;
+  const e=data.event,p=data.participant||{};const canSubmit=currentAppRole==='TEAM'&&Boolean(p.student_id)&&e.status==='OPEN'&&Date.now()/1000<e.deadline;
+  document.getElementById('qualifier-team-card').hidden=currentAppRole!=='TEAM'||!p.student_id;
   document.getElementById('qualifier-team-card').style.display=currentAppRole==='ADMIN'?'none':'block';
   document.getElementById('qualifier-submit').disabled=!canSubmit;document.getElementById('qualifier-check').disabled=currentAppRole!=='TEAM';
   document.getElementById('qualifier-code').readOnly=!canSubmit;

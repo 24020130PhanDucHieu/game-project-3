@@ -135,6 +135,19 @@ func TestLastValidSubmissionDeadlineAndFreeze(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if _, err := s.Submit(e.ID, "12340001", "valid code", "PYTHON"); err == nil {
+		t.Fatal("unregistered submission accepted")
+	}
+	if err := s.Register(e.ID, "12340001"); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Register(e.ID, "12340001"); err != nil {
+		t.Fatal(err)
+	}
+	registered, _ := s.Participants(e.ID)
+	if len(registered) != 1 || registered["12340001"].ValidID != "" {
+		t.Fatal("registration unexpectedly submitted code")
+	}
 	good, err := s.Submit(e.ID, "12340001", "valid code", "PYTHON")
 	if err != nil {
 		t.Fatal(err)
@@ -165,5 +178,42 @@ func TestLastValidSubmissionDeadlineAndFreeze(t *testing.T) {
 	}
 	if s.Start(e.ID) == nil {
 		t.Fatal("started with fewer than K entrants")
+	}
+}
+
+func TestExplicitTestBotsAndCapacity(t *testing.T) {
+	s, _ := fixture(t, 8)
+	e, err := s.Configure("", Event{Name: "Test only", Deadline: now() + 100, Rounds: 1, TopK: 8})
+	if err != nil {
+		t.Fatal(err)
+	}
+	people, _ := s.Participants(e.ID)
+	if len(people) != 0 {
+		t.Fatal("new qualifier not empty")
+	}
+	if err := s.GenerateTestBots(e.ID, 2000); err != nil {
+		t.Fatal(err)
+	}
+	people, _ = s.Participants(e.ID)
+	if len(people) != 2000 {
+		t.Fatal(len(people))
+	}
+	for _, p := range people {
+		if !p.TestBot || p.ValidID == "" || p.Code == "" {
+			t.Fatal(p)
+		}
+	}
+	if s.GenerateTestBots(e.ID, 1) == nil {
+		t.Fatal("capacity exceeded")
+	}
+	if err := s.Freeze(e.ID); err != nil {
+		t.Fatal(err)
+	}
+	if s.GenerateTestBots(e.ID, 1) == nil {
+		t.Fatal("generated after freeze")
+	}
+	e, _ = s.Event(e.ID)
+	if e.Eligible != 2000 {
+		t.Fatal(e.Eligible)
 	}
 }
