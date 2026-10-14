@@ -11,7 +11,7 @@ MOVES = ("ROCK", "PAPER", "SCISSORS")
 
 
 def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1,
-                   stage_rule="STAGE_1_STANDARD", tie_seed=None):
+                   stage_rule="STAGE_1_STANDARD", tie_seed=None, reuse_sandbox=False):
     pattern = (["ROCK"] * 5 + ["PAPER"] * 2 + ["SCISSORS"] * 2
                if stage_rule == "STAGE_2_MUTATED" else
                ["ROCK"] * 2 + ["PAPER"] * 4 + ["SCISSORS"] * 3
@@ -27,6 +27,7 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
     codes = {"team_a": code_a, "team_b": code_b}
     languages = {"team_a": lang_a, "team_b": lang_b}
     executables = {}
+    python_processes = {}
     steps = []
     first = "team_a" if round_num % 2 else "team_b"
     order = (first, "team_b" if first == "team_a" else "team_a")
@@ -50,6 +51,10 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
     snapshot(f"Đi lần lượt. Đội {names[first]} đi trước; tối đa 32 nước (16 nước mỗi đội).")
     try:
         for side, language in languages.items():
+            if language == "PYTHON" and reuse_sandbox:
+                from app.sandbox.game_process import GameProcess
+                python_processes[side] = GameProcess(codes[side])
+                errors[side] = python_processes[side].error
             if language == "CPP":
                 executable, error = BotRunner.compile_cpp_code(codes[side])
                 executables[side] = executable
@@ -87,6 +92,7 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                      "target": list(targets[side]), "reverse_rule": reverse}
             try:
                 move, error = (BotRunner.run_cpp_binary(executables[side], state) if languages[side] == "CPP"
+                               else python_processes[side].decide(state) if side in python_processes
                                else BotRunner.run_python_code(codes[side], state))
             except Exception as exc:
                 move, error = None, str(exc)
@@ -163,6 +169,8 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                 "pref_move_b": histories["team_b"][0]["my_move"] if histories["team_b"] else "ROCK",
                 "bot_errors": errors, "first_side": first, "tie_break_seed": tie_seed}
     finally:
+        for process in python_processes.values():
+            process.close()
         for executable in executables.values():
             if executable and os.path.exists(executable):
                 try:

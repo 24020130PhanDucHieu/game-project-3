@@ -63,6 +63,28 @@ def mutate_tournament(req: MutateRequest):
         elif action == "create-tournament":
             new_t = stateless_db.create_tournament(p.get("name"), p.get("num_teams", 8))
             return {"status": "SUCCESS", "tournament": new_t}
+        elif action == "qualifier-game":
+            from app.engine.board import simulate_board
+            result = simulate_board(p.get("code_a") or "", p.get("code_b") or "", p.get("language_a") or "PYTHON", p.get("language_b") or "PYTHON", 1 if p.get("first") == 1 else 2, "STAGE_1_STANDARD", p.get("seed"), reuse_sandbox=True)
+            return {key: result[key] for key in ("winner_side", "win_reason", "final_red_alive", "final_blue_alive", "first_side", "bot_errors")}
+        elif action == "import-qualified":
+            tournament = stateless_db.tournaments[t_id]
+            event_id = p.get("qualifier_id")
+            if tournament.get("qualifier_id") != event_id:
+                if tournament.get("teams") or any(m.get("rounds_history") for m in tournament.get("matches", {}).values()):
+                    raise ValueError("Chọn giải chính còn trống, chưa có đội hoặc kết quả.")
+                teams = p.get("teams") or []
+                count = p.get("top_k")
+                if count not in (8, 16, 32) or count != tournament.get("num_teams") or len(teams) != count:
+                    raise ValueError("Số đội của giải chính phải bằng top K vòng loại.")
+                ids = [t.get("student_id") for t in teams]
+                if len(set(ids)) != count or not all(ids):
+                    raise ValueError("Mã sinh viên trùng hoặc thiếu.")
+                for team in teams:
+                    stateless_db.add_team_to_tournament(t_id, team["team_name"], team["student_id"], "Vòng loại")
+                    tournament["teams"][-1]["elo"] = team.get("elo", 1200)
+                tournament["qualifier_id"] = event_id
+                stateless_db.auto_schedule_tournament(t_id)
         elif action == "upgrade-rules":
             pass
         elif action == "auto-schedule":

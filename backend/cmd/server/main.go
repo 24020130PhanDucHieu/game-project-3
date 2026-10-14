@@ -15,6 +15,7 @@ import (
 	wsHandler "project-tuan3/internal/handler/websocket"
 	"project-tuan3/internal/middleware"
 	"project-tuan3/internal/observability"
+	"project-tuan3/internal/qualifier"
 	"project-tuan3/internal/repository"
 	"project-tuan3/internal/service"
 )
@@ -73,6 +74,15 @@ func main() {
 	mHandler.Accounts = accounts
 	mHandler.AccountSync = aHandler.ImportLegacy
 	sessions.ValidateStudent = func(id string) bool { a, err := accounts.Get(id); return err == nil && !a.Deleted }
+	qualifierStore, err := repository.NewQualifierRecords(tournamentRepo, filepath.Join(filepath.Dir(cfg.DBPath), "qualifier_store"))
+	if err != nil {
+		log.Fatalf("Could not initialize qualifier storage: %v", err)
+	}
+	qualifierService := qualifier.New(qualifierStore, accounts, tournamentService, botRunnerAdapter)
+	qHandler := &httpHandler.QualifierHandler{Service: qualifierService}
+	if err := qualifierService.Recover(); err != nil {
+		log.Fatalf("Could not recover qualifiers: %v", err)
+	}
 
 	// 4. WebSocket Hub for Live Stream
 	wsHub := wsHandler.NewHub()
@@ -151,6 +161,14 @@ func main() {
 		api.POST("/admin/accounts/:studentId/enroll", adminOnly, aHandler.Enroll)
 		matchSession := requireSession(sessions, false, true)
 		matchAdmin := requireSession(sessions, true, true)
+		api.GET("/qualifiers", qHandler.List)
+		api.POST("/qualifiers", adminOnly, qHandler.Configure)
+		api.GET("/qualifiers/:qid", qHandler.Detail)
+		api.PUT("/qualifiers/:qid", adminOnly, qHandler.Configure)
+		api.GET("/qualifiers/:qid/teams", adminOnly, qHandler.Teams)
+		api.GET("/qualifiers/:qid/ranking", qHandler.Ranking)
+		api.POST("/qualifiers/:qid/submissions", requireSession(sessions, false, false), qHandler.Submit)
+		api.POST("/qualifiers/:qid/actions/:action", adminOnly, qHandler.Action)
 		// Tournaments
 		api.GET("/tournaments", tHandler.GetAll)
 		api.GET("/tournaments/list", tHandler.GetList)

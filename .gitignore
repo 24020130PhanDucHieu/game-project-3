@@ -37,6 +37,7 @@ backend/server.exe
 # Database & Runtime Data
 **/accounts_store.json
 **/accounts_store.json.key
+**/qualifier_store/
 database/backups/*.gz
 data/
 *.log

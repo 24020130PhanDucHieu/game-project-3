@@ -10,6 +10,12 @@ CREATE TABLE IF NOT EXISTS arena_accounts (
     data JSONB NOT NULL
 );
 
+-- Record vòng loại: đợt, bài nộp, đội và job; gateway tự migrate.
+CREATE TABLE IF NOT EXISTS arena_qualifier_records (
+    key TEXT PRIMARY KEY,
+    data JSONB NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS users (
     student_id VARCHAR(32) PRIMARY KEY,
     full_name VARCHAR(128) NOT NULL,

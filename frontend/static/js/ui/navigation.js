@@ -178,6 +178,8 @@ function switchToTab(tabId, { skipMatchOpen = false } = {}) {
     }
   } else if (tabId === "tab-admin-console") {
     renderTeamCredentialsTable();
+  } else if (tabId === "tab-qualifier") {
+    loadQualifierPage();
   }
 }
 

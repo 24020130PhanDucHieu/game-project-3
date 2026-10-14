@@ -1,0 +1,47 @@
+<section class="tab-pane" id="tab-qualifier">
+  <div class="content-header-row"><div><h1 class="page-title">Vòng loại</h1><p class="page-subtitle">Nộp bot trước hạn, thi đấu tự động và chọn đội vào giải chính.</p></div><button class="btn btn-primary admin-only" type="button" onclick="openQualifierConfig(true)">Tạo vòng loại</button></div>
+  <div class="content-card">
+    <label for="qualifier-select">Vòng loại</label><select id="qualifier-select" class="input-text-sm" onchange="selectQualifier(this.value)"></select>
+    <p id="qualifier-summary" aria-live="polite">Chưa có vòng loại.</p>
+    <progress id="qualifier-progress" max="1" value="0" style="width:100%;"></progress>
+    <div class="toolbar-btn-group admin-only">
+      <button class="btn btn-outline" type="button" id="qualifier-config" onclick="openQualifierConfig(false)">Cấu hình</button>
+      <button class="btn btn-outline" type="button" id="qualifier-freeze" onclick="qualifierAction('freeze')">Khóa bài nộp</button>
+      <button class="btn btn-primary" type="button" id="qualifier-start" onclick="qualifierAction('start')">Bắt đầu / tiếp tục</button>
+    </div>
+  </div>
+  <div class="content-card" id="qualifier-team-card">
+    <h3 class="panel-title">Nộp bot vòng loại</h3><p id="qualifier-my-status">Đăng nhập tài khoản đội để nộp bot. Không cần chọn trận đấu.</p>
+    <div class="ide-toolbar-row">
+      <select id="qualifier-language" class="input-text-sm" aria-label="Ngôn ngữ" onchange="saveQualifierDraft()"><option value="PYTHON">Python (.py)</option><option value="CPP">C++ (.cpp)</option></select>
+      <label class="studio-tool-btn">Tải code lên<input id="qualifier-file" type="file" accept=".py,.cpp" onchange="loadQualifierFile(this)" hidden></label>
+      <button class="studio-tool-btn" type="button" onclick="loadQualifierTemplate()">Nạp mẫu</button>
+      <button class="studio-tool-btn" type="button" id="qualifier-check" onclick="checkQualifierCode()">Kiểm tra</button>
+    </div>
+    <textarea id="qualifier-code" class="ide-editor" rows="14" style="width:100%;" aria-label="Mã nguồn vòng loại" oninput="saveQualifierDraft()" placeholder="def decide_move(game_state):&#10;    return 'ROCK'"></textarea>
+    <button class="btn btn-primary" type="button" id="qualifier-submit" onclick="submitQualifierCode()">Nộp bot</button>
+    <details><summary>Lịch sử bài nộp và kết quả của đội</summary><div id="qualifier-my-history"></div><div id="qualifier-my-results"></div></details>
+  </div>
+  <div class="content-card admin-only">
+    <h3 class="panel-title">Đội và trạng thái nộp code</h3>
+    <div class="ide-toolbar-row"><input id="qualifier-search" class="input-text-sm" placeholder="Tìm mã sinh viên / tên đội" oninput="qualifierFilterChanged()"><select id="qualifier-filter" class="input-text-sm" onchange="qualifierFilterChanged()"><option value="">Tất cả</option><option value="NOT_SUBMITTED">Chưa nộp</option><option value="INVALID">Chưa có bản hợp lệ</option><option value="VALID">Có bản hợp lệ</option><option value="LOCKED">Đã khóa</option></select></div>
+    <div class="table-responsive"><table class="table-clean"><thead><tr><th>Mã sinh viên</th><th>Đội</th><th>Trạng thái</th><th>ELO</th></tr></thead><tbody id="qualifier-teams"></tbody></table></div>
+    <div class="qualifier-pagination"><button class="btn-outline" onclick="qualifierPage('teams',-1)">Trước</button><span id="qualifier-teams-page"></span><button class="btn-outline" onclick="qualifierPage('teams',1)">Sau</button></div>
+  </div>
+  <div class="content-card">
+    <h3 class="panel-title">Bảng xếp hạng ELO vòng loại</h3><p class="text-muted">ELO ban đầu 1.200, hệ số K=32. Đồng ELO xét số trận thắng, sức mạnh đối thủ rồi bốc thăm cố định. ELO cập nhật khi hoàn tất từng lượt.</p>
+    <div class="table-responsive"><table class="table-clean"><thead><tr><th>Hạng</th><th>Đội / MSSV</th><th>ELO</th><th>Thắng / Đã đấu</th></tr></thead><tbody id="qualifier-ranking"></tbody></table></div>
+    <div class="qualifier-pagination"><button class="btn-outline" onclick="qualifierPage('ranking',-1)">Trước</button><span id="qualifier-ranking-page"></span><button class="btn-outline" onclick="qualifierPage('ranking',1)">Sau</button></div>
+    <div class="ide-toolbar-row admin-only"><select id="qualifier-target" class="input-text-sm" aria-label="Giải chính"></select><button id="qualifier-promote" class="btn btn-primary" onclick="qualifierAction('promote')">Chốt đội vào bảng đấu</button></div>
+    <p class="text-muted admin-only">Tạo giải chính trống tại Bảng đấu với số đội đúng top K, rồi chọn giải để chốt.</p>
+  </div>
+</section>
+<dialog class="stage-schedule-dialog" id="qualifier-config-dialog"><form onsubmit="saveQualifierConfig(event)">
+  <div class="card-head-compact"><h3>Cấu hình vòng loại</h3><button type="button" class="btn-outline" aria-label="Đóng hộp thoại" onclick="document.getElementById('qualifier-config-dialog').close()">×</button></div>
+  <label>Tên vòng loại<input id="qualifier-config-name" class="login-input-field" required maxlength="100"></label>
+  <label>Hạn nộp (giờ thiết bị)<input id="qualifier-config-deadline" class="login-input-field" type="datetime-local" required></label>
+  <label>Số lượt ghép cặp<input id="qualifier-config-rounds" class="login-input-field" type="number" min="1" max="100" value="10" required></label>
+  <label>Số đội vào giải chính<select id="qualifier-config-top" class="login-input-field"><option>8</option><option>16</option><option selected>32</option></select></label>
+  <p class="text-muted">Tối đa 2.000 đội. Mỗi lượt mỗi đội gặp một đối thủ, đấu một hiệp bàn cờ. Bản hợp lệ cuối cùng được khóa khi hết hạn; Admin có thể khóa sớm.</p>
+  <p id="qualifier-config-error" role="alert"></p><button id="qualifier-config-save" class="btn btn-primary" type="submit">Lưu</button>
+</form></dialog>

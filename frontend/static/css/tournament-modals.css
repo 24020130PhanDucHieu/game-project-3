@@ -122,6 +122,10 @@
   line-height: 1.45;
 }
 /* Stage schedule and public timeline. */
+.qualifier-pagination { display:flex; align-items:center; gap:16px; margin-top:16px; }
+#qualifier-config-dialog label { display:block; margin:16px 0; }
+#qualifier-config-dialog label input, #qualifier-config-dialog label select { display:block; width:100%; margin-top:6px; }
+#qualifier-config-error { color:#dc2626; }
 .stage-schedule-dialog { border:0; border-radius:20px; padding:28px; width:min(760px,94vw); max-height:90vh; overflow:auto; }
 .stage-schedule-dialog::backdrop { background:rgb(15 23 42 / 45%); backdrop-filter:blur(3px); }
 #stage-schedule-fields fieldset { display:grid; grid-template-columns:1fr 1fr; gap:16px; border:1px solid #dbe5f1; border-radius:12px; margin:16px 0; padding:16px; }
