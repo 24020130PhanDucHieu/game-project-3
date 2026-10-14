@@ -48,7 +48,7 @@ function openStageRules() {
     const input = document.createElement('input'); input.type = 'datetime-local'; input.className = 'login-input-field'; input.value = localDatetime(saved?.publish_at); input.disabled = locked; timeLabel.append(input);
     input.dataset.originalValue = input.value; input.dataset.originalTimestamp = saved?.publish_at || 0;
     const note = document.createElement('small'); note.textContent = locked ? 'Đã khóa luật của vòng này.' : 'Kiểm tra trước khi lưu: công bố ngay sẽ khóa cấu hình.';
-    row.append(legend,label,description,timeLabel,note); fields.append(row);
+    row.append(legend,label,timeLabel,description,note); fields.append(row);
   }
   document.getElementById('btn-save-stage-rules').disabled = !fields.querySelector('select:not(:disabled)');
   document.getElementById('dialog-stage-rules').showModal();
