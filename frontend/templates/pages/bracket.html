@@ -16,6 +16,7 @@
         <span>Tạo giải đấu</span>
       </button>
       <button class="btn btn-outline btn-sm" id="btn-stage-schedule" type="button" onclick="openStageSchedule()">Đặt thời gian các vòng</button>
+      <button class="btn btn-outline btn-sm" id="btn-stage-rules" type="button" style="display:none" onclick="openStageRules()">Thiết lập luật từng vòng</button>
 
       <button class="btn btn-outline btn-sm" id="btn-open-tournament-list" type="button">
 <svg class="arena-icon " aria-hidden="true" focusable="false"><use href="#icon-trophy"></use></svg>
@@ -44,7 +45,6 @@
 
         <h3 class="panel-title" id="bracket-card-round-title">Tứ kết</h3>
       </div>
-      <button class="btn-subtle" id="btn-bracket-menu-opts">Tùy chọn</button>
     </div>
 
     <div class="bracket-tree-canvas-wrapper" id="bracket-tree-canvas">
@@ -75,5 +75,17 @@
     <div id="stage-schedule-fields"></div>
     <p id="stage-schedule-error" role="alert"></p>
     <button class="btn btn-primary" type="submit" id="btn-save-stage-schedule">Lưu lịch</button>
+  </form>
+</dialog>
+
+<dialog id="dialog-stage-rules" class="stage-schedule-dialog">
+  <form onsubmit="saveStageRules(event)">
+    <div class="card-head-compact"><h3>Thiết lập luật từng vòng</h3><button type="button" aria-label="Đóng hộp thoại" onclick="document.getElementById('dialog-stage-rules').close()">×</button></div>
+    <p id="stage-rules-tournament"></p>
+    <p class="text-muted">Mọi trận và hiệp Bo5 trong cùng vòng dùng một luật. Mỗi hiệp vẫn nộp code mới. Giờ công bố theo thiết bị của bạn; để trống để công bố ngay khi lưu.</p>
+    <p class="text-muted">Chỉ lưu các vòng đã chọn luật riêng. Luật đã công bố hoặc vòng đã thi đấu sẽ bị khóa. Khi thiết lập luật mới, các đội cần nộp lại code hợp lệ. Lịch mở/đóng vòng vẫn đặt tại “Đặt thời gian các vòng”.</p>
+    <div id="stage-rules-fields"></div>
+    <p id="stage-rules-error" role="alert"></p>
+    <button class="btn btn-primary" type="submit" id="btn-save-stage-rules">Lưu luật</button>
   </form>
 </dialog>

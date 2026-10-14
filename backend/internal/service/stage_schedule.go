@@ -27,6 +27,9 @@ func number(v interface{}) float64 {
 }
 
 func CanStartStage(tournament, match map[string]interface{}, now time.Time) error {
+	if err := CheckStageRulePublished(tournament, match, now); err != nil {
+		return err
+	}
 	level := int(number(match["round_level"]))
 	matches, _ := tournament["matches"].(map[string]interface{})
 	for _, raw := range matches {

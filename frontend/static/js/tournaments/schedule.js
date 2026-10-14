@@ -11,6 +11,8 @@ function tournamentStages(tournament) {
 }
 
 function stageBlockReason(match, tournament = currentTournamentData) {
+  const rule = tournament?.stage_rules?.[match.round_level];
+  if (rule?.hidden || rule?.publish_at > Date.now()/1000) return 'Chờ công bố luật vòng đấu';
   if (Object.values(tournament?.matches || {}).some(previous => previous.round_level < match.round_level && previous.status !== 'COMPLETED')) return 'Chờ vòng trước hoàn tất';
   const window = tournament?.stage_schedule?.[match.round_level];
   if (!window) return '';
@@ -32,7 +34,10 @@ function renderStageTimeline(tournament = currentTournamentData) {
     times.textContent = window ? `${new Date(window.starts_at * 1000).toLocaleString('vi-VN')} → ${new Date(window.ends_at * 1000).toLocaleString('vi-VN')}` : 'Chưa đặt giờ';
     const status = document.createElement('small');
     status.textContent = stage.matches.every(match => match.status === 'COMPLETED') ? 'Hoàn tất' : stageBlockReason(stage.matches[0], tournament) || 'Có thể thi đấu';
-    item.append(title, times, status); container.appendChild(item);
+    const ruleLabel = document.createElement('span');
+    const ruleInfo = stageRuleInfo(tournament, stage.matches[0]);
+    ruleLabel.textContent = ruleInfo.name; ruleLabel.title = ruleInfo.description;
+    item.append(title, times, ruleLabel, status); container.appendChild(item);
   }
 }
 

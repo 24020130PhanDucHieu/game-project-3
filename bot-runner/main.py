@@ -59,7 +59,7 @@ def mutate_tournament(req: MutateRequest):
                 match[side]["authenticated"] = True
         if action == "validate-code":
             from app.sandbox.runner import BotRunner
-            return BotRunner.validate_bot_code(p.get("code_content") or "", p.get("language") or "PYTHON")
+            return BotRunner.validate_bot_code(p.get("code_content") or "", p.get("language") or "PYTHON", p.get("rule_id") or "STAGE_1_STANDARD")
         elif action == "create-tournament":
             new_t = stateless_db.create_tournament(p.get("name"), p.get("num_teams", 8))
             return {"status": "SUCCESS", "tournament": new_t}
@@ -132,7 +132,7 @@ def mutate_tournament(req: MutateRequest):
             side = p.get("side") or "team_a"
             code = p.get("code_content") or p.get("code") or ""
             lang = p.get("language") or "PYTHON"
-            action_res = stateless_db.update_match_code(t_id, p.get("match_id"), side, code, lang)
+            action_res = stateless_db.update_match_code(t_id, p.get("match_id"), side, code, lang, p.get("explanation", ""))
         elif action == "demo-fill":
             action_res = stateless_db.quick_fill_demo_bots(t_id, p.get("match_id"))
         elif action == "reset":

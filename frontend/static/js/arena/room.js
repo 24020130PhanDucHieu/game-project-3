@@ -38,6 +38,7 @@ function openMatchRoom(matchId) {
 }
 
 function renderMatchRoomData(match) {
+  renderMatchRule();
   if (!match) return;
   currentMatchData = match;
 

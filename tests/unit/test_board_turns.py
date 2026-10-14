@@ -9,6 +9,54 @@ from app.repository.database import Database
 
 
 class BoardRulesTests(unittest.TestCase):
+    def test_new_presets_reach_bot_state_and_initial_board(self):
+        for rule in ('RULE_REVERSE', 'RULE_FOG', 'RULE_MUTATED_FOG'):
+            states = []
+            def decide(code, state):
+                states.append(state)
+                return 'ROCK', None
+            with patch('app.engine.board.BotRunner.run_python_code', side_effect=decide):
+                result = simulate_board('a', 'b', stage_rule=rule)
+            self.assertEqual(states[0]['rules']['id'], rule)
+            self.assertEqual(states[0]['reverse_rule'], rule == 'RULE_REVERSE')
+            self.assertEqual('type' not in states[0]['opponent_pieces'][0], rule != 'RULE_REVERSE')
+            self.assertEqual(states[0]['remaining_cards']['ROCK'], 5 if rule == 'RULE_MUTATED_FOG' else 3)
+            self.assertEqual(result['rules']['id'], rule)
+
+    def test_match_uses_stage_rule_and_records_it(self):
+        from app.engine.board_rules import match_rule
+        tournament = {'stage_rule':'STAGE_1_STANDARD', 'stage_rules':{'2':{'rule_id':'RULE_FOG'}}}
+        self.assertEqual(match_rule(tournament, {'round_level':2}), 'RULE_FOG')
+        self.assertEqual(match_rule(tournament, {'round_level':1}), 'STAGE_1_STANDARD')
+
+    def test_dry_run_supplies_selected_rules(self):
+        from app.sandbox.runner import BotRunner
+        code = "def decide_move(state):\n    return 'PAPER' if state['rules']['reverse'] else 'ROCK'"
+        checked = BotRunner.validate_bot_code(code, 'PYTHON', 'RULE_REVERSE')
+        self.assertTrue(checked['is_valid'])
+        self.assertEqual(checked['test_move'], 'PAPER')
+
+    def test_no_turn_limit_and_only_board_objectives_end_valid_games(self):
+        longest = 0
+        for rule in ('STAGE_1_STANDARD', 'STAGE_2_MUTATED', 'STAGE_3_REVERSE_FOG', 'STAGE_4_FINALS'):
+            for move_a in ('ROCK', 'PAPER', 'SCISSORS'):
+                for move_b in ('ROCK', 'PAPER', 'SCISSORS'):
+                    with self.subTest(rule=rule, moves=(move_a, move_b)):
+                        def decide(code, state):
+                            self.assertLess(state['ply_number'], 1000, 'Game failed to reach a board objective')
+                            return (move_a if code == 'a' else move_b), None
+                        with patch('app.engine.board.BotRunner.run_python_code', side_effect=decide):
+                            result = simulate_board('a', 'b', stage_rule=rule)
+                        final = result['board_steps'][-1]
+                        winner = result['winner_side']
+                        own = final['red_pieces'] if winner == 'team_a' else final['blue_pieces']
+                        enemy = final['blue_pieces'] if winner == 'team_a' else final['red_pieces']
+                        target = (8, 0) if winner == 'team_a' else (0, 8)
+                        self.assertTrue(not any(p['alive'] for p in enemy) or
+                                        any(p['alive'] and (p['col'], p['row']) == target for p in own))
+                        longest = max(longest, len(result['board_steps']) - 1)
+        self.assertGreater(longest, 32)
+
     def test_one_action_each_step_and_fresh_second_state(self):
         calls = []
         def decide(code, state):

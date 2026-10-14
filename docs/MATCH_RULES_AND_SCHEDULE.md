@@ -4,9 +4,9 @@
 
 - Bo5: tối đa 5 hiệp, thắng 3 hiệp kết thúc ngay.
 - Hai đội đi lần lượt; mỗi bot nhận bàn cờ sau nước đi của đối thủ. Replay và nhật ký ghi riêng từng nước.
-- Hiệp lẻ đội Đỏ đi trước, hiệp chẵn đội Xanh đi trước. Tối đa 32 nước (16 mỗi bên).
+- Hiệp lẻ đội Đỏ đi trước, hiệp chẵn đội Xanh đi trước. Không giới hạn số nước mỗi hiệp.
 - Búa thắng Kéo, Kéo thắng Bao, Bao thắng Búa; luật đảo chiều được áp dụng nhất quán khi giải chọn chế độ đó. Quân cùng loại va chạm thì quân phòng thủ thắng.
-- Mỗi hiệp có một đội thắng: chiếm căn cứ hoặc quét sạch quân đối thủ; hết lượt xét quân số rồi tổng tiến độ tới căn cứ. Nếu vẫn bằng nhau, bốc thăm dùng mã ngẫu nhiên riêng của hiệp, lưu trong bản ghi kết quả. Không dùng cố định ưu thế đội Đỏ.
+- Mỗi hiệp tiếp tục cho đến khi một đội chiếm căn cứ hoặc quét sạch quân đối thủ. Không phân thắng theo quân số, tiến độ hay bốc thăm khi đạt một mốc nước đi. Bot lỗi hoặc quá thời gian vẫn bị xử thua hiệp.
 - Bot lỗi/quá thời gian bị xử thua hiệp; lỗi và trạng thái FAILED được ghi trong nhật ký thực thi.
 - Việc nộp lại code từng hiệp, Admin bắt đầu hiệp và tự chuyển đội thắng vào nhánh tiếp theo tiếp tục hoạt động.
 

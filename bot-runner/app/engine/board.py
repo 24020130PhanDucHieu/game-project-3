@@ -1,10 +1,12 @@
 """Alternating single-action board engine. Every completed game has one winner."""
 import copy
 import hashlib
+import itertools
 import os
 import secrets
 
 from app.engine.rules import GameRulesEngine
+from app.engine.board_rules import board_rules
 from app.sandbox.runner import BotRunner
 
 MOVES = ("ROCK", "PAPER", "SCISSORS")
@@ -12,10 +14,10 @@ MOVES = ("ROCK", "PAPER", "SCISSORS")
 
 def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1,
                    stage_rule="STAGE_1_STANDARD", tie_seed=None, reuse_sandbox=False):
-    pattern = (["ROCK"] * 5 + ["PAPER"] * 2 + ["SCISSORS"] * 2
-               if stage_rule == "STAGE_2_MUTATED" else
-               ["ROCK"] * 2 + ["PAPER"] * 4 + ["SCISSORS"] * 3
-               if stage_rule == "STAGE_4_FINALS" else list(MOVES) * 3)
+    initial_rules = board_rules(stage_rule)
+    counts = initial_rules["initial_pieces"]
+    pattern = (list(MOVES) * 3 if counts == {"ROCK": 3, "PAPER": 3, "SCISSORS": 3}
+               else [move for move in MOVES for _ in range(counts[move])])
     pieces = {side: [{"id": f"{prefix}_{i}", "col": i, "row": row,
                       "type": pattern[i], "alive": True} for i in range(9)]
               for side, prefix, row in (("team_a", "r", 7), ("team_b", "b", 1))}
@@ -48,7 +50,7 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                       "blue_pieces": copy.deepcopy(pieces["team_b"]), "clash_event": clash,
                       "log": log, "red_alive": len(alive("team_a")), "blue_alive": len(alive("team_b"))})
 
-    snapshot(f"Đi lần lượt. Đội {names[first]} đi trước; tối đa 32 nước (16 nước mỗi đội).")
+    snapshot(f"Đi lần lượt. Đội {names[first]} đi trước; không giới hạn số nước. Chiếm căn cứ hoặc quét sạch quân đối thủ để thắng.")
     try:
         for side, language in languages.items():
             if language == "PYTHON" and reuse_sandbox:
@@ -67,7 +69,7 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                 winner = "team_b" if errors["team_a"] else "team_a"
                 reason = "Đối thủ bị xử thua vì lỗi biên dịch."
             snapshot(reason, winner)
-        for ply in range(32):
+        for ply in itertools.count():
             if winner:
                 break
             side = order[ply % 2]
@@ -75,8 +77,8 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
             cycle = ply // 2 + 1
             own, enemy = alive(side), alive(opponent)
             cards = {move: sum(p["type"] == move for p in own) for move in MOVES}
-            fog = stage_rule in ("STAGE_3_REVERSE_FOG", "STAGE_4_FINALS")
-            reverse = (stage_rule == "STAGE_3_REVERSE_FOG" and cycle % 2 == 1) or (stage_rule == "STAGE_4_FINALS" and cycle % 3 == 0)
+            active_rules = board_rules(stage_rule, cycle)
+            fog, reverse = active_rules["fog"], active_rules["reverse"]
             history = copy.deepcopy(histories[side])
             if fog:
                 for entry in history:
@@ -89,7 +91,8 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
             state = {"my_hp": 100, "remaining_cards": cards, "turn_number": cycle,
                      "ply_number": ply + 1, "active_side": side, "history": history,
                      "my_pieces": copy.deepcopy(own), "opponent_pieces": enemy_view,
-                     "target": list(targets[side]), "reverse_rule": reverse}
+                     "target": list(targets[side]), "reverse_rule": reverse,
+                     "rules": copy.deepcopy(active_rules)}
             try:
                 move, error = (BotRunner.run_cpp_binary(executables[side], state) if languages[side] == "CPP"
                                else python_processes[side].decide(state) if side in python_processes
@@ -152,22 +155,12 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                     clash = {"type": "GOAL", "side": colors[possible_winner], "col": targets[possible_winner][0], "row": targets[possible_winner][1], "log": reason}
                     break
             snapshot(log + (" " + reason if winner else ""), side, clash, cycle)
-        if not winner:
-            counts = {side: len(alive(side)) for side in pieces}
-            progress = {side: sum(16 - distance(p, side) for p in alive(side)) for side in pieces}
-            scores = {side: (counts[side], progress[side]) for side in pieces}
-            if scores["team_a"] != scores["team_b"]:
-                winner = max(scores, key=scores.get)
-                reason = f"Hết 32 nước: đội {names[winner]} thắng theo quân số, rồi tổng tiến độ tới căn cứ."
-            else:
-                winner = "team_a" if int(hashlib.sha256(f"{tie_seed}:{round_num}".encode()).hexdigest(), 16) % 2 == 0 else "team_b"
-                reason = f"Quân số và tiến độ bằng nhau: đội {names[winner]} thắng bốc thăm với mã phân định đã lưu."
-            steps[-1]["log"] += " " + reason
         return {"winner_side": winner, "win_reason": reason, "board_steps": steps,
                 "final_red_alive": len(alive("team_a")), "final_blue_alive": len(alive("team_b")),
                 "pref_move_a": histories["team_a"][0]["my_move"] if histories["team_a"] else "ROCK",
                 "pref_move_b": histories["team_b"][0]["my_move"] if histories["team_b"] else "ROCK",
-                "bot_errors": errors, "first_side": first, "tie_break_seed": tie_seed}
+                "bot_errors": errors, "first_side": first, "tie_break_seed": tie_seed,
+                "rules": initial_rules}
     finally:
         for process in python_processes.values():
             process.close()

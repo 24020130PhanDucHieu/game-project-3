@@ -104,6 +104,7 @@ function openPrivateStudio(side) {
 }
 
 function populateStudioEditor(team) {
+  renderMatchRule();
   const editor = document.getElementById("studio-code-editor"), selLang = document.getElementById("studio-sel-lang"), statusTag = document.getElementById("studio-submission-status");
   const key = studioDraftKey();
   if (editor && currentEditorKey !== key) {
@@ -113,6 +114,8 @@ function populateStudioEditor(team) {
     editor.scrollTop = draft?.scroll || 0;
     if (draft) editor.setSelectionRange(draft.selectionStart || 0, draft.selectionEnd || 0);
     currentEditorKey = key;
+    const note = document.getElementById('studio-rule-note');
+    if (note) note.value = draft?.explanation || '';
   }
   const round = currentMatchData?.current_round_idx || 1, maxR = currentMatchData?.max_rounds || 5;
   if (statusTag) {
@@ -128,6 +131,7 @@ function setupStudioControls() {
   const editor = document.getElementById("studio-code-editor"), language = document.getElementById("studio-sel-lang"), submit = document.getElementById("btn-studio-submit-bot");
   if (!editor || !language || !submit) return;
   let draftTimer = null;
+  document.getElementById('studio-rule-note')?.addEventListener('input', saveStudioDraft);
   editor.addEventListener("input", () => {
     saveStudioDraft(); clearTimeout(draftTimer);
     if (!currentTournamentId || !currentActiveMatchId || !currentStudioSide || !["TEAM","ADMIN"].includes(currentAppRole)) return;
@@ -156,7 +160,10 @@ function setupStudioControls() {
     if (dryrunLabel) dryrunLabel.textContent = "Đang kiểm tra…";
     dryrun.setAttribute("aria-busy", "true");
     try {
-      const response = await fetch(`${API_BASE}/api/bots/validate`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({code_content:editor.value,language:language.value}) });
+      const match = currentTournamentData?.matches?.[currentActiveMatchId];
+      const configured = currentTournamentData?.stage_rules?.[match?.round_level];
+      if (configured?.hidden || configured?.publish_at > Date.now()/1000) throw new Error('Chờ công bố luật vòng đấu.');
+      const response = await fetch(`${API_BASE}/api/bots/validate`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({code_content:editor.value,language:language.value,rule_id:configured?.rule_id || currentTournamentData?.stage_rule || 'STAGE_1_STANDARD'}) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.detail || "Không kiểm tra được mã.");
       if (result.is_valid) notifySuccess("Mã hợp lệ", `Sandbox đã thực thi bot (${result.execution_time_ms || 0}ms).`);
@@ -178,7 +185,7 @@ function setupStudioControls() {
     saveStudioDraft(); submit.disabled=true;
     const label=document.getElementById("btn-submit-bot-text"); if (label) label.textContent="Đang nộp...";
     try {
-      const response=await fetch(`${API_BASE}/api/tournaments/${tournamentId}/matches/${matchId}/code`, { method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({side,code_content:code,language:language.value,round_number:round}) });
+      const response=await fetch(`${API_BASE}/api/tournaments/${tournamentId}/matches/${matchId}/code`, { method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({side,code_content:code,language:language.value,round_number:round,explanation:document.getElementById('studio-rule-note')?.value || ''}) });
       const result=await response.json();
       if (!response.ok) throw new Error(result.detail || "Không nộp được mã.");
       if (result.is_valid) notifySuccess(`Nộp bot Round ${round} thành công`,"Đội đã sẵn sàng.");

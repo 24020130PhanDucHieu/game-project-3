@@ -182,7 +182,7 @@ except BaseException as exc:
 # --- BỘ ĐIỀU PHỐI SANDBOX ---
 class BotRunner:
     @staticmethod
-    def validate_bot_code(code_str: str, language: str = "PYTHON") -> ValidationResult:
+    def validate_bot_code(code_str: str, language: str = "PYTHON", rule_id: str = "STAGE_1_STANDARD") -> ValidationResult:
         """
         Kiểm tra và cô lập code bot trước khi cho phép thi đấu (Validation Stage):
         - Định dạng và khả năng biên dịch/thông dịch.
@@ -200,6 +200,10 @@ class BotRunner:
             "turn_number": 1,
             "history": []
         }
+        from app.engine.board_rules import board_rules
+        dummy_state["rules"] = board_rules(rule_id)
+        dummy_state["reverse_rule"] = dummy_state["rules"]["reverse"]
+        dummy_state["remaining_cards"] = dict(dummy_state["rules"]["initial_pieces"])
 
         if lang == "PYTHON":
             started = time.monotonic()

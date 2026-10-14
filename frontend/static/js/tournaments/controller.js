@@ -164,6 +164,7 @@ async function refreshTournamentSnapshot(tournamentId, showErrors = false) {
   finally { tournamentRefreshRequests.delete(tournamentId); }
 }
 function applyTournamentSnapshot(data) {
+  renderMatchRule();
   if (currentActiveMatchId && !data.matches?.[currentActiveMatchId]) resetSelectedMatch();
   if (currentAppRole === "ADMIN") renderTeamCredentialsTable();
   const teamCountEl = document.getElementById("tourn-teams-count");
@@ -179,7 +180,7 @@ function applyTournamentSnapshot(data) {
   renderBracketTree(data); renderDashboardOverview(); renderStageTimeline(data);
   const stages = { STAGE_1_STANDARD: "Luật Chuẩn", STAGE_2_MUTATED: "Luật Biến Đổi", STAGE_3_REVERSE_FOG: "Luật Sương Mù", STAGE_4_FINALS: "Luật Chung Kết" };
   const stageLabel = document.getElementById("sidebar-stage-text");
-  if (stageLabel) stageLabel.textContent = `Hiệp ${data.matches?.[currentActiveMatchId]?.current_round_idx || 1} · ${stages[data.stage_rule] || stages.STAGE_1_STANDARD}`;
+  if (stageLabel) stageLabel.textContent = `Hiệp ${data.matches?.[currentActiveMatchId]?.current_round_idx || 1} · ${stageRuleInfo(data, data.matches?.[currentActiveMatchId]).name}`;
   if (currentActiveMatchId && data.matches?.[currentActiveMatchId] && sessionStorage.getItem("matchExplicitlySelected") === "true") renderMatchRoomData(data.matches[currentActiveMatchId]);
   if (document.querySelector(".tab-pane.active")?.id === "tab-ranking") loadLeaderboard();
 }

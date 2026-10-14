@@ -58,7 +58,7 @@ async function loadMatchSubmissions(matchId) {
         tr.innerHTML = `
           <td><code>${escapeHtml(s.submission_id)}</code></td>
           <td>${sideText}</td>
-          <td><strong>Round ${s.round_number}</strong></td>
+          <td><strong>Round ${s.round_number}</strong>${s.explanation ? `<p class="submission-explanation">${escapeHtml(s.explanation)}</p>` : ''}</td>
           <td><span class="badge-tag">${escapeHtml(s.language || 'PYTHON')}</span></td>
           <td>${validText}</td>
           <td>${timeStr}</td>

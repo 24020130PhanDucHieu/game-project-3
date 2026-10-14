@@ -2,6 +2,7 @@
 // HỆ THỐNG XÁC THỰC VAI TRÒ & PHÂN QUYỀN (ROLE-BASED ACCESS CONTROL)
 // =============================================================================
 function updateRoleUI() {
+  renderMatchRule();
   if (currentAppRole === 'GUEST') {
     if (typeof qualifierDraftKeyLoaded !== 'undefined') qualifierDraftKeyLoaded = '';
     const code = document.getElementById('qualifier-code');

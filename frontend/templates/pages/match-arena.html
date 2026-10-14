@@ -20,6 +20,7 @@
     </div>
   </div>
 
+  <p id="match-rule-summary" class="match-rule-summary" aria-live="polite"></p>
   <div class="match-teams-score-board">
 
     <div class="match-team-col red" id="arena-card-red">
@@ -106,6 +107,7 @@
         <div class="studio-card-header">
           <div>
             <h3 class="panel-title" id="studio-round-target-title">Phòng nộp code bot</h3>
+            <p id="studio-rule-summary" class="match-rule-summary" aria-live="polite"></p>
             <p class="panel-subtitle">Soạn thuật toán Oẳn Tù Tì V2 cho round hiện tại</p>
           </div>
           <div class="ide-status-tag" id="studio-submission-status">Chưa nộp code</div>
@@ -131,7 +133,9 @@
 
         <textarea class="studio-code-editor" id="studio-code-editor" spellcheck="false" placeholder="# Viết hàm decide_move(game_state) tại đây..."></textarea>
 
-        <div class="studio-bottom-actions">
+          <label for="studio-rule-note">Điều chỉnh để thích ứng với luật (không bắt buộc)</label>
+          <textarea id="studio-rule-note" class="input-modern" maxlength="2000" rows="3" placeholder="Giải thích ngắn thay đổi chiến thuật trong bản code này…"></textarea>
+          <div class="studio-bottom-actions">
           <div class="trial-boss-group">
             <select class="input-text-sm" id="sel-trial-boss-bot">
               <option value="RANDOM">Boss 1: Random Bot</option>

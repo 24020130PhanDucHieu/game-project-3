@@ -85,7 +85,7 @@ function saveStudioDraft() {
   const editor = document.getElementById("studio-code-editor");
   const language = document.getElementById("studio-sel-lang");
   if (!editor || !language || currentEditorKey !== studioDraftKey()) return;
-  localStorage.setItem(currentEditorKey, JSON.stringify({ code: editor.value, language: language.value, scroll: editor.scrollTop, selectionStart: editor.selectionStart, selectionEnd: editor.selectionEnd }));
+  localStorage.setItem(currentEditorKey, JSON.stringify({ code: editor.value, language: language.value, explanation:document.getElementById('studio-rule-note')?.value || '', scroll: editor.scrollTop, selectionStart: editor.selectionStart, selectionEnd: editor.selectionEnd }));
 }
 function tabScrollKey(tab) { return `arena-scroll:${API_BASE}:${currentTeamStudentId || currentAppRole}:${tab}`; }
 function saveTabScroll() {

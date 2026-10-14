@@ -204,6 +204,31 @@ func (s *TournamentService) MutateTournament(tournamentID, action string, params
 	}
 	var runningMatch map[string]interface{}
 	var previousRoundStatus interface{}
+	if action == "submit-code" || action == "submit-draft" {
+		matches, _ := current["matches"].(map[string]interface{})
+		matchID, _ := params["match_id"].(string)
+		match, _ := matches[matchID].(map[string]interface{})
+		if err := CheckStageRulePublished(current, match, time.Now()); err != nil {
+			return nil, err
+		}
+	}
+	if action == "set-rule" {
+		ruleID, _ := params["stage_name"].(string)
+		if !ValidStageRule(ruleID) {
+			return nil, errors.New("Luật không hợp lệ.")
+		}
+		if rules, _ := current["stage_rules"].(map[string]interface{}); len(rules) > 0 {
+			return nil, errors.New("Hãy dùng thiết lập luật từng vòng.")
+		}
+		matches, _ := current["matches"].(map[string]interface{})
+		for _, raw := range matches {
+			match, _ := raw.(map[string]interface{})
+			history, _ := match["rounds_history"].([]interface{})
+			if len(history) > 0 || match["battle_running"] == true {
+				return nil, errors.New("Giải đã thi đấu; không thể đổi luật chung.")
+			}
+		}
+	}
 	if action == "play-round" {
 		matches, _ := current["matches"].(map[string]interface{})
 		matchID, _ := params["match_id"].(string)

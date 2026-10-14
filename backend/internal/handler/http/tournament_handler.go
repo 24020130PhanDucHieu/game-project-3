@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"project-tuan3/internal/auth"
@@ -77,6 +78,16 @@ func requestSession(c *gin.Context) auth.Session {
 // session can see only its own current and draft code; officials can see both.
 func redactTournament(value map[string]interface{}, session auth.Session) map[string]interface{} {
 	copyTournament := cloneJSONMap(value)
+	if session.Role != "ADMIN" {
+		rules, _ := copyTournament["stage_rules"].(map[string]interface{})
+		for key, raw := range rules {
+			rule, _ := raw.(map[string]interface{})
+			publishAt, _ := rule["publish_at"].(float64)
+			if publishAt > float64(time.Now().UnixMilli())/1000 {
+				rules[key] = map[string]interface{}{"publish_at": publishAt, "hidden": true}
+			}
+		}
+	}
 	if teams, ok := copyTournament["teams"].([]interface{}); ok {
 		for _, raw := range teams {
 			if team, ok := raw.(map[string]interface{}); ok {
@@ -377,8 +388,26 @@ func (h *TournamentHandler) GetRule(c *gin.Context) {
 		stage = "STAGE_1_STANDARD"
 	}
 	c.JSON(http.StatusOK, gin.H{
-		"stage": stage,
+		"stage":       stage,
+		"stage_rules": redactTournament(t, requestSession(c))["stage_rules"],
 	})
+}
+
+func (h *TournamentHandler) SetStageRules(c *gin.Context) {
+	var req struct {
+		Rules []service.StageRule `json:"rules"`
+	}
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 16384)
+	if c.ShouldBindJSON(&req) != nil || req.Rules == nil {
+		c.JSON(400, gin.H{"detail": "Cấu hình luật không hợp lệ."})
+		return
+	}
+	result, err := h.service.SetStageRules(c.Param("id"), req.Rules)
+	if err != nil {
+		c.JSON(400, gin.H{"detail": err.Error()})
+		return
+	}
+	c.JSON(200, result)
 }
 
 func (h *TournamentHandler) SetRule(c *gin.Context) {

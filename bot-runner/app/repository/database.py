@@ -1104,7 +1104,7 @@ def decide_move(game_state):
         else:
             raise ValueError("MSSV hoặc mật khẩu không chính xác cho đội này.")
 
-    def update_match_code(self, tournament_id: str, match_id: str, side: str, code: str, language: str = "PYTHON") -> dict:
+    def update_match_code(self, tournament_id: str, match_id: str, side: str, code: str, language: str = "PYTHON", explanation: str = "") -> dict:
         from app.sandbox.runner import BotRunner
         tourn = self.tournaments.get(tournament_id)
         if not tourn:
@@ -1121,7 +1121,10 @@ def decide_move(game_state):
         # Bước kiểm tra và cô lập code bot (Syntax & Dry-run sandbox validation)
         if not team_slot.get("authenticated"):
             raise ValueError("Team login is required before submitting code.")
-        val_res = BotRunner.validate_bot_code(code, language)
+        if not isinstance(explanation, str) or len(explanation) > 2000:
+            raise ValueError("Giải thích không hợp lệ hoặc quá 2.000 ký tự.")
+        from app.engine.board_rules import match_rule
+        val_res = BotRunner.validate_bot_code(code, language, match_rule(tourn, match))
 
         # Tạo submission ID và bản ghi lịch sử bài nộp chuẩn Kaggle
         sub_id = f"sub_{uuid.uuid4().hex[:8]}"
@@ -1135,6 +1138,8 @@ def decide_move(game_state):
             "language": language,
             "code": code,
             "submitted_at": time.time(),
+            "explanation": explanation.strip(),
+            "stage_rule": match_rule(tourn, match),
             "is_valid": val_res["is_valid"],
             "validation_status": "VALIDATED" if val_res["is_valid"] else "INVALID",
             "error_message": val_res.get("error_message"),
@@ -1470,6 +1475,8 @@ def decide_move(game_state):
                 sub["is_locked"] = True
 
         r_num = match["current_round_idx"]
+        from app.engine.board_rules import match_rule
+        stage_rule = match_rule(tourn, match)
 
         # Mô phỏng trận đấu trên Bàn cờ chiến thuật 9x9 trong môi trường cô lập
         sim_res = Database.simulate_9x9_board_match(
@@ -1478,13 +1485,12 @@ def decide_move(game_state):
             team_a.get("current_lang", "PYTHON"),
             team_b.get("current_lang", "PYTHON"),
             r_num,
-            tourn.get("stage_rule", "STAGE_1_STANDARD"),
+            stage_rule,
             uuid.uuid4().hex
         )
 
         winner_side = sim_res["winner_side"]
         win_reason = sim_res["win_reason"]
-        stage_rule = tourn.get("stage_rule", "STAGE_1_STANDARD")
         damage = 30 if stage_rule == "STAGE_2_MUTATED" and r_num % 2 == 0 else (20 if stage_rule == "STAGE_4_FINALS" else 15)
 
         if winner_side == "team_a":
@@ -1539,6 +1545,8 @@ def decide_move(game_state):
         ]
 
         round_record = {
+            "stage_rule": stage_rule,
+            "rules": sim_res.get("rules", {}),
             "round_number": r_num,
             "sub_a_id": sub_a_id,
             "sub_b_id": sub_b_id,
