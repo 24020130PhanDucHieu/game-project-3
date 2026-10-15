@@ -10,7 +10,7 @@ from app.repository.database import Database
 
 class BoardRulesTests(unittest.TestCase):
     def test_new_presets_reach_bot_state_and_initial_board(self):
-        for rule in ('RULE_REVERSE', 'RULE_FOG', 'RULE_MUTATED_FOG'):
+        for rule in ('STAGE_1_STANDARD', 'STAGE_2_MUTATED', 'RULE_REVERSE', 'RULE_FOG', 'RULE_MUTATED_FOG', 'STAGE_3_REVERSE_FOG', 'STAGE_4_FINALS'):
             states = []
             def decide(code, state):
                 states.append(state)
@@ -18,9 +18,15 @@ class BoardRulesTests(unittest.TestCase):
             with patch('app.engine.board.BotRunner.run_python_code', side_effect=decide):
                 result = simulate_board('a', 'b', stage_rule=rule)
             self.assertEqual(states[0]['rules']['id'], rule)
-            self.assertEqual(states[0]['reverse_rule'], rule == 'RULE_REVERSE')
-            self.assertEqual('type' not in states[0]['opponent_pieces'][0], rule != 'RULE_REVERSE')
-            self.assertEqual(states[0]['remaining_cards']['ROCK'], 5 if rule == 'RULE_MUTATED_FOG' else 3)
+            self.assertEqual(states[0]['reverse_rule'], rule in ('RULE_REVERSE', 'STAGE_3_REVERSE_FOG'))
+            self.assertEqual('type' not in states[0]['opponent_pieces'][0], rule in ('RULE_FOG', 'RULE_MUTATED_FOG', 'STAGE_3_REVERSE_FOG', 'STAGE_4_FINALS'))
+            expected = ({'ROCK':5,'PAPER':2,'SCISSORS':2} if rule in ('STAGE_2_MUTATED', 'RULE_MUTATED_FOG') else
+                        {'ROCK':2,'PAPER':4,'SCISSORS':3} if rule == 'STAGE_4_FINALS' else
+                        {'ROCK':3,'PAPER':3,'SCISSORS':3})
+            self.assertEqual(states[0]['remaining_cards'], expected)
+            for side in ('red_pieces', 'blue_pieces'):
+                initial = result['board_steps'][0][side]
+                self.assertEqual({kind:sum(p['type']==kind for p in initial) for kind in expected}, expected)
             self.assertEqual(result['rules']['id'], rule)
 
     def test_match_uses_stage_rule_and_records_it(self):

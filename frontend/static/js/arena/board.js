@@ -31,8 +31,16 @@ function initChessboardGrid() {
   }
 }
 
-function getInitialBoardPieces() {
-  const typesPattern = ["ROCK", "PAPER", "SCISSORS", "ROCK", "PAPER", "SCISSORS", "ROCK", "PAPER", "SCISSORS"];
+function getInitialBoardPieces(ruleId = "STAGE_1_STANDARD") {
+  const counts = {
+    STAGE_2_MUTATED: [5, 2, 2],
+    RULE_MUTATED_FOG: [5, 2, 2],
+    STAGE_4_FINALS: [2, 4, 3]
+  }[ruleId];
+  const moves = ["ROCK", "PAPER", "SCISSORS"];
+  const typesPattern = counts
+    ? moves.flatMap((type, index) => Array(counts[index]).fill(type))
+    : [...moves, ...moves, ...moves];
   const red = typesPattern.map((t, i) => ({ id: `r_${i}`, col: i, row: 7, type: t, alive: true }));
   const blue = typesPattern.map((t, i) => ({ id: `b_${i}`, col: i, row: 1, type: t, alive: true }));
   return { red, blue };

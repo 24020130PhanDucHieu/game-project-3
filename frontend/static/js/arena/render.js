@@ -2,6 +2,8 @@ function renderVisualBattleArena(match) {
   if (!match) return;
   const teamA = match.team_a;
   const teamB = match.team_b;
+  const configuredRule = currentTournamentData?.stage_rules?.[match.round_level];
+  const previewRule = configuredRule?.rule_id || currentTournamentData?.stage_rule || "STAGE_1_STANDARD";
 
   // PHÂN QUYỀN GIAO DIỆN PHÒNG ĐẤU:
   // Nếu là ADMIN: Ẩn cột nộp code, hiện cột bàn đấu realtime với nhật ký nước đi trực tiếp!
@@ -18,7 +20,7 @@ function renderVisualBattleArena(match) {
     if (!isMatchRunning) {
       const lastRound = match.rounds_history?.[match.rounds_history.length - 1];
       const lastStep = lastRound?.board_steps?.[lastRound.board_steps.length - 1];
-      const initPieces = getInitialBoardPieces();
+      const initPieces = getInitialBoardPieces(previewRule);
       renderRealtimeChessboard(lastStep?.red_pieces || initPieces.red, lastStep?.blue_pieces || initPieces.blue, null);
     }
   } else {
@@ -89,7 +91,7 @@ function renderVisualBattleArena(match) {
     const indicator = document.getElementById("playback-step-indicator");
     if (indicator) indicator.textContent = `Hiệp ${lastR.round_number}: Bước ${inlinePlaybackCurrentIdx + 1} / ${lastR.board_steps.length}`;
   } else if (!isMatchRunning) {
-    const pieces = getInitialBoardPieces(); renderChessboard(pieces.red, pieces.blue, null);
+    const pieces = getInitialBoardPieces(previewRule); renderChessboard(pieces.red, pieces.blue, null);
   }
 
   // Dòng bình luận (Commentary ticker)

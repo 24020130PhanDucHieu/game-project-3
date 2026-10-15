@@ -46,6 +46,18 @@ def run(server):
             arena.tab(page,'tab-bracket');page.locator('#btn-stage-rules').click()
             expect(page.locator('#stage-rules-fields fieldset').first.locator('select')).to_be_disabled()
             page.locator('#dialog-stage-rules button[aria-label]').click()
+            preview = page.evaluate('''() => {
+                const old = currentTournamentData.stage_rules['1'];
+                currentTournamentData.stage_rules['1'] = {rule_id:'STAGE_2_MUTATED', publish_at:0};
+                const match = Object.values(currentTournamentData.matches).find(m => m.round_level === 1);
+                renderVisualBattleArena(match);
+                const counts = ['chessboard-9x9','realtime-chessboard-9x9'].map(id =>
+                    ['red','blue'].map(side => ['ROCK','PAPER','SCISSORS'].map(type =>
+                        document.querySelectorAll(`#${id} .piece-${side}[title*="${type}"]`).length)));
+                currentTournamentData.stage_rules['1'] = old;
+                return counts;
+            }''')
+            assert preview == [[[5,2,2],[5,2,2]],[[5,2,2],[5,2,2]]], preview
             assert api('GET',f'/api/tournaments/{tid}')['stage_rules']['1']['rule_id']=='RULE_REVERSE'
             api('PUT',f'/api/tournaments/{tid}/stage-rules',{'rules':[{'level':1,'rule_id':'RULE_FOG','publish_at':0}]},admin,expected=400)
             for number in (1,2):
