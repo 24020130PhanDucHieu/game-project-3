@@ -57,6 +57,7 @@ function syncLiveRoundBoard(match) {
   if (key === liveRoundKey) return;
   liveRoundKey = key;
   clearInterval(liveRoundTimer);
+  let drawnIndex = -1;
   const draw = () => {
     const countdown = document.getElementById("countdown-num");
     if (countdown && match.intermission_ends_at) countdown.textContent = Math.max(0, Math.ceil(match.intermission_ends_at - Date.now() / 1000));
@@ -64,6 +65,8 @@ function syncLiveRoundBoard(match) {
     const steps = record.board_steps;
     const progress = match.round_status === "ROUND_FINISHED" ? Math.max(0, Math.min(1, (Date.now() / 1000 - (match.intermission_ends_at - 5)) / 5)) : 1;
     const index = Math.min(steps.length - 1, Math.floor(progress * steps.length));
+    if (index === drawnIndex) { if (progress === 1) clearInterval(liveRoundTimer); return; }
+    drawnIndex = index;
     const step = steps[index];
     if (currentAppRole === "ADMIN") renderRealtimeChessboard(step.red_pieces, step.blue_pieces, step.clash_event);
     if (currentAppRole === 'TEAM' || (currentAppRole !== "ADMIN" && !readArenaViewState().inlineRound)) {

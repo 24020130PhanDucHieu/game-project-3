@@ -310,7 +310,7 @@ def run(arena):
 
         cpp = '#include <iostream>\nint main() { std::cout << "ROCK" << std::endl; }'
         assert api("POST", "/api/bots/validate", {"code_content":cpp,"language":"CPP"}, admin)["is_valid"]
-        practice = api("POST", f"/api/tournaments/{tid}/practice-match", {"code_content":CODE,"language":"PYTHON","side":"team_a","boss":"RANDOM"})
+        practice = api("POST", f"/api/tournaments/{tid}/practice-match", {"code_content":CODE,"language":"PYTHON","side":"team_a","boss":"RANDOM"}, token=admin)
         assert practice["board_steps"]
         check("real local C++ validation and Python practice battle")
 

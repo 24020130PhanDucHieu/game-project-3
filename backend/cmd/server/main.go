@@ -212,7 +212,8 @@ func main() {
 		api.POST("/tournaments/:id/matches/:matchId/reset", matchAdmin, mHandler.Reset)
 		api.GET("/tournaments/:id/matches/:matchId/submissions", matchSession, mHandler.GetSubmissions)
 		api.GET("/tournaments/:id/matches/:matchId/replay/:roundNumber", mHandler.GetRoundReplay)
-		api.POST("/tournaments/:id/practice-match", mHandler.PracticeMatch)
+		api.POST("/tournaments/:id/practice-match", requireSession(sessions, false, false), mHandler.PracticeMatch)
+		api.POST("/bots/practice", requireSession(sessions, false, false), mHandler.PracticeMatch)
 
 		// Global Match History, Ranking & Rules
 		api.GET("/matches/history", mHandler.GetMatchHistory)

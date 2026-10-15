@@ -1,11 +1,12 @@
 // =============================================================================
 // 7.3. THỬ NGHIỆM VỚI BOT MẪU TRÊN BÀN CỜ 9x9 (PRACTICE MODE)
 // =============================================================================
-async function handlePracticeMatch() {
-  if (!currentTournamentId) return;
+async function handlePracticeMatch(source = "studio") {
+  const qualifier = source === "qualifier";
+  if (currentAppRole !== "TEAM" && currentAppRole !== "ADMIN") return;
 
-  const editor = document.getElementById("studio-code-editor");
-  const selLang = document.getElementById("studio-sel-lang");
+  const editor = document.getElementById(qualifier ? "qualifier-code" : "studio-code-editor");
+  const selLang = document.getElementById(qualifier ? "qualifier-language" : "studio-sel-lang");
   const code = editor.value.trim();
 
   if (!code) {
@@ -13,21 +14,23 @@ async function handlePracticeMatch() {
     return;
   }
 
-  const selBoss = document.getElementById("sel-trial-boss-bot");
+  const selBoss = document.getElementById(qualifier ? "qualifier-boss" : "sel-trial-boss-bot");
   const boss = selBoss ? selBoss.value : "RANDOM";
 
-  const btnPractice = document.getElementById("btn-studio-test-practice");
+  const btnPractice = document.getElementById(qualifier ? "qualifier-practice" : "btn-studio-test-practice");
+  if (btnPractice.disabled) return;
+  const originalLabel = btnPractice.textContent;
   btnPractice.disabled = true;
   btnPractice.textContent = "Đang Chạy Thử Nghiệm...";
 
   try {
-    const res = await fetch(`${API_BASE}/api/tournaments/${currentTournamentId}/practice-match`, {
+    const res = await fetch(`${API_BASE}/api/bots/practice`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         code_content: code,
         language: selLang.value,
-        side: currentStudioSide || "team_a",
+        side: "team_a",
         boss: boss
       })
     });
@@ -36,12 +39,12 @@ async function handlePracticeMatch() {
     if (!res.ok) {
       notifyError("Lỗi Thử Nghiệm", data.detail || "Không thể mô phỏng trận đấu.");
       btnPractice.disabled = false;
-      btnPractice.textContent = "Thử Nghiệm Với Bot Mẫu";
+      btnPractice.textContent = originalLabel;
       return;
     }
 
     btnPractice.disabled = false;
-    btnPractice.textContent = "Thử Nghiệm Với Bot Mẫu";
+    btnPractice.textContent = originalLabel;
 
     // Mở modal bàn đấu thử nghiệm
     openPracticeArenaModal(data);
@@ -50,7 +53,7 @@ async function handlePracticeMatch() {
     console.error("Lỗi thử nghiệm:", err);
     notifyError("Lỗi Kết Nối", "Không thể kết nối đến máy chủ API.");
     btnPractice.disabled = false;
-    btnPractice.textContent = "Thử Nghiệm Với Bot Mẫu";
+    btnPractice.textContent = originalLabel;
   }
 }
 

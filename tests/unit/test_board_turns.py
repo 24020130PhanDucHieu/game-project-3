@@ -112,21 +112,22 @@ class BoardRulesTests(unittest.TestCase):
                 matches = Database.build_bracket_matches(4)
                 match = matches['m_lvl1_1']
                 for side in ('team_a', 'team_b'):
-                    match[side] = dict(team_name=side, code_valid=True, current_code='code',
+                    match[side] = dict(team_name=side, code_valid=True, current_code='def decide_move(s): return "ROCK"',
                                        current_lang='PYTHON', rounds_won=0, hp=100)
                 db.tournaments = {'cup': dict(matches=matches, stage_rule='STAGE_4_FINALS',
                                               stage_rules={'1':{'rule_id':rule, 'publish_at':0}})}
                 states = []
-                def decide(code, state):
+                def decide(state):
                     states.append(state)
                     return 'ROCK', None
-                with patch('app.engine.board.BotRunner.run_python_code', side_effect=decide):
+                with patch('app.sandbox.game_process.GameProcess.decide', side_effect=decide):
                     for number in (1, 2):
                         match['current_round_idx'] = number
                         db.play_match_round('cup', match['match_id'])
                         record = match['rounds_history'][-1]
                         self.assertEqual(record['stage_rule'], rule)
                         self.assertEqual(record['rules']['id'], rule)
+                        self.assertTrue(states)
                         self.assertTrue(all(s['rules']['id'] == rule for s in states))
                         self.assertEqual(record['first_side'], 'team_a' if number == 1 else 'team_b')
                         states.clear()

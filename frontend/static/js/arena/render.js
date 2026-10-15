@@ -21,7 +21,9 @@ function renderVisualBattleArena(match) {
     if (document.getElementById("realtime-chessboard-9x9")?.children.length !== 81) initRealtimeChessboardGrid();
     if (!isMatchRunning) {
       const lastRound = match.rounds_history?.[match.rounds_history.length - 1];
-      const lastStep = lastRound?.board_steps?.[lastRound.board_steps.length - 1];
+      const steps = lastRound?.board_steps || [];
+      const progress = match.round_status === 'ROUND_FINISHED' ? Math.max(0, Math.min(1, (Date.now()/1000 - (match.intermission_ends_at - 5))/5)) : 1;
+      const lastStep = steps[Math.min(steps.length-1, Math.floor(progress*steps.length))];
       const initPieces = getInitialBoardPieces(previewRule);
       renderRealtimeChessboard(lastStep?.red_pieces || initPieces.red, lastStep?.blue_pieces || initPieces.blue, null);
     }

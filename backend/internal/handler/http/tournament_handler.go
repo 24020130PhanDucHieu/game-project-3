@@ -347,7 +347,7 @@ func (h *TournamentHandler) GetRanking(c *gin.Context) {
 				continue
 			}
 			roundsHist, ok := m["rounds_history"].([]interface{})
-			if !ok || len(roundsHist) == 0 {
+			if !ok || len(roundsHist) == 0 || m["status"] != "COMPLETED" {
 				continue
 			}
 			// This match has been played - count participation and wins

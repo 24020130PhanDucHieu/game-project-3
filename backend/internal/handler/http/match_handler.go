@@ -616,13 +616,17 @@ func sessionFromContext(c *gin.Context) (auth.Session, bool) {
 }
 
 func (h *MatchHandler) PracticeMatch(c *gin.Context) {
-	id := c.Param("id")
 	var req map[string]interface{}
-	_ = c.ShouldBindJSON(&req)
-	if req == nil {
-		req = make(map[string]interface{})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Dữ liệu chạy thử không hợp lệ."})
+		return
 	}
-	res, err := h.service.MutateTournament(id, "practice-match", req)
+	code, _ := req["code_content"].(string)
+	if len(code) == 0 || len(code) > 65536 {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Mã bot phải có nội dung và không quá 64 KB."})
+		return
+	}
+	res, err := h.service.PracticeMatch(req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
 		return

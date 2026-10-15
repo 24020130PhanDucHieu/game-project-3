@@ -12,7 +12,9 @@ CHILD = r'''
 import sys,json,builtins,random,math
 try:
     import resource
-    resource.setrlimit(resource.RLIMIT_CPU,(20,21))
+    # The parent enforces a one-second deadline for every decide() and kills
+    # the process on timeout. A cumulative CPU cap would incorrectly forfeit
+    # a long game even when every individual move meets that deadline.
     resource.setrlimit(resource.RLIMIT_AS,(160*1024*1024,160*1024*1024))
     resource.setrlimit(resource.RLIMIT_FSIZE,(1024*1024,1024*1024))
     resource.setrlimit(resource.RLIMIT_NOFILE,(32,32))

@@ -48,7 +48,8 @@ def run():
             page.locator('#btn-edit-stage-schedule').click()
             new_end=time.strftime('%Y-%m-%dT%H:%M',time.localtime(time.time()+7200))
             times.locator('[data-time=ends_at]').fill(new_end)
-            page.locator('#dialog-stage-schedule').get_by_role('button',name='Hoàn tác',exact=True).click()
+            expect(page.locator('#dialog-stage-schedule').get_by_role('button',name='Hoàn tác',exact=True)).to_have_count(0)
+            page.evaluate('document.getElementById("dialog-stage-schedule").close(); openStageSchedule()')
             expect(times.locator('[data-time=ends_at]')).to_have_value(end)
             page.locator('#btn-edit-stage-schedule').click()
             times.locator('[data-time=ends_at]').fill(new_end)
@@ -75,6 +76,46 @@ def run():
                 arena.submit_ui(team,'#include <iostream>\nint main(){std::cout<<"ROCK";}')
                 team.context.close()
             api('POST',f'/api/tournaments/{tid}/matches/{mid}/play-round',token=admin)
+            played=api('GET',f'/api/tournaments/{tid}')['matches'][mid]
+            winner=played['rounds_history'][0]['winner']
+            sid=played[winner]['student_id']
+            winner_page=arena.open_page(browser,errors,[])
+            arena.login_page(winner_page,sid,'k69'+sid)
+            arena.tab(winner_page,'tab-profile')
+            def stat(label):
+                return winner_page.locator('.profile-stat').filter(has=winner_page.locator('span',has_text=label)).locator('strong')
+            expect(stat('Hiệp thắng')).to_have_text('1')
+            expect(stat('Trận Bo5 thắng')).to_have_text('0')
+            expect(stat('ELO bảng xếp hạng')).to_have_text('1200')
+            expect(winner_page.locator('#profile-matches')).to_contain_text('Đang đấu Bo5')
+            # Rendering identical snapshots must preserve every piece node.
+            stable=page.evaluate('''steps => {
+              renderRealtimeChessboard(steps[0].red_pieces,steps[0].blue_pieces);
+              const board=document.getElementById('realtime-chessboard-9x9');
+              const original=Array.from(board.querySelectorAll('.board-piece'));
+              renderRealtimeChessboard(steps[0].red_pieces,steps[0].blue_pieces);
+              return original.length===18 && original.every(node=>node.isConnected);
+            }''',played['rounds_history'][0]['board_steps'])
+            assert stable
+            # Complete the real Bo5, then assert the winning team's profile and ranking.
+            while played['status']!='COMPLETED':
+                time.sleep(5.2)
+                api('POST',f'/api/tournaments/{tid}/matches/{mid}/demo-fill',token=admin)
+                api('POST',f'/api/tournaments/{tid}/matches/{mid}/play-round',token=admin)
+                played=api('GET',f'/api/tournaments/{tid}')['matches'][mid]
+            final_sid=played[played['winner']]['student_id']
+            if final_sid!=sid:
+                winner_page.context.close()
+                winner_page=arena.open_page(browser,errors,[])
+                arena.login_page(winner_page,final_sid,'k69'+final_sid)
+                arena.tab(winner_page,'tab-profile')
+            winner_page.evaluate('refreshTeamProfile()')
+            expect(stat('Trận Bo5 thắng')).to_have_text('1')
+            expect(stat('Hiệp thắng')).to_have_text('3')
+            ranking=api('GET','/api/ranking')
+            elo=next(row['elo_score'] for row in ranking if row['student_id']==final_sid)
+            expect(stat('ELO bảng xếp hạng')).to_have_text(str(elo))
+            winner_page.context.close()
             api('PUT',f'/api/tournaments/{tid}/stage-rules',{'correction':True,'rules':[{'level':1,'rule_id':'COMBO_4','publish_at':0}]},admin,expected=400)
             page.set_viewport_size({'width':390,'height':900})
             for kind,opener in [('rules','openStageRules'),('schedule','openStageSchedule')]:
@@ -84,7 +125,7 @@ def run():
                 dialog.screenshot(path=str(arena.ROOT/'tests'/f'profile-{kind}-390.png'))
                 page.evaluate(f'document.getElementById("dialog-stage-{kind}").close()')
             assert not errors,errors
-            print('PASS team profile desktop/mobile/F5, fog own/enemy, published rule correction, schedule edit/undo, C++ submissions and played-stage lock',flush=True)
+            print('PASS profile heat/Bo5 wins + ELO, stable live nodes, desktop/mobile/F5, fog, rule correction, schedule edit, C++ submissions',flush=True)
         finally: browser.close()
 
 

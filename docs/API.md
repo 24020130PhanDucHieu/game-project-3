@@ -189,3 +189,16 @@ Khi client kết nối vào phòng trận đấu:
 ```json
 {"correction":true,"rules":[{"level":1,"rule_id":"COMBO_5","publish_at":0}]}
 ```
+
+## Chạy thử Boss độc lập
+
+`POST /api/bots/practice` yêu cầu phiên đăng nhập đội hoặc Admin. Không cần giải chính hay trận đấu. Endpoint cũ `/api/tournaments/:id/practice-match` vẫn hoạt động với phiên hợp lệ.
+
+```json
+{"code_content":"def decide_move(s): return 'ROCK'","language":"PYTHON","side":"team_a","boss":"RANDOM"}
+```
+
+- Ngôn ngữ: `PYTHON` hoặc `CPP`; Boss: `RANDOM`, `AGGRESSIVE`, `ADAPTIVE`.
+- Mã nguồn phải có nội dung, tối đa 64 KB. Kết quả có `board_steps`, `winner`, `win_reason`, `simulation`.
+- Không ghi vào giải, bài nộp, lịch sử thi đấu hay ELO. Phòng chạy thử của đội dùng phía Đỏ (`team_a`).
+- `/api/ranking` chỉ cộng/trừ kết quả trận Bo5 đã `COMPLETED`; hiệp riêng lẻ không tính là trận thua.

@@ -62,49 +62,9 @@ function renderChessboard(redPieces, bluePieces, clashEvent = null) {
     initChessboardGrid();
   }
 
-  const cells = boardEl.querySelectorAll(".board-cell");
-  cells.forEach(cell => {
-    cell.innerHTML = "";
-    cell.classList.remove("cell-clash");
-  });
-
-  // Render quân Đội Xanh
-  let blueAliveCount = 0;
-  if (bluePieces && Array.isArray(bluePieces)) {
-    bluePieces.forEach(p => {
-      if (!p.alive) return;
-      blueAliveCount++;
-      const cell = boardEl.querySelector(`.board-cell[data-col="${p.col}"][data-row="${p.row}"]`);
-      if (cell) {
-        const pieceEl = document.createElement("div");
-        pieceEl.className = "board-piece piece-blue";
-        pieceEl.innerHTML = pieceIcon(p.type);
-        pieceEl.setAttribute("role", "img");
-        pieceEl.setAttribute("aria-label", PIECE_ICONS[p.type] || "B\u00faa");
-        pieceEl.title = `Quân Xanh: ${p.type} (${p.col}, ${p.row})`;
-        cell.appendChild(pieceEl);
-      }
-    });
-  }
-
-  // Render quân Đội Đỏ
-  let redAliveCount = 0;
-  if (redPieces && Array.isArray(redPieces)) {
-    redPieces.forEach(p => {
-      if (!p.alive) return;
-      redAliveCount++;
-      const cell = boardEl.querySelector(`.board-cell[data-col="${p.col}"][data-row="${p.row}"]`);
-      if (cell) {
-        const pieceEl = document.createElement("div");
-        pieceEl.className = "board-piece piece-red";
-        pieceEl.innerHTML = pieceIcon(p.type);
-        pieceEl.setAttribute("role", "img");
-        pieceEl.setAttribute("aria-label", PIECE_ICONS[p.type] || "B\u00faa");
-        pieceEl.title = `Quân Đỏ: ${p.type} (${p.col}, ${p.row})`;
-        cell.appendChild(pieceEl);
-      }
-    });
-  }
+  updateBoardPieces(boardEl, redPieces, bluePieces, clashEvent);
+  const redAliveCount = (redPieces || []).filter(p => p.alive).length;
+  const blueAliveCount = (bluePieces || []).filter(p => p.alive).length;
 
   // Cập nhật số quân còn lại trên top bar
   const countRedEl = document.getElementById("board-count-red");
@@ -156,46 +116,42 @@ function renderRealtimeChessboard(redPieces, bluePieces, clashEvent = null) {
     initRealtimeChessboardGrid();
   }
 
-  const cells = boardEl.querySelectorAll(".board-cell");
-  cells.forEach(cell => {
-    cell.innerHTML = "";
-    cell.classList.remove("cell-clash");
-  });
+  updateBoardPieces(boardEl, redPieces, bluePieces, clashEvent);
+}
 
-  if (bluePieces && Array.isArray(bluePieces)) {
-    bluePieces.forEach(p => {
-      if (!p.alive) return;
-      const cell = boardEl.querySelector(`.board-cell[data-col="${p.col}"][data-row="${p.row}"]`);
-      if (cell) {
-        const pieceEl = document.createElement("div");
-        pieceEl.className = "board-piece piece-blue";
-        pieceEl.innerHTML = pieceIcon(p.type);
-        pieceEl.setAttribute("role", "img");
-        pieceEl.setAttribute("aria-label", PIECE_ICONS[p.type] || "B\u00faa");
-        pieceEl.title = `Quân Xanh: ${p.type} (${p.col}, ${p.row})`;
-        cell.appendChild(pieceEl);
+function updateBoardPieces(board, red, blue, clash) {
+  const existing = new Map(Array.from(board.querySelectorAll('.board-piece'), el => [el.dataset.key, el]));
+  for (const [color, pieces] of [['blue', blue], ['red', red]]) {
+    for (const [i, p] of (pieces || []).entries()) {
+      if (!p.alive) continue;
+      const cell = board.children[p.row * 9 + p.col];
+      if (!cell) continue;
+      const key = `${color}:${p.id ?? i}`;
+      let node = existing.get(key);
+      existing.delete(key);
+      if (!node) {
+        node = document.createElement('div'); node.dataset.key = key;
+        node.className = `board-piece piece-${color}`; node.setAttribute('role', 'img');
       }
-    });
-  }
-
-  if (redPieces && Array.isArray(redPieces)) {
-    redPieces.forEach(p => {
-      if (!p.alive) return;
-      const cell = boardEl.querySelector(`.board-cell[data-col="${p.col}"][data-row="${p.row}"]`);
-      if (cell) {
-        const pieceEl = document.createElement("div");
-        pieceEl.className = "board-piece piece-red";
-        pieceEl.innerHTML = pieceIcon(p.type);
-        pieceEl.setAttribute("role", "img");
-        pieceEl.setAttribute("aria-label", PIECE_ICONS[p.type] || "B\u00faa");
-        pieceEl.title = `Quân Đỏ: ${p.type} (${p.col}, ${p.row})`;
-        cell.appendChild(pieceEl);
+      if (node.dataset.type !== p.type) {
+        node.dataset.type = p.type; node.innerHTML = pieceIcon(p.type);
+        node.setAttribute('aria-label', PIECE_ICONS[p.type] || '?');
       }
-    });
+      node.title = `${color === 'red' ? 'Đỏ' : 'Xanh'}: ${p.type} (${p.col}, ${p.row})`;
+      if (node.parentNode !== cell) {
+        const previous = node.parentElement;
+        const dx = previous ? previous.offsetLeft - cell.offsetLeft : 0;
+        const dy = previous ? previous.offsetTop - cell.offsetTop : 0;
+        node.getAnimations().forEach(animation => animation.cancel());
+        cell.appendChild(node);
+        if (previous && (dx || dy) && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          node.animate([{transform:`translate(${dx}px, ${dy}px)`}, {transform:'translate(0, 0)'}], {duration:150, easing:'ease-out'});
+        }
+      }
+    }
   }
-
-  if (clashEvent && typeof clashEvent.col === "number" && typeof clashEvent.row === "number") {
-    const clashCell = boardEl.querySelector(`.board-cell[data-col="${clashEvent.col}"][data-row="${clashEvent.row}"]`);
-    if (clashCell) clashCell.classList.add("cell-clash");
-  }
+  existing.forEach(node => node.remove());
+  const clashCell = clash ? board.children[clash.row * 9 + clash.col] : null;
+  board.querySelectorAll('.cell-clash').forEach(cell => { if (cell !== clashCell) cell.classList.remove('cell-clash'); });
+  clashCell?.classList.add('cell-clash');
 }

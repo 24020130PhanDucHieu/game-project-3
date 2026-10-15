@@ -1,7 +1,7 @@
 let scheduleTournamentId = null;
 function editSavedStageSchedule() {
   document.querySelectorAll('#stage-schedule-fields input[data-editable="true"]').forEach(input => input.disabled=false);
-  document.getElementById('stage-schedule-error').textContent='Sửa giờ rồi bấm Lưu lịch. Vòng đã đấu chỉ được gia hạn giờ đóng; Hoàn tác để bỏ thay đổi chưa lưu.';
+  document.getElementById('stage-schedule-error').textContent='Sửa giờ rồi bấm Lưu lịch. Vòng đã đấu chỉ được gia hạn giờ đóng. Đóng cửa sổ để bỏ thay đổi chưa lưu.';
   document.querySelector('#stage-schedule-fields input:not(:disabled)')?.focus();
 }
 

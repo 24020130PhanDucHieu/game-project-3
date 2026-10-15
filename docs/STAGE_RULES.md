@@ -21,7 +21,7 @@ Bàn chính của đội theo hiệp mới nhất, cùng cơ chế với bàn li
 - Giờ công bố để trống: công bố và khóa ngay khi lưu.
 - Giờ ở tương lai: Admin được sửa trước giờ đó; đội thi và khách chỉ thấy thời điểm công bố, API không gửi ID luật.
 - Trước công bố: server chặn nộp bài chính thức, đồng bộ bản nháp và bắt đầu hiệp của vòng đó.
-- Sau công bố: Admin dùng **Sửa lại** để sửa nhầm nếu vòng chưa có trận nào bắt đầu. Đổi luật yêu cầu các đội nộp lại bot. **Hoàn tác** bỏ các thay đổi chưa lưu.
+- Sau công bố: Admin dùng **Sửa lại** để sửa nhầm nếu vòng chưa có trận nào bắt đầu. Đổi luật yêu cầu các đội nộp lại bot. Đóng cửa sổ để bỏ các thay đổi chưa lưu.
 - Khi vòng đã có trận hoặc đang chạy: không được đổi luật, kể cả qua API sửa lại hoặc luật chung cũ.
 - Khi thêm/đổi cấu hình chưa khóa: bài cũ mất trạng thái sẵn sàng, đội phải nộp lại. Lịch sử và bản nháp vẫn được giữ.
 - Lịch mở/đóng vòng đặt riêng bằng nút lịch hiện có; không có hạn nộp mới áp dụng chung cho cả Bo5. Bài được khóa khi Admin bắt đầu từng hiệp.

@@ -25,6 +25,11 @@
     </div>
     <textarea id="qualifier-code" class="ide-editor" rows="14" style="width:100%;" aria-label="Mã nguồn vòng loại" oninput="saveQualifierDraft()" placeholder="def decide_move(game_state):&#10;    return 'ROCK'"></textarea>
     <button class="btn btn-primary" type="button" id="qualifier-submit" onclick="submitQualifierCode()">Nộp bot</button>
+      <div class="qualifier-practice-tools">
+        <select id="qualifier-boss" class="input-text-sm" aria-label="Boss chạy thử"><option value="RANDOM">Boss ngẫu nhiên</option><option value="AGGRESSIVE">Boss hiếu chiến</option><option value="ADAPTIVE">Boss phản đòn</option></select>
+        <button class="btn btn-outline" type="button" id="qualifier-practice" onclick="handlePracticeMatch('qualifier')">Chạy thử với Boss</button>
+        <small>Chạy thử không nộp bài và không tính ELO.</small>
+      </div>
     <details><summary>Lịch sử bài nộp và kết quả của đội</summary><div id="qualifier-my-history"></div><div id="qualifier-my-results"></div></details>
   </div>
   <div class="content-card admin-only" id="qualifier-admin-teams-card" hidden>

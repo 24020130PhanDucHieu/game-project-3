@@ -1379,7 +1379,7 @@ def decide_move(game_state):
     @staticmethod
     def simulate_9x9_board_match(team_a_code: str, team_b_code: str, team_a_lang: str = "PYTHON", team_b_lang: str = "PYTHON", round_num: int = 1, stage_rule: str = "STAGE_1_STANDARD", tie_seed: str = None) -> dict:
         from app.engine.board import simulate_board
-        return simulate_board(team_a_code, team_b_code, team_a_lang, team_b_lang, round_num, stage_rule, tie_seed)
+        return simulate_board(team_a_code, team_b_code, team_a_lang, team_b_lang, round_num, stage_rule, tie_seed, reuse_sandbox=True)
 
     @staticmethod
     def complete_bracket_match(tourn, match):

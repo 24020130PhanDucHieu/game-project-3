@@ -59,6 +59,11 @@ func (s *TournamentService) ValidateCode(params map[string]interface{}) (map[str
 	return s.adapter.Mutate(nil, "validate-code", params)
 }
 
+// Practice is independent of tournament state and never writes official results.
+func (s *TournamentService) PracticeMatch(params map[string]interface{}) (map[string]interface{}, error) {
+	return s.adapter.Mutate(nil, "practice-match", params)
+}
+
 func (s *TournamentService) RecoverInterruptedRounds() error {
 	for tournamentID, raw := range s.repo.GetAll() {
 		tournament, _ := raw.(map[string]interface{})
