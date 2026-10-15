@@ -45,7 +45,8 @@ class Combinations(unittest.TestCase):
     return next(m for m,n in state['remaining_cards'].items() if n>0)
 '''
             with self.subTest(rule=rule):
-                self.assertTrue(BotRunner.validate_bot_code(code,'PYTHON',rule)['is_valid'])
+                validation=BotRunner.validate_bot_code(code,'PYTHON',rule)
+                self.assertTrue(validation['is_valid'],validation)
                 for reuse in (False,True):
                     result=simulate_board(code,code,stage_rule=rule,tie_seed='combo-fixture',reuse_sandbox=reuse)
                     self.assertEqual(result['bot_errors'],{'team_a':None,'team_b':None})

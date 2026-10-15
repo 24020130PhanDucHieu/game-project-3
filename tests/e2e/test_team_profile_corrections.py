@@ -99,7 +99,11 @@ def run():
             assert stable
             # Complete the real Bo5, then assert the winning team's profile and ranking.
             while played['status']!='COMPLETED':
-                time.sleep(5.2)
+                deadline=time.monotonic()+20
+                while played['round_status']=='ROUND_FINISHED' and time.monotonic()<deadline:
+                    time.sleep(0.2)
+                    played=api('GET',f'/api/tournaments/{tid}')['matches'][mid]
+                assert played['round_status']=='AWAITING_SUBMISSIONS',played['round_status']
                 api('POST',f'/api/tournaments/{tid}/matches/{mid}/demo-fill',token=admin)
                 api('POST',f'/api/tournaments/{tid}/matches/{mid}/play-round',token=admin)
                 played=api('GET',f'/api/tournaments/{tid}')['matches'][mid]

@@ -1189,13 +1189,15 @@ def decide_move(game_state):
         }
 
     def quick_fill_demo_bots(self, tournament_id: str, match_id: str) -> dict:
-        from app.sandbox.runner import BotRunner
         tourn = self.tournaments.get(tournament_id)
         if not tourn:
             raise ValueError("Không tìm thấy giải đấu.")
         match = tourn["matches"].get(match_id)
         if not match:
             raise ValueError("Không tìm thấy trận đấu.")
+        if (match.get("status") == "COMPLETED" or match.get("battle_running")
+                or match.get("round_status") in ("ROUND_FINISHED", "BATTLE_RUNNING")):
+            raise ValueError("Chờ hiệp tiếp theo sẵn sàng trước khi nạp bot mẫu.")
         team_a = match.get("team_a")
         team_b = match.get("team_b")
         if not team_a or not team_b:
@@ -1209,46 +1211,15 @@ def decide_move(game_state):
             "    avail = [c for c, count in cards.items() if count > 0]\n"
             "    return random.choice(avail) if avail else 'ROCK'\n"
         )
-        if not team_a.get("current_code"):
-            team_a["current_code"] = py_tpl
-            team_a["draft_code"] = py_tpl
-        team_a["authenticated"] = True
-        team_a["code_submitted"] = True
-        val_a = BotRunner.validate_bot_code(team_a["current_code"], team_a.get("current_lang", "PYTHON"))
-        team_a["code_valid"] = val_a["is_valid"]
-        sub_a_id = f"sub_{uuid.uuid4().hex[:8]}"
-        team_a["active_submission_id"] = sub_a_id
-
-        if not team_b.get("current_code"):
-            team_b["current_code"] = py_tpl
-            team_b["draft_code"] = py_tpl
-        team_b["authenticated"] = True
-        team_b["code_submitted"] = True
-        val_b = BotRunner.validate_bot_code(team_b["current_code"], team_b.get("current_lang", "PYTHON"))
-        team_b["code_valid"] = val_b["is_valid"]
-        sub_b_id = f"sub_{uuid.uuid4().hex[:8]}"
-        team_b["active_submission_id"] = sub_b_id
-
-        if "submissions_history" not in match:
-            match["submissions_history"] = []
-        match["submissions_history"].append({
-            "submission_id": sub_a_id, "match_id": match_id, "round_number": match.get("current_round_idx", 1),
-            "side": "team_a", "team_name": team_a["team_name"], "student_id": team_a["student_id"],
-            "language": team_a.get("current_lang", "PYTHON"), "code": team_a["current_code"],
-            "submitted_at": time.time(), "is_valid": True, "validation_status": "VALIDATED", "is_locked": False
-        })
-        match["submissions_history"].append({
-            "submission_id": sub_b_id, "match_id": match_id, "round_number": match.get("current_round_idx", 1),
-            "side": "team_b", "team_name": team_b["team_name"], "student_id": team_b["student_id"],
-            "language": team_b.get("current_lang", "PYTHON"), "code": team_b["current_code"],
-            "submitted_at": time.time(), "is_valid": True, "validation_status": "VALIDATED", "is_locked": False
-        })
-
-        match["all_teams_ready"] = True
-        match["round_status"] = "READY_FOR_BATTLE"
-
-        self.save_tournaments_to_file()
-        return {"status": "SUCCESS", "message": "Ban tổ chức đã nạp mã Bot mẫu hợp lệ cho cả 2 đội (Cả 2 đã sẵn sàng)!", "match": match}
+        for side, team in (("team_a", team_a), ("team_b", team_b)):
+            code = team.get("current_code") or py_tpl
+            language = team.get("current_lang", "PYTHON") if team.get("current_code") else "PYTHON"
+            team["authenticated"] = True
+            self.update_match_code(tournament_id, match_id, side, code, language)
+        ready = match["all_teams_ready"]
+        return {"status": "SUCCESS" if ready else "INVALID_CODE",
+                "message": "Cả hai bot đã hợp lệ và sẵn sàng." if ready else "Có bot chưa hợp lệ; kiểm tra lỗi bài nộp trước khi bắt đầu.",
+                "match": match}
 
     def reset_match(self, tournament_id: str, match_id: str) -> dict:
         tourn = self.tournaments.get(tournament_id)

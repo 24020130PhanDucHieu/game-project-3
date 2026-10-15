@@ -65,9 +65,9 @@ def run(server):
         assert password not in store
         organizer.reload()
         organizer.wait_for_function("currentAppRole === 'ADMIN'")
-        organizer.on('dialog', lambda dialog: dialog.accept())
         row = organizer.locator('#tbody-team-credentials tr').filter(has_text=sid)
         row.get_by_role('button', name='Xóa', exact=True).click()
+        organizer.locator('#app-action-dialog').get_by_role('button', name='Xóa tài khoản', exact=True).click()
         expect(row).to_have_count(0)
         api('GET', '/api/session', token=team_token, expected=401)
         api('GET', '/api/session', token=selected['session_token'], expected=401)

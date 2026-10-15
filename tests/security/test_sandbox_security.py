@@ -38,9 +38,15 @@ class TestSandboxSecurity(unittest.TestCase):
 
     def test_disable_native_cpp_in_production(self):
         with patch.dict(os.environ, {"ENVIRONMENT": "production"}):
-            path, error = BotRunner.compile_cpp_code("int main() { return 0; }")
-        self.assertIsNone(path)
-        self.assertIn("disabled in production", error)
+            with patch('app.sandbox.cpp_wasi.compile_wasi', return_value=('fixture.wasm', None)) as compile_wasi:
+                path, error = BotRunner.compile_cpp_code("int main() { return 0; }")
+                compile_wasi.assert_called_once_with("int main() { return 0; }")
+                self.assertEqual(path, 'fixture.wasm')
+                self.assertIsNone(error)
+            with patch('app.sandbox.runner.subprocess.run') as native:
+                _, error = BotRunner.run_cpp_binary('fixture.exe', {})
+                self.assertIn('WASI', error)
+                native.assert_not_called()
 
 
 if __name__ == "__main__":

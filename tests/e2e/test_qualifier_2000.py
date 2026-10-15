@@ -105,8 +105,8 @@ def run_ui(server, admin):
         organizer.locator('#qualifier-config-save').click()
         expect(organizer.locator('#qualifier-config-dialog')).not_to_be_visible()
         expect(organizer.locator('#qualifier-freeze')).to_be_enabled()
-        organizer.on('dialog',lambda dialog:dialog.accept())
         organizer.locator('#qualifier-freeze').click()
+        organizer.locator('#app-action-dialog').get_by_role('button',name='Khóa bài nộp',exact=True).click()
         expect(organizer.locator('#qualifier-summary')).to_contain_text('Đã khóa bài')
         locked = api('GET', f'/api/qualifiers/{qid}', token=tokens[0])['participant']
         assert locked['locked_id'] == good
