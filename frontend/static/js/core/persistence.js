@@ -66,7 +66,7 @@ function syncLiveRoundBoard(match) {
     const index = Math.min(steps.length - 1, Math.floor(progress * steps.length));
     const step = steps[index];
     if (currentAppRole === "ADMIN") renderRealtimeChessboard(step.red_pieces, step.blue_pieces, step.clash_event);
-    if (currentAppRole !== "ADMIN" && !readArenaViewState().inlineRound) {
+    if (currentAppRole === 'TEAM' || (currentAppRole !== "ADMIN" && !readArenaViewState().inlineRound)) {
       inlinePlaybackCurrentIdx = index;
       renderChessboard(step.red_pieces, step.blue_pieces, step.clash_event);
       const indicator = document.getElementById("playback-step-indicator");

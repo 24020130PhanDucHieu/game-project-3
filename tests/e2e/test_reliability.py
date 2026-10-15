@@ -278,7 +278,8 @@ def run(arena):
         submit_ui(team_a, CODE)
         check("the next round requires fresh code, without requiring a new login")
 
-        team_a.locator("#btn-playback-step-prev").click()
+        expect(team_a.locator("#match-playback-bar")).not_to_be_visible()
+        team_a.evaluate('saveArenaViewState({inlineRound:1,inlineStep:0});renderVisualBattleArena(currentMatchData)')
         playback = team_a.locator("#playback-step-indicator").inner_text()
         log_button = team_a.locator(".log-tab-btn").last
         log_button.click()
@@ -291,7 +292,7 @@ def run(arena):
         team_a.evaluate("() => window.arenaReady")
         expect(team_a.locator("#playback-step-indicator")).to_have_text(playback)
         assert team_a.locator(".log-tab-btn.active").get_attribute("data-log-tab") == log_id
-        check("replay position and log tab survive background updates, tab changes and F5")
+        check("team live board ignores old replay position; log tab survives tab changes and F5")
 
         history_panel = team_a.locator("details").filter(has=team_a.locator("#tbody-round-history"))
         history_panel.locator("summary").click()

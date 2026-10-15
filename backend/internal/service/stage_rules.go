@@ -15,6 +15,9 @@ type StageRule struct {
 }
 
 func ValidStageRule(id string) bool {
+	if len(id) == 7 && id[:6] == "COMBO_" && id[6] >= '0' && id[6] <= '7' {
+		return true
+	}
 	switch id {
 	case "STAGE_1_STANDARD", "STAGE_2_MUTATED", "RULE_REVERSE", "RULE_FOG":
 		return true

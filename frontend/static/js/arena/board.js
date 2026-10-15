@@ -38,7 +38,7 @@ function getInitialBoardPieces(ruleId = "STAGE_1_STANDARD") {
     STAGE_4_FINALS: [2, 4, 3]
   }[ruleId];
   const moves = ["ROCK", "PAPER", "SCISSORS"];
-  const typesPattern = counts
+  const typesPattern = /^COMBO_[1357]$/.test(ruleId) ? Array(9).fill('UNKNOWN') : counts
     ? moves.flatMap((type, index) => Array(counts[index]).fill(type))
     : [...moves, ...moves, ...moves];
   const red = typesPattern.map((t, i) => ({ id: `r_${i}`, col: i, row: 7, type: t, alive: true }));
@@ -47,6 +47,14 @@ function getInitialBoardPieces(ruleId = "STAGE_1_STANDARD") {
 }
 
 function renderChessboard(redPieces, bluePieces, clashEvent = null) {
+  const match = currentTournamentData?.matches?.[currentActiveMatchId] || currentMatchData;
+  const rule = currentTournamentData?.stage_rules?.[match?.round_level]?.rule_id || currentTournamentData?.stage_rule;
+  if (currentAppRole === 'TEAM' && (ruleBits(rule) & 4)) {
+    const mine = String(currentTeamStudentId || '').trim();
+    const hide = pieces => pieces?.map(piece => ({...piece, type:'UNKNOWN'}));
+    if (!mine || String(match?.team_a?.student_id).trim() !== mine) redPieces=hide(redPieces);
+    if (!mine || String(match?.team_b?.student_id).trim() !== mine) bluePieces=hide(bluePieces);
+  }
   const boardEl = document.getElementById("chessboard-9x9");
   if (!boardEl) return;
 

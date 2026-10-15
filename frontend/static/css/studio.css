@@ -8,6 +8,24 @@
   align-items: flex-start;
   justify-content: space-between;
   margin-bottom: 14px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.arena-studio-column, .arena-board-column, .studio-card-header > div { min-width: 0; }
+.studio-card-header > div:first-child { flex: 1 1 240px; }
+.studio-card-header .ide-status-tag { flex: 0 0 auto; white-space: nowrap; max-width: 100%; }
+.studio-card .panel-title { font-size: 18px; line-height: 1.4; margin: 0; }
+.studio-card #studio-rule-summary { margin: 0 0 14px; padding: 10px 12px; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.studio-card .ide-toolbar-row { flex-wrap: wrap; gap: 8px; }
+.studio-card .toolbar-lang-group { flex-wrap: wrap; min-width: 0; }
+.studio-card select { max-width: 100%; }
+.studio-card #studio-rule-note { min-height: 66px; margin: 6px 0 12px; }
+.piece-unknown { font-size: 24px; font-weight: 800; line-height: 1; }
+@media (max-width: 600px) {
+  .studio-card { padding: 16px; }
+  .studio-card-header > div:first-child { flex-basis: 100%; }
+  .studio-card .trial-boss-group { flex-wrap: wrap; min-width: 0; }
 }
 
 .ide-status-tag {

@@ -1,6 +1,19 @@
 """Board presets shared by initial placement and the state supplied to bots."""
+import random
 
-def board_rules(rule_id, cycle=1):
+
+def combination_bits(rule_id):
+    return int(rule_id[-1]) if rule_id in {f"COMBO_{i}" for i in range(8)} else 0
+
+
+def shuffled_pattern(seed):
+    rng = random.Random(str(seed) + ':pieces')
+    moves = ['ROCK', 'PAPER', 'SCISSORS']
+    pattern = moves + [rng.choice(moves) for _ in range(6)]
+    rng.shuffle(pattern)
+    return pattern
+
+def board_rules(rule_id, cycle=1, seed='validation'):
     counts = {"ROCK": 3, "PAPER": 3, "SCISSORS": 3}
     if rule_id in ("STAGE_2_MUTATED", "RULE_MUTATED_FOG"):
         counts = {"ROCK": 5, "PAPER": 2, "SCISSORS": 2}
@@ -10,7 +23,14 @@ def board_rules(rule_id, cycle=1):
                rule_id == "STAGE_3_REVERSE_FOG" and cycle % 2 == 1 or
                rule_id == "STAGE_4_FINALS" and cycle % 3 == 0)
     fog = rule_id in ("RULE_FOG", "RULE_MUTATED_FOG", "STAGE_3_REVERSE_FOG", "STAGE_4_FINALS")
+    bits = combination_bits(rule_id)
+    if bits & 1:
+        pattern = shuffled_pattern(seed)
+        counts = {move: pattern.count(move) for move in counts}
+    reverse = reverse or bool(bits & 2)
+    fog = fog or bool(bits & 4)
     return {"id": rule_id, "initial_pieces": counts, "fog": fog,
+            "shuffle": bool(bits & 1),
             "reverse": reverse, "board_size": 9, "max_moves": None,
             "win_conditions": ["capture_base", "eliminate_opponent"]}
 
@@ -20,11 +40,14 @@ def match_rule(tournament, match):
     return configured.get("rule_id", tournament.get("stage_rule", "STAGE_1_STANDARD"))
 
 
-def initial_board(rule_id):
-    counts = board_rules(rule_id)["initial_pieces"]
+def initial_board(rule_id, seed='validation'):
+    counts = board_rules(rule_id, seed=seed)["initial_pieces"]
     moves = ("ROCK", "PAPER", "SCISSORS")
     pattern = (list(moves) * 3 if all(counts[m] == 3 for m in moves)
                else [move for move in moves for _ in range(counts[move])])
+    if combination_bits(rule_id) & 1:
+        pattern = shuffled_pattern(seed)
     return {side: [{"id": f"{prefix}_{i}", "col": i, "row": row,
-                    "type": kind, "alive": True} for i, kind in enumerate(pattern)]
+                    "type": kind, "alive": True} for i, kind in enumerate(
+                        list(reversed(pattern)) if side == 'team_b' and combination_bits(rule_id) & 1 else pattern)]
             for side, prefix, row in (("team_a", "r", 7), ("team_b", "b", 1))}

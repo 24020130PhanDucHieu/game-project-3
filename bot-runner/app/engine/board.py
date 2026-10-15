@@ -14,8 +14,9 @@ MOVES = ("ROCK", "PAPER", "SCISSORS")
 
 def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1,
                    stage_rule="STAGE_1_STANDARD", tie_seed=None, reuse_sandbox=False):
-    initial_rules = board_rules(stage_rule)
-    pieces = initial_board(stage_rule)
+    tie_seed = tie_seed or secrets.token_hex(16)
+    initial_rules = board_rules(stage_rule, seed=tie_seed)
+    pieces = initial_board(stage_rule, seed=tie_seed)
     targets = {"team_a": (8, 0), "team_b": (0, 8)}
     names = {"team_a": "Đỏ", "team_b": "Xanh"}
     colors = {"team_a": "red", "team_b": "blue"}
@@ -28,7 +29,6 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
     steps = []
     first = "team_a" if round_num % 2 else "team_b"
     order = (first, "team_b" if first == "team_a" else "team_a")
-    tie_seed = tie_seed or secrets.token_hex(16)
     winner, reason = None, ""
 
     def alive(side):
@@ -72,7 +72,7 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
             cycle = ply // 2 + 1
             own, enemy = alive(side), alive(opponent)
             cards = {move: sum(p["type"] == move for p in own) for move in MOVES}
-            active_rules = board_rules(stage_rule, cycle)
+            active_rules = board_rules(stage_rule, cycle, seed=tie_seed)
             fog, reverse = active_rules["fog"], active_rules["reverse"]
             history = copy.deepcopy(histories[side])
             if fog:

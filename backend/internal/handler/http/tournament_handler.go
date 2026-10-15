@@ -130,6 +130,11 @@ func redactTournament(value map[string]interface{}, session auth.Session) map[st
 					if !ownsMatch || session.Side != "team_b" {
 						delete(round, "team_b_code")
 					}
+					visibleSide := ""
+					if ownsMatch {
+						visibleSide = session.Side
+					}
+					redactFogRound(round, visibleSide)
 				}
 			}
 		}
@@ -146,6 +151,57 @@ func redactTournament(value map[string]interface{}, session auth.Session) map[st
 		}
 	}
 	return copyTournament
+}
+
+// Hide fog information in every public representation, including logs and replay.
+// Guests see both sides masked; only officials receive the complete board.
+func redactFogRound(round map[string]interface{}, ownSide string) {
+	rules, _ := round["rules"].(map[string]interface{})
+	id, _ := round["stage_rule"].(string)
+	fog := rules["fog"] == true || id == "RULE_FOG" || id == "RULE_MUTATED_FOG" || id == "STAGE_3_REVERSE_FOG" || id == "STAGE_4_FINALS" || (len(id) == 7 && strings.HasPrefix(id, "COMBO_") && id[6] >= '4' && id[6] <= '7')
+	if !fog {
+		return
+	}
+	delete(round, "tie_break_seed")
+	for _, side := range []string{"team_a", "team_b"} {
+		if side != ownSide {
+			delete(round, side+"_move")
+		}
+	}
+	var scrub func(interface{})
+	scrub = func(value interface{}) {
+		switch node := value.(type) {
+		case []interface{}:
+			for _, child := range node {
+				scrub(child)
+			}
+		case map[string]interface{}:
+			for key, child := range node {
+				if (key == "red_pieces" && ownSide != "team_a") || (key == "blue_pieces" && ownSide != "team_b") {
+					if pieces, ok := child.([]interface{}); ok {
+						for _, item := range pieces {
+							if piece, ok := item.(map[string]interface{}); ok {
+								piece["type"] = "UNKNOWN"
+							}
+						}
+					}
+				}
+				if key == "winner_type" || key == "loser_type" || key == "preferred_move" {
+					delete(node, key)
+					continue
+				}
+				if key == "log" {
+					if text, ok := child.(string); ok {
+						node[key] = strings.NewReplacer("ROCK", "?", "PAPER", "?", "SCISSORS", "?").Replace(text)
+					}
+				}
+				scrub(child)
+			}
+		}
+	}
+	for _, key := range []string{"board_steps", "move_logs", "bot_logs"} {
+		scrub(round[key])
+	}
 }
 
 func cloneJSONMap(value map[string]interface{}) map[string]interface{} {

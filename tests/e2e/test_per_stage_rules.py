@@ -25,14 +25,13 @@ def run(server):
             expect(page.locator('#dialog-stage-rules')).to_be_visible()
             rows = page.locator('#stage-rules-fields fieldset')
             assert rows.count()==5
-            assert rows.first.locator('select option').evaluate_all('(options) => options.filter(o => o.value).map(o => o.value)') == ['STAGE_1_STANDARD','STAGE_2_MUTATED','RULE_REVERSE','RULE_FOG']
+            assert rows.first.locator('input[type=checkbox]').count()==3
             for retired in ('RULE_MUTATED_FOG','STAGE_3_REVERSE_FOG','STAGE_4_FINALS'):
                 api('PUT',f'/api/tournaments/{tid}/stage-rules',{'rules':[{'level':1,'rule_id':retired,'publish_at':0}]},admin,expected=400)
             rect = page.locator('#dialog-stage-rules').bounding_box()
             assert abs(rect['x']+rect['width']/2-720)<3
-            for i in range(5):
-                rows.nth(i).locator('input').fill(time.strftime('%Y-%m-%dT%H:%M',time.localtime(time.time()+900)))
-            rows.first.locator('select').select_option('RULE_REVERSE')
+            rows.first.locator('input[type=datetime-local]').fill(time.strftime('%Y-%m-%dT%H:%M',time.localtime(time.time()+900)))
+            for checkbox in rows.first.locator('input[type=checkbox]').all(): checkbox.check()
             page.locator('#btn-save-stage-rules').click()
             expect(page.locator('#dialog-stage-rules')).not_to_be_visible()
             public = api('GET',f'/api/tournaments/{tid}')
@@ -42,12 +41,14 @@ def run(server):
             api('POST',f'/api/tournaments/{tid}/matches/{mid}/code',{'side':'team_a','code_content':arena.CODE},admin,expected=400)
             api('POST',f'/api/tournaments/{tid}/matches/{mid}/play-round',token=admin,expected=400)
             page.locator('#btn-stage-rules').click()
-            page.locator('#stage-rules-fields fieldset').first.locator('input').fill('')
+            page.locator('#stage-rules-fields fieldset').first.locator('input[type=datetime-local]').fill('')
             page.locator('#btn-save-stage-rules').click()
             expect(page.locator('#dialog-stage-rules')).not_to_be_visible()
             page.reload(); page.wait_for_function('window.arenaReady !== undefined'); page.evaluate('() => window.arenaReady')
             arena.tab(page,'tab-bracket');page.locator('#btn-stage-rules').click()
-            expect(page.locator('#stage-rules-fields fieldset').first.locator('select')).to_be_disabled()
+            for checkbox in page.locator('#stage-rules-fields fieldset').first.locator('input[type=checkbox]').all():
+                expect(checkbox).to_be_disabled()
+                expect(checkbox).to_be_checked()
             page.locator('#dialog-stage-rules button[aria-label]').click()
             preview = page.evaluate('''() => {
                 const old = currentTournamentData.stage_rules['1'];
@@ -75,8 +76,8 @@ def run(server):
                 renderMatchRule();
                 return note;
             }''')
-            assert 'dữ liệu bot nhận được' in fog_note
-            assert api('GET',f'/api/tournaments/{tid}')['stage_rules']['1']['rule_id']=='RULE_REVERSE'
+            assert 'dấu ?' in fog_note
+            assert api('GET',f'/api/tournaments/{tid}')['stage_rules']['1']['rule_id']=='COMBO_7'
             api('PUT',f'/api/tournaments/{tid}/stage-rules',{'rules':[{'level':1,'rule_id':'RULE_FOG','publish_at':0}]},admin,expected=400)
             for number in (1,2):
                 for side in ('team_a','team_b'):
@@ -84,7 +85,8 @@ def run(server):
                 api('POST',f'/api/tournaments/{tid}/matches/{mid}/play-round',token=admin)
                 data=api('GET',f'/api/tournaments/{tid}',token=admin)
                 record=data['matches'][mid]['rounds_history'][-1]
-                assert record['stage_rule']=='RULE_REVERSE' and record['rules']['reverse']
+                assert record['stage_rule']=='COMBO_7' and record['rules']['reverse'] and record['rules']['fog'] and record['rules']['shuffle']
+                assert record['board_steps'] and not any(item.get('error') for item in record['bot_logs'])
                 assert data['matches'][mid]['submissions_history'][-1]['explanation']=='Adapted for reversed clashes'
                 if number==1:
                     api('POST',f'/api/tournaments/{tid}/matches/{mid}/next-round',token=admin)
@@ -92,8 +94,48 @@ def run(server):
                     assert not data['matches'][mid]['team_a']['code_valid']
             server.restart_gateway()
             data=api('GET',f'/api/tournaments/{tid}',token=admin)
-            assert data['stage_rules']['1']['rule_id']=='RULE_REVERSE'
+            assert data['stage_rules']['1']['rule_id']=='COMBO_7'
             assert len(data['matches'][mid]['rounds_history'])==2
+            # All checkbox combinations persist independently without publishing other stages.
+            for bits in range(8):
+                api('PUT',f'/api/tournaments/{tid}/stage-rules',{'rules':[{'level':2,'rule_id':f'COMBO_{bits}','publish_at':time.time()+900}]},admin)
+                assert api('GET',f'/api/tournaments/{tid}',token=admin)['stage_rules']['2']['rule_id']==f'COMBO_{bits}'
+            match=data['matches'][mid]
+            for side,color,enemy in [('team_a','red','blue'),('team_b','blue','red')]:
+                sid=match[side]['student_id']
+                team=arena.open_page(browser,errors,[])
+                arena.login_page(team,sid,'k69'+sid)
+                arena.choose_match(team,mid)
+                team.wait_for_function("currentMatchData.round_status !== 'ROUND_FINISHED'",timeout=10000)
+                expect(team.locator('#match-playback-bar')).not_to_be_visible()
+                expect(team.locator('#board-card-title-label')).to_contain_text('LIVE')
+                team.evaluate('saveArenaViewState({inlineRound:1,inlineStep:0});renderVisualBattleArena(currentMatchData)')
+                visible=team.evaluate('''() => {
+                    const record=currentMatchData.rounds_history.at(-1);
+                    return {index:inlinePlaybackCurrentIdx,expected:record.board_steps.length-1,
+                        seed:record.tie_break_seed,
+                        own:record.board_steps[0][currentStudioSide==='team_a'?'red_pieces':'blue_pieces'].map(p=>p.type),
+                        enemy:record.board_steps[0][currentStudioSide==='team_a'?'blue_pieces':'red_pieces'].map(p=>p.type)};
+                }''')
+                assert visible['index']==visible['expected'] and visible.get('seed') is None,visible
+                assert all(p!='UNKNOWN' for p in visible['own']) and visible['enemy']==['UNKNOWN']*9
+                assert team.locator(f'#chessboard-9x9 .piece-{enemy}').count()==team.locator(f'#chessboard-9x9 .piece-{enemy} .piece-unknown').count()
+                # History replay remains separate from live board.
+                team.evaluate('openReplayModal(currentActiveMatchId,1)')
+                team.locator('#replay-step-slider').press('Home')
+                expect(team.locator('#replay-chessboard-9x9 .piece-unknown')).to_have_count(9)
+                team.locator('#btn-close-replay-x').click()
+                for width in (1440,390):
+                    team.set_viewport_size({'width':width,'height':1000})
+                    layout=team.locator('.studio-card-header').evaluate('''el => {
+                        const title=el.querySelector('h3').getBoundingClientRect();
+                        const badge=el.querySelector('.ide-status-tag').getBoundingClientRect();
+                        return {overlap:title.right>badge.left && title.bottom>badge.top && title.top<badge.bottom,
+                            overflow:document.documentElement.scrollWidth>innerWidth+1};
+                    }''')
+                    assert not layout['overlap'] and not layout['overflow'],layout
+                    team.locator('.match-arena-2col-layout').screenshot(path=str(arena.ROOT/'tests'/f'combo-{side}-{width}.png'))
+                team.context.close()
             page.reload();page.wait_for_function('window.arenaReady !== undefined');page.evaluate('() => window.arenaReady')
             page.set_viewport_size({'width':390,'height':844})
             arena.tab(page,'tab-bracket');page.evaluate('openStageRules()')
@@ -102,7 +144,7 @@ def run(server):
             assert not errors,errors
         finally:
             browser.close()
-    print('PASS 32-team stage-rule dialog, publish privacy, permissions, locks, real reversed games, fresh per-heat submissions, notes, replay and restart',flush=True)
+    print('PASS 32-team checkbox dialog, publish privacy, permissions, locks, combined real games, fresh per-heat submissions, notes, replay and restart',flush=True)
 
 
 if __name__=='__main__':

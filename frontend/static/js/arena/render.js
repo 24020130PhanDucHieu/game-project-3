@@ -11,6 +11,8 @@ function renderVisualBattleArena(match) {
   const studioCol = document.getElementById("arena-studio-col");
   const adminRealtimeCol = document.getElementById("arena-admin-realtime-col");
   const boardTitleLabel = document.getElementById("board-card-title-label");
+  const playbackBar = document.getElementById('match-playback-bar');
+  if (playbackBar) playbackBar.style.display = currentAppRole === 'TEAM' ? 'none' : '';
 
   if (currentAppRole === "ADMIN") {
     if (studioCol) studioCol.style.display = "none";
@@ -26,7 +28,7 @@ function renderVisualBattleArena(match) {
   } else {
     if (studioCol) studioCol.style.display = "block";
     if (adminRealtimeCol) adminRealtimeCol.style.display = "none";
-    if (boardTitleLabel) boardTitleLabel.textContent = "BÀN ĐẤU CHIẾN THUẬT 9×9";
+    if (boardTitleLabel) boardTitleLabel.textContent = "BÀN ĐẤU LIVE · 9×9";
   }
 
   // Round indicator
@@ -82,10 +84,11 @@ function renderVisualBattleArena(match) {
     }
   }
 
-  const lastR = inlineReplayRecord(match);
+  const lastR = currentAppRole === 'TEAM' ? match.rounds_history?.at(-1) : inlineReplayRecord(match);
   if (!isMatchRunning && lastR?.board_steps?.length) {
     const state = readArenaViewState();
-    inlinePlaybackCurrentIdx = state.inlineRound === lastR.round_number ? Math.min(state.inlineStep ?? lastR.board_steps.length - 1, lastR.board_steps.length - 1) : lastR.board_steps.length - 1;
+    const liveProgress = match.round_status === 'ROUND_FINISHED' ? Math.max(0,Math.min(1,(Date.now()/1000-(match.intermission_ends_at-5))/5)) : 1;
+    inlinePlaybackCurrentIdx = currentAppRole === 'TEAM' ? Math.min(lastR.board_steps.length-1,Math.floor(liveProgress*lastR.board_steps.length)) : state.inlineRound === lastR.round_number ? Math.min(state.inlineStep ?? lastR.board_steps.length - 1, lastR.board_steps.length - 1) : lastR.board_steps.length - 1;
     const step = lastR.board_steps[inlinePlaybackCurrentIdx];
     renderChessboard(step.red_pieces, step.blue_pieces, step.clash_event);
     const indicator = document.getElementById("playback-step-indicator");
@@ -199,7 +202,10 @@ function renderRoundStepPills(currentIdx, history, isFinished) {
     }
 
     container.appendChild(pill);
-    if (roundRec) pill.addEventListener("click", () => { clearInterval(inlinePlaybackTimer); inlinePlaybackTimer = null; saveArenaViewState({ inlineRound: r, inlineStep: 0 }); renderVisualBattleArena(currentMatchData); });
+    if (roundRec) pill.addEventListener("click", () => {
+      if (currentAppRole === 'TEAM') { openReplayModal(currentActiveMatchId,r); return; }
+      clearInterval(inlinePlaybackTimer); inlinePlaybackTimer = null; saveArenaViewState({ inlineRound: r, inlineStep: 0 }); renderVisualBattleArena(currentMatchData);
+    });
   }
 }
 

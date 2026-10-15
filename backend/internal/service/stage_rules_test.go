@@ -65,7 +65,7 @@ func TestFourSelectableRulesAndLegacyCompatibility(t *testing.T) {
 		"1": map[string]interface{}{"rule_id": "RULE_MUTATED_FOG", "publish_at": future},
 	}})
 	svc := NewTournamentService(repo, nil)
-	for _, id := range []string{"STAGE_1_STANDARD", "STAGE_2_MUTATED", "RULE_REVERSE", "RULE_FOG"} {
+	for _, id := range []string{"STAGE_1_STANDARD", "STAGE_2_MUTATED", "RULE_REVERSE", "RULE_FOG", "COMBO_0", "COMBO_1", "COMBO_2", "COMBO_3", "COMBO_4", "COMBO_5", "COMBO_6", "COMBO_7"} {
 		if !ValidStageRule(id) {
 			t.Fatal("missing selectable rule", id)
 		}

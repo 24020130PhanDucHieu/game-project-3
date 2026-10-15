@@ -6,6 +6,7 @@ const BATTLE_MOVES = {
 };
 
 function pieceIcon(type) {
+  if (!BATTLE_MOVES[String(type).toUpperCase()]) return '<span class="piece-unknown" aria-label="Quân chưa rõ loại">?</span>';
   const move = BATTLE_MOVES[String(type).toUpperCase()] || BATTLE_MOVES.ROCK;
   return arenaIcon(move.icon, "rps-icon");
 }
