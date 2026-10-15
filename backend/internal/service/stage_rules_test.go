@@ -55,3 +55,39 @@ func TestStageRulesPersistLockAndInvalidateOldSubmissions(t *testing.T) {
 		t.Fatal("legacy endpoint bypassed lock")
 	}
 }
+func TestFourSelectableRulesAndLegacyCompatibility(t *testing.T) {
+	repo := repository.NewJSONTournamentRepository(filepath.Join(t.TempDir(), "rules.json"))
+	future := float64(time.Now().Unix() + 600)
+	repo.Save("cup", map[string]interface{}{"matches": map[string]interface{}{
+		"a": map[string]interface{}{"round_level": 1},
+		"b": map[string]interface{}{"round_level": 2},
+	}, "stage_rules": map[string]interface{}{
+		"1": map[string]interface{}{"rule_id": "RULE_MUTATED_FOG", "publish_at": future},
+	}})
+	svc := NewTournamentService(repo, nil)
+	for _, id := range []string{"STAGE_1_STANDARD", "STAGE_2_MUTATED", "RULE_REVERSE", "RULE_FOG"} {
+		if !ValidStageRule(id) {
+			t.Fatal("missing selectable rule", id)
+		}
+		if _, err := svc.SetStageRules("cup", []StageRule{{2, id, future}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, id := range []string{"RULE_MUTATED_FOG", "STAGE_3_REVERSE_FOG", "STAGE_4_FINALS"} {
+		if ValidStageRule(id) {
+			t.Fatal("legacy rule selectable", id)
+		}
+		if _, err := svc.SetStageRules("cup", []StageRule{{2, id, future}}); err == nil {
+			t.Fatal("new legacy configuration accepted", id)
+		}
+	}
+	if _, err := svc.SetStageRules("cup", []StageRule{{1, "RULE_MUTATED_FOG", future}}); err != nil {
+		t.Fatal("existing rule lost", err)
+	}
+	if _, err := svc.SetStageRules("cup", []StageRule{{1, "RULE_FOG", 0}}); err != nil {
+		t.Fatal("cannot replace unpublished legacy rule", err)
+	}
+	if _, err := svc.SetStageRules("cup", []StageRule{{1, "RULE_REVERSE", 0}}); err == nil {
+		t.Fatal("published rule changed")
+	}
+}

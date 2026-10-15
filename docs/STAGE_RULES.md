@@ -2,7 +2,7 @@
 
 Trong Bảng đấu, Admin chọn **Thiết lập luật từng vòng** cạnh nút đặt thời gian. Mỗi vòng hiện có của giải (kể cả vòng 1/16 trong giải 32 đội) có một cấu hình riêng. Toàn bộ trận và các hiệp Bo5 trong vòng dùng chung cấu hình đó. Mỗi hiệp vẫn yêu cầu nộp code mới như trước.
 
-Các lựa chọn mới:
+Chỉ có 4 luật để chọn cho cấu hình mới:
 
 | ID | Luật |
 |---|---|
@@ -10,9 +10,8 @@ Các lựa chọn mới:
 | `STAGE_2_MUTATED` | 5 Búa, 2 Bao, 2 Kéo; tương khắc chuẩn |
 | `RULE_REVERSE` | 3 quân mỗi loại; đảo tương khắc trong mọi lượt |
 | `RULE_FOG` | 3 quân mỗi loại; ẩn loại quân và nước chọn đối phương trong đầu vào bot |
-| `RULE_MUTATED_FOG` | 5 Búa, 2 Bao, 2 Kéo; sương mù |
 
-Hai biến thể `STAGE_3_REVERSE_FOG`, `STAGE_4_FINALS` vẫn được hỗ trợ cho giải cũ; phần chọn luật mô tả cụ thể cơ chế đảo theo lượt của chúng. Cùng loại va chạm vẫn ưu tiên quân phòng thủ. Không giới hạn số nước; thắng bằng chiếm cứ điểm hoặc hết quân đối phương. Bot lỗi/quá thời gian vẫn bị xử thua.
+Ba biến thể `RULE_MUTATED_FOG`, `STAGE_3_REVERSE_FOG`, `STAGE_4_FINALS` được giữ để thực thi và đọc replay của giải cũ. Chúng không còn là lựa chọn cho cấu hình mới. Vòng cũ chưa công bố có thể đổi sang một trong 4 luật trên; vòng đã khóa giữ nguyên luật để bảo đảm công bằng. Cùng loại va chạm vẫn ưu tiên quân phòng thủ. Không giới hạn số nước; thắng bằng chiếm cứ điểm hoặc hết quân đối phương. Bot lỗi/quá thời gian vẫn bị xử thua.
 
 ## Công bố và khóa
 

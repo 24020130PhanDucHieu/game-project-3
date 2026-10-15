@@ -16,7 +16,7 @@ type StageRule struct {
 
 func ValidStageRule(id string) bool {
 	switch id {
-	case "STAGE_1_STANDARD", "STAGE_2_MUTATED", "RULE_REVERSE", "RULE_FOG", "RULE_MUTATED_FOG", "STAGE_3_REVERSE_FOG", "STAGE_4_FINALS":
+	case "STAGE_1_STANDARD", "STAGE_2_MUTATED", "RULE_REVERSE", "RULE_FOG":
 		return true
 	}
 	return false
@@ -70,7 +70,9 @@ func (s *TournamentService) SetStageRules(id string, requested []StageRule) (map
 	changed := map[int]bool{}
 	now := float64(time.Now().UnixMilli()) / 1000
 	for _, r := range requested {
-		if !levels[r.Level] || seen[r.Level] || !ValidStageRule(r.RuleID) || math.IsNaN(r.PublishAt) || math.IsInf(r.PublishAt, 0) || r.PublishAt < 0 || r.PublishAt > 253402300799 {
+		existing, _ := old[strconv.Itoa(r.Level)].(map[string]interface{})
+		preserveLegacy := existing != nil && existing["rule_id"] == r.RuleID && (r.RuleID == "RULE_MUTATED_FOG" || r.RuleID == "STAGE_3_REVERSE_FOG" || r.RuleID == "STAGE_4_FINALS")
+		if !levels[r.Level] || seen[r.Level] || (!ValidStageRule(r.RuleID) && !preserveLegacy) || math.IsNaN(r.PublishAt) || math.IsInf(r.PublishAt, 0) || r.PublishAt < 0 || r.PublishAt > 253402300799 {
 			return nil, errors.New("Vòng, luật hoặc giờ công bố không hợp lệ.")
 		}
 		seen[r.Level] = true

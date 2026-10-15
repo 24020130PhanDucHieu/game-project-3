@@ -92,6 +92,9 @@ function renderVisualBattleArena(match) {
     if (indicator) indicator.textContent = `Hiệp ${lastR.round_number}: Bước ${inlinePlaybackCurrentIdx + 1} / ${lastR.board_steps.length}`;
   } else if (!isMatchRunning) {
     const pieces = getInitialBoardPieces(previewRule); renderChessboard(pieces.red, pieces.blue, null);
+    inlinePlaybackCurrentIdx = 0;
+    const indicator = document.getElementById("playback-step-indicator");
+    if (indicator) indicator.textContent = "Chưa có dữ liệu phát lại";
   }
 
   // Dòng bình luận (Commentary ticker)

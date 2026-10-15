@@ -7,6 +7,7 @@ const BOARD_RULE_PRESETS = {
   STAGE_3_REVERSE_FOG: { name: 'Sương mù + đảo lượt lẻ (luật cũ)', description: '3 quân mỗi loại; ẩn loại quân đối phương, đảo tương khắc ở lượt lẻ của mỗi đội.' },
   STAGE_4_FINALS: { name: 'Chung kết biến thể (luật cũ)', description: '2 Búa, 4 Bao, 3 Kéo; sương mù, đảo tương khắc mỗi lượt chia hết cho 3.' }
 };
+const SELECTABLE_BOARD_RULES = ['STAGE_1_STANDARD', 'STAGE_2_MUTATED', 'RULE_REVERSE', 'RULE_FOG'];
 let rulesTournamentId = null;
 function stageRuleInfo(tournament, match) {
   const configured = tournament?.stage_rules?.[match?.round_level];
@@ -16,9 +17,13 @@ function stageRuleInfo(tournament, match) {
 function renderMatchRule() {
   const match = currentTournamentData?.matches?.[currentActiveMatchId];
   const info = stageRuleInfo(currentTournamentData, match);
+  const configured = currentTournamentData?.stage_rules?.[match?.round_level];
+  const ruleId = configured?.rule_id || currentTournamentData?.stage_rule;
+  const fogNote = !info.hidden && ['RULE_FOG','RULE_MUTATED_FOG','STAGE_3_REVERSE_FOG','STAGE_4_FINALS'].includes(ruleId)
+    ? ' Sương mù áp dụng cho dữ liệu bot nhận được; bàn cờ và replay cho người xem vẫn hiển thị đầy đủ quân.' : '';
   for (const id of ['match-rule-summary','studio-rule-summary']) {
     const element = document.getElementById(id);
-    if (element) element.textContent = match ? `${match.round_name} · ${info.name}: ${info.description}` : '';
+    if (element) element.textContent = match ? `${match.round_name} · ${info.name}: ${info.description}${fogNote}` : '';
   }
   const button = document.getElementById('btn-stage-rules');
   if (button) button.style.display = currentAppRole === 'ADMIN' ? 'inline-flex' : 'none';
@@ -39,7 +44,13 @@ function openStageRules() {
     const label = document.createElement('label'); label.textContent = 'Luật áp dụng';
     const select = document.createElement('select'); select.className = 'login-input-field';
     select.add(new Option('Chưa thiết lập — dùng luật chung', ''));
-    for (const [id,preset] of Object.entries(BOARD_RULE_PRESETS)) select.add(new Option(preset.name,id));
+    for (const id of SELECTABLE_BOARD_RULES) select.add(new Option(BOARD_RULE_PRESETS[id].name,id));
+    const existingRule = saved?.rule_id || (locked ? currentTournamentData.stage_rule : null);
+    if (existingRule && !SELECTABLE_BOARD_RULES.includes(existingRule) && BOARD_RULE_PRESETS[existingRule]) {
+      const legacy = new Option(`${BOARD_RULE_PRESETS[existingRule].name} — đang dùng`, existingRule);
+      legacy.disabled = true;
+      select.add(legacy);
+    }
     select.value = saved?.rule_id || (locked ? currentTournamentData.stage_rule || 'STAGE_1_STANDARD' : ''); select.disabled = locked;
     label.append(select);
     const description = document.createElement('p'); description.className = 'stage-rule-description';

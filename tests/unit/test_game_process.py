@@ -29,5 +29,43 @@ class GameProcessTests(unittest.TestCase):
         self.assertIn(result['winner_side'],('team_a','team_b'))
         self.assertEqual(result['bot_errors'],{'team_a':None,'team_b':None})
 
+    def test_real_bots_receive_selected_rules_and_fog_on_every_turn(self):
+        rules = {
+            'STAGE_1_STANDARD': (False, [3,3,3]),
+            'STAGE_2_MUTATED': (False, [5,2,2]),
+            'RULE_REVERSE': (False, [3,3,3]),
+            'RULE_FOG': (True, [3,3,3]),
+            'RULE_MUTATED_FOG': (True, [5,2,2]),
+            'STAGE_3_REVERSE_FOG': (True, [3,3,3]),
+            'STAGE_4_FINALS': (True, [2,4,3]),
+        }
+        for rule, (fog, counts) in rules.items():
+            # Both execution modes used by bracket matches and qualifiers.
+            for reuse in (False, True):
+                with self.subTest(rule=rule, reuse=reuse):
+                    code = f'''def decide_move(state):
+    assert state['rules']['id'] == {rule!r}
+    assert state['rules']['fog'] == {fog!r}
+    turn = state['turn_number']
+    reverse = {rule!r} == 'RULE_REVERSE' or ({rule!r} == 'STAGE_3_REVERSE_FOG' and turn % 2 == 1) or ({rule!r} == 'STAGE_4_FINALS' and turn % 3 == 0)
+    assert state['reverse_rule'] == reverse == state['rules']['reverse']
+    for piece in state['opponent_pieces']:
+        assert ('type' not in piece) == {fog!r}
+        assert 'col' in piece and 'row' in piece
+    for item in state['history']:
+        if {fog!r}:
+            assert 'opponent_move' not in item and 'their_move' not in item
+    if turn == 1:
+        assert [state['remaining_cards'][m] for m in ('ROCK','PAPER','SCISSORS')] == {counts!r}
+    for move, count in state['remaining_cards'].items():
+        if count > 0:
+            return move
+    return 'ROCK'
+'''
+                    result = simulate_board(code, code, stage_rule=rule, reuse_sandbox=reuse)
+                    self.assertEqual(result['bot_errors'], {'team_a':None,'team_b':None})
+                    self.assertGreater(len(result['board_steps']), 3)
+                    self.assertEqual(result['rules']['id'], rule)
+
 
 if __name__=='__main__':unittest.main()
