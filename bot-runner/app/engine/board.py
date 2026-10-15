@@ -6,7 +6,7 @@ import os
 import secrets
 
 from app.engine.rules import GameRulesEngine
-from app.engine.board_rules import board_rules
+from app.engine.board_rules import board_rules, initial_board
 from app.sandbox.runner import BotRunner
 
 MOVES = ("ROCK", "PAPER", "SCISSORS")
@@ -15,12 +15,7 @@ MOVES = ("ROCK", "PAPER", "SCISSORS")
 def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1,
                    stage_rule="STAGE_1_STANDARD", tie_seed=None, reuse_sandbox=False):
     initial_rules = board_rules(stage_rule)
-    counts = initial_rules["initial_pieces"]
-    pattern = (list(MOVES) * 3 if counts == {"ROCK": 3, "PAPER": 3, "SCISSORS": 3}
-               else [move for move in MOVES for _ in range(counts[move])])
-    pieces = {side: [{"id": f"{prefix}_{i}", "col": i, "row": row,
-                      "type": pattern[i], "alive": True} for i in range(9)]
-              for side, prefix, row in (("team_a", "r", 7), ("team_b", "b", 1))}
+    pieces = initial_board(stage_rule)
     targets = {"team_a": (8, 0), "team_b": (0, 8)}
     names = {"team_a": "Đỏ", "team_b": "Xanh"}
     colors = {"team_a": "red", "team_b": "blue"}

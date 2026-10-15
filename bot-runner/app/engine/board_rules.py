@@ -18,3 +18,13 @@ def board_rules(rule_id, cycle=1):
 def match_rule(tournament, match):
     configured = tournament.get("stage_rules", {}).get(str(match.get("round_level", 1)), {})
     return configured.get("rule_id", tournament.get("stage_rule", "STAGE_1_STANDARD"))
+
+
+def initial_board(rule_id):
+    counts = board_rules(rule_id)["initial_pieces"]
+    moves = ("ROCK", "PAPER", "SCISSORS")
+    pattern = (list(moves) * 3 if all(counts[m] == 3 for m in moves)
+               else [move for move in moves for _ in range(counts[move])])
+    return {side: [{"id": f"{prefix}_{i}", "col": i, "row": row,
+                    "type": kind, "alive": True} for i, kind in enumerate(pattern)]
+            for side, prefix, row in (("team_a", "r", 7), ("team_b", "b", 1))}

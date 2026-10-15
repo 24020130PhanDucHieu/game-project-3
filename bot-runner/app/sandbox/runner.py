@@ -200,10 +200,16 @@ class BotRunner:
             "turn_number": 1,
             "history": []
         }
-        from app.engine.board_rules import board_rules
+        from app.engine.board_rules import board_rules, initial_board
         dummy_state["rules"] = board_rules(rule_id)
         dummy_state["reverse_rule"] = dummy_state["rules"]["reverse"]
         dummy_state["remaining_cards"] = dict(dummy_state["rules"]["initial_pieces"])
+        pieces = initial_board(rule_id)
+        dummy_state.update(ply_number=1, active_side="team_a", target=[8, 0],
+                           my_pieces=pieces["team_a"], opponent_pieces=pieces["team_b"])
+        if dummy_state["rules"]["fog"]:
+            for piece in dummy_state["opponent_pieces"]:
+                piece.pop("type", None)
 
         if lang == "PYTHON":
             started = time.monotonic()

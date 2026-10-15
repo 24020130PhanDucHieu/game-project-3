@@ -9,6 +9,73 @@ from app.repository.database import Database
 
 
 class BoardRulesTests(unittest.TestCase):
+    def test_validation_state_matches_first_real_turn_for_every_rule(self):
+        from app.sandbox.runner import BotRunner
+        rules = ('STAGE_1_STANDARD', 'STAGE_2_MUTATED', 'RULE_REVERSE', 'RULE_FOG',
+                 'RULE_MUTATED_FOG', 'STAGE_3_REVERSE_FOG', 'STAGE_4_FINALS')
+        for rule in rules:
+            with self.subTest(rule=rule):
+                captured = []
+                def decide(code, state, **kwargs):
+                    captured.append(state)
+                    return 'ROCK', None
+                with patch('app.sandbox.runner._execute_python_isolated', side_effect=decide):
+                    self.assertTrue(BotRunner.validate_bot_code('code', 'PYTHON', rule)['is_valid'])
+                sample = captured.pop()
+                with patch('app.engine.board.BotRunner.run_python_code', side_effect=decide):
+                    simulate_board('a', 'b', stage_rule=rule)
+                self.assertEqual(sample, captured[0])
+        code = '''def decide_move(state):
+    own = state["my_pieces"]
+    enemy = state["opponent_pieces"]
+    assert len(own) == len(enemy) == 9
+    assert state["target"] == [8, 0] and state["ply_number"] == 1
+    assert all("type" not in p for p in enemy) == state["rules"]["fog"]
+    return own[0]["type"]
+'''
+        for rule in rules:
+            self.assertTrue(BotRunner.validate_bot_code(code, 'PYTHON', rule)['is_valid'], rule)
+
+    def test_actual_clashes_follow_each_rule_and_defender_wins_same_type(self):
+        rules = ('STAGE_1_STANDARD', 'STAGE_2_MUTATED', 'RULE_REVERSE', 'RULE_FOG',
+                 'RULE_MUTATED_FOG', 'STAGE_3_REVERSE_FOG', 'STAGE_4_FINALS')
+        standard_wins = {('ROCK','SCISSORS'), ('SCISSORS','PAPER'), ('PAPER','ROCK')}
+        clashes = equal_clashes = 0
+        for rule in rules:
+            for first_round in (1, 2):
+                for a in ('ROCK', 'PAPER', 'SCISSORS'):
+                    for b in ('ROCK', 'PAPER', 'SCISSORS'):
+                        with self.subTest(rule=rule, round=first_round, moves=(a,b)):
+                            def decide(code, state):
+                                self.assertLess(state['ply_number'], 1000)
+                                if state['rules']['fog']:
+                                    self.assertTrue(all('type' not in p for p in state['opponent_pieces']))
+                                    self.assertTrue(all('opponent_move' not in h and 'their_move' not in h for h in state['history']))
+                                return (a if code == 'a' else b), None
+                            with patch('app.engine.board.BotRunner.run_python_code', side_effect=decide):
+                                result = simulate_board('a','b',round_num=first_round,stage_rule=rule)
+                            for step in result['board_steps']:
+                                clash = step.get('clash_event') or {}
+                                if clash.get('type') != 'CLASH':
+                                    continue
+                                clashes += 1
+                                winner, loser = clash['winner_type'], clash['loser_type']
+                                reverse = (rule == 'RULE_REVERSE' or rule == 'STAGE_3_REVERSE_FOG' and step['cycle'] % 2 == 1
+                                           or rule == 'STAGE_4_FINALS' and step['cycle'] % 3 == 0)
+                                if winner == loser:
+                                    equal_clashes += 1
+                                    self.assertEqual(clash['winner'], 'blue' if step['active_side'] == 'team_a' else 'red')
+                                else:
+                                    self.assertEqual((winner, loser) in standard_wins, not reverse)
+                            final = result['board_steps'][-1]
+                            red_won = result['winner_side'] == 'team_a'
+                            own = final['red_pieces' if red_won else 'blue_pieces']
+                            enemy = final['blue_pieces' if red_won else 'red_pieces']
+                            target = (8, 0) if red_won else (0, 8)
+                            self.assertTrue(not any(p['alive'] for p in enemy) or any(p['alive'] and (p['col'],p['row']) == target for p in own))
+        self.assertGreater(clashes, 0)
+        self.assertGreater(equal_clashes, 0)
+
     def test_new_presets_reach_bot_state_and_initial_board(self):
         for rule in ('STAGE_1_STANDARD', 'STAGE_2_MUTATED', 'RULE_REVERSE', 'RULE_FOG', 'RULE_MUTATED_FOG', 'STAGE_3_REVERSE_FOG', 'STAGE_4_FINALS'):
             states = []
@@ -34,6 +101,35 @@ class BoardRulesTests(unittest.TestCase):
         tournament = {'stage_rule':'STAGE_1_STANDARD', 'stage_rules':{'2':{'rule_id':'RULE_FOG'}}}
         self.assertEqual(match_rule(tournament, {'round_level':2}), 'RULE_FOG')
         self.assertEqual(match_rule(tournament, {'round_level':1}), 'STAGE_1_STANDARD')
+
+    def test_repository_applies_selected_rule_to_each_heat_and_replay(self):
+        rules = ('STAGE_1_STANDARD', 'STAGE_2_MUTATED', 'RULE_REVERSE', 'RULE_FOG',
+                 'RULE_MUTATED_FOG', 'STAGE_3_REVERSE_FOG', 'STAGE_4_FINALS')
+        for rule in rules:
+            with self.subTest(rule=rule):
+                db = object.__new__(Database)
+                db.save_tournaments_to_file = lambda: None
+                matches = Database.build_bracket_matches(4)
+                match = matches['m_lvl1_1']
+                for side in ('team_a', 'team_b'):
+                    match[side] = dict(team_name=side, code_valid=True, current_code='code',
+                                       current_lang='PYTHON', rounds_won=0, hp=100)
+                db.tournaments = {'cup': dict(matches=matches, stage_rule='STAGE_4_FINALS',
+                                              stage_rules={'1':{'rule_id':rule, 'publish_at':0}})}
+                states = []
+                def decide(code, state):
+                    states.append(state)
+                    return 'ROCK', None
+                with patch('app.engine.board.BotRunner.run_python_code', side_effect=decide):
+                    for number in (1, 2):
+                        match['current_round_idx'] = number
+                        db.play_match_round('cup', match['match_id'])
+                        record = match['rounds_history'][-1]
+                        self.assertEqual(record['stage_rule'], rule)
+                        self.assertEqual(record['rules']['id'], rule)
+                        self.assertTrue(all(s['rules']['id'] == rule for s in states))
+                        self.assertEqual(record['first_side'], 'team_a' if number == 1 else 'team_b')
+                        states.clear()
 
     def test_dry_run_supplies_selected_rules(self):
         from app.sandbox.runner import BotRunner
