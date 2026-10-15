@@ -316,9 +316,9 @@ def run(arena):
         # Delete through the actual list modal, while another tournament stays open.
         tab(admin_page, "tab-bracket")
         admin_page.locator("#btn-open-tournament-list").click()
-        admin_page.once("dialog", lambda dialog: dialog.accept())
         row = admin_page.locator("#tbody-bracket-tournament-list tr").filter(has_text="Unrelated Cup")
         row.get_by_role("button", name="Xóa giải", exact=True).click()
+        admin_page.locator('#app-action-dialog .app-action-submit').click()
         expect(admin_page.locator("#tbody-bracket-tournament-list tr").filter(has_text="Unrelated Cup")).to_have_count(0)
         api("GET", f"/api/tournaments/{second}", expected=404)
         assert admin_page.evaluate("currentTournamentId") == tid

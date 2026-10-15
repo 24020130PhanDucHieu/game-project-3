@@ -66,17 +66,17 @@
 
 .guest-card-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
 }
 
 .guest-card-actions button {
   min-width: 0;
   min-height: 36px;
-  padding: 7px 6px;
+  padding: 7px 10px;
   border-radius: 8px;
   font: 600 12px var(--font-sans);
-  white-space: nowrap;
+  white-space: normal;
   cursor: pointer;
   box-shadow: none;
 }
@@ -86,6 +86,20 @@
   background: #f8fafc;
   color: var(--text-heading);
 }
+
+.guest-card-actions .btn-sidebar-register {
+  min-height: 30px;
+  padding: 5px 10px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--primary-blue);
+}
+
+.guest-meta { min-width: 0; overflow-wrap: anywhere; }
+.guest-card-actions .btn-sidebar-login { gap: 6px; }
+.sidebar-user-card .guest-card-top { gap: 8px; }
+.sidebar-user-card .guest-avatar-circle { width: 32px; height: 32px; }
+.sidebar-user-card .guest-name { font-size: 12px; line-height: 1.35; }
 
 .btn-sidebar-register:hover {
   background: #eff6ff;

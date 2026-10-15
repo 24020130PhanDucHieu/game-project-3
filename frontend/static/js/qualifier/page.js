@@ -87,7 +87,9 @@ async function saveQualifierConfig(event){
 }
 async function qualifierAction(action){
   if(!qualifierId||currentAppRole!=='ADMIN')return;
-  if(action==='freeze'&&!confirm('Khóa bản hợp lệ cuối cùng của các đội? Sau khi khóa không thể nộp lại.'))return;
+  const selectedQualifier=qualifierId;
+  if(action==='freeze'&&!await confirmAction('Khóa bản hợp lệ cuối cùng của các đội? Sau khi khóa không thể nộp lại.',{title:'Khóa bài vòng loại',confirmText:'Khóa bài nộp'}))return;
+  if(selectedQualifier!==qualifierId)return;
   const target=document.getElementById('qualifier-target').value;if(action==='promote'&&!target){notifyWarning('Chọn giải chính','Tạo/chọn giải trống có đúng số đội top K.');return;}
   const button=document.getElementById(action==='promote'?'qualifier-promote':`qualifier-${action}`);if(button?.disabled)return;if(button)button.disabled=true;
   try{await qualifierAPI(`/${qualifierId}/actions/${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tournament_id:target})});await loadQualifierPage();if(action==='promote'){await loadTournamentsList();notifySuccess('Đã chốt đội','Đội đã được ghép vào bảng đấu chính.');}}catch(err){notifyError('Không thể thực hiện',err.message);}finally{loadQualifierPage();}

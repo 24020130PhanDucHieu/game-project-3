@@ -1,3 +1,23 @@
+/* Shared confirmation and input dialogs. */
+dialog.app-action-dialog {
+  position:fixed; inset:0; margin:auto; box-sizing:border-box;
+  width:min(440px,calc(100vw - 32px)); max-height:calc(100dvh - 40px);
+  padding:24px; overflow:auto; border:1px solid #e2e8f0; border-radius:18px;
+  background:#fff; color:var(--text-body); box-shadow:0 24px 80px #0f172a33;
+}
+.app-action-dialog::backdrop { background:#0f172a66; backdrop-filter:blur(4px); }
+.app-action-heading { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.app-action-heading h3 { font-size:18px; color:var(--text-heading); margin:0; }
+.app-action-heading .app-action-close { width:32px; min-height:32px; padding:0; border:0; border-radius:8px; background:#f1f5f9; color:#64748b; font-size:22px; cursor:pointer; flex-shrink:0; }
+#app-action-message { margin:16px 0; font-size:14px; line-height:1.65; white-space:pre-line; overflow-wrap:anywhere; }
+.app-action-input-label { display:block; font-size:12px; font-weight:600; }
+.app-action-input-label input { width:100%; box-sizing:border-box; }
+.app-action-buttons { display:flex; justify-content:flex-end; gap:10px; margin-top:22px; }
+.app-action-dialog .app-action-buttons .btn { min-height:38px; margin:0; padding:9px 16px; font-size:13px; }
+.app-action-dialog .app-action-danger { background:#dc2626; border-color:#dc2626; }
+.app-action-dialog .app-action-danger:hover { background:#b91c1c; }
+@media(max-width:480px) { dialog.app-action-dialog { padding:20px; } }
+
 /* TOAST NOTIFICATION BANNER */
 .toast-container {
   position: fixed;

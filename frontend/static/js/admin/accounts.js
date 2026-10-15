@@ -50,7 +50,7 @@ function renderAccountRows() {
 }
 
 async function deleteRegisteredAccount(account, button) {
-  if (!confirm(`Xóa tài khoản ${account.team_name} (${account.student_id})? Đội sẽ không thể đăng nhập. Lịch sử và tên đội trong các giải được giữ lại; mã sinh viên này không thể đăng ký lại.`)) return;
+  if (!await confirmAction(`Xóa tài khoản ${account.team_name} (${account.student_id})? Đội sẽ không thể đăng nhập. Lịch sử và tên đội trong các giải được giữ lại; mã sinh viên này không thể đăng ký lại.`, {title:'Xóa tài khoản', confirmText:'Xóa tài khoản', danger:true})) return;
   button.disabled = true;
   try {
     const response = await fetch(`${API_BASE}/api/admin/accounts/${encodeURIComponent(account.student_id)}`, { method: 'DELETE' });

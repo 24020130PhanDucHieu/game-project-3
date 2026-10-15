@@ -100,9 +100,9 @@ async function initApp() {
     if (localStorage.getItem("ARENA_API_URL")) {
       btnSetBackend.textContent = "Đổi Server (" + localStorage.getItem("ARENA_API_URL").replace(/^https?:\/\//, '').slice(0, 16) + "...)";
     }
-    btnSetBackend.addEventListener("click", () => {
+    btnSetBackend.addEventListener("click", async () => {
       const current = localStorage.getItem("ARENA_API_URL") || "";
-      const input = prompt("Nhập đường dẫn máy chủ Backend của bạn:\n(Ví dụ: link Cloudflare Tunnel https://xxx.trycloudflare.com hoặc link Render https://xxx.onrender.com)", current);
+      const input = await promptAction("Nhập đường dẫn máy chủ Backend của bạn:\n(Ví dụ: link Cloudflare Tunnel https://xxx.trycloudflare.com hoặc link Render https://xxx.onrender.com)", current);
       if (input !== null) {
         const trimmed = input.trim().replace(/\/+$/, "");
         if (trimmed) {

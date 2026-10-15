@@ -7,14 +7,15 @@ async function handleMatchCardClick(matchId) {
 
   // Nếu trận đấu chưa có đội nào được sắp (do chưa bấm Tự Sắp Xếp Lịch)
   if (!match.team_a && !match.team_b) {
-    const shouldOpen = confirm(
+    const selectedTournament = currentTournamentId;
+    const shouldOpen = await confirmAction(
       `Trận đấu "${match.title}" chưa có đội nào được ghép cặp.
 
 Bạn cần mở mục "Đội Thi Đấu" và bấm "Tự Sắp Xếp Lịch Đấu" để xếp các đội vào sơ đồ.
 
 Bạn có muốn mở bảng Quản Lý Đội ngay không?`
     );
-    if (shouldOpen) {
+    if (shouldOpen && selectedTournament === currentTournamentId) {
       openTeamManagerModal();
     }
     return;

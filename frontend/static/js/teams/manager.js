@@ -136,7 +136,9 @@ async function handleDeleteTeam(studentId) {
     notifyWarning("Quyền Hạn Ban Tổ Chức", "Chỉ Ban Tổ Chức (Admin) mới có quyền xóa đội!");
     return;
   }
-  if (!confirm(`Bạn có chắc muốn xóa đội có MSSV '${studentId}' khỏi giải đấu?`)) return;
+  const selectedTournament = currentTournamentId;
+  if (!await confirmAction(`Bạn có chắc muốn xóa đội có MSSV '${studentId}' khỏi giải đấu?`, {title:'Xóa đội khỏi giải', confirmText:'Xóa đội', danger:true})) return;
+  if (selectedTournament !== currentTournamentId) return;
 
   try {
     const res = await fetch(`${API_BASE}/api/tournaments/${currentTournamentId}/teams/${studentId}`, {

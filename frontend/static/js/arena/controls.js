@@ -117,7 +117,9 @@ async function handleQuickFillDemo() {
 async function handleResetCurrentMatch() {
   if (!currentTournamentId || !currentActiveMatchId) return;
 
-  if (!confirm("Bạn có chắc chắn muốn đặt lại trận đấu này về 0-0 ban đầu không?")) return;
+  const selectedTournament = currentTournamentId, selectedMatch = currentActiveMatchId;
+  if (!await confirmAction("Bạn có chắc chắn muốn đặt lại trận đấu này về 0-0 ban đầu không?", {title:'Đặt lại trận đấu', confirmText:'Đặt lại', danger:true})) return;
+  if (selectedTournament !== currentTournamentId || selectedMatch !== currentActiveMatchId) return;
 
   try {
     const res = await fetch(`${API_BASE}/api/tournaments/${currentTournamentId}/matches/${currentActiveMatchId}/reset`, {

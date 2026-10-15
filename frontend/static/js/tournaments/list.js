@@ -176,7 +176,7 @@ window.deleteTournamentFromBracket = async function(tournamentId, tournamentName
     notifyWarning("Không đủ quyền", "Chỉ Ban Tổ Chức mới được xóa giải đấu.");
     return;
   }
-  if (!confirm(`Xóa ${tournamentName}? Toàn bộ đội, nhánh đấu và kết quả của giải sẽ bị xóa.`)) return;
+  if (!await confirmAction(`Xóa ${tournamentName}? Toàn bộ đội, nhánh đấu và kết quả của giải sẽ bị xóa.`, {title:'Xóa giải đấu', confirmText:'Xóa giải', danger:true})) return;
   try {
     const response = await fetch(`${API_BASE}/api/tournaments/${encodeURIComponent(tournamentId)}`, { method: "DELETE" });
     const result = await response.json();
