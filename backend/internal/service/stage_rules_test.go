@@ -91,3 +91,26 @@ func TestFourSelectableRulesAndLegacyCompatibility(t *testing.T) {
 		t.Fatal("published rule changed")
 	}
 }
+
+func TestCorrectPublishedRulesOnlyBeforeAnyMatchAndInvalidateCode(t *testing.T) {
+	repo := repository.NewJSONTournamentRepository(filepath.Join(t.TempDir(), "correction.json"))
+	repo.Save("cup", map[string]interface{}{"matches": map[string]interface{}{
+		"a": map[string]interface{}{"round_level": 1, "team_a": map[string]interface{}{"code_valid": true, "code_submitted": true, "current_code": "draft"}},
+		"b": map[string]interface{}{"round_level": 2, "rounds_history": []interface{}{map[string]interface{}{"winner": "team_a"}}},
+	}, "stage_rules": map[string]interface{}{"1": map[string]interface{}{"rule_id": "COMBO_7", "publish_at": float64(0)}}})
+	svc := NewTournamentService(repo, nil)
+	if _, err := svc.SetStageRules("cup", []StageRule{{1, "COMBO_4", 0}}); err == nil {
+		t.Fatal("implicit edit bypassed lock")
+	}
+	if _, err := svc.SetStageRulesWithCorrection("cup", []StageRule{{1, "COMBO_4", 0}}, true); err != nil {
+		t.Fatal(err)
+	}
+	data, _ := svc.GetTournamentByID("cup")
+	team := data["matches"].(map[string]interface{})["a"].(map[string]interface{})["team_a"].(map[string]interface{})
+	if team["code_valid"] != false || team["code_submitted"] != false || team["current_code"] != "draft" {
+		t.Fatal("fresh submission not required")
+	}
+	if _, err := svc.SetStageRulesWithCorrection("cup", []StageRule{{2, "COMBO_4", 0}}, true); err == nil {
+		t.Fatal("played stage changed")
+	}
+}

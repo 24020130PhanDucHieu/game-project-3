@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -156,7 +157,8 @@ func main() {
 	{
 		api.GET("/capabilities", func(c *gin.Context) {
 			languages := []string{"PYTHON"}
-			if cfg.Environment != "production" {
+			_, wasiErr := os.Stat("/opt/wasi-sdk/bin/clang++")
+			if cfg.Environment != "production" || wasiErr == nil {
 				languages = append(languages, "CPP")
 			}
 			c.JSON(http.StatusOK, gin.H{"languages": languages})

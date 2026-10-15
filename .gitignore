@@ -46,6 +46,8 @@ data/
 cloudflared.exe
 
 # IDE & OS
+tests/combo-*.png
+tests/profile-*.png
 .vscode/
 .idea/
 .DS_Store

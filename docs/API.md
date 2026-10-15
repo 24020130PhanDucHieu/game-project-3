@@ -182,3 +182,10 @@ Khi client kết nối vào phòng trận đấu:
    }
    ```
 4. Client có thể gửi `"ping"`, máy chủ phản hồi `"pong"` để duy trì kết nối (Heartbeat).
+# Sửa lại luật đã công bố
+
+`PUT /api/tournaments/:id/stage-rules` cho phép Admin gửi thêm `"correction": true` để sửa nhầm luật đã công bố **chỉ khi vòng chưa có trận bắt đầu**. Backend vẫn từ chối nếu vòng đã có lịch sử, đang chạy hoặc đã hoàn tất. Thay đổi cấu hình làm mất trạng thái sẵn sàng của bài nộp cũ; giữ bản nháp và lịch sử. Lưu bình thường không có cờ này vẫn giữ khóa công bố.
+
+```json
+{"correction":true,"rules":[{"level":1,"rule_id":"COMBO_5","publish_at":0}]}
+```

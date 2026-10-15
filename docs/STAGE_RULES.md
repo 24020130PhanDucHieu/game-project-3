@@ -14,14 +14,15 @@ ID mới là `COMBO_0` đến `COMBO_7`, cộng các bit đã tích: `COMBO_5` =
 
 ## Bàn live và phát lại
 
-Bàn chính của đội theo hiệp mới nhất, cùng cơ chế với bàn live Admin: máy chủ thực thi hiệp, gửi các bước để trình diễn trong thời gian chuyển hiệp, chưa truyền từng nước khi bot đang thực thi. Dùng **Lịch sử hiệp đấu và phát lại → Xem Replay** để xem lại riêng. Bấm hiệp đã hoàn tất ở thanh điểm cũng mở phát lại. Trước khi hiệp trộn quân bắt đầu, bàn chờ hiện `?` vì chưa tạo vị trí quân thật.
+Bàn chính của đội theo hiệp mới nhất, cùng cơ chế với bàn live Admin: máy chủ thực thi hiệp, gửi các bước để trình diễn trong thời gian chuyển hiệp, chưa truyền từng nước khi bot đang thực thi. Dùng **Lịch sử hiệp đấu và phát lại → Xem Replay** để xem lại riêng. Bấm hiệp đã hoàn tất ở thanh điểm cũng mở phát lại. Trước khi hiệp trộn quân bắt đầu, quân chưa xếp hiện `↻`; khi bật sương mù, chỉ quân đối thủ hiện `?`. Khi có dữ liệu trận, đội luôn thấy đúng loại quân của mình.
 
 ## Công bố và khóa
 
 - Giờ công bố để trống: công bố và khóa ngay khi lưu.
 - Giờ ở tương lai: Admin được sửa trước giờ đó; đội thi và khách chỉ thấy thời điểm công bố, API không gửi ID luật.
 - Trước công bố: server chặn nộp bài chính thức, đồng bộ bản nháp và bắt đầu hiệp của vòng đó.
-- Sau công bố hoặc khi vòng đã có trận: không được thay đổi cấu hình, kể cả qua API luật chung cũ.
+- Sau công bố: Admin dùng **Sửa lại** để sửa nhầm nếu vòng chưa có trận nào bắt đầu. Đổi luật yêu cầu các đội nộp lại bot. **Hoàn tác** bỏ các thay đổi chưa lưu.
+- Khi vòng đã có trận hoặc đang chạy: không được đổi luật, kể cả qua API sửa lại hoặc luật chung cũ.
 - Khi thêm/đổi cấu hình chưa khóa: bài cũ mất trạng thái sẵn sàng, đội phải nộp lại. Lịch sử và bản nháp vẫn được giữ.
 - Lịch mở/đóng vòng đặt riêng bằng nút lịch hiện có; không có hạn nộp mới áp dụng chung cho cả Bo5. Bài được khóa khi Admin bắt đầu từng hiệp.
 - Chưa cấu hình luật riêng: dùng luật chung của giải để giữ tương thích.

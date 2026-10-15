@@ -152,6 +152,7 @@ async function refreshTournamentSnapshot(tournamentId, showErrors = false) {
         if (tournamentId !== currentTournamentId) return null;
         const fingerprint = `${currentAppRole}:${currentTeamStudentId}:` + JSON.stringify(latest);
         currentTournamentData = latest; connectActiveMatchSocket(currentActiveMatchId);
+        renderTeamProfile();
         if (fingerprint !== lastAppliedTournamentFingerprint) {
           lastAppliedTournamentFingerprint = fingerprint; applyTournamentSnapshot(latest);
         }

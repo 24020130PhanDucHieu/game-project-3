@@ -22,7 +22,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     g++ \
     curl \
+    libtinfo6 \
     && rm -rf /var/lib/apt/lists/*
+
+COPY bot-runner/install-wasi.sh /tmp/install-wasi.sh
+RUN sh /tmp/install-wasi.sh
 
 # Cài đặt Python dependencies
 COPY bot-runner/requirements.txt ./

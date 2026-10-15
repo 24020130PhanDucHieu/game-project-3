@@ -1,3 +1,4 @@
 fastapi
 uvicorn
 pydantic
+wasmtime==49.0.0

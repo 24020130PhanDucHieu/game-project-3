@@ -2,7 +2,9 @@
 const PIECE_ICONS = {
   "ROCK": "BÚA",
   "PAPER": "BAO",
-  "SCISSORS": "KÉO"
+  "SCISSORS": "KÉO",
+  "UNKNOWN": "Quân đối thủ chưa rõ loại",
+  "PENDING": "Chờ xếp quân khi bắt đầu hiệp"
 };
 
 // Cập nhật nhãn nút nộp mã lệnh gọn gàng, không bị tràn

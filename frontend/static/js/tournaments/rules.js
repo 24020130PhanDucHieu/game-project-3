@@ -24,6 +24,17 @@ for (let bits=0; bits<8; bits++) {
   };
 }
 let rulesTournamentId = null;
+let correctingStageRules = false;
+function editSavedStageRules() {
+  correctingStageRules = true;
+  for (const row of document.querySelectorAll('#stage-rules-fields fieldset[data-played="false"]')) {
+    row.dataset.locked='false';
+    row.querySelectorAll('input').forEach(input => input.disabled=false);
+    row.querySelector(':scope > small').textContent='Đang sửa. Lưu lại sẽ yêu cầu các đội nộp lại bot hợp lệ.';
+  }
+  document.getElementById('btn-save-stage-rules').disabled=!document.querySelector('#stage-rules-fields input:not(:disabled)');
+  document.getElementById('stage-rules-error').textContent='Đã mở sửa các vòng chưa thi đấu. Thay đổi chỉ áp dụng khi bấm Lưu luật.';
+}
 function stageRuleInfo(tournament, match) {
   const configured = tournament?.stage_rules?.[match?.round_level];
   if (configured?.hidden || configured?.publish_at > Date.now()/1000) return { name: 'Chưa công bố luật', description: `Công bố lúc ${new Date(configured.publish_at*1000).toLocaleString('vi-VN')}`, hidden:true };
@@ -47,6 +58,7 @@ function openStageRules() {
   if (currentAppRole !== 'ADMIN') { notifyWarning('Chỉ dành cho Admin', 'Ban tổ chức mới được thiết lập luật.'); return; }
   if (!currentTournamentData) { notifyWarning('Chưa chọn giải', 'Hãy chọn giải đấu trước.'); return; }
   rulesTournamentId = currentTournamentId;
+  correctingStageRules = false;
   document.getElementById('stage-rules-tournament').textContent = currentTournamentData.name;
   document.getElementById('stage-rules-error').textContent = '';
   const fields = document.getElementById('stage-rules-fields'); fields.replaceChildren();
@@ -56,6 +68,7 @@ function openStageRules() {
     const saved = currentTournamentData.stage_rules?.[stage.level];
     const locked = currentTournamentData.status === 'FINISHED' || stage.matches.some(m => m.rounds_history?.length || m.battle_running || m.status === 'COMPLETED') || (saved && saved.publish_at <= Date.now()/1000);
     row.dataset.locked = locked ? 'true' : 'false';
+    row.dataset.played = String(currentTournamentData.status === 'FINISHED' || stage.matches.some(m => m.rounds_history?.length || m.battle_running || m.status === 'COMPLETED'));
     const existingRule = saved?.rule_id || currentTournamentData.stage_rule || 'STAGE_1_STANDARD';
     row.dataset.ruleId = existingRule;
     const choices = document.createElement('div'); choices.className = 'stage-rule-choices';
@@ -83,6 +96,7 @@ function openStageRules() {
     row.append(legend,choices,timeLabel,description,note); fields.append(row);
   }
   document.getElementById('btn-save-stage-rules').disabled = !fields.querySelector('input:not(:disabled)');
+  document.getElementById('btn-edit-stage-rules').disabled = !fields.querySelector('fieldset[data-played="false"]');
   document.getElementById('dialog-stage-rules').showModal();
 }
 async function saveStageRules(event) {
@@ -94,7 +108,7 @@ async function saveStageRules(event) {
   if (!rules.length) { document.getElementById('stage-rules-error').textContent = 'Hãy chọn luật cho ít nhất một vòng chưa khóa.'; return; }
   button.disabled=true;
   try {
-    const response = await fetch(`${API_BASE}/api/tournaments/${encodeURIComponent(rulesTournamentId)}/stage-rules`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({rules})});
+    const response = await fetch(`${API_BASE}/api/tournaments/${encodeURIComponent(rulesTournamentId)}/stage-rules`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({rules,correction:correctingStageRules})});
     const data = await response.json(); if (!response.ok) throw new Error(data.detail || 'Không lưu được luật.');
     document.getElementById('dialog-stage-rules').close();
     if (currentTournamentId === rulesTournamentId) await loadActiveTournament(rulesTournamentId);

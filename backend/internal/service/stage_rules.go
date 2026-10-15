@@ -40,6 +40,10 @@ func CheckStageRulePublished(tournament, match map[string]interface{}, now time.
 }
 
 func (s *TournamentService) SetStageRules(id string, requested []StageRule) (map[string]interface{}, error) {
+	return s.SetStageRulesWithCorrection(id, requested, false)
+}
+
+func (s *TournamentService) SetStageRulesWithCorrection(id string, requested []StageRule, correction bool) (map[string]interface{}, error) {
 	unlock := s.lockTournament(id)
 	defer unlock()
 	tournament, found, err := s.repo.GetByID(id)
@@ -88,7 +92,7 @@ func (s *TournamentService) SetStageRules(id string, requested []StageRule) (map
 		if played[r.Level] {
 			return nil, errors.New("Không thể đổi luật vòng đã có trận thi đấu.")
 		}
-		if previous != nil && number(previous["publish_at"]) <= now {
+		if previous != nil && number(previous["publish_at"]) <= now && !correction {
 			return nil, errors.New("Luật đã công bố được khóa để bảo đảm công bằng.")
 		}
 		next[key] = value

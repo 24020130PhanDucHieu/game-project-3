@@ -144,3 +144,5 @@
 #stage-rules-fields .stage-rule-choice strong { display: block; font-size: 14px; }
 #stage-rules-fields .stage-rule-choice small { display: block; font-weight: 400; line-height: 1.45; margin-top: 3px; }
 #stage-rules-fields .stage-rule-description { font-size: 13px; }
+.config-footer-actions { display:flex; justify-content:flex-end; flex-wrap:wrap; gap:8px; }
+.config-footer-actions .btn { min-width:0; padding:10px 16px; }

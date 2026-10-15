@@ -47,23 +47,23 @@ except BaseException as exc:
 
 
 class GameProcess:
-    def __init__(self, code):
+    def __init__(self, code, *, command=None, initial_payload=None):
         self.process = None
         self.reader = None
         self.responses = queue.Queue(maxsize=2)
-        self.error = _validate_python_ast(code)
+        self.error = _validate_python_ast(code) if command is None else None
         if self.error:
             return
         environment = {k:v for k,v in os.environ.items() if k.upper() in {'PATH','SYSTEMROOT','WINDIR','TEMP','TMP'}}
         environment['PYTHONIOENCODING']='utf-8'
         try:
-            self.process = subprocess.Popen([sys.executable,'-I','-S','-u','-c',CHILD],
+            self.process = subprocess.Popen(command or [sys.executable,'-I','-S','-u','-c',CHILD],
                 stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,
                 text=True,encoding='utf-8',errors='replace',env=environment,close_fds=True,
                 creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
             self.reader=threading.Thread(target=self._read,daemon=True)
             self.reader.start()
-            self.process.stdin.write(json.dumps({'code':code})+'\n')
+            self.process.stdin.write(json.dumps(initial_payload if initial_payload is not None else {'code':code})+'\n')
             self.process.stdin.flush()
             ready=self.responses.get(timeout=5)
             if not ready.get('ready'):

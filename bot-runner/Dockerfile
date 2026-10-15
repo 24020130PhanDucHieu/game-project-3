@@ -5,12 +5,21 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     g++ \
+    curl \
+    libtinfo6 \
     && rm -rf /var/lib/apt/lists/*
+
+COPY install-wasi.sh /tmp/install-wasi.sh
+RUN sh /tmp/install-wasi.sh
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
+
+ENV ENVIRONMENT=production
+RUN useradd --system --uid 10001 --create-home arena && chown -R arena:arena /app
+USER arena
 
 EXPOSE 8001
 

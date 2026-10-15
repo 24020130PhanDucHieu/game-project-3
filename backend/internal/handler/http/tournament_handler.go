@@ -451,14 +451,15 @@ func (h *TournamentHandler) GetRule(c *gin.Context) {
 
 func (h *TournamentHandler) SetStageRules(c *gin.Context) {
 	var req struct {
-		Rules []service.StageRule `json:"rules"`
+		Rules      []service.StageRule `json:"rules"`
+		Correction bool                `json:"correction"`
 	}
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 16384)
 	if c.ShouldBindJSON(&req) != nil || req.Rules == nil {
 		c.JSON(400, gin.H{"detail": "Cấu hình luật không hợp lệ."})
 		return
 	}
-	result, err := h.service.SetStageRules(c.Param("id"), req.Rules)
+	result, err := h.service.SetStageRulesWithCorrection(c.Param("id"), req.Rules, req.Correction)
 	if err != nil {
 		c.JSON(400, gin.H{"detail": err.Error()})
 		return

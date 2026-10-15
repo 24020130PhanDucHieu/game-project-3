@@ -254,10 +254,11 @@ class BotRunner:
         Trả về: (đường_dẫn_file_exe_nếu_thành_công, lỗi_biên_dịch_nếu_có)
         """
         temp_dir = tempfile.gettempdir()
-        if os.getenv("ENVIRONMENT", "").lower() == "production":
-            return None, "Native C++ execution is disabled in production until an OS-isolated runner is configured."
         if len(cpp_code_str.encode("utf-8")) > MAX_CODE_BYTES:
             return None, "C++ source exceeds the 64 KB limit."
+        if os.getenv("ENVIRONMENT", "").lower() == "production" or os.getenv('CPP_RUNTIME') == 'wasi':
+            from app.sandbox.cpp_wasi import compile_wasi
+            return compile_wasi(cpp_code_str)
         file_id = f"bot_{int(time.time()*1000)}_{random.randint(100, 999)}"
         src_path = os.path.join(temp_dir, f"{file_id}.cpp")
         exe_path = os.path.join(temp_dir, f"{file_id}.exe")
@@ -301,8 +302,12 @@ class BotRunner:
         available = [k for k, v in cards.items() if v > 0]
         fallback_move = available[0] if available else "ROCK"
 
+        if exe_path.endswith('.wasm'):
+            from app.sandbox.cpp_wasi import run_wasi
+            move,error=run_wasi(exe_path,game_state,timeout)
+            return (move,None) if move else (fallback_move,error)
         if os.getenv("ENVIRONMENT", "").lower() == "production":
-            return fallback_move, "Native C++ execution is disabled in production."
+            return fallback_move, 'Production chỉ chạy C++ trong WASI.'
 
         if not os.path.exists(exe_path):
             return fallback_move, "Không tìm thấy tệp nhị phân thực thi C++."

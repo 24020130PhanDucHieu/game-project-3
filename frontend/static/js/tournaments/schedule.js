@@ -1,4 +1,9 @@
 let scheduleTournamentId = null;
+function editSavedStageSchedule() {
+  document.querySelectorAll('#stage-schedule-fields input[data-editable="true"]').forEach(input => input.disabled=false);
+  document.getElementById('stage-schedule-error').textContent='Sửa giờ rồi bấm Lưu lịch. Vòng đã đấu chỉ được gia hạn giờ đóng; Hoàn tác để bỏ thay đổi chưa lưu.';
+  document.querySelector('#stage-schedule-fields input:not(:disabled)')?.focus();
+}
 
 function tournamentStages(tournament) {
   const groups = new Map();
@@ -65,6 +70,10 @@ function openStageSchedule() {
       const input = document.createElement('input'); input.type = 'datetime-local'; input.className = 'login-input-field';
       input.dataset.time = key; input.value = localDatetime(window?.[key]);
       input.disabled = currentTournamentData.status === 'FINISHED' || (played && window && key === 'starts_at');
+      input.dataset.editable = String(!input.disabled);
+      if (window) input.disabled = true;
+      input.dataset.originalValue = input.value;
+      input.dataset.originalTimestamp = window?.[key] || 0;
       wrapper.appendChild(input); row.appendChild(wrapper);
     }
     fields.appendChild(row);
@@ -75,6 +84,7 @@ function openStageSchedule() {
     }
   }
   document.getElementById('btn-save-stage-schedule').disabled = currentTournamentData.status === 'FINISHED';
+  document.getElementById('btn-edit-stage-schedule').disabled = currentTournamentData.status === 'FINISHED';
   document.getElementById('dialog-stage-schedule').showModal();
 }
 
@@ -89,8 +99,8 @@ async function saveStageSchedule(event) {
     const end = row.querySelector('[data-time="ends_at"]').value;
     if (!start && !end) continue;
     if (!start || !end) { error.textContent = 'Nhập đủ giờ mở và giờ đóng cho mỗi vòng.'; return; }
-    const startTime = row.querySelector('[data-time="starts_at"]').disabled && row.dataset.originalStart ? Number(row.dataset.originalStart) : new Date(start).getTime() / 1000;
-    windows.push({ level: Number(row.dataset.level), starts_at: startTime, ends_at: new Date(end).getTime() / 1000 });
+    const timestamp = key => { const input=row.querySelector(`[data-time="${key}"]`); return input.value===input.dataset.originalValue ? Number(input.dataset.originalTimestamp) : new Date(input.value).getTime()/1000; };
+    windows.push({ level: Number(row.dataset.level), starts_at: timestamp('starts_at'), ends_at: timestamp('ends_at') });
   }
   button.disabled = true;
   try {

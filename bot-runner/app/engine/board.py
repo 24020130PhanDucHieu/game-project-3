@@ -26,6 +26,7 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
     languages = {"team_a": lang_a, "team_b": lang_b}
     executables = {}
     python_processes = {}
+    wasi_processes = {}
     steps = []
     first = "team_a" if round_num % 2 else "team_b"
     order = (first, "team_b" if first == "team_a" else "team_a")
@@ -56,6 +57,10 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                 executable, error = BotRunner.compile_cpp_code(codes[side])
                 executables[side] = executable
                 errors[side] = error if error or not executable else None
+                if executable and executable.endswith('.wasm') and not error:
+                    from app.sandbox.cpp_wasi import WasiGameProcess
+                    wasi_processes[side]=WasiGameProcess(executable)
+                    errors[side]=wasi_processes[side].error
         if any(errors.values()):
             if all(errors.values()):
                 winner = "team_a" if int(hashlib.sha256(f"{tie_seed}:compile".encode()).hexdigest(), 16) % 2 == 0 else "team_b"
@@ -89,7 +94,8 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                      "target": list(targets[side]), "reverse_rule": reverse,
                      "rules": copy.deepcopy(active_rules)}
             try:
-                move, error = (BotRunner.run_cpp_binary(executables[side], state) if languages[side] == "CPP"
+                move, error = (wasi_processes[side].decide(state) if side in wasi_processes
+                               else BotRunner.run_cpp_binary(executables[side], state) if languages[side] == "CPP"
                                else python_processes[side].decide(state) if side in python_processes
                                else BotRunner.run_python_code(codes[side], state))
             except Exception as exc:
@@ -157,6 +163,8 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                 "bot_errors": errors, "first_side": first, "tie_break_seed": tie_seed,
                 "rules": initial_rules}
     finally:
+        for process in wasi_processes.values():
+            process.close()
         for process in python_processes.values():
             process.close()
         for executable in executables.values():

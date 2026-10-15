@@ -87,6 +87,8 @@ function findBestMatchToDisplay(tournament) {
 }
 
 function switchToTab(tabId, { skipMatchOpen = false } = {}) {
+  if (tabId==='tab-profile' && currentAppRole!=='TEAM') tabId='tab-overview';
+  if (tabId==='tab-profile') renderTeamProfile();
   saveTabScroll();
   clearInterval(inlinePlaybackTimer); inlinePlaybackTimer = null;
   clearInterval(replayPlayInterval); replayPlayInterval = null;

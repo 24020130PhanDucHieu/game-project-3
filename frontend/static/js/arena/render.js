@@ -109,7 +109,7 @@ function renderVisualBattleArena(match) {
       const selectedStep = lastR.board_steps?.[inlinePlaybackCurrentIdx];
       setBattleCommentary(ticker, selectedStep?.log || lastR.win_reason || lastR.log);
     } else {
-      setBattleCommentary(ticker, `Hiệp ${match.current_round_idx || 1}: chờ hai đội nộp bot và Ban tổ chức bắt đầu.`);
+      setBattleCommentary(ticker, `Hiệp ${match.current_round_idx || 1}: chờ hai đội nộp bot và Ban tổ chức bắt đầu.${/^COMBO_[1357]$/.test(previewRule) ? ' ↻ Quân của bạn sẽ được xếp ngẫu nhiên khi bắt đầu hiệp.' : ''}`);
     }
   }
 

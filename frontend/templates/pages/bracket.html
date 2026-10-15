@@ -75,7 +75,7 @@
     <p class="text-muted">Sau giờ đóng, không bắt đầu hiệp mới. Hiệp đang chạy tiếp tục hoàn tất. Vòng đã thi đấu có thể bổ sung lịch nếu chưa đặt; lịch đã có chỉ được gia hạn giờ đóng.</p>
     <div id="stage-schedule-fields"></div>
     <p id="stage-schedule-error" role="alert"></p>
-    <button class="btn btn-primary" type="submit" id="btn-save-stage-schedule">Lưu lịch</button>
+    <div class="config-footer-actions"><button class="btn btn-outline" type="button" id="btn-edit-stage-schedule" onclick="editSavedStageSchedule()">Sửa lại</button><button class="btn btn-outline" type="button" onclick="openStageSchedule()">Hoàn tác</button><button class="btn btn-primary" type="submit" id="btn-save-stage-schedule">Lưu lịch</button></div>
   </form>
 </dialog>
 
@@ -84,9 +84,9 @@
     <div class="card-head-compact"><h3>Thiết lập luật từng vòng</h3><button type="button" aria-label="Đóng hộp thoại" onclick="document.getElementById('dialog-stage-rules').close()">×</button></div>
     <p id="stage-rules-tournament"></p>
     <p class="text-muted">Tích một, hai hoặc cả ba luật cho mỗi vòng. Không tích: luật chuẩn. Mọi hiệp trong vòng dùng cùng tổ hợp; mỗi hiệp vẫn nộp code mới.</p>
-    <p class="text-muted">Chỉ lưu vòng có thay đổi. Để trống giờ để công bố ngay và khóa luật. Luật đã công bố hoặc vòng đã đấu không thể sửa. Lịch thi đấu đặt tại “Đặt thời gian các vòng”.</p>
+    <p class="text-muted">Chỉ lưu vòng có thay đổi. Để trống giờ để công bố ngay. Bấm “Sửa lại” nếu lưu nhầm trước khi vòng bắt đầu; đội cần nộp lại bot sau khi đổi luật. Vòng đã đấu giữ nguyên luật.</p>
     <div id="stage-rules-fields"></div>
     <div class="stage-rules-footer"><p id="stage-rules-error" role="alert"></p>
-    <button class="btn btn-primary" type="submit" id="btn-save-stage-rules">Lưu luật</button></div>
+    <div class="config-footer-actions"><button class="btn btn-outline" type="button" id="btn-edit-stage-rules" onclick="editSavedStageRules()">Sửa lại</button><button class="btn btn-outline" type="button" onclick="openStageRules()">Hoàn tác</button><button class="btn btn-primary" type="submit" id="btn-save-stage-rules">Lưu luật</button></div></div>
   </form>
 </dialog>
