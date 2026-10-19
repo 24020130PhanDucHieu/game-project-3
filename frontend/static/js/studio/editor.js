@@ -185,13 +185,16 @@ function setupStudioControls() {
     saveStudioDraft(); submit.disabled=true;
     const label=document.getElementById("btn-submit-bot-text"); if (label) label.textContent="Đang nộp...";
     try {
-      const response=await fetch(`${API_BASE}/api/tournaments/${tournamentId}/matches/${matchId}/code`, { method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({side,code_content:code,language:language.value,round_number:round,explanation:document.getElementById('studio-rule-note')?.value || ''}) });
-      const result=await response.json();
-      if (!response.ok) throw new Error(result.detail || "Không nộp được mã.");
-      if (result.is_valid) notifySuccess(`Nộp bot Round ${round} thành công`,"Đội đã sẵn sàng.");
-      else notifyWarning("Code không hợp lệ",result.validation?.error_message || "Hãy sửa mã và nộp lại.");
-      if (currentTournamentId===tournamentId && currentActiveMatchId===matchId) { await loadActiveTournament(tournamentId); loadMatchSubmissions(matchId); }
-      broadcastCrossTabSync("CODE_SUBMITTED");
+      const payload={side,code_content:code,language:language.value,round_number:round,explanation:document.getElementById('studio-rule-note')?.value || ''};
+      if(currentAppRole==='TEAM'){
+        await arenaOutbox.submit(`/api/tournaments/${tournamentId}/matches/${matchId}/code`,payload);
+        notifyInfo('Đã lưu trên thiết bị','Bài sẽ tự gửi khi có mạng. Chưa được server xác nhận.');
+      }else{
+        const response=await fetch(`${API_BASE}/api/tournaments/${tournamentId}/matches/${matchId}/code`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        const result=await response.json();if(!response.ok)throw new Error(result.detail||'Submission failed');
+        notifyInfo('Server received submission',result.is_valid?'Bot valid':result.validation?.error_message||'Bot invalid');
+        await loadActiveTournament(tournamentId);
+      }
     } catch (error) { notifyError("Lỗi nộp mã lệnh",error.message); }
     finally { submit.disabled=false; updateStudioSubmitBtnText(currentMatchData?.current_round_idx || round); }
   });

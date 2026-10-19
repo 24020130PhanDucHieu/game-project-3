@@ -1,5 +1,6 @@
 """Assemble Go-compatible HTML templates for static hosting (no dependencies)."""
 import argparse
+import json
 from pathlib import Path
 import re
 import shutil
@@ -45,6 +46,14 @@ def build(destination):
     temporary = destination / "index.html.tmp"
     temporary.write_text(html, encoding="utf-8")
     temporary.replace(destination / "index.html")
+    shutil.copyfile(FRONTEND / 'sw.js', destination / 'sw.js')
+    # Exact query strings match the versioned script/style requests in the HTML.
+    urls = {'/', '/index.html'}
+    urls.update(re.findall(r'(?:src|href)="(/(?:static|assets)/[^"?#]+(?:\?[^"#]*)?)"', html))
+    for path in (destination / 'assets').rglob('*'):
+        if path.is_file():
+            urls.add('/' + path.relative_to(destination).as_posix())
+    (destination / 'offline-assets.json').write_text(json.dumps(sorted(urls)), encoding='utf-8')
     print(f"Frontend built: {destination}")
 
 

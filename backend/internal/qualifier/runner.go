@@ -123,6 +123,11 @@ func (s *Service) play(id string, job Job, people map[string]Participant) error 
 	if job.Status == "ERROR" {
 		job.Attempts = 0
 	}
+	// A persisted RUNNING attempt was interrupted before its result committed.
+	// Resume it without charging an extra failure for a power loss/restart.
+	if job.Status == "RUNNING" && job.Attempts > 0 {
+		job.Attempts--
+	}
 	a, b := people[job.A], people[job.B]
 	var last error
 	for job.Attempts < 3 {

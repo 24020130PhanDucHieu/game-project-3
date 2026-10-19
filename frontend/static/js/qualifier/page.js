@@ -94,4 +94,4 @@ async function qualifierAction(action){
   const button=document.getElementById(action==='promote'?'qualifier-promote':`qualifier-${action}`);if(button?.disabled)return;if(button)button.disabled=true;
   try{await qualifierAPI(`/${qualifierId}/actions/${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tournament_id:target})});await loadQualifierPage();if(action==='promote'){await loadTournamentsList();notifySuccess('Đã chốt đội','Đội đã được ghép vào bảng đấu chính.');}}catch(err){notifyError('Không thể thực hiện',err.message);}finally{loadQualifierPage();}
 }
-setInterval(()=>{if(!document.hidden&&document.getElementById('tab-qualifier')?.classList.contains('active'))loadQualifierPage();},4000);
+setInterval(()=>{if(!document.hidden&&document.getElementById('tab-qualifier')?.classList.contains('active'))loadQualifierPage();},15000 + Math.random()*5000);

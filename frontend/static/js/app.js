@@ -142,3 +142,9 @@ if (document.readyState === 'loading') {
 } else {
   window.arenaReady = initApp();
 }
+
+if('serviceWorker' in navigator && location.protocol==='https:'){
+  navigator.serviceWorker.register('/sw.js').then(()=>navigator.serviceWorker.ready).then(()=>{
+    notifyInfo('Đã sẵn sàng offline','Hãy mở đúng giải/trận và phòng nộp bot trước khi tắt mạng.');
+  }).catch(()=>console.warn('Offline app cache unavailable; keep this tab open.'));
+}

@@ -69,13 +69,13 @@ func RateLimitMiddleware() gin.HandlerFunc {
 		now := time.Now()
 		rateState.Lock()
 		entry, known := rateState.clients[key]
-		if !known && len(rateState.clients) >= 10000 {
+		if !known && len(rateState.clients) >= 50000 {
 			for client, old := range rateState.clients {
 				if now.Sub(old.window) > 2*time.Minute {
 					delete(rateState.clients, client)
 				}
 			}
-			if len(rateState.clients) >= 10000 {
+			if len(rateState.clients) >= 50000 {
 				rateState.Unlock()
 				c.Header("Retry-After", "60")
 				c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"detail": "Rate limit capacity reached. Retry in 60 seconds."})

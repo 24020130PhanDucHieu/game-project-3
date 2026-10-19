@@ -108,8 +108,9 @@ func main() {
 	r.Use(middleware.RecoveryMiddleware())
 	r.Use(middleware.LoggerMiddleware())
 	r.Use(optionalSession(sessions))
-	r.Use(middleware.RateLimitMiddleware())
 	r.Use(middleware.CORSMiddleware(cfg.CORSOrigin))
+	r.Use(middleware.RateLimitMiddleware())
+	r.Use(middleware.SubmissionGate(qualifierStore, 2))
 	r.Use(func(c *gin.Context) {
 		c.Next()
 		if c.Request.Method == http.MethodGet || c.Writer.Status() >= http.StatusBadRequest {

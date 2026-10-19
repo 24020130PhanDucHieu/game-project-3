@@ -48,7 +48,7 @@ class LocalArena:
         self.env = dict(os.environ, ADMIN_PASSWORD=PASSWORD, SESSION_SECRET="verification-stable-key",
                         ENVIRONMENT="development", ENV="development", DATABASE_URL="", POSTGRES_URL="",
                         NEON_DATABASE_URL="", DB_PATH=str(self.directory / "tournaments.json"), PORT=str(self.gateway_port),
-                        WORKER_URL=f"http://127.0.0.1:{self.worker_port}/mutate-tournament", CORS_ORIGIN=BASE,
+                        WORKER_URL=f"http://127.0.0.1:{self.worker_port}/mutate-tournament", WORKER_URLS="", CORS_ORIGIN=BASE,
                         PYTHONIOENCODING="utf-8")
 
     def start(self, command, cwd, name):
@@ -67,7 +67,9 @@ class LocalArena:
             except requests.RequestException:
                 pass
             time.sleep(0.1)
-        raise AssertionError("Local service failed to start: " + url)
+        logs = '\n'.join(path.name + ':\n' + path.read_text(encoding='utf-8', errors='replace')[-2500:]
+                         for path in self.directory.glob('*.log'))
+        raise AssertionError("Local service failed to start: " + url + '\n' + logs)
 
     def start_gateway(self):
         self.gateway = self.start([str(SERVER_BINARY)], ROOT, "gateway")

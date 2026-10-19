@@ -99,6 +99,36 @@ func TestFailedWorkerCanResumeStoredJobs(t *testing.T) {
 		t.Fatal(done)
 	}
 }
+
+func TestPowerLossOnThirdAttemptResumesAndDoesNotDoubleRate(t *testing.T) {
+	s, e := fixture(t, 8)
+	people, _ := s.Participants(e.ID)
+	if err := s.pair(e, people, 1); err != nil {
+		t.Fatal(err)
+	}
+	jobs, _ := s.jobs(e.ID, 1)
+	job := jobs[0]
+	job.Status = "RUNNING"
+	job.Attempts = 3
+	if err := s.Store.Batch(map[string]interface{}{job.ID: job}); err != nil {
+		t.Fatal(err)
+	}
+	// Simulate a new gateway process using the same durable records.
+	restarted := New(s.Store, nil, nil, &testEngine{})
+	if err := restarted.run(e.ID); err != nil {
+		t.Fatal(err)
+	}
+	before, _ := restarted.Participants(e.ID)
+	if err := restarted.run(e.ID); err != nil {
+		t.Fatal(err)
+	}
+	after, _ := restarted.Participants(e.ID)
+	for sid, p := range before {
+		if p.Played != 3 || after[sid].Played != 3 || p.Elo != after[sid].Elo {
+			t.Fatal("double rating or missing game", sid)
+		}
+	}
+}
 func TestConfigureAndFrozenRules(t *testing.T) {
 	s, _ := fixture(t, 8)
 	if _, err := s.Configure("", Event{Name: "bad", Deadline: now() + 100, Rounds: 2, TopK: 12}); err == nil {
@@ -187,7 +217,7 @@ func TestLastValidSubmissionDeadlineAndFreeze(t *testing.T) {
 
 func TestExplicitTestBotsAndCapacity(t *testing.T) {
 	s, _ := fixture(t, 8)
-	e, err := s.Configure("", Event{Name: "Test only", Deadline: now() + 100, Rounds: 1, TopK: 8})
+	e, err := s.Configure("", Event{Name: "Test only", Deadline: now() + 600, Rounds: 1, TopK: 8})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -195,11 +225,11 @@ func TestExplicitTestBotsAndCapacity(t *testing.T) {
 	if len(people) != 0 {
 		t.Fatal("new qualifier not empty")
 	}
-	if err := s.GenerateTestBots(e.ID, 2000); err != nil {
+	if err := s.GenerateTestBots(e.ID, 4000); err != nil {
 		t.Fatal(err)
 	}
 	people, _ = s.Participants(e.ID)
-	if len(people) != 2000 {
+	if len(people) != 4000 {
 		t.Fatal(len(people))
 	}
 	for _, p := range people {
@@ -210,7 +240,7 @@ func TestExplicitTestBotsAndCapacity(t *testing.T) {
 	if s.GenerateTestBots(e.ID, 1) == nil {
 		t.Fatal("capacity exceeded")
 	}
-	// Reproduce the reported persisted state: 2,000 valid test bots but
+	// Reproduce the reported persisted state: 4,000 valid test bots but
 	// metadata says LOCKED with zero eligible and no jobs ever scheduled.
 	e.Status = "LOCKED"
 	e.Eligible = 0
@@ -225,7 +255,7 @@ func TestExplicitTestBotsAndCapacity(t *testing.T) {
 		t.Fatal("generated after freeze")
 	}
 	e, _ = s.Event(e.ID)
-	if e.Eligible != 2000 {
+	if e.Eligible != 4000 {
 		t.Fatal(e.Eligible)
 	}
 	if e.Error != "" {
@@ -241,7 +271,7 @@ func TestExplicitTestBotsAndCapacity(t *testing.T) {
 		t.Fatal(err)
 	}
 	e, _ = s.Event(e.ID)
-	if e.Eligible != 2000 {
+	if e.Eligible != 4000 {
 		t.Fatal("double counted", e.Eligible)
 	}
 	// Existing pairing records prohibit any replacement of snapshots.

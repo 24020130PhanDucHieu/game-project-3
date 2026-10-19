@@ -21,5 +21,5 @@ async function checkQualifierCode(){
 }
 async function submitQualifierCode(){
   const button=document.getElementById('qualifier-submit');if(button.disabled)return;button.disabled=true;
-  try{const data=await qualifierAPI(`/${qualifierId}/submissions`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:document.getElementById('qualifier-code').value,language:document.getElementById('qualifier-language').value})});if(data.valid)notifySuccess('Đã nhận bot','Bản hợp lệ mới nhất sẽ được dùng khi khóa bài.');else notifyWarning('Bài nộp lỗi',data.error||'Bản hợp lệ trước đó vẫn được giữ.');await loadQualifierPage();}catch(err){notifyError('Không thể nộp',err.message);}finally{button.disabled=qualifierData?.event.status!=='OPEN'||Date.now()/1000>=qualifierData?.event.deadline;}
+  try{await arenaOutbox.submit(`/api/qualifiers/${qualifierId}/submissions`,{code:document.getElementById('qualifier-code').value,language:document.getElementById('qualifier-language').value});notifyInfo('Đã lưu trên thiết bị','Bài sẽ tự gửi khi có mạng. Chưa được server xác nhận.');}catch(err){notifyError('Không lưu được bài',err.message);}finally{button.disabled=qualifierData?.event.status!=='OPEN'||Date.now()/1000>=qualifierData?.event.deadline;}
 }

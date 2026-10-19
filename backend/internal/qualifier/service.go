@@ -214,8 +214,8 @@ func (s *Service) Submit(id, sid, code, language string) (Submission, error) {
 	}
 	p, exists := people[sid]
 	if !exists {
-		if len(people) >= 2000 {
-			return sub, errors.New("Vòng loại đã đủ 2.000 đội.")
+		if len(people) >= 4000 {
+			return sub, errors.New("Vòng loại đã đủ 4.000 đội.")
 		}
 		return sub, errors.New("Hãy đăng ký tham gia vòng loại trước khi nộp bot.")
 	}

@@ -27,8 +27,8 @@ func (s *Service) Register(id, sid string) error {
 	if e.Status != "OPEN" || now() >= e.Deadline {
 		return errors.New("Vòng loại đã đóng đăng ký.")
 	}
-	if len(people) >= 2000 {
-		return errors.New("Vòng loại đã đủ 2.000 đội.")
+	if len(people) >= 4000 {
+		return errors.New("Vòng loại đã đủ 4.000 đội.")
 	}
 	return s.Store.Batch(map[string]interface{}{participantKey(id, sid): Participant{SID: sid, Name: account.TeamName, Elo: 1200}})
 }
@@ -53,8 +53,8 @@ func (s *Service) GenerateTestBots(id string, count int) error {
 	if err != nil {
 		return err
 	}
-	if count < 1 || count > 2000 || len(people)+count > 2000 {
-		return errors.New("Số bot từ 1 đến 2.000; tổng số đội không vượt quá 2.000.")
+	if count < 1 || count > 4000 || len(people)+count > 4000 {
+		return errors.New("Số bot từ 1 đến 4.000; tổng số đội không vượt quá 4.000.")
 	}
 	rows := map[string]interface{}{}
 	batch := uniqueID()

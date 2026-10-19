@@ -41,6 +41,9 @@ func LoadConfig() *Config {
 	}
 
 	workerURL := os.Getenv("WORKER_URL")
+	if urls := os.Getenv("WORKER_URLS"); urls != "" {
+		workerURL = urls
+	}
 	if workerURL == "" {
 		workerURL = "http://127.0.0.1:8001/mutate-tournament"
 	}

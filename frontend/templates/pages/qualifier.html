@@ -52,7 +52,7 @@
   <label>Hạn nộp (giờ thiết bị)<input id="qualifier-config-deadline" class="login-input-field" type="datetime-local" required></label>
   <div class="qualifier-form-grid"><label>Số lượt ghép cặp<input id="qualifier-config-rounds" class="login-input-field" type="number" min="1" max="100" value="10" required></label>
   <label>Số đội vào giải chính<select id="qualifier-config-top" class="login-input-field"><option>8</option><option>16</option><option selected>32</option></select></label></div>
-  <p class="text-muted">Tối đa 2.000 đội. Mỗi lượt mỗi đội gặp một đối thủ, đấu một hiệp bàn cờ. Bản hợp lệ cuối cùng được khóa khi hết hạn; Admin có thể khóa sớm.</p>
+  <p class="text-muted">Tối đa 4.000 đội. Mỗi lượt mỗi đội gặp một đối thủ, đấu một hiệp bàn cờ. Bản hợp lệ cuối cùng được khóa khi hết hạn; Admin có thể khóa sớm.</p>
   <p id="qualifier-config-error" role="alert"></p><button id="qualifier-config-save" class="btn btn-primary" type="submit">Lưu</button>
 </form></dialog>
 <dialog class="stage-schedule-dialog" id="qualifier-events-dialog">
@@ -62,6 +62,6 @@
 <dialog class="stage-schedule-dialog" id="qualifier-test-dialog"><form onsubmit="generateQualifierTestBots(event)">
   <div class="card-head-compact"><h3>Tạo bot thử nghiệm</h3><button type="button" aria-label="Đóng hộp thoại" onclick="this.closest('dialog').close()">×</button></div>
   <p id="qualifier-test-name"></p><p class="text-muted">Bot mẫu có nhãn “Thử nghiệm”, được thêm vào vòng loại đang chọn và có thể thi đấu như đội thường. Bot không tạo tài khoản đăng nhập. Nên dùng một vòng loại riêng để thử.</p>
-  <label>Số bot cần thêm<input id="qualifier-test-count" class="login-input-field" type="number" min="1" max="2000" value="8" required></label>
+  <label>Số bot cần thêm<input id="qualifier-test-count" class="login-input-field" type="number" min="1" max="4000" value="8" required></label>
   <p id="qualifier-test-error" role="alert"></p><button id="qualifier-test-save" class="btn btn-primary" type="submit">Thêm bot thử nghiệm</button>
 </form></dialog>

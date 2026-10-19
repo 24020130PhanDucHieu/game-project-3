@@ -389,6 +389,9 @@ Bot Python chạy trong subprocess có **timeout** và **giới hạn tài nguy�
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Kiến trúc hệ thống chi tiết |
 | [docs/API.md](docs/API.md) | Đặc tả API đầy đủ |
 | [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md) | Hướng dẫn phát triển local |
+| [docs/TOURNAMENT_OPERATIONS.md](docs/TOURNAMENT_OPERATIONS.md) | Vận hành giải, sự cố mất điện/mạng, chia máy chấm và dữ liệu |
+| [docs/VERIFICATION_EXAM_READINESS.md](docs/VERIFICATION_EXAM_READINESS.md) | Kết quả kiểm thử và điều kiện cần trước kỳ thi thật |
+| [docs/OFFLINE_EXAMS.md](docs/OFFLINE_EXAMS.md) | Nộp bài offline, đồng bộ và giới hạn tải |
 | [docs/CLOUD_DEPLOYMENT.md](docs/CLOUD_DEPLOYMENT.md) | Triển khai lên cloud |
 | [docs/BENCHMARK_REPORT.md](docs/BENCHMARK_REPORT.md) | Báo cáo hiệu năng |
 | [docs/VERIFICATION_RELIABILITY.md](docs/VERIFICATION_RELIABILITY.md) | Kiểm chứng độ tin cậy |
