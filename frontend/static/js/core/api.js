@@ -3,7 +3,13 @@
 // Hỗ trợ đa giải đấu, cây sơ đồ nhánh, màn hình nộp code riêng tư, trọng tài tự động
 // =============================================================================
 
-const API_BASE = localStorage.getItem("ARENA_API_URL") || (window.location.hostname.includes("workers.dev") || window.location.hostname.includes("pages.dev") ? "https://game-project-3.onrender.com" : (window.location.origin === "null" || window.location.protocol === "file:" ? "https://game-project-3.onrender.com" : window.location.origin));
+const ARENA_HOSTED_API = "https://arena.13.250.49.111.sslip.io";
+let arenaSavedAPI = localStorage.getItem("ARENA_API_URL");
+if (arenaSavedAPI && arenaSavedAPI.replace(/\/+$/, "") === "https://game-project-3.onrender.com") {
+  localStorage.removeItem("ARENA_API_URL");
+  arenaSavedAPI = null;
+}
+const API_BASE = arenaSavedAPI || (window.location.hostname.endsWith(".workers.dev") || window.location.hostname.endsWith(".pages.dev") || window.location.origin === "null" || window.location.protocol === "file:" ? ARENA_HOSTED_API : window.location.origin);
 const arenaFetch = window.fetch.bind(window);
 window.fetch = (input, init = {}) => {
   const requestURL = typeof input === "string" ? input : (input.url || input.href || String(input));

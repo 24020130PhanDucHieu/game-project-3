@@ -67,17 +67,14 @@ def compile_wasi(source):
 
 
 def run_wasi(path, state, timeout):
+    process = None
     try:
-        with tempfile.TemporaryDirectory(prefix='arena-wasi-') as work:
-            (Path(work)/'state.json').write_text(json.dumps(state)+'\n', encoding='utf-8')
-            (stdout, stderr), status = _run([sys.executable, '-I', str(Path(__file__).with_name('cpp_wasi_child.py')), path, work],
-                max(timeout,1.0)+0.5, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                env={'PATH':os.environ.get('PATH',''), 'PYTHONIOENCODING':'utf-8'}, text=True, encoding='utf-8')
-            if status:
-                return None, 'Lỗi thực thi C++: ' + stderr[-1500:]
-            result=json.loads(stdout)
-            return result.get('move'), result.get('error')
-    except subprocess.TimeoutExpired:
-        return None, 'C++ quá thời gian thực thi.'
+        # Use the same startup handshake as real matches: compiling the WASM
+        # module is separate from the deadline for executing a bot move.
+        process = WasiGameProcess(path)
+        return process.decide(state, timeout=timeout)
     except Exception as error:
         return None, f'Lỗi sandbox C++: {error}'
+    finally:
+        if process is not None:
+            process.close()

@@ -17,3 +17,10 @@ database/backups/*.gz
 cloudflared.exe
 scratch/
 docs/*.docx
+*.pem
+*.key
+**/.env
+**/.env.*
+.aws/
+.codex/
+tests/

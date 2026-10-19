@@ -1,0 +1,28 @@
+[Unit]
+Description=Arena isolated bot execution worker
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=arena
+Group=arena
+WorkingDirectory=/opt/arena/app/bot-runner
+Environment=ENVIRONMENT=production
+Environment=PYTHONIOENCODING=utf-8
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/arena/venv/bin/python -m uvicorn main:app --host 127.0.0.1 --port 8001
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/arena
+UMask=0077
+MemoryHigh=512M
+MemoryMax=700M
+TasksMax=128
+
+[Install]
+WantedBy=multi-user.target

@@ -45,6 +45,15 @@ data/
 # Cloudflared executable
 cloudflared.exe
 
+# Deployment credentials
+*.pem
+*.key
+.env
+.env.*
+!.env.example
+!*.env.example
+.aws/
+
 # IDE & OS
 tests/combo-*.png
 tests/profile-*.png

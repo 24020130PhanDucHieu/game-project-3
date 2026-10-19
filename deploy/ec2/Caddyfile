@@ -1,0 +1,5 @@
+# Replace this hostname if the EC2 public IP changes.
+arena.13.250.49.111.sslip.io {
+    encode gzip
+    reverse_proxy 127.0.0.1:8080
+}

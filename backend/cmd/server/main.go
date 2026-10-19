@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -228,12 +229,13 @@ func main() {
 
 	log.Printf("=====================================================")
 	log.Printf("  OTTV2 Freshman AI Arena Backend (Go Standard Layout)")
-	log.Printf("  Server listening on port :%s", cfg.Port)
+	listenAddress := net.JoinHostPort(os.Getenv("HOST"), cfg.Port)
+	log.Printf("  Server listening on %s", listenAddress)
 	log.Printf("  Game Engine Worker Target: %s", cfg.WorkerURL)
 	log.Printf("  Database Storage: %s", cfg.DBPath)
 	log.Printf("=====================================================")
 
-	if err := r.Run(":" + cfg.Port); err != nil {
+	if err := r.Run(listenAddress); err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
 }

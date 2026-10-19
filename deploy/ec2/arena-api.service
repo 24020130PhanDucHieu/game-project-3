@@ -1,0 +1,32 @@
+[Unit]
+Description=Arena Go API
+Wants=network-online.target
+After=network-online.target arena-worker.service
+Requires=arena-worker.service
+
+[Service]
+User=arena
+Group=arena
+WorkingDirectory=/opt/arena/app
+EnvironmentFile=/etc/arena/backend.env
+Environment=ENVIRONMENT=production
+Environment=HOST=127.0.0.1
+Environment=PORT=8080
+Environment=WORKER_URL=http://127.0.0.1:8001/mutate-tournament
+Environment=DB_PATH=/var/lib/arena/tournaments_store.json
+Environment=QUALIFIER_WORKERS=1
+ExecStart=/opt/arena/app/server
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/arena
+UMask=0077
+MemoryHigh=128M
+MemoryMax=192M
+
+[Install]
+WantedBy=multi-user.target
