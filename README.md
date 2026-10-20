@@ -6,9 +6,11 @@ Go API Gateway · Python Bot Runner · Vanilla JS Frontend
 
 ## Giới thiệu
 
+**Dành cho thành viên dự án:** xem [Web hiện đã làm được những gì?](docs/PRODUCT_OVERVIEW.md) để nắm chức năng, luồng demo, trạng thái triển khai và các phần cần góp ý.
+
 **Freshman Bot Arena** là hệ thống tổ chức giải đấu bot Oẳn Tù Tì (Rock–Paper–Scissors) theo thể thức đấu loại trực tiếp. Người chơi nộp mã bot, hệ thống chạy bot trong môi trường sandbox, tự động xếp cặp, thi đấu và cập nhật bảng đấu theo thời gian thực.
 
-Hệ thống phục vụ giải đấu ICPC tân sinh viên với khả năng chịu tải hàng nghìn người dùng đồng thời.
+Hệ thống hướng đến tổ chức giải lập trình bot cho tân sinh viên. Giới hạn đăng ký 4.000 đội đã có kiểm thử chức năng; năng lực phục vụ hàng nghìn người đồng thời vẫn cần được đo tải trên hạ tầng thực tế.
 
 ---
 

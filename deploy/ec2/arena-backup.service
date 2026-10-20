@@ -1,0 +1,17 @@
+[Unit]
+Description=Arena consistent PostgreSQL backup
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+EnvironmentFile=/etc/arena/backend.env
+ExecStart=/usr/bin/python3 /opt/arena/app/deploy/ec2/backup.py
+UMask=0077
+NoNewPrivileges=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/backups/arena
+PrivateTmp=true
+TimeoutStartSec=1900

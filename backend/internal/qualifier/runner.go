@@ -16,7 +16,9 @@ import (
 
 func (s *Service) launch(id string) {
 	s.mu.Lock()
-	if s.running[id] {
+	// Each event holds a database lease. Bound event coordinators so multiple
+	// simultaneous events cannot exhaust the SQL pool and deadlock storage.
+	if s.running[id] || len(s.running) >= 1 {
 		s.mu.Unlock()
 		return
 	}
@@ -182,6 +184,14 @@ func (s *Service) run(id string) error {
 		}
 		if e.Status != "RUNNING" {
 			return nil
+		}
+		if e.PauseRequested {
+			s.mu.Lock()
+			e.Status = "PAUSED"
+			e.Error = "Ban tổ chức tạm dừng sau khi hoàn tất lượt đang chấm."
+			err = s.Store.Batch(map[string]interface{}{metaKey(id): e})
+			s.mu.Unlock()
+			return err
 		}
 		round := e.AppliedRound + 1
 		people, err := s.Participants(id)

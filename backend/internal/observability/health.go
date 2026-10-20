@@ -42,8 +42,8 @@ func MetricsHandler(c *gin.Context) {
 	runtime.ReadMemStats(&m)
 
 	metrics := gin.H{
-		"uptime_seconds":  time.Since(startTime).Seconds(),
-		"goroutines":      runtime.NumGoroutine(),
+		"uptime_seconds":     time.Since(startTime).Seconds(),
+		"goroutines":         runtime.NumGoroutine(),
 		"memory_alloc_bytes": m.Alloc,
 		"memory_sys_bytes":   m.Sys,
 		"gc_cycles":          m.NumGC,

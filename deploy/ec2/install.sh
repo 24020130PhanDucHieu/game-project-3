@@ -2,7 +2,9 @@
 # Run as root after extracting the release into /opt/arena/app.
 set -eu
 id arena >/dev/null 2>&1 || useradd --system --home-dir /var/lib/arena --create-home --shell /usr/sbin/nologin arena
+id arena-worker >/dev/null 2>&1 || useradd --system --home-dir /var/lib/arena-worker --create-home --shell /usr/sbin/nologin arena-worker
 install -d -o arena -g arena -m 0700 /var/lib/arena
+install -d -o arena-worker -g arena-worker -m 0700 /var/lib/arena-worker
 install -d -o root -g root -m 0700 /etc/arena
 mkdir -p /opt/arena/app/data
 chmod 755 /opt/arena/app/server

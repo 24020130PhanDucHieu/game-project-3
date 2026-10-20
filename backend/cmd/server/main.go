@@ -57,9 +57,6 @@ func main() {
 
 	// 2. Service Layer
 	tournamentService := service.NewTournamentService(tournamentRepo, botRunnerAdapter)
-	if err := tournamentService.RecoverInterruptedRounds(); err != nil {
-		log.Fatalf("Could not recover interrupted rounds: %v", err)
-	}
 
 	// 3. HTTP Handlers
 	tHandler := httpHandler.NewTournamentHandler(tournamentService)
@@ -71,9 +68,6 @@ func main() {
 		log.Fatalf("Could not initialize accounts: %v", err)
 	}
 	aHandler := &httpHandler.AccountsHandler{Store: accounts, Service: tournamentService}
-	if err := aHandler.ImportLegacy(); err != nil {
-		log.Fatalf("Could not import team accounts: %v", err)
-	}
 	mHandler.Accounts = accounts
 	mHandler.AccountSync = aHandler.ImportLegacy
 	sessions.CheckStudent = func(id string) (bool, error) {
@@ -86,6 +80,17 @@ func main() {
 	qualifierStore, err := repository.NewQualifierRecords(tournamentRepo, filepath.Join(filepath.Dir(cfg.DBPath), "qualifier_store"))
 	if err != nil {
 		log.Fatalf("Could not initialize qualifier storage: %v", err)
+	}
+	lostLease, err := qualifierStore.GatewayLease()
+	if err != nil {
+		log.Fatalf("Cannot acquire gateway writer lease: %v", err)
+	}
+	go func() { log.Fatalf("Stopping gateway: %v", <-lostLease) }()
+	if err := aHandler.ImportLegacy(); err != nil {
+		log.Fatalf("Could not import team accounts: %v", err)
+	}
+	if err := tournamentService.RecoverInterruptedRounds(); err != nil {
+		log.Fatalf("Could not recover interrupted rounds: %v", err)
 	}
 	qualifierService := qualifier.New(qualifierStore, accounts, tournamentService, botRunnerAdapter)
 	qHandler := &httpHandler.QualifierHandler{Service: qualifierService}
@@ -111,6 +116,7 @@ func main() {
 	r.Use(middleware.CORSMiddleware(cfg.CORSOrigin))
 	r.Use(middleware.RateLimitMiddleware())
 	r.Use(middleware.SubmissionGate(qualifierStore, 2))
+	r.Use(middleware.AdminAudit(qualifierStore))
 	r.Use(func(c *gin.Context) {
 		c.Next()
 		if c.Request.Method == http.MethodGet || c.Writer.Status() >= http.StatusBadRequest {
@@ -144,6 +150,10 @@ func main() {
 		})
 	}
 	r.GET("/health", observability.HealthHandler)
+	r.GET("/ready", observability.ReadinessHandler(map[string]observability.ReadinessCheck{
+		"database": qualifierStore.Ready,
+		"workers":  botRunnerAdapter.Ready,
+	}))
 	r.GET("/metrics", observability.MetricsHandler)
 
 	// WebSocket Endpoint

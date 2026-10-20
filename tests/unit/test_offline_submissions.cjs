@@ -7,7 +7,7 @@ function app(){
  const context={API_BASE:'https://api',currentAppRole:'TEAM',currentTeamStudentId:'alice',localStorage:disk,
  navigator:{onLine:false,locks:{request:async(_,opts,fn)=>fn({})}},crypto:require('node:crypto').webcrypto,TextEncoder,Response,AbortController,
  document:{getElementById:element,createElement:element,body:{appendChild(){}}},setTimeout(){return 1},clearTimeout(){},
- notifySuccess(){},notifyWarning(){},CustomEvent:class{},Blob,URL,console,loadQualifierPage(){},currentTournamentId:null};
+ notifySuccess(){},notifyWarning(){},notifyInfo(){},CustomEvent:class{},Blob,URL,console,loadQualifierPage(){},currentTournamentId:null};
  context.window=context;context.addEventListener=()=>{};context.dispatchEvent=()=>{};
  context.fetch=async()=>new Response(JSON.stringify({valid:true}),{status:200});
  vm.createContext(context);vm.runInContext(fs.readFileSync('frontend/static/js/core/offline-submissions.js','utf8')+'\nglobalThis.outbox=arenaOutbox;',context);return context;
@@ -31,5 +31,11 @@ function app(){
  const originalID=row.id;
  a.fetch=async(url,init)=>{assert.equal(init.headers['X-Submission-Id'],originalID);return new Response('{"valid":true}',{status:200});};
  await a.outbox.flush();assert.equal(a.outbox.rows().length,0);
+ await a.outbox.submit('/api/qualifiers/q/submissions',{code:'queued'});
+ a.fetch=async()=>new Response('{"status":"QUEUED","id":"durable-id","at":123,"valid":false}',{status:202});
+ let warned=false;a.notifyWarning=()=>{warned=true};
+ await a.outbox.flush();
+ assert.equal(a.outbox.rows().length,0,'durable 202 acknowledges receipt');
+ assert.equal(warned,false,'pending verdict must not be shown as invalid');
  console.log('PASS offline: reload, account isolation, backpressure, missing receipt, deadline rejection, stable ID, acknowledgement');
 })().catch(err=>{console.error(err);process.exitCode=1;});

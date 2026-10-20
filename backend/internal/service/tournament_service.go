@@ -207,6 +207,19 @@ func (s *TournamentService) MutateTournament(tournamentID, action string, params
 	if !found {
 		return nil, fmt.Errorf("%w có ID: %s", repository.ErrTournamentNotFound, tournamentID)
 	}
+	receiptKey, receiptDigest := "", ""
+	receipts, _ := current["_submission_receipts"].(map[string]interface{})
+	if action == "submit-code" {
+		receiptKey, receiptDigest = submissionReceipt(params)
+		if previous, ok := receipts[receiptKey].(map[string]interface{}); ok && receiptKey != "" {
+			if previous["digest"] != receiptDigest {
+				return nil, errors.New("Submission ID belongs to another payload")
+			}
+			if response, ok := previous["response"].(map[string]interface{}); ok {
+				return response, nil
+			}
+		}
+	}
 	var runningMatch map[string]interface{}
 	var previousRoundStatus interface{}
 	if action == "submit-code" || action == "submit-draft" {
@@ -289,6 +302,15 @@ func (s *TournamentService) MutateTournament(tournamentID, action string, params
 	}
 
 	if mutated, ok := res["tournament"].(map[string]interface{}); ok {
+		if receiptKey != "" {
+			if receipts == nil {
+				receipts = map[string]interface{}{}
+			}
+			receipts[receiptKey] = map[string]interface{}{"digest": receiptDigest, "response": compactSubmissionReceipt(res)}
+		}
+		if len(receipts) > 0 {
+			mutated["_submission_receipts"] = receipts
+		}
 		if err := s.repo.Save(tournamentID, mutated); err != nil {
 			return nil, err
 		}

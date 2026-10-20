@@ -10,7 +10,7 @@ for service in arena-api arena-worker caddy; do
         failed=1
     fi
 done
-for endpoint in http://127.0.0.1:8080/health http://127.0.0.1:8001/health http://127.0.0.1:8080/api/capabilities; do
+for endpoint in http://127.0.0.1:8080/health http://127.0.0.1:8080/ready http://127.0.0.1:8001/health http://127.0.0.1:8080/api/capabilities; do
     if curl --connect-timeout 3 --max-time 10 -fsS "$endpoint"; then
         echo " OK $endpoint"
     else

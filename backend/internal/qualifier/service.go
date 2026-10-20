@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -20,22 +19,24 @@ import (
 )
 
 type Event struct {
-	ID           string  `json:"id"`
-	Name         string  `json:"name"`
-	Deadline     float64 `json:"deadline"`
-	Rounds       int     `json:"rounds"`
-	TopK         int     `json:"top_k"`
-	Status       string  `json:"status"`
-	CurrentRound int     `json:"current_round"`
-	AppliedRound int     `json:"applied_round"`
-	Completed    int     `json:"completed"`
-	Total        int     `json:"total"`
-	Eligible     int     `json:"eligible"`
-	Seed         string  `json:"seed"`
-	Error        string  `json:"error,omitempty"`
-	Target       string  `json:"target,omitempty"`
+	PauseRequested bool    `json:"pause_requested,omitempty"`
+	ID             string  `json:"id"`
+	Name           string  `json:"name"`
+	Deadline       float64 `json:"deadline"`
+	Rounds         int     `json:"rounds"`
+	TopK           int     `json:"top_k"`
+	Status         string  `json:"status"`
+	CurrentRound   int     `json:"current_round"`
+	AppliedRound   int     `json:"applied_round"`
+	Completed      int     `json:"completed"`
+	Total          int     `json:"total"`
+	Eligible       int     `json:"eligible"`
+	Seed           string  `json:"seed"`
+	Error          string  `json:"error,omitempty"`
+	Target         string  `json:"target,omitempty"`
 }
 type Participant struct {
+	Pending     int      `json:"pending_submissions,omitempty"`
 	TestBot     bool     `json:"test_bot,omitempty"`
 	SID         string   `json:"student_id"`
 	Name        string   `json:"team_name"`
@@ -52,6 +53,7 @@ type Participant struct {
 	SubmittedAt float64  `json:"submitted_at"`
 }
 type Submission struct {
+	Status   string  `json:"status,omitempty"`
 	ID       string  `json:"id"`
 	Code     string  `json:"code,omitempty"`
 	Language string  `json:"language"`
@@ -168,67 +170,17 @@ func (s *Service) Configure(id string, req Event) (Event, error) {
 	return e, s.Store.Batch(map[string]interface{}{metaKey(e.ID): e})
 }
 func (s *Service) Submit(id, sid, code, language string) (Submission, error) {
-	e, err := s.Event(id)
-	if err != nil {
-		return Submission{}, err
-	}
-	if e.Status != "OPEN" || now() >= e.Deadline {
-		return Submission{}, errors.New("Đã hết hạn hoặc bài nộp đã bị khóa.")
-	}
-	if len([]byte(code)) > 65536 || strings.TrimSpace(code) == "" {
-		return Submission{}, errors.New("Mã nguồn cần từ 1 đến 64 KB.")
-	}
-	if language != "PYTHON" && language != "CPP" {
-		return Submission{}, errors.New("Ngôn ngữ không hợp lệ.")
-	}
-	if language == "CPP" && os.Getenv("ENVIRONMENT") == "production" {
-		return Submission{}, errors.New("Máy chủ hiện chỉ hỗ trợ Python.")
-	}
-	account, err := s.Accounts.Get(sid)
-	if err != nil || account.Deleted {
-		return Submission{}, errors.New("Tài khoản không hợp lệ.")
-	}
-	var registered Participant
-	if err := s.Store.Get(participantKey(id, sid), &registered); err != nil || registered.SID == "" {
-		return Submission{}, errors.New("Hãy đăng ký tham gia vòng loại trước khi nộp bot.")
-	}
-	result, err := s.Engine.Mutate(nil, "validate-code", map[string]interface{}{"code_content": code, "language": language})
-	if err != nil {
-		return Submission{}, err
-	}
-	valid, _ := result["is_valid"].(bool)
-	message, _ := result["error_message"].(string)
-	sub := Submission{ID: uniqueID(), Code: code, Language: language, Valid: valid, Error: message, At: now()}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	e, err = s.Event(id)
+	sub, err := s.EnqueueSubmission(id, sid, code, language, "")
 	if err != nil {
 		return sub, err
 	}
-	if e.Status != "OPEN" || now() >= e.Deadline {
-		return sub, errors.New("Hạn nộp đã qua trong lúc kiểm tra. Bài chưa được nhận.")
-	}
-	people, err := s.Participants(id)
-	if err != nil {
+	if err = s.processSubmission("validation:" + id + ":" + sub.ID); err != nil {
 		return sub, err
 	}
-	p, exists := people[sid]
-	if !exists {
-		if len(people) >= 4000 {
-			return sub, errors.New("Vòng loại đã đủ 4.000 đội.")
-		}
-		return sub, errors.New("Hãy đăng ký tham gia vòng loại trước khi nộp bot.")
-	}
-	p.SubmittedAt = sub.At
-	if valid {
-		p.Code = code
-		p.Language = language
-		p.ValidID = sub.ID
-		p.SubmittedAt = sub.At
-	}
-	rows := map[string]interface{}{participantKey(id, sid): p, "submission:" + id + ":" + sid + ":" + sub.ID: sub}
-	return sub, s.Store.Batch(rows)
+	err = s.Store.Get("submission:"+id+":"+sid+":"+sub.ID, &sub)
+	return sub, err
 }
+
 func (s *Service) Freeze(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -242,7 +194,7 @@ func (s *Service) Freeze(id string) error {
 	if err != nil {
 		return err
 	}
-	if e.Status != "OPEN" && e.Status != "LOCKED" {
+	if e.Status != "OPEN" && e.Status != "CLOSING" && e.Status != "LOCKED" {
 		return errors.New("Không thể khóa lại vòng loại đã bắt đầu thi đấu.")
 	}
 	if e.CurrentRound != 0 || e.AppliedRound != 0 || e.Completed != 0 || e.Total != 0 {
@@ -254,6 +206,15 @@ func (s *Service) Freeze(id string) error {
 	}
 	if len(jobs) != 0 {
 		return errors.New("Vòng loại đã được ghép cặp; không thay đổi bài đã khóa.")
+	}
+	pending, err := s.Store.Pending("validation:" + id + ":")
+	if err != nil {
+		return err
+	}
+	if len(pending) > 0 {
+		e.Status = "CLOSING"
+		e.Error = "Đang chờ chấm hết bài đã nhận trước khi khóa danh sách."
+		return s.Store.Batch(map[string]interface{}{metaKey(id): e})
 	}
 	wasLocked, previousEligible := e.Status == "LOCKED", e.Eligible
 	// Derive the count from saved participants, never from a previous counter.
@@ -308,6 +269,7 @@ func (s *Service) Start(id string) error {
 		return errors.New("Cần khóa ít nhất K bot hợp lệ trước khi chạy; chỉ tiếp tục vòng đang tạm dừng.")
 	}
 	e.Status = "RUNNING"
+	e.PauseRequested = false
 	e.Error = ""
 	err = s.Store.Batch(map[string]interface{}{metaKey(id): e})
 	s.mu.Unlock()
@@ -317,6 +279,7 @@ func (s *Service) Start(id string) error {
 	return err
 }
 func (s *Service) Recover() error {
+	go s.runSubmissionQueue()
 	events, err := s.Events()
 	if err != nil {
 		return err
@@ -340,7 +303,8 @@ func (s *Service) Recover() error {
 				continue
 			}
 			for _, e := range events {
-				if e.Status == "OPEN" && now() >= e.Deadline {
+				if e.Status == "RUNNING" { s.launch(e.ID) }
+				if (e.Status == "OPEN" && now() >= e.Deadline) || e.Status == "CLOSING" {
 					s.Freeze(e.ID)
 					s.signal(e.ID)
 				}

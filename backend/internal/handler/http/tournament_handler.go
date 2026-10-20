@@ -78,6 +78,7 @@ func requestSession(c *gin.Context) auth.Session {
 // session can see only its own current and draft code; officials can see both.
 func redactTournament(value map[string]interface{}, session auth.Session) map[string]interface{} {
 	copyTournament := cloneJSONMap(value)
+	delete(copyTournament, "_submission_receipts")
 	if session.Role != "ADMIN" {
 		rules, _ := copyTournament["stage_rules"].(map[string]interface{})
 		for key, raw := range rules {

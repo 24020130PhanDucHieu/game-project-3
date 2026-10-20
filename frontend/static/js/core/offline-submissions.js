@@ -41,7 +41,7 @@ const arenaOutbox = (() => {
       const data=await response.json();
       if(!response.ok){row.error=data.detail||`HTTP ${response.status}`;save(row);return {blocked:true,data};}
       // An HTTP 200 from a proxy or an unrelated endpoint is not a receipt.
-      if(typeof data.valid!=='boolean' && typeof data.is_valid!=='boolean')return null;
+      if(!(response.status===202 && data.status==='QUEUED' && typeof data.id==='string' && data.at>0) && typeof data.valid!=='boolean' && typeof data.is_valid!=='boolean')return null;
       localStorage.removeItem(prefix+row.id);
       window.dispatchEvent(new CustomEvent('arena-submission-synced',{detail:{path:row.path,data}}));
       return {data};
@@ -54,7 +54,8 @@ const arenaOutbox = (() => {
         if(row.error)break;
         const result=await deliver(row);
         if(!result||result.blocked)break;
-        if(result.data.valid===false||result.data.is_valid===false)notifyWarning('Bot chưa hợp lệ','Server đã nhận nhưng bot chưa hợp lệ. Kiểm tra và sửa mã.');
+        if(result.data.status==='QUEUED')notifyInfo('Đã nhận bài','Bài đã lưu trên server, đang chờ chấm. Xem kết quả tại vòng loại.');
+        else if(result.data.valid===false||result.data.is_valid===false)notifyWarning('Bot chưa hợp lệ','Server đã nhận nhưng bot chưa hợp lệ. Kiểm tra và sửa mã.');
         else notifySuccess('Đã đồng bộ bài nộp','Server đã phản hồi. Xem trạng thái bài nộp để biết kết quả kiểm tra.');
       }
     }finally{running=false;status();if(rows().some(r=>!r.error))schedule(15000+Math.random()*30000);}

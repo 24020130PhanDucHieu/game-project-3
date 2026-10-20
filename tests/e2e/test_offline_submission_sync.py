@@ -34,6 +34,11 @@ def run():
             page.context.set_offline(False)
             page.wait_for_function('arenaOutbox.rows().length===0',timeout=30000)
             after=arena.api('GET',f'/api/qualifiers/{qid}',token=token)
+            assert len(after['history'])==1,after
+            deadline=time.monotonic()+30
+            while after['history'][0].get('status')=='QUEUED' and time.monotonic()<deadline:
+                time.sleep(.3)
+                after=arena.api('GET',f'/api/qualifiers/{qid}',token=token)
             assert len(after['history'])==1 and after['history'][0]['valid'],after
             assert after['participant']['valid_id']==after['history'][0]['id']
             assert not errors,errors

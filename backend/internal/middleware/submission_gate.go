@@ -47,6 +47,11 @@ func SubmissionGate(store *repository.QualifierRecords, concurrency int) gin.Han
 			return
 		}
 		path := c.Request.URL.Path
+		// Qualifier receipts and tasks are now committed atomically by the service.
+		if strings.HasPrefix(path, "/api/qualifiers/") && strings.HasSuffix(path, "/submissions") {
+			c.Next()
+			return
+		}
 		submission := strings.HasSuffix(path, "/submissions") || (strings.Contains(path, "/matches/") && strings.HasSuffix(path, "/code"))
 		heavy := submission || path == "/api/bots/validate" || path == "/api/bots/practice" || strings.HasSuffix(path, "/practice-match")
 		if !heavy {

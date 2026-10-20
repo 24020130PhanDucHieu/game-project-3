@@ -24,11 +24,11 @@ func TestSubmissionReceiptSurvivesGateRestartAndRejectsChangedPayload(t *testing
 		r := gin.New()
 		r.Use(func(c *gin.Context) { c.Set("session", auth.Session{Role: "TEAM", StudentID: "A"}) })
 		r.Use(SubmissionGate(store, 1))
-		r.POST("/api/qualifiers/q/submissions", func(c *gin.Context) { calls++; c.JSON(200, gin.H{"id": "accepted", "valid": true}) })
+		r.POST("/api/tournaments/t/matches/m/code", func(c *gin.Context) { calls++; c.JSON(200, gin.H{"id": "accepted", "valid": true}) })
 		return r
 	}
 	request := func(r *gin.Engine, body string) int {
-		req := httptest.NewRequest("POST", "/api/qualifiers/q/submissions", strings.NewReader(body))
+		req := httptest.NewRequest("POST", "/api/tournaments/t/matches/m/code", strings.NewReader(body))
 		req.Header.Set("X-Submission-Id", "same-request")
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)

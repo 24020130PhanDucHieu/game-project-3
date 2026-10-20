@@ -1,7 +1,9 @@
 package http
 
 import (
+	"crypto/sha256"
 	"crypto/subtle"
+	"fmt"
 	"net/http"
 	"os"
 	"sort"
@@ -417,6 +419,16 @@ func (h *MatchHandler) SubmitCode(c *gin.Context) {
 	}
 	req["session_authenticated"] = true
 	req["match_id"] = matchID
+	delete(req, "_receipt_key")
+	if session, ok := sessionFromContext(c); ok && session.Role == "TEAM" {
+		if requestID := c.GetHeader("X-Submission-Id"); requestID != "" {
+			if len(requestID) > 80 {
+				c.JSON(400, gin.H{"detail": "Invalid submission ID"})
+				return
+			}
+			req["_receipt_key"] = fmt.Sprintf("%x", sha256.Sum256([]byte(session.StudentID+"\x00"+requestID)))
+		}
+	}
 
 	res, err := h.service.MutateTournament(id, "submit-code", req)
 	if err != nil {

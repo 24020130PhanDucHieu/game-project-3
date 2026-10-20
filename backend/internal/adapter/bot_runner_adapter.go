@@ -9,6 +9,8 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -25,9 +27,14 @@ type HTTPBotRunnerAdapter struct {
 	workers   []string
 	next      atomic.Uint64
 	client    *http.Client
+	slots     chan struct{}
 }
 
 func NewHTTPBotRunnerAdapter(workerURL string) *HTTPBotRunnerAdapter {
+	concurrency, _ := strconv.Atoi(os.Getenv("JUDGE_CONCURRENCY"))
+	if concurrency < 1 || concurrency > 32 {
+		concurrency = 2
+	}
 	workers := []string{}
 	for _, value := range strings.Split(workerURL, ",") {
 		if value = strings.TrimSpace(value); value != "" {
@@ -38,6 +45,7 @@ func NewHTTPBotRunnerAdapter(workerURL string) *HTTPBotRunnerAdapter {
 		workers = append(workers, "http://127.0.0.1:8001/mutate-tournament")
 	}
 	return &HTTPBotRunnerAdapter{
+		slots:     make(chan struct{}, concurrency),
 		workerURL: workerURL,
 		workers:   workers,
 		client: &http.Client{
@@ -52,6 +60,14 @@ func NewHTTPBotRunnerAdapter(workerURL string) *HTTPBotRunnerAdapter {
 }
 
 func (a *HTTPBotRunnerAdapter) Mutate(currentTournament interface{}, action string, params map[string]interface{}) (map[string]interface{}, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+	select {
+	case a.slots <- struct{}{}:
+		defer func() { <-a.slots }()
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 	reqBody := dto.MutateWorkerRequest{
 		Tournament: currentTournament,
 		Action:     action,
@@ -66,8 +82,6 @@ func (a *HTTPBotRunnerAdapter) Mutate(currentTournament interface{}, action stri
 	// Workers are stateless: only the gateway commits tournament/results to SQL.
 	// Retry on a different worker only for transport errors or temporary overload.
 	start := int((a.next.Add(1) - 1) % uint64(len(a.workers)))
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
-	defer cancel()
 	var resp *http.Response
 	for offset := 0; offset < len(a.workers); offset++ {
 		url := a.workers[(start+offset)%len(a.workers)]

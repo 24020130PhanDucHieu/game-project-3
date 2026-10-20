@@ -4,8 +4,8 @@ Wants=network-online.target
 After=network-online.target
 
 [Service]
-User=arena
-Group=arena
+User=arena-worker
+Group=arena-worker
 WorkingDirectory=/opt/arena/app/bot-runner
 Environment=ENVIRONMENT=production
 Environment=PYTHONIOENCODING=utf-8
@@ -18,7 +18,19 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/lib/arena
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+# Worker accepts requests only on localhost and cannot reach the public network.
+IPAddressDeny=any
+IPAddressAllow=localhost
+InaccessiblePaths=/etc/arena /var/lib/arena
+ProtectProc=invisible
+ReadWritePaths=/var/lib/arena-worker
 UMask=0077
 MemoryHigh=512M
 MemoryMax=700M

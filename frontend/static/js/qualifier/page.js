@@ -3,7 +3,7 @@ let qualifierData = null, qualifierLoading = false, qualifierCreating = false, q
 let qualifierTeamsPage = 1, qualifierRankPage = 1, qualifierTeamsTotal = 0, qualifierRankTotal = 0;
 let qualifierDraftKeyLoaded = '';
 let qualifierViewLoadedKey = '';
-const qualifierPhaseLabels = { OPEN:'Đang nhận bài', LOCKED:'Đã khóa bài', RUNNING:'Đang thi đấu', PAUSED:'Tạm dừng vì lỗi', FINISHED:'Hoàn tất', PROMOTED:'Đã chốt vào giải chính' };
+const qualifierPhaseLabels = { OPEN:'Đang nhận bài', CLOSING:'Đã đóng nhận bài · Chờ chấm xong', LOCKED:'Đã khóa bài', RUNNING:'Đang thi đấu', PAUSED:'Tạm dừng vì lỗi', FINISHED:'Hoàn tất', PROMOTED:'Đã chốt vào giải chính' };
 async function qualifierAPI(path, options = {}) {
   const response = await fetch(`${API_BASE}/api/qualifiers${path}`, {cache:'no-store', ...options});
   const data = await response.json(); if (!response.ok) throw new Error(data.detail || 'Không xử lý được vòng loại.'); return data;
@@ -15,7 +15,7 @@ function selectQualifier(id) {
   qualifierData=null;
   renderQualifierRegistration(null);
   document.getElementById('qualifier-test-bots').disabled=true;
-  for(const key of ['config','freeze','start','promote'])document.getElementById(`qualifier-${key}`).disabled=true;
+  for(const key of ['config','freeze','start','pause','promote'])document.getElementById(`qualifier-${key}`).disabled=true;
   document.getElementById('qualifier-submit').disabled=true;
   let state={};try {state=JSON.parse(localStorage.getItem(qualifierStateKey())||'{}');}catch{}
   qualifierTeamsPage=state.teams||1;qualifierRankPage=state.rank||1;
@@ -38,7 +38,7 @@ async function loadQualifierPage() {
       document.getElementById('qualifier-search').value=saved.q||'';document.getElementById('qualifier-filter').value=saved.filter||'';
       qualifierViewLoadedKey=qualifierStateKey();
     }
-    if(!qualifierId){qualifierData=null;renderQualifierRegistration(null);document.getElementById('qualifier-submit').disabled=true;document.getElementById('qualifier-summary').textContent=list.length?'Chọn một giải vòng loại để xem thông tin.':'Chưa có vòng loại. Admin có thể tạo vòng loại mới.';for(const key of ['config','freeze','start','promote','test-bots'])document.getElementById(`qualifier-${key}`).disabled=true;renderQualifierTable('qualifier-ranking',[]);renderQualifierTable('qualifier-teams',[]);return;}
+    if(!qualifierId){qualifierData=null;renderQualifierRegistration(null);document.getElementById('qualifier-submit').disabled=true;document.getElementById('qualifier-summary').textContent=list.length?'Chọn một giải vòng loại để xem thông tin.':'Chưa có vòng loại. Admin có thể tạo vòng loại mới.';for(const key of ['config','freeze','start','pause','promote','test-bots'])document.getElementById(`qualifier-${key}`).disabled=true;renderQualifierTable('qualifier-ranking',[]);renderQualifierTable('qualifier-teams',[]);return;}
     const requested=qualifierId;const data=await qualifierAPI(`/${requested}`);if(requested!==qualifierId||identity!==`${currentAppRole}:${currentTeamStudentId}`)return;qualifierData=data;
     const e=data.event;
     renderQualifierRegistration(data);
@@ -49,6 +49,7 @@ async function loadQualifierPage() {
     const repairLock=e.status==='LOCKED'&&e.current_round===0&&e.applied_round===0&&e.completed===0&&e.total===0&&e.eligible<e.top_k;
     document.getElementById('qualifier-freeze').disabled=e.status!=='OPEN'&&!repairLock;
     document.getElementById('qualifier-freeze').textContent=repairLock?'Kiểm tra lại bài đã khóa':'Khóa bài nộp';
+    document.getElementById('qualifier-pause').disabled=e.status!=='RUNNING'||e.pause_requested;
     document.getElementById('qualifier-start').disabled=!['LOCKED','PAUSED'].includes(e.status)||e.eligible<e.top_k;
     document.getElementById('qualifier-promote').disabled=e.status!=='FINISHED';
     renderQualifierOwn(data);

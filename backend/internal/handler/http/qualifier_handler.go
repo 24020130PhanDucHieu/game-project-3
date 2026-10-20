@@ -126,18 +126,26 @@ func (h *QualifierHandler) Submit(c *gin.Context) {
 		c.JSON(400, gin.H{"detail": "Bài nộp không hợp lệ hoặc quá 64 KB."})
 		return
 	}
-	sub, err := h.Service.Submit(c.Param("qid"), session.StudentID, req.Code, req.Language)
+	sub, err := h.Service.EnqueueSubmission(c.Param("qid"), session.StudentID, req.Code, req.Language, c.GetHeader("X-Submission-Id"))
 	if err != nil {
-		qualifierError(c, err)
+		var rejected *qualifier.RejectedSubmission
+		if errors.As(err, &rejected) {
+			c.JSON(400, gin.H{"detail": rejected.Error()})
+		} else {
+			c.Header("Retry-After", "15")
+			c.JSON(503, gin.H{"detail": "Chưa lưu được bài. Bài trên thiết bị sẽ tự gửi lại; vui lòng giữ bản dự phòng."})
+		}
 		return
 	}
 	sub.Code = ""
-	c.JSON(200, sub)
+	c.JSON(http.StatusAccepted, sub)
 }
 func (h *QualifierHandler) Action(c *gin.Context) {
 	id := c.Param("qid")
 	var err error
 	switch c.Param("action") {
+	case "pause":
+		err = h.Service.Pause(id)
 	case "test-bots":
 		var req struct {
 			Count int `json:"count"`
