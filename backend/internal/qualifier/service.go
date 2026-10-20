@@ -85,6 +85,7 @@ type Service struct {
 	Engine     adapter.BotRunnerAdapter
 	mu         sync.Mutex
 	running    map[string]bool
+	validating sync.Map
 	OnUpdate   func(string)
 }
 
@@ -220,7 +221,7 @@ func (s *Service) Freeze(id string) error {
 	// Derive the count from saved participants, never from a previous counter.
 	e.Eligible = 0
 	e.Error = ""
-	people, err := s.Participants(id)
+	people, err := s.ParticipantSummaries(id)
 	if err != nil {
 		return err
 	}
@@ -249,7 +250,7 @@ func (s *Service) Freeze(id string) error {
 		e.Error = fmt.Sprintf("Chỉ có %d bot hợp lệ; cần ít nhất %d để chọn top.", e.Eligible, e.TopK)
 	}
 	rows[metaKey(id)] = e
-	if err := s.Store.Batch(rows); err != nil {
+	if err := s.Store.BatchPreservingParticipantCode(rows); err != nil {
 		return err
 	}
 	if wasLocked && previousEligible != e.Eligible {
@@ -303,7 +304,9 @@ func (s *Service) Recover() error {
 				continue
 			}
 			for _, e := range events {
-				if e.Status == "RUNNING" { s.launch(e.ID) }
+				if e.Status == "RUNNING" {
+					s.launch(e.ID)
+				}
 				if (e.Status == "OPEN" && now() >= e.Deadline) || e.Status == "CLOSING" {
 					s.Freeze(e.ID)
 					s.signal(e.ID)

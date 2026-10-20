@@ -14,6 +14,7 @@
       <button class="btn btn-outline" type="button" id="qualifier-freeze" onclick="qualifierAction('freeze')">Khóa bài nộp</button>
       <button class="btn btn-primary" type="button" id="qualifier-start" onclick="qualifierAction('start')">Bắt đầu / tiếp tục</button>
       <button class="btn btn-outline" type="button" id="qualifier-pause" onclick="qualifierAction('pause')" disabled>Tạm dừng sau lượt này</button>
+      <button class="btn btn-outline" type="button" id="qualifier-reopen" onclick="openQualifierReopen()" disabled>Gia hạn nhận bài</button>
     </div>
   </div>
   <div class="content-card" id="qualifier-team-card" hidden>
@@ -35,7 +36,7 @@
   </div>
   <div class="content-card admin-only" id="qualifier-admin-teams-card" hidden>
     <h3 class="panel-title">Đội đã đăng ký</h3><p class="text-muted">Chỉ các đội đăng ký vòng loại này mới xuất hiện ở đây.</p>
-    <div class="ide-toolbar-row"><input id="qualifier-search" class="input-text-sm" placeholder="Tìm mã sinh viên / tên đội" oninput="qualifierFilterChanged()"><select id="qualifier-filter" class="input-text-sm" onchange="qualifierFilterChanged()"><option value="">Tất cả</option><option value="NOT_SUBMITTED">Chưa nộp</option><option value="INVALID">Chưa có bản hợp lệ</option><option value="VALID">Có bản hợp lệ</option><option value="LOCKED">Đã khóa</option></select></div>
+    <div class="ide-toolbar-row"><input id="qualifier-search" class="input-text-sm" placeholder="Tìm mã sinh viên / tên đội" oninput="qualifierFilterChanged()"><select id="qualifier-filter" class="input-text-sm" onchange="qualifierFilterChanged()"><option value="">Tất cả</option><option value="NOT_SUBMITTED">Chưa nộp</option><option value="PENDING">Đã nhận · Đang chấm</option><option value="INVALID">Chưa có bản hợp lệ</option><option value="VALID">Có bản hợp lệ</option><option value="LOCKED">Đã khóa</option></select></div>
     <div class="table-responsive"><table class="table-clean"><thead><tr><th>Mã sinh viên</th><th>Đội</th><th>Trạng thái</th><th>ELO</th></tr></thead><tbody id="qualifier-teams"></tbody></table></div>
     <div class="qualifier-pagination"><button class="btn-outline" onclick="qualifierPage('teams',-1)">Trước</button><span id="qualifier-teams-page"></span><button class="btn-outline" onclick="qualifierPage('teams',1)">Sau</button></div>
   </div>
@@ -60,6 +61,13 @@
   <div class="card-head-compact"><h3>Các giải đấu vòng loại</h3><button type="button" aria-label="Đóng hộp thoại" onclick="this.closest('dialog').close()">×</button></div>
   <div id="qualifier-events-list"></div>
 </dialog>
+<dialog class="stage-schedule-dialog" id="qualifier-reopen-dialog"><form onsubmit="reopenQualifier(event)">
+  <div class="card-head-compact"><h3>Gia hạn nhận bài</h3><button type="button" aria-label="Đóng hộp thoại" onclick="this.closest('dialog').close()">×</button></div>
+  <p class="text-muted">Áp dụng cùng hạn mới cho tất cả đội, giữ các bản bot hợp lệ. Chỉ thực hiện trước khi vòng loại bắt đầu thi đấu.</p>
+  <label>Hạn mới (giờ thiết bị)<input id="qualifier-reopen-deadline" class="login-input-field" type="datetime-local" required></label>
+  <label>Lý do gia hạn<input id="qualifier-reopen-reason" class="login-input-field" maxlength="300" required placeholder="Ví dụ: phòng thi bị mất mạng"></label>
+  <p id="qualifier-reopen-error" role="alert"></p><button id="qualifier-reopen-save" class="btn btn-primary" type="submit">Gia hạn cho tất cả đội</button>
+</form></dialog>
 <dialog class="stage-schedule-dialog" id="qualifier-test-dialog"><form onsubmit="generateQualifierTestBots(event)">
   <div class="card-head-compact"><h3>Tạo bot thử nghiệm</h3><button type="button" aria-label="Đóng hộp thoại" onclick="this.closest('dialog').close()">×</button></div>
   <p id="qualifier-test-name"></p><p class="text-muted">Bot mẫu có nhãn “Thử nghiệm”, được thêm vào vòng loại đang chọn và có thể thi đấu như đội thường. Bot không tạo tài khoản đăng nhập. Nên dùng một vòng loại riêng để thử.</p>

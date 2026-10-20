@@ -1,12 +1,14 @@
 # Freshman Bot Arena — Web hiện đã làm được những gì?
 
-**Cập nhật: 20/10/2026 · Dành cho thành viên dự án và ban tổ chức.**
+**Cập nhật: 21/10/2026 · Dành cho thành viên dự án và ban tổ chức.**
 
-Tài liệu tổng hợp chức năng để mọi người hiểu sản phẩm, thử demo và góp ý nâng cấp. Phạm vi là mã nguồn đã đẩy lên GitHub đến commit `1be77af`, không phải xác nhận mọi tính năng đã được triển khai trên website thật.
+Tài liệu tổng hợp chức năng để mọi người hiểu sản phẩm, thử demo và góp ý nâng cấp. Nội dung mô tả mã nguồn hiện tại, bao gồm nâng cấp nhận bài và phục hồi sự cố. Xem [hướng dẫn vận hành bản mới](RELEASE_READINESS.md) để phân biệt chức năng trong mã với phần đã được triển khai trên hosting.
 
 > **Trạng thái phát hành:** bản mới đã có trên GitHub. Theo lần cập nhật gần nhất, backend AWS chưa được cập nhật bản này; việc frontend Cloudflare phát hành thành công cũng chưa được xác nhận. Cần cập nhật và kiểm tra trên hosting trước khi dùng các tính năng mới trong giải thật.
 
 ## 1. Sản phẩm giải quyết việc gì?
+
+**Nâng cấp nhiều máy chấm:** có bộ chia việc theo sức chứa từng worker, chuyển máy khi lỗi/quá tải, xác thực máy chấm và kiểm tra cùng phiên bản. Hàng đợi vòng loại nhận bài bền vững; ghép cặp và tính ELO giảm tải mã nguồn lên gateway. Xem [kiến trúc và cách triển khai](MULTI_JUDGE.md), [kết quả kiểm thử](VERIFICATION_MULTI_JUDGE.md). Chưa chứng nhận 4.000 người đồng thời trên AWS.
 
 Freshman Bot Arena là website tổ chức giải đấu lập trình bot Oẳn Tù Tì trên bàn cờ 9×9. Sinh viên viết thuật toán, nộp mã và cho bot thi đấu tự động. Ban tổ chức quản lý đội, vòng loại, bảng đấu, lịch, luật và kết quả ngay trên web.
 
@@ -74,7 +76,7 @@ Cũng có thể tổ chức giải chính với các đội do ban tổ chức t
 - Đấu thử với các boss **ngẫu nhiên**, **tấn công** và **thích ứng**; xem diễn biến bàn cờ mà không ghi thành kết quả thi đấu chính thức.
 - Có lịch sử bài nộp và xem mã nguồn theo quyền của đội/Admin.
 
-**Ngôn ngữ:** phần trận đấu và kiểm tra bot đã có Python và C++; C++ production cần WASI SDK trên worker. Riêng luồng **nộp bài vòng loại** hiện vẫn chặn C++ khi chạy production, nên chưa thể công bố hỗ trợ C++ đồng nhất ở mọi phần thi.
+**Ngôn ngữ:** trận đấu, kiểm tra bot và nhận bài vòng loại hỗ trợ Python và C++. C++ production cần WASI SDK và runtime trên worker. Cần chạy kiểm thử Linux/WASI trên đúng cấu hình phát hành trước khi mở thi.
 
 ### Xem trận, kết quả và replay
 
@@ -137,12 +139,14 @@ Theo lượt kiểm thử ngày 20/10/2026:
 | Nhóm | Kết quả |
 |---|---|
 | Backend Go | Toàn bộ bộ kiểm thử đã chạy đạt. |
-| Python unit | 33 đạt; 6 bỏ qua do cần Linux/WASI SDK. |
-| Sandbox | 6 kiểm thử đạt. |
+| Python unit | 39 đạt trên Linux, bao gồm 6 kiểm thử C++/WASI; có kiểm tra đủ 8 tổ hợp luật. |
+| Sandbox | Kiểm thử bảo mật Linux gồm module, filesystem, mạng, tiến trình và phân loại lỗi hạ tầng; xem báo cáo nâng cấp. |
 | Offline trên Chrome | Đã thử nộp khi offline, nối mạng tự gửi, server lưu đúng một bài hợp lệ; tải lại bản build khi ngắt mạng được. |
 | Luồng giải đấu trên Chrome | Đã chạy qua đăng nhập, quyền đội, nộp bot, mở trận, chuyển hiệp, restart gateway, replay, xếp hạng và giải bốn đội đến quán quân. |
 
 Các kết quả trên dùng dữ liệu thử local. Không đồng nghĩa mọi cấu hình hosting, mọi trình duyệt hoặc mọi tải lớn đã được kiểm chứng. Chi tiết và điều kiện trước khi thi thật nằm trong [báo cáo kiểm thử](VERIFICATION_EXAM_READINESS.md).
+
+Kết quả của các nâng cấp nhận bài, khôi phục và sandbox mới được ghi tại [báo cáo kiểm chứng bản nâng cấp](VERIFICATION_RELEASE_READINESS.md).
 
 ## 8. Những phần chưa hoàn tất / cần góp ý
 
@@ -150,11 +154,12 @@ Các kết quả trên dùng dữ liệu thử local. Không đồng nghĩa mọ
 |---|---|
 | Triển khai bản mới lên hệ thống thật | Cần cập nhật backend AWS và xác nhận frontend Cloudflare đúng phiên bản, rồi thử một giải riêng trên hosting. |
 | 4.000 người cùng nhận kết quả nhanh | Chưa đo tải đạt mục tiêu này. Máy t3.micro hiện tại chưa có cam kết đáp ứng; cần thêm tài nguyên và đo tải. |
-| Hàng đợi nhận bài phía server | Chưa có luồng nhận bài trả biên nhận ngay rồi chấm nền. Hàng chờ offline trên thiết bị và hàng đợi chấm trận vòng loại hiện có là hai cơ chế khác. |
-| C++ cho mọi phần thi | Cần thống nhất hỗ trợ ở vòng loại production và chạy kiểm thử WASI trên Linux. |
+| Hàng đợi nhận bài phía server | Đã bổ sung cho vòng loại: lưu bài và tác vụ chấm cùng transaction, trả biên nhận rồi chấm nền; giữ bài để chấm lại khi worker hỏng. Bảng đấu chính vẫn kiểm tra đồng bộ và lưu biên nhận cùng snapshot bài nộp. |
+| Tạm dừng, gia hạn và truy vết | Có tạm dừng vòng loại sau lượt hiện tại; gia hạn cho mọi đội trước khi ghép cặp; nhật ký admin và kiểm tra database/worker tại `/ready`. |
+| C++ cho mọi phần thi | Đã bỏ chặn C++ ở vòng loại production; cần xác nhận WASI trên môi trường phát hành. |
 | Nộp bot qua Git | Chưa có webhook nhận bài từ repository/commit. GitHub hiện dùng quản lý và phát hành mã nguồn dự án. |
 | Chạy thử khi hoàn toàn offline | Chưa có bộ chạy Python/C++ và boss trong trình duyệt hoặc bộ công cụ offline cho sinh viên. |
-| Phục hồi mọi sự cố | Cần diễn tập backup/restore, mất máy chấm, mất database và quy trình gia hạn công bằng; không có cam kết xử lý được mọi sự cố. |
+| Phục hồi sự cố | Đã diễn tập worker hỏng, restart gateway, bài chờ chấm, gia hạn và backup/restore PostgreSQL trên dữ liệu thử. Cần lặp lại trên staging tương đương AWS và thiết lập bản sao lưu ngoài máy. |
 
 ## 9. Gợi ý buổi demo và cách góp ý
 

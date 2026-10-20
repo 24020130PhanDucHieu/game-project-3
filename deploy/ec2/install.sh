@@ -1,6 +1,10 @@
 #!/bin/sh
 # Run as root after extracting the release into /opt/arena/app.
 set -eu
+if ! python3 -c 'import ctypes; ctypes.CDLL("libseccomp.so.2")' >/dev/null 2>&1; then
+    apt-get update
+    apt-get install -y --no-install-recommends libseccomp2
+fi
 id arena >/dev/null 2>&1 || useradd --system --home-dir /var/lib/arena --create-home --shell /usr/sbin/nologin arena
 id arena-worker >/dev/null 2>&1 || useradd --system --home-dir /var/lib/arena-worker --create-home --shell /usr/sbin/nologin arena-worker
 install -d -o arena -g arena -m 0700 /var/lib/arena

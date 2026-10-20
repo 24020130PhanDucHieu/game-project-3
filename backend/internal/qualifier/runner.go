@@ -131,6 +131,13 @@ func (s *Service) play(id string, job Job, people map[string]Participant) error 
 		job.Attempts--
 	}
 	a, b := people[job.A], people[job.B]
+	// Fetch only the two bots being executed, not all sources in the event.
+	if err := s.Store.Get(participantKey(id, job.A), &a); err != nil {
+		return err
+	}
+	if err := s.Store.Get(participantKey(id, job.B), &b); err != nil {
+		return err
+	}
 	var last error
 	for job.Attempts < 3 {
 		job.Attempts++
@@ -174,7 +181,7 @@ func (s *Service) play(id string, job Job, people map[string]Participant) error 
 }
 func (s *Service) run(id string) error {
 	workers := 2
-	if value, err := strconv.Atoi(os.Getenv("QUALIFIER_WORKERS")); err == nil && value >= 1 && value <= 8 {
+	if value, err := strconv.Atoi(os.Getenv("QUALIFIER_WORKERS")); err == nil && value >= 1 && value <= 32 {
 		workers = value
 	}
 	for {
@@ -194,7 +201,7 @@ func (s *Service) run(id string) error {
 			return err
 		}
 		round := e.AppliedRound + 1
-		people, err := s.Participants(id)
+		people, err := s.ParticipantSummaries(id)
 		if err != nil {
 			return err
 		}
@@ -296,7 +303,7 @@ func (s *Service) run(id string) error {
 			e.Status = "FINISHED"
 		}
 		rows[metaKey(id)] = e
-		err = s.Store.Batch(rows)
+		err = s.Store.BatchPreservingParticipantCode(rows)
 		s.mu.Unlock()
 		if err != nil {
 			return err

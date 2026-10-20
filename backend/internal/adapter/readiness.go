@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 // Require all configured workers to pass so a broken pool member is visible.
@@ -30,7 +31,10 @@ func (a *HTTPBotRunnerAdapter) Ready(ctx context.Context) error {
 		}
 		err = json.NewDecoder(io.LimitReader(res.Body, 8192)).Decode(&body)
 		res.Body.Close()
-		if err != nil || res.StatusCode != 200 || body.Status != "HEALTHY" {
+		if a.expectedRelease != "" && res.Header.Get("X-Arena-Release") != a.expectedRelease {
+			return errors.New("worker release mismatch")
+		}
+		if err != nil || res.StatusCode != 200 || !strings.EqualFold(body.Status, "HEALTHY") {
 			return errors.New("worker not ready")
 		}
 	}

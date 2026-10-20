@@ -24,6 +24,62 @@ class TestSandboxSecurity(unittest.TestCase):
         self.assertTrue(result["is_valid"])
         self.assertEqual(result["test_move"], "ROCK")
 
+    def test_block_indirect_system_modules_and_private_imports(self):
+        for source in [
+            'import typing\ndef decide_move(s):\n    typing.sys.modules["os"].getpid()\n    return "ROCK"',
+            'from typing import sys\ndef decide_move(s):\n    return "ROCK"',
+            'from math import __getattribute__ as access\ndef decide_move(s):\n    return "ROCK"',
+            'import functools\ndef decide_move(s):\n    functools.update_wrapper(None,None)\n    return "ROCK"',
+        ]:
+            with self.subTest(source=source):
+                self.assertFalse(BotRunner.validate_bot_code(source, 'PYTHON')['is_valid'])
+
+    def test_supported_algorithm_imports(self):
+        code = '''from collections import Counter, deque
+from collections.abc import Mapping
+from functools import lru_cache
+from typing import Dict, List
+import json, heapq, itertools
+def decide_move(state):
+    values = deque([1, 2])
+    assert Counter(values)[1] == 1
+    assert isinstance(state, Mapping)
+    return 'ROCK'
+'''
+        result=BotRunner.validate_bot_code(code,'PYTHON')
+        self.assertTrue(result['is_valid'],result)
+
+    def test_sandbox_setup_failure_is_not_an_invalid_bot(self):
+        from app.sandbox.game_process import SandboxUnavailableError
+        child="import sys,json;sys.stdin.readline();print(json.dumps({'error':'fixture isolation failure','isolation_error':True}),flush=True)"
+        with patch('app.sandbox.game_process.CHILD',child):
+            with self.assertRaises(SandboxUnavailableError):
+                BotRunner.validate_bot_code("def decide_move(state): return 'ROCK'",'PYTHON')
+
+    def test_worker_marks_isolation_failure_retryable(self):
+        from fastapi import HTTPException
+        from main import MutateRequest, mutate_tournament, worker_health
+        from app.sandbox.game_process import SandboxUnavailableError
+        self.assertEqual(worker_health()['status'],'HEALTHY')
+        with patch.object(BotRunner,'validate_bot_code',side_effect=SandboxUnavailableError('fixture')):
+            with self.assertRaises(HTTPException) as raised:
+                mutate_tournament(MutateRequest(action='validate-code',params={'code_content':'fixture'}))
+        self.assertEqual(raised.exception.status_code,503)
+
+    def test_worker_internal_failure_is_not_a_source_error(self):
+        from fastapi import HTTPException
+        from main import MutateRequest, mutate_tournament
+        with patch.object(BotRunner,'validate_bot_code',side_effect=RuntimeError('fixture worker failure')), patch('traceback.print_exc'):
+            with self.assertRaises(HTTPException) as raised:
+                mutate_tournament(MutateRequest(action='validate-code',params={'code_content':'fixture'}))
+        self.assertEqual(raised.exception.status_code,500)
+
+    def test_process_spawn_failure_is_retryable(self):
+        from app.sandbox.game_process import SandboxUnavailableError
+        with patch('app.sandbox.game_process.subprocess.Popen',side_effect=OSError('fixture spawn failure')):
+            with self.assertRaises(SandboxUnavailableError):
+                BotRunner.validate_bot_code("def decide_move(s): return 'ROCK'",'PYTHON')
+
     def test_reject_python_introspection(self):
         code = "def decide_move(game_state):\n    return type(game_state).__class__.__name__"
         result = BotRunner.validate_bot_code(code, "PYTHON")

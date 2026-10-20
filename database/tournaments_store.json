@@ -2114,22 +2114,23 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "07b9f851685a4cb9aebeee41f0d76784",
           "title": "Chung Kết Tổng",
           "winner": null,
           "winner_name": null
         },
         "m_lvl1_1": {
-          "all_teams_ready": true,
+          "all_teams_ready": false,
           "battle_running": false,
-          "current_round_idx": 1,
-          "intermission_ends_at": 1791651379.8906193,
+          "current_round_idx": 2,
+          "intermission_ends_at": null,
           "match_id": "m_lvl1_1",
           "max_rounds": 5,
           "next_match_id": "m_lvl2_1",
           "next_slot": "team_a",
           "round_level": 1,
           "round_name": "Tứ Kết",
-          "round_status": "ROUND_FINISHED",
+          "round_status": "AWAITING_SUBMISSIONS",
           "rounds_history": [
             {
               "board_steps": [
@@ -9931,11 +9932,11 @@
             }
           ],
           "team_a": {
-            "active_submission_id": "sub_f7054ef1",
+            "active_submission_id": null,
             "authenticated": true,
             "bot_id": "bot_24020001",
-            "code_submitted": true,
-            "code_valid": true,
+            "code_submitted": false,
+            "code_valid": false,
             "current_code": "\nimport random\ndef decide_move(game_state):\n    # Chiêu thức cải tiến cho Round 2: Dựa vào lịch sử round 1\n    history = game_state.get('history', [])\n    return 'PAPER' if history and history[-1] == 'ROCK' else 'SCISSORS'\n",
             "current_lang": "PYTHON",
             "draft_code": "\nimport random\ndef decide_move(game_state):\n    # Chiêu thức cải tiến cho Round 2: Dựa vào lịch sử round 1\n    history = game_state.get('history', [])\n    return 'PAPER' if history and history[-1] == 'ROCK' else 'SCISSORS'\n",
@@ -9949,11 +9950,11 @@
             "validation_error": null
           },
           "team_b": {
-            "active_submission_id": "sub_d1083a82",
+            "active_submission_id": null,
             "authenticated": true,
             "bot_id": "bot_24020160",
-            "code_submitted": true,
-            "code_valid": true,
+            "code_submitted": false,
+            "code_valid": false,
             "current_code": "def decide_move(gs): return 'ROCK'",
             "current_lang": "PYTHON",
             "draft_code": "def decide_move(gs): return 'ROCK'",
@@ -9965,6 +9966,7 @@
             "university": "ĐHBK Hà Nội",
             "validation_error": null
           },
+          "tie_break_seed": "c8e79b3fc1b141c690814a8c6b3c9166",
           "title": "Tứ Kết 1",
           "winner": null,
           "winner_name": null
@@ -10018,6 +10020,7 @@
             "university": "ĐH Bách Khoa ĐN",
             "validation_error": null
           },
+          "tie_break_seed": "5adb16e9d74445b1aee856cf53bc8ca0",
           "title": "Tứ Kết 2",
           "winner": null,
           "winner_name": null
@@ -10071,6 +10074,7 @@
             "university": "ĐH KHTN ĐHQG-HCM",
             "validation_error": null
           },
+          "tie_break_seed": "8ca7c3f694ee40d49f1ce712843f2fdd",
           "title": "Tứ Kết 3",
           "winner": null,
           "winner_name": null
@@ -10124,6 +10128,7 @@
             "university": "Đại Học FPT",
             "validation_error": null
           },
+          "tie_break_seed": "0aa36902f89341fbbc497de4f1768d1d",
           "title": "Tứ Kết 4",
           "winner": null,
           "winner_name": null
@@ -10145,6 +10150,7 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "80389f393bee4167b67e55c80f6a3f63",
           "title": "Bán Kết 1",
           "winner": null,
           "winner_name": null
@@ -10166,6 +10172,7 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "87ce6f5233674809afbab9acf903e021",
           "title": "Bán Kết 2",
           "winner": null,
           "winner_name": null
@@ -10437,22 +10444,23 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "f5f4e50ef748435ea4c04e244b66ee32",
           "title": "Chung Kết Tổng",
           "winner": null,
           "winner_name": null
         },
         "m_lvl1_1": {
-          "all_teams_ready": true,
+          "all_teams_ready": false,
           "battle_running": false,
-          "current_round_idx": 1,
-          "intermission_ends_at": 1791661749.4893558,
+          "current_round_idx": 2,
+          "intermission_ends_at": null,
           "match_id": "m_lvl1_1",
           "max_rounds": 5,
           "next_match_id": "m_lvl2_1",
           "next_slot": "team_a",
           "round_level": 1,
           "round_name": "Tứ Kết",
-          "round_status": "ROUND_FINISHED",
+          "round_status": "AWAITING_SUBMISSIONS",
           "rounds_history": [
             {
               "board_steps": [
@@ -13062,11 +13070,11 @@
             }
           ],
           "team_a": {
-            "active_submission_id": "sub_ca4d3e5b",
+            "active_submission_id": null,
             "authenticated": true,
             "bot_id": "bot_24020001",
-            "code_submitted": true,
-            "code_valid": true,
+            "code_submitted": false,
+            "code_valid": false,
             "current_code": "def decide_move(game_state):\n    return 'ROCK'",
             "current_lang": "PYTHON",
             "draft_code": "# Draft live code typing test\ndef decide_move(s):\n    return 'SCISSORS'",
@@ -13080,11 +13088,11 @@
             "validation_error": null
           },
           "team_b": {
-            "active_submission_id": "sub_822ec129",
+            "active_submission_id": null,
             "authenticated": true,
             "bot_id": "bot_24020160",
-            "code_submitted": true,
-            "code_valid": true,
+            "code_submitted": false,
+            "code_valid": false,
             "current_code": "def decide_move(game_state):\n    return 'ROCK'",
             "current_lang": "PYTHON",
             "draft_code": "def decide_move(game_state):\n    return 'ROCK'",
@@ -13096,6 +13104,7 @@
             "university": "ĐHBK Hà Nội",
             "validation_error": null
           },
+          "tie_break_seed": "99ad915f617d44b6a28b3e528406b3be",
           "title": "Tứ Kết 1",
           "winner": null,
           "winner_name": null
@@ -13149,6 +13158,7 @@
             "university": "ĐH Bách Khoa ĐN",
             "validation_error": null
           },
+          "tie_break_seed": "14b25701d84b400ea1b9957245e47c30",
           "title": "Tứ Kết 2",
           "winner": null,
           "winner_name": null
@@ -13202,6 +13212,7 @@
             "university": "ĐH KHTN ĐHQG-HCM",
             "validation_error": null
           },
+          "tie_break_seed": "7242ce32fd504229be6f809c0c075278",
           "title": "Tứ Kết 3",
           "winner": null,
           "winner_name": null
@@ -13255,6 +13266,7 @@
             "university": "Đại Học FPT",
             "validation_error": null
           },
+          "tie_break_seed": "ad70c164633e492987c8564e12b90793",
           "title": "Tứ Kết 4",
           "winner": null,
           "winner_name": null
@@ -13276,6 +13288,7 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "79c0be9fe8ad45c6afcd4b4df8841024",
           "title": "Bán Kết 1",
           "winner": null,
           "winner_name": null
@@ -13297,6 +13310,7 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "bbbdc09e9a444be395aeb027024de01d",
           "title": "Bán Kết 2",
           "winner": null,
           "winner_name": null
@@ -107330,22 +107344,23 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "f14d50b9263841d898bdf5ad8cc3a01b",
           "title": "Chung Kết Tổng",
           "winner": null,
           "winner_name": null
         },
         "m_lvl1_1": {
-          "all_teams_ready": true,
+          "all_teams_ready": false,
           "battle_running": false,
-          "current_round_idx": 1,
-          "intermission_ends_at": 1791656129.1412373,
+          "current_round_idx": 2,
+          "intermission_ends_at": null,
           "match_id": "m_lvl1_1",
           "max_rounds": 5,
           "next_match_id": "m_lvl2_1",
           "next_slot": "team_a",
           "round_level": 1,
           "round_name": "Tứ Kết",
-          "round_status": "ROUND_FINISHED",
+          "round_status": "AWAITING_SUBMISSIONS",
           "rounds_history": [
             {
               "board_steps": [
@@ -109955,11 +109970,11 @@
             }
           ],
           "team_a": {
-            "active_submission_id": "sub_90cc3144",
+            "active_submission_id": null,
             "authenticated": true,
             "bot_id": "bot_24020001",
-            "code_submitted": true,
-            "code_valid": true,
+            "code_submitted": false,
+            "code_valid": false,
             "current_code": "def decide_move(game_state):\n    return 'ROCK'",
             "current_lang": "PYTHON",
             "draft_code": "# Draft live code typing test\ndef decide_move(s):\n    return 'SCISSORS'",
@@ -109973,11 +109988,11 @@
             "validation_error": null
           },
           "team_b": {
-            "active_submission_id": "sub_e7daed88",
+            "active_submission_id": null,
             "authenticated": true,
             "bot_id": "bot_24020160",
-            "code_submitted": true,
-            "code_valid": true,
+            "code_submitted": false,
+            "code_valid": false,
             "current_code": "def decide_move(game_state):\n    return 'ROCK'",
             "current_lang": "PYTHON",
             "draft_code": "def decide_move(game_state):\n    return 'ROCK'",
@@ -109989,6 +110004,7 @@
             "university": "ĐHBK Hà Nội",
             "validation_error": null
           },
+          "tie_break_seed": "673bc7bfbe174817bf7664ae7577d2c7",
           "title": "Tứ Kết 1",
           "winner": null,
           "winner_name": null
@@ -110042,6 +110058,7 @@
             "university": "ĐH Bách Khoa ĐN",
             "validation_error": null
           },
+          "tie_break_seed": "2e7c5307ef7840a8afdbff730c09d774",
           "title": "Tứ Kết 2",
           "winner": null,
           "winner_name": null
@@ -110095,6 +110112,7 @@
             "university": "ĐH KHTN ĐHQG-HCM",
             "validation_error": null
           },
+          "tie_break_seed": "81c1adf5f52c483d992a4fbe40c43de2",
           "title": "Tứ Kết 3",
           "winner": null,
           "winner_name": null
@@ -110148,6 +110166,7 @@
             "university": "Đại Học FPT",
             "validation_error": null
           },
+          "tie_break_seed": "d10b7405a04749d384dfd0bd73a9bf9f",
           "title": "Tứ Kết 4",
           "winner": null,
           "winner_name": null
@@ -110169,6 +110188,7 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "5d786e61db74464ba9b54ac5d6e0d278",
           "title": "Bán Kết 1",
           "winner": null,
           "winner_name": null
@@ -110190,6 +110210,7 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "584b78c9e980418483f9417622e3c512",
           "title": "Bán Kết 2",
           "winner": null,
           "winner_name": null
@@ -113081,22 +113102,23 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "c7943f171f984d0bbe3849353c7558a0",
           "title": "Chung Kết Tổng",
           "winner": null,
           "winner_name": null
         },
         "m_lvl1_1": {
-          "all_teams_ready": true,
+          "all_teams_ready": false,
           "battle_running": false,
-          "current_round_idx": 1,
-          "intermission_ends_at": 1791629156.3156817,
+          "current_round_idx": 2,
+          "intermission_ends_at": null,
           "match_id": "m_lvl1_1",
           "max_rounds": 5,
           "next_match_id": "m_lvl2_1",
           "next_slot": "team_a",
           "round_level": 1,
           "round_name": "Tứ Kết",
-          "round_status": "ROUND_FINISHED",
+          "round_status": "AWAITING_SUBMISSIONS",
           "rounds_history": [
             {
               "board_steps": [
@@ -115706,11 +115728,11 @@
             }
           ],
           "team_a": {
-            "active_submission_id": "sub_165fc4a0",
+            "active_submission_id": null,
             "authenticated": true,
             "bot_id": "bot_24020001",
-            "code_submitted": true,
-            "code_valid": true,
+            "code_submitted": false,
+            "code_valid": false,
             "current_code": "def decide_move(game_state):\n    return 'ROCK'",
             "current_lang": "PYTHON",
             "draft_code": "# Draft live code typing test\ndef decide_move(s):\n    return 'SCISSORS'",
@@ -115724,11 +115746,11 @@
             "validation_error": null
           },
           "team_b": {
-            "active_submission_id": "sub_a3e3726e",
+            "active_submission_id": null,
             "authenticated": true,
             "bot_id": "bot_24020160",
-            "code_submitted": true,
-            "code_valid": true,
+            "code_submitted": false,
+            "code_valid": false,
             "current_code": "def decide_move(game_state):\n    return 'ROCK'",
             "current_lang": "PYTHON",
             "draft_code": "def decide_move(game_state):\n    return 'ROCK'",
@@ -115740,6 +115762,7 @@
             "university": "ĐHBK Hà Nội",
             "validation_error": null
           },
+          "tie_break_seed": "2120b03fe0fa4d67a0021c4b560ce02b",
           "title": "Tứ Kết 1",
           "winner": null,
           "winner_name": null
@@ -115793,6 +115816,7 @@
             "university": "ĐH Bách Khoa ĐN",
             "validation_error": null
           },
+          "tie_break_seed": "2335019706054d1a86ca41e1f3c80dfe",
           "title": "Tứ Kết 2",
           "winner": null,
           "winner_name": null
@@ -115846,6 +115870,7 @@
             "university": "ĐH KHTN ĐHQG-HCM",
             "validation_error": null
           },
+          "tie_break_seed": "faaa603fd10b4b37a9e450721a7b37e1",
           "title": "Tứ Kết 3",
           "winner": null,
           "winner_name": null
@@ -115899,6 +115924,7 @@
             "university": "Đại Học FPT",
             "validation_error": null
           },
+          "tie_break_seed": "d8f1d53140d54722b4bfbb5aa7dce4e6",
           "title": "Tứ Kết 4",
           "winner": null,
           "winner_name": null
@@ -115920,6 +115946,7 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "ab1253fbef0b483dbc462eb97a895e8e",
           "title": "Bán Kết 1",
           "winner": null,
           "winner_name": null
@@ -115941,6 +115968,7 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "89ebbb0a84af452980d248504c6bfdc2",
           "title": "Bán Kết 2",
           "winner": null,
           "winner_name": null
@@ -207636,22 +207664,23 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "5aa27e025e214eb8a27950a4b1d55cc1",
           "title": "Chung Kết Tổng",
           "winner": null,
           "winner_name": null
         },
         "m_lvl1_1": {
-          "all_teams_ready": true,
+          "all_teams_ready": false,
           "battle_running": false,
-          "current_round_idx": 1,
-          "intermission_ends_at": 1791659158.4861598,
+          "current_round_idx": 2,
+          "intermission_ends_at": null,
           "match_id": "m_lvl1_1",
           "max_rounds": 5,
           "next_match_id": "m_lvl2_1",
           "next_slot": "team_a",
           "round_level": 1,
           "round_name": "Tứ Kết",
-          "round_status": "ROUND_FINISHED",
+          "round_status": "AWAITING_SUBMISSIONS",
           "rounds_history": [
             {
               "board_steps": [
@@ -210261,11 +210290,11 @@
             }
           ],
           "team_a": {
-            "active_submission_id": "sub_9953d75f",
+            "active_submission_id": null,
             "authenticated": true,
             "bot_id": "bot_24020001",
-            "code_submitted": true,
-            "code_valid": true,
+            "code_submitted": false,
+            "code_valid": false,
             "current_code": "def decide_move(game_state):\n    return 'ROCK'",
             "current_lang": "PYTHON",
             "draft_code": "# Draft live code typing test\ndef decide_move(s):\n    return 'SCISSORS'",
@@ -210279,11 +210308,11 @@
             "validation_error": null
           },
           "team_b": {
-            "active_submission_id": "sub_02b4b53a",
+            "active_submission_id": null,
             "authenticated": true,
             "bot_id": "bot_24020160",
-            "code_submitted": true,
-            "code_valid": true,
+            "code_submitted": false,
+            "code_valid": false,
             "current_code": "def decide_move(game_state):\n    return 'ROCK'",
             "current_lang": "PYTHON",
             "draft_code": "def decide_move(game_state):\n    return 'ROCK'",
@@ -210295,6 +210324,7 @@
             "university": "ĐHBK Hà Nội",
             "validation_error": null
           },
+          "tie_break_seed": "7c3653e015e244e2accba235e4336eab",
           "title": "Tứ Kết 1",
           "winner": null,
           "winner_name": null
@@ -210348,6 +210378,7 @@
             "university": "ĐH Bách Khoa ĐN",
             "validation_error": null
           },
+          "tie_break_seed": "7a072e5d8efc46578ce90c9c979b3b5a",
           "title": "Tứ Kết 2",
           "winner": null,
           "winner_name": null
@@ -210401,6 +210432,7 @@
             "university": "ĐH KHTN ĐHQG-HCM",
             "validation_error": null
           },
+          "tie_break_seed": "7a7c2a78c8774ecfb05cd1e8810a5892",
           "title": "Tứ Kết 3",
           "winner": null,
           "winner_name": null
@@ -210454,6 +210486,7 @@
             "university": "Đại Học FPT",
             "validation_error": null
           },
+          "tie_break_seed": "e8bb662d5040451c96e228d477ac63ec",
           "title": "Tứ Kết 4",
           "winner": null,
           "winner_name": null
@@ -210475,6 +210508,7 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "12bedf38ac8048d596a5ee66d1b2bbb4",
           "title": "Bán Kết 1",
           "winner": null,
           "winner_name": null
@@ -210496,6 +210530,7 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "da7ee8204e544c44ba8d9f6c01190c4c",
           "title": "Bán Kết 2",
           "winner": null,
           "winner_name": null
@@ -213565,17 +213600,17 @@
       "created_at": 1791651701.0270197,
       "matches": {
         "m_gf": {
-          "all_teams_ready": true,
+          "all_teams_ready": false,
           "battle_running": false,
-          "current_round_idx": 1,
-          "intermission_ends_at": 1791710127.3194482,
+          "current_round_idx": 2,
+          "intermission_ends_at": null,
           "match_id": "m_gf",
           "max_rounds": 5,
           "next_match_id": null,
           "next_slot": null,
           "round_level": 3,
           "round_name": "Chung Kết",
-          "round_status": "ROUND_FINISHED",
+          "round_status": "AWAITING_SUBMISSIONS",
           "rounds_history": [
             {
               "board_steps": [
@@ -221377,11 +221412,11 @@
             }
           ],
           "team_a": {
-            "active_submission_id": "sub_8a190e78",
+            "active_submission_id": null,
             "authenticated": true,
             "bot_id": "bot_24020001",
-            "code_submitted": true,
-            "code_valid": true,
+            "code_submitted": false,
+            "code_valid": false,
             "current_code": "\nimport random\ndef decide_move(game_state):\n    # Chiêu thức cải tiến cho Round 2: Dựa vào lịch sử round 1\n    history = game_state.get('history', [])\n    return 'PAPER' if history and history[-1] == 'ROCK' else 'SCISSORS'\n",
             "current_lang": "PYTHON",
             "draft_code": "\nimport random\ndef decide_move(game_state):\n    # Chiêu thức cải tiến cho Round 2: Dựa vào lịch sử round 1\n    history = game_state.get('history', [])\n    return 'PAPER' if history and history[-1] == 'ROCK' else 'SCISSORS'\n",
@@ -221394,11 +221429,11 @@
             "validation_error": null
           },
           "team_b": {
-            "active_submission_id": "sub_410c98f4",
+            "active_submission_id": null,
             "authenticated": true,
             "bot_id": "bot_24020520",
-            "code_submitted": true,
-            "code_valid": true,
+            "code_submitted": false,
+            "code_valid": false,
             "current_code": "def decide_move(gs): return 'ROCK'",
             "current_lang": "PYTHON",
             "draft_code": "def decide_move(gs): return 'ROCK'",
@@ -221410,6 +221445,7 @@
             "university": "ĐH Công Nghệ ĐHQG",
             "validation_error": null
           },
+          "tie_break_seed": "23b1e5be3c894491892706dd7253bfbb",
           "title": "Chung Kết Tổng",
           "winner": null,
           "winner_name": null
@@ -299943,22 +299979,23 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "0bfb93dcab5f454ca99adad4794267ed",
           "title": "Chung Kết Tổng",
           "winner": null,
           "winner_name": null
         },
         "m_lvl1_1": {
-          "all_teams_ready": true,
+          "all_teams_ready": false,
           "battle_running": false,
-          "current_round_idx": 1,
-          "intermission_ends_at": 1791651943.1160138,
+          "current_round_idx": 2,
+          "intermission_ends_at": null,
           "match_id": "m_lvl1_1",
           "max_rounds": 5,
           "next_match_id": "m_lvl2_1",
           "next_slot": "team_a",
           "round_level": 1,
           "round_name": "Tứ Kết",
-          "round_status": "ROUND_FINISHED",
+          "round_status": "AWAITING_SUBMISSIONS",
           "rounds_history": [
             {
               "board_steps": [
@@ -302568,11 +302605,11 @@
             }
           ],
           "team_a": {
-            "active_submission_id": "sub_044a6561",
+            "active_submission_id": null,
             "authenticated": true,
             "bot_id": "bot_24020001",
-            "code_submitted": true,
-            "code_valid": true,
+            "code_submitted": false,
+            "code_valid": false,
             "current_code": "def decide_move(game_state):\n    return 'ROCK'",
             "current_lang": "PYTHON",
             "draft_code": "# Draft live code typing test\ndef decide_move(s):\n    return 'SCISSORS'",
@@ -302586,11 +302623,11 @@
             "validation_error": null
           },
           "team_b": {
-            "active_submission_id": "sub_7c1d25c6",
+            "active_submission_id": null,
             "authenticated": true,
             "bot_id": "bot_24020160",
-            "code_submitted": true,
-            "code_valid": true,
+            "code_submitted": false,
+            "code_valid": false,
             "current_code": "def decide_move(game_state):\n    return 'ROCK'",
             "current_lang": "PYTHON",
             "draft_code": "def decide_move(game_state):\n    return 'ROCK'",
@@ -302602,6 +302639,7 @@
             "university": "ĐHBK Hà Nội",
             "validation_error": null
           },
+          "tie_break_seed": "87234db264644c5c9a275d34f077d8a3",
           "title": "Tứ Kết 1",
           "winner": null,
           "winner_name": null
@@ -302655,6 +302693,7 @@
             "university": "ĐH Bách Khoa ĐN",
             "validation_error": null
           },
+          "tie_break_seed": "34cc1d4052bb4baa8929f49f1118bf20",
           "title": "Tứ Kết 2",
           "winner": null,
           "winner_name": null
@@ -302708,6 +302747,7 @@
             "university": "ĐH KHTN ĐHQG-HCM",
             "validation_error": null
           },
+          "tie_break_seed": "4a50191f972f4abc9bed979ecf667ea3",
           "title": "Tứ Kết 3",
           "winner": null,
           "winner_name": null
@@ -302761,6 +302801,7 @@
             "university": "Đại Học FPT",
             "validation_error": null
           },
+          "tie_break_seed": "6d7490dfacd74dee942609c8490da96c",
           "title": "Tứ Kết 4",
           "winner": null,
           "winner_name": null
@@ -302782,6 +302823,7 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "ec1b2ae432004feab7a033c00eaec2ab",
           "title": "Bán Kết 1",
           "winner": null,
           "winner_name": null
@@ -302803,6 +302845,7 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "4edf80e0d3e14c62b1d3dd746cfa320e",
           "title": "Bán Kết 2",
           "winner": null,
           "winner_name": null
@@ -303155,22 +303198,23 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "376124c55280457aa8be29d73bb550bf",
           "title": "Chung Kết Tổng",
           "winner": null,
           "winner_name": null
         },
         "m_lvl1_1": {
-          "all_teams_ready": true,
+          "all_teams_ready": false,
           "battle_running": false,
-          "current_round_idx": 1,
-          "intermission_ends_at": 1791651325.8087835,
+          "current_round_idx": 2,
+          "intermission_ends_at": null,
           "match_id": "m_lvl1_1",
           "max_rounds": 5,
           "next_match_id": "m_lvl2_1",
           "next_slot": "team_a",
           "round_level": 1,
           "round_name": "Tứ Kết",
-          "round_status": "ROUND_FINISHED",
+          "round_status": "AWAITING_SUBMISSIONS",
           "rounds_history": [
             {
               "board_steps": [
@@ -305780,11 +305824,11 @@
             }
           ],
           "team_a": {
-            "active_submission_id": "sub_f5d286f7",
+            "active_submission_id": null,
             "authenticated": true,
             "bot_id": "bot_24020001",
-            "code_submitted": true,
-            "code_valid": true,
+            "code_submitted": false,
+            "code_valid": false,
             "current_code": "def decide_move(game_state):\n    return 'ROCK'",
             "current_lang": "PYTHON",
             "draft_code": "# Draft live code typing test\ndef decide_move(s):\n    return 'SCISSORS'",
@@ -305798,11 +305842,11 @@
             "validation_error": null
           },
           "team_b": {
-            "active_submission_id": "sub_1b18e3bc",
+            "active_submission_id": null,
             "authenticated": true,
             "bot_id": "bot_24020160",
-            "code_submitted": true,
-            "code_valid": true,
+            "code_submitted": false,
+            "code_valid": false,
             "current_code": "def decide_move(game_state):\n    return 'ROCK'",
             "current_lang": "PYTHON",
             "draft_code": "def decide_move(game_state):\n    return 'ROCK'",
@@ -305814,6 +305858,7 @@
             "university": "ĐHBK Hà Nội",
             "validation_error": null
           },
+          "tie_break_seed": "bf44aef36f9e43c681fba3e7b7caa4bf",
           "title": "Tứ Kết 1",
           "winner": null,
           "winner_name": null
@@ -305867,6 +305912,7 @@
             "university": "ĐH Bách Khoa ĐN",
             "validation_error": null
           },
+          "tie_break_seed": "4731349aad4349b99e608ca410846676",
           "title": "Tứ Kết 2",
           "winner": null,
           "winner_name": null
@@ -305920,6 +305966,7 @@
             "university": "ĐH KHTN ĐHQG-HCM",
             "validation_error": null
           },
+          "tie_break_seed": "d8dd6768c91d4969a176d0c3b4b02b2c",
           "title": "Tứ Kết 3",
           "winner": null,
           "winner_name": null
@@ -305973,6 +306020,7 @@
             "university": "Đại Học FPT",
             "validation_error": null
           },
+          "tie_break_seed": "d5ab803d82124573be5924b4be0c80f0",
           "title": "Tứ Kết 4",
           "winner": null,
           "winner_name": null
@@ -305994,6 +306042,7 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "122d0ae196af4ff2977143940c44e5bd",
           "title": "Bán Kết 1",
           "winner": null,
           "winner_name": null
@@ -306015,6 +306064,7 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "c3c416de6ba4465c98ec3b73fc8c89bc",
           "title": "Bán Kết 2",
           "winner": null,
           "winner_name": null

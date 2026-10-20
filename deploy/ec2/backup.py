@@ -38,7 +38,15 @@ def main():
             digest = hashlib.file_digest(handle, "sha256").hexdigest()
             os.fsync(handle.fileno())
         partial.replace(archive)
-        archive.with_suffix(".sha256").write_text(digest + "  " + archive.name + "\n", encoding="ascii")
+        with archive.with_suffix(".sha256").open("w", encoding="ascii") as checksum:
+            checksum.write(digest + "  " + archive.name + "\n")
+            checksum.flush()
+            os.fsync(checksum.fileno())
+        directory_fd = os.open(target, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
         print("Backup created and archive catalog verified:", archive.name)
         print("Restore drill and encrypted off-host copy remain required.")
     finally:

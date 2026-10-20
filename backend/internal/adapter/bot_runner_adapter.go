@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -23,31 +24,53 @@ type BotRunnerAdapter interface {
 }
 
 type HTTPBotRunnerAdapter struct {
-	workerURL string
-	workers   []string
-	next      atomic.Uint64
-	client    *http.Client
-	slots     chan struct{}
+	workerURL       string
+	workers         []string
+	next            atomic.Uint64
+	client          *http.Client
+	slots           chan struct{}
+	poolMu          sync.Mutex
+	active          []int
+	cooldown        []time.Time
+	perWorker       int
+	token           string
+	attemptTimeout  time.Duration
+	expectedRelease string
 }
 
 func NewHTTPBotRunnerAdapter(workerURL string) *HTTPBotRunnerAdapter {
 	concurrency, _ := strconv.Atoi(os.Getenv("JUDGE_CONCURRENCY"))
-	if concurrency < 1 || concurrency > 32 {
-		concurrency = 2
+	perWorker, _ := strconv.Atoi(os.Getenv("WORKER_CONCURRENCY"))
+	if perWorker < 1 || perWorker > 8 {
+		perWorker = 2
 	}
 	workers := []string{}
+	seen := map[string]bool{}
 	for _, value := range strings.Split(workerURL, ",") {
 		if value = strings.TrimSpace(value); value != "" {
-			workers = append(workers, value)
+			if !seen[value] {
+				workers = append(workers, value)
+				seen[value] = true
+			}
 		}
 	}
 	if len(workers) == 0 {
 		workers = append(workers, "http://127.0.0.1:8001/mutate-tournament")
 	}
+	if concurrency < 1 || concurrency > 32 {
+		concurrency = min(32, len(workers)*perWorker)
+	}
+	timeout, _ := strconv.Atoi(os.Getenv("WORKER_ATTEMPT_TIMEOUT_SECONDS"))
+	if timeout < 1 || timeout > 180 {
+		timeout = 90
+	}
 	return &HTTPBotRunnerAdapter{
-		slots:     make(chan struct{}, concurrency),
-		workerURL: workerURL,
-		workers:   workers,
+		active: make([]int, len(workers)), cooldown: make([]time.Time, len(workers)),
+		perWorker: perWorker, token: os.Getenv("WORKER_TOKEN"), attemptTimeout: time.Duration(timeout) * time.Second,
+		expectedRelease: os.Getenv("WORKER_RELEASE"),
+		slots:           make(chan struct{}, concurrency),
+		workerURL:       workerURL,
+		workers:         workers,
 		client: &http.Client{
 			Timeout: 3 * time.Minute,
 			Transport: &http.Transport{
@@ -81,25 +104,50 @@ func (a *HTTPBotRunnerAdapter) Mutate(currentTournament interface{}, action stri
 
 	// Workers are stateless: only the gateway commits tournament/results to SQL.
 	// Retry on a different worker only for transport errors or temporary overload.
-	start := int((a.next.Add(1) - 1) % uint64(len(a.workers)))
+	tried := map[int]bool{}
 	var resp *http.Response
 	for offset := 0; offset < len(a.workers); offset++ {
-		url := a.workers[(start+offset)%len(a.workers)]
+		index, acquireErr := a.acquireWorker(ctx, tried)
+		if acquireErr != nil {
+			return nil, acquireErr
+		}
+		tried[index] = true
+		url := a.workers[index]
+		attemptCtx, attemptCancel := context.WithTimeout(ctx, a.attemptTimeout)
 		var request *http.Request
-		request, err = http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewReader(jsonData))
+		request, err = http.NewRequestWithContext(attemptCtx, http.MethodPost, url, bytes.NewReader(jsonData))
 		if err != nil {
+			attemptCancel()
+			a.releaseWorker(index, true)
 			continue
 		}
 		request.Header.Set("Content-Type", "application/json")
+		if a.token != "" {
+			request.Header.Set("X-Worker-Token", a.token)
+		}
 		resp, err = a.client.Do(request)
 		if err != nil {
+			attemptCancel()
+			a.releaseWorker(index, true)
+			continue
+		}
+		if a.expectedRelease != "" && resp.Header.Get("X-Arena-Release") != a.expectedRelease {
+			_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 65536))
+			resp.Body.Close()
+			attemptCancel()
+			a.releaseWorker(index, true)
+			err = fmt.Errorf("worker release mismatch; refusing result")
 			continue
 		}
 		if (resp.StatusCode == 429 || resp.StatusCode >= 500) && offset+1 < len(a.workers) {
 			_, _ = ioutil.ReadAll(io.LimitReader(resp.Body, 65536))
 			resp.Body.Close()
+			attemptCancel()
+			a.releaseWorker(index, true)
 			continue
 		}
+		defer attemptCancel()
+		defer a.releaseWorker(index, resp.StatusCode == 429 || resp.StatusCode >= 500)
 		break
 	}
 	if err != nil {

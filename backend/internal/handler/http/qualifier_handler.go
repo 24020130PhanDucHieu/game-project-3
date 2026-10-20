@@ -128,6 +128,11 @@ func (h *QualifierHandler) Submit(c *gin.Context) {
 	}
 	sub, err := h.Service.EnqueueSubmission(c.Param("qid"), session.StudentID, req.Code, req.Language, c.GetHeader("X-Submission-Id"))
 	if err != nil {
+		if errors.Is(err, qualifier.ErrSubmissionBacklog) {
+			c.Header("Retry-After", "20")
+			c.JSON(429, gin.H{"detail": err.Error()})
+			return
+		}
 		var rejected *qualifier.RejectedSubmission
 		if errors.As(err, &rejected) {
 			c.JSON(400, gin.H{"detail": rejected.Error()})
@@ -144,6 +149,16 @@ func (h *QualifierHandler) Action(c *gin.Context) {
 	id := c.Param("qid")
 	var err error
 	switch c.Param("action") {
+	case "reopen":
+		var req struct {
+			Deadline float64 `json:"deadline"`
+			Reason   string  `json:"reason"`
+		}
+		if c.ShouldBindJSON(&req) != nil {
+			c.JSON(400, gin.H{"detail": "Hạn mới hoặc lý do không hợp lệ."})
+			return
+		}
+		err = h.Service.Reopen(id, req.Deadline, req.Reason)
 	case "pause":
 		err = h.Service.Pause(id)
 	case "test-bots":
@@ -199,6 +214,9 @@ func (h *QualifierHandler) Teams(c *gin.Context) {
 		}
 		if p.ValidID != "" {
 			status = "VALID"
+		}
+		if p.Pending > 0 {
+			status = "PENDING"
 		}
 		if p.LockedID != "" {
 			status = "LOCKED"

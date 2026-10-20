@@ -1,0 +1,2 @@
+# Only test tooling; never installed inside student sandboxes.
+httpx==0.28.1

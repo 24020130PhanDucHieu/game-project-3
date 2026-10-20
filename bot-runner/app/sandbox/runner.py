@@ -135,49 +135,17 @@ def _validate_python_ast(code_str: str) -> Optional[str]:
     return None
 
 def _execute_python_isolated(code_str: str, game_state: dict, timeout: float) -> Tuple[Optional[str], Optional[str]]:
-    validation_error = _validate_python_ast(code_str)
-    if validation_error:
-        return None, validation_error
-    child = r'''import json, sys, random, math, builtins
-payload = json.loads(sys.stdin.read())
-safe_modules = {"random", "math", "collections", "itertools", "re", "json", "heapq", "functools", "typing"}
-def safe_import(name, globals=None, locals=None, fromlist=(), level=0):
-    if name.split(".")[0] not in safe_modules: raise ImportError("Import module bị cấm")
-    return builtins.__import__(name, globals, locals, fromlist, level)
-safe_builtins = {"range":range,"len":len,"min":min,"max":max,"abs":abs,"sum":sum,"int":int,"float":float,"str":str,"bool":bool,"list":list,"dict":dict,"set":set,"tuple":tuple,"print":lambda *a:None,"sorted":sorted,"reversed":reversed,"enumerate":enumerate,"zip":zip,"next":next,"iter":iter,"any":any,"all":all,"map":map,"filter":filter,"isinstance":isinstance,"type":type,"__import__":safe_import}
-scope = {"__builtins__":safe_builtins,"random":random,"math":math}
-try:
-    exec(compile(payload["code"], "<bot>", "exec"), scope, scope)
-    fn = scope.get("decide_move")
-    if not callable(fn): raise ValueError("Thiếu hàm decide_move(game_state).")
-    result = fn(payload["state"])
-    if not isinstance(result, str) or result.upper() not in ("ROCK","PAPER","SCISSORS"): raise ValueError("Nước đi không hợp lệ.")
-    print(json.dumps({"move":result.upper()}))
-except BaseException as exc:
-    print(json.dumps({"error":str(exc)}))
-'''
+    # Bootstrap has its own bounded handshake. The move budget measures only
+    # execution after readiness, as it does for the persistent game process.
+    # Import lazily because GameProcess uses the AST validator in this module.
+    from app.sandbox.game_process import GameProcess
+    bot = GameProcess(code_str)
     try:
-        child_env = {
-            key: value for key, value in os.environ.items()
-            if key.upper() not in {"ADMIN_PASSWORD", "DATABASE_URL", "POSTGRES_URL", "NEON_DATABASE_URL", "SECRET_KEY"}
-        }
-        child_env["PYTHONIOENCODING"] = "utf-8"
-        completed = subprocess.run(
-            [sys.executable, "-I", "-S", "-c", child],
-            input=json.dumps({"code": code_str, "state": game_state}),
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace",
-            timeout=max(0.05, timeout), close_fds=True,
-            cwd=tempfile.gettempdir(), env=child_env,
-            preexec_fn=_limit_child_resources if os.name == "posix" else None
-        )
-        output = json.loads(completed.stdout.splitlines()[-1]) if completed.stdout.strip() else {}
-        if "move" in output:
-            return output["move"], None
-        return None, output.get("error") or completed.stderr[-2000:] or "Bot không trả về nước đi."
-    except subprocess.TimeoutExpired:
-        return None, f"Time Limit Exceeded ({timeout:.2f}s)."
-    except Exception as exc:
-        return None, f"Lỗi sandbox: {exc}"
+        if bot.error:
+            return None, bot.error
+        return bot.decide(game_state, timeout=max(0.05, timeout))
+    finally:
+        bot.close()
 
 # --- BỘ ĐIỀU PHỐI SANDBOX ---
 class BotRunner:

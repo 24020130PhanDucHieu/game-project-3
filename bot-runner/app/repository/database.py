@@ -37,7 +37,8 @@ class Database:
         self.active_tournament_id: str = "tourn_k69_main"
 
         self.data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "data")
-        os.makedirs(self.data_dir, exist_ok=True)
+        # Persistence belongs to the Go gateway. Importing the stateless
+        # worker must not create directories on its read-only filesystem.
     def _get_serializable_data(self) -> dict:
         """Return serializable representation of tournament data."""
         return {"tournaments": self.tournaments, "active_tournament_id": self.active_tournament_id}

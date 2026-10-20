@@ -54,6 +54,9 @@ func NewQualifierRecords(repo TournamentRepository, dir string) (*QualifierRecor
 		if err == nil {
 			_, err = s.db.Exec(`CREATE INDEX IF NOT EXISTS idx_qualifier_prefix ON arena_qualifier_records(key text_pattern_ops); CREATE INDEX IF NOT EXISTS idx_qualifier_job_a ON arena_qualifier_records ((data->>'a')); CREATE INDEX IF NOT EXISTS idx_qualifier_job_b ON arena_qualifier_records ((data->>'b'))`)
 		}
+		if err == nil {
+			_, err = s.db.Exec(`CREATE INDEX IF NOT EXISTS idx_validation_ready ON arena_qualifier_records (((data->>'at')::double precision),key) WHERE key LIKE 'validation:%' AND data->>'status'='QUEUED'`)
+		}
 		return s, err
 	}
 	if err := os.MkdirAll(dir, 0700); err != nil {
@@ -215,6 +218,16 @@ func (s *QualifierRecords) list(prefix string, metadata bool, studentID string) 
 	return cacheResult(result, nil)
 }
 func (s *QualifierRecords) Batch(values map[string]interface{}) error {
+	return s.batch(values, false)
+}
+
+// BatchPreservingParticipantCode updates standings without transferring every
+// entrant's source out of PostgreSQL and back on every pairing round.
+func (s *QualifierRecords) BatchPreservingParticipantCode(values map[string]interface{}) error {
+	return s.batch(values, true)
+}
+
+func (s *QualifierRecords) batch(values map[string]interface{}, preserveCode bool) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	// Invalidate before writing: an uncertain commit must never leave stale views.
@@ -236,6 +249,24 @@ func (s *QualifierRecords) Batch(values map[string]interface{}) error {
 			return err
 		}
 		rows[key] = raw
+		if preserveCode && s.db == nil && strings.HasPrefix(key, "participant:") {
+			var prior, update map[string]json.RawMessage
+			if old, ok := s.items[key]; ok {
+				if err := json.Unmarshal(old, &prior); err != nil {
+					return err
+				}
+				if code, ok := prior["code"]; ok {
+					if err := json.Unmarshal(raw, &update); err != nil {
+						return err
+					}
+					update["code"] = code
+					rows[key], err = json.Marshal(update)
+					if err != nil {
+						return err
+					}
+				}
+			}
+		}
 	}
 	if s.db != nil {
 		tx, err := s.db.Begin()
@@ -249,7 +280,11 @@ func (s *QualifierRecords) Batch(values map[string]interface{}) error {
 			keys = append(keys, key)
 			values = append(values, string(raw))
 		}
-		if _, err = tx.Exec(`INSERT INTO arena_qualifier_records(key,data) SELECT entry.key,entry.data::jsonb FROM unnest($1::text[],$2::text[]) AS entry(key,data) ON CONFLICT(key) DO UPDATE SET data=EXCLUDED.data`, pq.Array(keys), pq.Array(values)); err != nil {
+		update := "EXCLUDED.data"
+		if preserveCode {
+			update += ` || CASE WHEN arena_qualifier_records.key LIKE 'participant:%' AND arena_qualifier_records.data ? 'code' THEN jsonb_build_object('code',arena_qualifier_records.data->'code') ELSE '{}'::jsonb END`
+		}
+		if _, err = tx.Exec(`INSERT INTO arena_qualifier_records(key,data) SELECT entry.key,entry.data::jsonb FROM unnest($1::text[],$2::text[]) AS entry(key,data) ON CONFLICT(key) DO UPDATE SET data=`+update, pq.Array(keys), pq.Array(values)); err != nil {
 			return err
 		}
 		return tx.Commit()

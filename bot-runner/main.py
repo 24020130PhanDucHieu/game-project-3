@@ -1,15 +1,26 @@
 import json
+import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 
 from app.repository.database import Database
+from app.sandbox.game_process import GameProcess, SandboxUnavailableError
+
+if os.getenv('ENVIRONMENT','').lower()=='production':
+    probe=GameProcess("def decide_move(state): return 'ROCK'")
+    try:
+        if probe.error or probe.decide({}) != ('ROCK',None):
+            raise RuntimeError('Production Python isolation preflight failed')
+    finally:probe.close()
 
 app = FastAPI(title="Stateless Engine Worker")
+from app.worker_admission import install_worker_admission
+install_worker_admission(app)
 
 @app.get("/health")
 def worker_health():
-    return {"status": "healthy"}
+    return {"status": "HEALTHY"}
 
 # Create a dummy database instance that doesn't use background threads or files
 class StatelessDatabase(Database):
@@ -156,12 +167,16 @@ def mutate_tournament(req: MutateRequest):
                 if k not in resp:
                     resp[k] = v
         return resp
+    except SandboxUnavailableError:
+        raise HTTPException(status_code=503, detail='Python isolation unavailable; retry after the worker is repaired.')
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail='Worker execution failed; retry later.')
     finally:
         if t_id in stateless_db.tournaments:
             del stateless_db.tournaments[t_id]

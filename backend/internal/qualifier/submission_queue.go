@@ -4,17 +4,21 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
-	"encoding/json"
+	"os"
 	"sort"
-	"sync"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
 type RejectedSubmission struct{ Message string }
+
+var ErrSubmissionBacklog = errors.New("Đội có 20 bài đang chờ chấm. Hãy chờ kết quả trước khi nộp tiếp.")
 
 func (e *RejectedSubmission) Error() string { return e.Message }
 func reject(message string) error           { return &RejectedSubmission{message} }
@@ -22,7 +26,7 @@ func reject(message string) error           { return &RejectedSubmission{message
 // A submission is also its durable receipt. The pending task and receipt are
 // committed together before the HTTP handler acknowledges acceptance.
 type validationTask struct {
-	At float64 `json:"at"`
+	At            float64 `json:"at"`
 	Event         string  `json:"event"`
 	SID           string  `json:"sid"`
 	SubmissionKey string  `json:"submission_key"`
@@ -91,7 +95,7 @@ func (s *Service) EnqueueSubmission(id, sid, code, language, requestID string) (
 		return Submission{}, err
 	}
 	if p.Pending >= 20 {
-		return Submission{}, reject("Đội có 20 bài đang chờ chấm. Hãy chờ kết quả trước khi nộp tiếp.")
+		return Submission{}, ErrSubmissionBacklog
 	}
 	p.Pending++
 	// Preserve order even if two requests arrive in the same millisecond.
@@ -106,11 +110,13 @@ func (s *Service) EnqueueSubmission(id, sid, code, language, requestID string) (
 }
 
 func (s *Service) processSubmission(key string) error {
-	release, err := s.Store.Lease(key)
-	if err != nil {
-		return err
+	// The gateway owns the durable queue (guarded by GatewayLease in production).
+	// Do not pin a PostgreSQL connection while a remote sandbox is running.
+	if _, busy := s.validating.LoadOrStore(key, true); busy {
+		return nil
 	}
-	defer release()
+	defer s.validating.Delete(key)
+	var err error
 	var task validationTask
 	if err = s.Store.Get(key, &task); err != nil {
 		return err
@@ -169,29 +175,45 @@ func (s *Service) runSubmissionQueue() {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	for range ticker.C {
-		tasks, err := s.Store.Pending("validation:")
+		consumers, _ := strconv.Atoi(os.Getenv("VALIDATION_WORKERS"))
+		if consumers < 1 || consumers > 32 {
+			consumers = 2
+		}
+		tasks, err := s.Store.ReadyValidations(now(), consumers*4)
 		if err != nil {
 			log.Printf("[SubmissionQueue] Storage unavailable")
 			continue
 		}
-		type entry struct { key string; at float64 }
+		type entry struct {
+			key string
+			at  float64
+		}
 		ready := []entry{}
-		for key,raw := range tasks {
+		for key, raw := range tasks {
 			var task validationTask
-			if json.Unmarshal(raw,&task)==nil && task.RetryAt <= now() { ready=append(ready,entry{key,task.At}) }
+			if json.Unmarshal(raw, &task) == nil && task.RetryAt <= now() {
+				ready = append(ready, entry{key, task.At})
+			}
 		}
-		sort.Slice(ready,func(i,j int)bool { return ready[i].at < ready[j].at })
-		queue:=make(chan string)
+		sort.Slice(ready, func(i, j int) bool { return ready[i].at < ready[j].at })
+		queue := make(chan string)
 		var wg sync.WaitGroup
-		// Two consumers leave SQL connections free for receipts and event leases.
-		// The adapter additionally caps execution across all judging endpoints.
-		for i:=0;i<2;i++ {
+		// HTTP execution holds no database lease; commits remain serialized.
+		// The adapter caps total execution and capacity on each remote worker.
+		for i := 0; i < consumers; i++ {
 			wg.Add(1)
-			go func(){ defer wg.Done();for key:=range queue {
-				if err:=s.processSubmission(key);err!=nil { log.Printf("[SubmissionQueue] Task deferred: %v",err) }
-			}}()
+			go func() {
+				defer wg.Done()
+				for key := range queue {
+					if err := s.processSubmission(key); err != nil {
+						log.Printf("[SubmissionQueue] Task deferred: %v", err)
+					}
+				}
+			}()
 		}
-		for _,item:=range ready { queue<-item.key }
+		for _, item := range ready {
+			queue <- item.key
+		}
 		close(queue)
 		wg.Wait()
 	}

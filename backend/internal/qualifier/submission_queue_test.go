@@ -5,8 +5,55 @@ import (
 	"path/filepath"
 	"project-tuan3/internal/repository"
 	"sync"
+	"sync/atomic"
 	"testing"
 )
+
+type blockedValidationEngine struct {
+	calls   atomic.Int32
+	entered chan struct{}
+	release chan struct{}
+}
+
+func (e *blockedValidationEngine) Mutate(_ interface{}, _ string, _ map[string]interface{}) (map[string]interface{}, error) {
+	e.calls.Add(1)
+	close(e.entered)
+	<-e.release
+	return map[string]interface{}{"is_valid": true}, nil
+}
+
+func TestConcurrentValidationRunsOnce(t *testing.T) {
+	s, event := submissionFixture(t)
+	sub, err := s.EnqueueSubmission(event.ID, "12345678", "source", "PYTHON", "once")
+	if err != nil {
+		t.Fatal(err)
+	}
+	engine := &blockedValidationEngine{entered: make(chan struct{}), release: make(chan struct{})}
+	s.Engine = engine
+	key := "validation:" + event.ID + ":" + sub.ID
+	done := make(chan error, 1)
+	go func() { done <- s.processSubmission(key) }()
+	<-engine.entered
+	for i := 0; i < 20; i++ {
+		if err = s.processSubmission(key); err != nil {
+			t.Fatal(err)
+		}
+	}
+	close(engine.release)
+	if err = <-done; err != nil {
+		t.Fatal(err)
+	}
+	if err = s.processSubmission(key); err != nil {
+		t.Fatal(err)
+	}
+	if engine.calls.Load() != 1 {
+		t.Fatal("duplicate execution")
+	}
+	people, err := s.Participants(event.ID)
+	if err != nil || people["12345678"].Pending != 0 || people["12345678"].ValidID != sub.ID {
+		t.Fatal(people, err)
+	}
+}
 
 func submissionFixture(t *testing.T) (*Service, Event) {
 	t.Helper()

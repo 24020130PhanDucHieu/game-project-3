@@ -23,6 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     g++ \
     curl \
     libtinfo6 \
+    libseccomp2 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY bot-runner/install-wasi.sh /tmp/install-wasi.sh

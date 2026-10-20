@@ -53,6 +53,7 @@ cloudflared.exe
 !.env.example
 !*.env.example
 .aws/
+*.load-sessions.json
 
 # IDE & OS
 tests/combo-*.png

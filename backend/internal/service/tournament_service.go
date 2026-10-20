@@ -317,6 +317,9 @@ func (s *TournamentService) MutateTournament(tournamentID, action string, params
 		if err := s.repo.SaveToDisk(); err != nil {
 			return nil, err
 		}
+		// Repository saves clone the snapshot. Internal receipts must not be
+		// returned in a team's mutation response or sent back to the browser.
+		delete(mutated, "_submission_receipts")
 	}
 
 	return res, nil
