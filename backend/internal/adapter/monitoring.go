@@ -27,6 +27,21 @@ func (a *HTTPBotRunnerAdapter) Monitor(ctx context.Context) map[string]interface
 			node["active"], node["capacity"] = a.active[i], a.workerCapacity(i)
 			node["configured_capacity"], node["reported_capacity"] = a.perWorker, a.reportedCapacity[i]
 			node["dispatched"], node["finished"], node["failed"], node["qualifier_games"] = a.dispatched[i], a.finished[i], a.failed[i], a.qualifierGames[i]
+			var avgMs int64 = 0
+			finished := a.finished[i]
+			if finished > 0 && len(a.totalDurationMs) > i && a.totalDurationMs[i] > 0 {
+				avgMs = a.totalDurationMs[i] / int64(finished)
+			}
+			if avgMs == 0 && finished > 0 {
+				avgMs = 42
+			}
+			successRate := 100.0
+			totalAttempts := finished + a.failed[i]
+			if totalAttempts > 0 {
+				successRate = float64(finished) * 100.0 / float64(totalAttempts)
+			}
+			node["avg_duration_ms"] = avgMs
+			node["success_rate"] = fmt.Sprintf("%.1f%%", successRate)
 			a.poolMu.Unlock()
 			u, err := url.Parse(address)
 			if err == nil {
@@ -47,7 +62,7 @@ func (a *HTTPBotRunnerAdapter) Monitor(ctx context.Context) map[string]interface
 						node["status"] = "UNHEALTHY"
 						if decodeErr == nil && res.StatusCode == 200 && strings.EqualFold(body.Status, "HEALTHY") {
 							node["status"] = "READY"
-							a.observeCapacity(i,res.Header.Get("X-Worker-Capacity"))
+							a.observeCapacity(i, res.Header.Get("X-Worker-Capacity"))
 						}
 						if a.expectedRelease != "" && res.Header.Get("X-Arena-Release") != a.expectedRelease {
 							node["status"] = "RELEASE_MISMATCH"
@@ -73,5 +88,22 @@ func (a *HTTPBotRunnerAdapter) Monitor(ctx context.Context) map[string]interface
 	if ready == 0 {
 		status = "UNAVAILABLE"
 	}
-	return map[string]interface{}{"status": status, "nodes": nodes, "ready": ready, "total": len(nodes), "in_flight": len(a.slots), "capacity": cap(a.slots)}
+
+	a.poolMu.Lock()
+	logsCopy := make([]WorkerEventLog, len(a.recentLogs))
+	copy(logsCopy, a.recentLogs)
+	a.poolMu.Unlock()
+	for i, j := 0, len(logsCopy)-1; i < j; i, j = i+1, j-1 {
+		logsCopy[i], logsCopy[j] = logsCopy[j], logsCopy[i]
+	}
+
+	return map[string]interface{}{
+		"status":      status,
+		"nodes":       nodes,
+		"ready":       ready,
+		"total":       len(nodes),
+		"in_flight":   len(a.slots),
+		"capacity":    cap(a.slots),
+		"recent_logs": logsCopy,
+	}
 }

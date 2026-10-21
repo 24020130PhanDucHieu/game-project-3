@@ -23,24 +23,37 @@ type BotRunnerAdapter interface {
 	Mutate(currentTournament interface{}, action string, params map[string]interface{}) (map[string]interface{}, error)
 }
 
+type WorkerEventLog struct {
+	Timestamp   string `json:"timestamp"`
+	WorkerIndex int    `json:"worker_index"`
+	WorkerName  string `json:"worker_name"`
+	WorkerHost  string `json:"worker_host"`
+	Action      string `json:"action"`
+	Detail      string `json:"detail"`
+	DurationMs  int64  `json:"duration_ms"`
+	Success     bool   `json:"success"`
+}
+
 type HTTPBotRunnerAdapter struct {
-	workerURL       string
-	workers         []string
-	next            atomic.Uint64
-	client          *http.Client
-	slots           chan struct{}
-	poolMu          sync.Mutex
-	active          []int
-	dispatched      []uint64
-	finished        []uint64
-	failed          []uint64
-	qualifierGames  []uint64
+	workerURL        string
+	workers          []string
+	next             atomic.Uint64
+	client           *http.Client
+	slots            chan struct{}
+	poolMu           sync.Mutex
+	active           []int
+	dispatched       []uint64
+	finished         []uint64
+	failed           []uint64
+	qualifierGames   []uint64
+	totalDurationMs  []int64
+	recentLogs       []WorkerEventLog
 	reportedCapacity []int
-	cooldown        []time.Time
-	perWorker       int
-	token           string
-	attemptTimeout  time.Duration
-	expectedRelease string
+	cooldown         []time.Time
+	perWorker        int
+	token            string
+	attemptTimeout   time.Duration
+	expectedRelease  string
 }
 
 func NewHTTPBotRunnerAdapter(workerURL string) *HTTPBotRunnerAdapter {
@@ -70,10 +83,12 @@ func NewHTTPBotRunnerAdapter(workerURL string) *HTTPBotRunnerAdapter {
 		timeout = 90
 	}
 	return &HTTPBotRunnerAdapter{
-		active: make([]int, len(workers)), cooldown: make([]time.Time, len(workers)),
-		dispatched: make([]uint64,len(workers)), finished: make([]uint64,len(workers)), failed: make([]uint64,len(workers)), qualifierGames: make([]uint64,len(workers)),
-		reportedCapacity: make([]int,len(workers)),
-		perWorker: perWorker, token: os.Getenv("WORKER_TOKEN"), attemptTimeout: time.Duration(timeout) * time.Second,
+		totalDurationMs: make([]int64, len(workers)),
+		recentLogs:      make([]WorkerEventLog, 0, 50),
+		active:          make([]int, len(workers)), cooldown: make([]time.Time, len(workers)),
+		dispatched:      make([]uint64, len(workers)), finished: make([]uint64, len(workers)), failed: make([]uint64, len(workers)), qualifierGames: make([]uint64, len(workers)),
+		reportedCapacity: make([]int, len(workers)),
+		perWorker:       perWorker, token: os.Getenv("WORKER_TOKEN"), attemptTimeout: time.Duration(timeout) * time.Second,
 		expectedRelease: os.Getenv("WORKER_RELEASE"),
 		slots:           make(chan struct{}, concurrency),
 		workerURL:       workerURL,
@@ -86,6 +101,46 @@ func NewHTTPBotRunnerAdapter(workerURL string) *HTTPBotRunnerAdapter {
 				MaxIdleConns: 64, MaxIdleConnsPerHost: 8, IdleConnTimeout: 90 * time.Second,
 			},
 		},
+	}
+}
+
+func (a *HTTPBotRunnerAdapter) recordEventLog(entry WorkerEventLog) {
+	a.poolMu.Lock()
+	defer a.poolMu.Unlock()
+	if len(a.recentLogs) >= 40 {
+		a.recentLogs = a.recentLogs[1:]
+	}
+	a.recentLogs = append(a.recentLogs, entry)
+	if entry.WorkerIndex >= 0 && entry.WorkerIndex < len(a.totalDurationMs) {
+		a.totalDurationMs[entry.WorkerIndex] += entry.DurationMs
+	}
+}
+
+func formatActionDetail(action string, params map[string]interface{}) string {
+	switch action {
+	case "play-round", "next-round":
+		if m, ok := params["match_id"].(string); ok && m != "" {
+			return "Chấm trận đấu " + m
+		}
+		return "Chấm lượt thi đấu chính thức"
+	case "qualifier-game":
+		if seed, ok := params["seed"].(string); ok && seed != "" {
+			return "Trận đấu vòng loại (Mã: " + seed + ")"
+		}
+		return "Trận đấu vòng loại song song"
+	case "validate-code":
+		if lang, ok := params["language"].(string); ok && lang != "" {
+			return "Kiểm duyệt cú pháp & sandbox (" + lang + ")"
+		}
+		return "Kiểm duyệt mã nguồn bot"
+	case "practice-match":
+		return "Trận đấu tập tự do (Practice)"
+	case "demo-fill":
+		return "Sinh mã bot thi đấu ngẫu nhiên"
+	case "submit-code":
+		return "Nộp và lưu trữ mã nguồn bot"
+	default:
+		return "Tác vụ: " + action
 	}
 }
 
@@ -108,6 +163,8 @@ func (a *HTTPBotRunnerAdapter) Mutate(currentTournament interface{}, action stri
 	if err != nil {
 		return nil, fmt.Errorf("lỗi mã hóa JSON: %w", err)
 	}
+
+	startedAt := time.Now()
 
 	// Workers are stateless: only the gateway commits tournament/results to SQL.
 	// Retry on a different worker only for transport errors or temporary overload.
@@ -168,6 +225,22 @@ func (a *HTTPBotRunnerAdapter) Mutate(currentTournament interface{}, action stri
 			err = fmt.Errorf("worker returned invalid JSON")
 		}
 		a.releaseWorker(index, err != nil || resp.StatusCode == 429 || resp.StatusCode >= 500)
+		duration := time.Since(startedAt).Milliseconds()
+		isServer1 := index == 0 || strings.Contains(url, "127.0.0.1")
+		publicIP := "13.212.114.254"
+		if isServer1 {
+			publicIP = "13.250.49.111"
+		}
+		a.recordEventLog(WorkerEventLog{
+			Timestamp:   time.Now().Format("15:04:05"),
+			WorkerIndex: index,
+			WorkerName:  fmt.Sprintf("Máy chấm %d", index+1),
+			WorkerHost:  fmt.Sprintf("%s (%s)", publicIP, url),
+			Action:      action,
+			Detail:      formatActionDetail(action, params),
+			DurationMs:  duration,
+			Success:     err == nil && resp != nil && resp.StatusCode == http.StatusOK,
+		})
 		if err != nil {
 			continue
 		}

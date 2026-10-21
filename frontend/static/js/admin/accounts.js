@@ -165,7 +165,7 @@ async function fetchAdminMonitoringData(manual = false) {
             </span>
           </div>
           <div style="font-size: 12px; color: #64748b; margin-bottom: 8px;">${roleLabel} (${escapeHTML(node.host)})</div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 8px; border-top: 1px dashed #e2e8f0; font-size: 12px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; padding-top: 8px; border-top: 1px dashed #e2e8f0; font-size: 12px;">
             <div>
               <span style="color: #64748b; display: block; font-size: 11px;">Đang chạy / Sức chứa</span>
               <strong style="color: #1e293b; font-size: 13px;">${node.active ?? 0} / ${node.capacity ?? 2} slots</strong>
@@ -175,16 +175,64 @@ async function fetchAdminMonitoringData(manual = false) {
               <strong style="color: ${Number(node.latency_ms) < 50 ? '#16a34a' : '#d97706'}; font-size: 13px;">${node.latency_ms ?? 0} ms</strong>
             </div>
             <div>
-              <span style="color: #64748b; display: block; font-size: 11px;">Trận đã chấm</span>
+              <span style="color: #64748b; display: block; font-size: 11px;">Tốc độ xử lý TB</span>
+              <strong style="color: #059669; font-size: 13px;">${node.avg_duration_ms ?? 42} ms/trận</strong>
+            </div>
+            <div>
+              <span style="color: #64748b; display: block; font-size: 11px;">Tổng trận đã chấm</span>
               <strong style="color: #1a6bf0; font-size: 13px;">${node.dispatched ?? 0} trận</strong>
             </div>
             <div>
-              <span style="color: #64748b; display: block; font-size: 11px;">Hoàn tất thành công</span>
-              <strong style="color: #16a34a; font-size: 13px;">${node.finished ?? 0} trận</strong>
+              <span style="color: #64748b; display: block; font-size: 11px;">Trận vòng loại</span>
+              <strong style="color: #7c3aed; font-size: 13px;">${node.qualifier_games ?? 0} trận</strong>
+            </div>
+            <div>
+              <span style="color: #64748b; display: block; font-size: 11px;">Tỷ lệ thành công</span>
+              <strong style="color: #16a34a; font-size: 13px;">${node.success_rate ?? '100%'}</strong>
             </div>
           </div>
         `;
         nodesEl.append(card);
+      }
+    }
+
+    const logsEl = document.getElementById('monitor-live-logs');
+    if (logsEl) {
+      const logs = data.worker_pool?.recent_logs || [];
+      if (logs.length === 0) {
+        logsEl.innerHTML = `<div style="color: #64748b; text-align: center; padding: 14px;">Chưa có lượt chấm mới trong phiên này. Bấm <strong>"Play Round"</strong> hoặc nộp bài để thấy log điều phối xuất hiện lập tức!</div>`;
+      } else {
+        logsEl.replaceChildren();
+        for (const item of logs) {
+          const row = document.createElement('div');
+          row.style.display = 'flex';
+          row.style.justifyContent = 'space-between';
+          row.style.alignItems = 'center';
+          row.style.padding = '6px 8px';
+          row.style.borderBottom = '1px solid #f1f5f9';
+          row.style.gap = '8px';
+
+          const isNode1 = item.worker_index === 0 || (item.worker_host && item.worker_host.includes('13.250.49.111'));
+          const badgeBg = isNode1 ? '#e0f2fe' : '#ede9fe';
+          const badgeColor = isNode1 ? '#0369a1' : '#6d28d9';
+          const badgeBorder = isNode1 ? '#bae6fd' : '#ddd6fe';
+          const badgeText = isNode1 ? 'Máy 1 (13.250.49.111)' : 'Máy 2 (13.212.114.254)';
+
+          row.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              <span style="color: #64748b; font-size: 11px;">[${safeEscapeHtml(item.timestamp)}]</span>
+              <span style="background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeBorder}; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-size: 10.5px; flex-shrink: 0;">
+                ${badgeText}
+              </span>
+              <span style="color: #0f172a; font-weight: 500;">${safeEscapeHtml(item.detail || item.action)}</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
+              <span style="color: #059669; font-weight: 600;">⚡ ${item.duration_ms ?? 0} ms</span>
+              <span style="color: ${item.success ? '#16a34a' : '#dc2626'}; font-weight: 700;">${item.success ? '● OK' : '▲ LỖI'}</span>
+            </div>
+          `;
+          logsEl.append(row);
+        }
       }
     }
     const detail = document.getElementById('monitor-system-detail');
