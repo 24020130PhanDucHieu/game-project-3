@@ -10,6 +10,7 @@ WorkingDirectory=/opt/arena/app/bot-runner
 Environment=ENVIRONMENT=production
 Environment=PYTHONIOENCODING=utf-8
 Environment=PYTHONDONTWRITEBYTECODE=1
+EnvironmentFile=-/etc/arena-worker.env
 ExecStart=/opt/arena/venv/bin/python -m uvicorn main:app --host 127.0.0.1 --port 8001
 Restart=on-failure
 RestartSec=5
