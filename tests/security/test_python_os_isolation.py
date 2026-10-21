@@ -10,8 +10,20 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]/'bot-runner'))
 from app.sandbox.python_isolation import CHILD_ISOLATION
 
 
-@unittest.skipUnless(sys.platform.startswith('linux'), 'kernel isolation requires Linux')
+def _has_libseccomp():
+    if not sys.platform.startswith('linux'):
+        return False
+    try:
+        import ctypes
+        ctypes.CDLL('libseccomp.so.2')
+        return True
+    except Exception:
+        return False
+
+
+@unittest.skipUnless(_has_libseccomp(), 'kernel isolation requires Linux with libseccomp2 installed')
 class PythonOSIsolation(unittest.TestCase):
+
     def probe(self, code):
         bootstrap = 'import os,socket,sys\n' + CHILD_ISOLATION + '\ninstall_python_isolation()\n' + code
         result = subprocess.run([sys.executable, '-I', '-S', '-c', bootstrap],

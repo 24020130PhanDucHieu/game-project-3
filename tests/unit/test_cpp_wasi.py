@@ -9,8 +9,10 @@ from app.sandbox.runner import BotRunner
 from app.engine.board import simulate_board
 
 
-@unittest.skipUnless(sys.platform.startswith('linux'), 'WASI compiler isolation requires Linux; run this suite in WSL/production image.')
+@unittest.skipUnless(sys.platform.startswith('linux') and Path('/opt/wasi-sdk/bin/clang++').is_file(),
+                     'WASI compiler isolation requires Linux with /opt/wasi-sdk installed; run this suite in WSL/production image.')
 class CppWasiTests(unittest.TestCase):
+
     def setUp(self):
         self.environment=patch.dict(os.environ,{'ENVIRONMENT':'production'})
         self.environment.start()
