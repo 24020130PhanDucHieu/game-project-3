@@ -227,8 +227,8 @@ async function fetchAdminMonitoringData(manual = false) {
               <span style="color: #0f172a; font-weight: 500;">${safeEscapeHtml(item.detail || item.action)}</span>
             </div>
             <div style="display: flex; align-items: center; gap: 10px; flex-shrink: 0;">
-              <span style="color: #059669; font-weight: 600;">⚡ ${item.duration_ms ?? 0} ms</span>
-              <span style="color: ${item.success ? '#16a34a' : '#dc2626'}; font-weight: 700;">${item.success ? '● OK' : '▲ LỖI'}</span>
+              <span style="color: #059669; font-weight: 600;">${item.duration_ms ?? 0} ms</span>
+              <span style="color: ${item.success ? '#16a34a' : '#dc2626'}; font-weight: 700;">${item.success ? 'OK' : 'LỖI'}</span>
             </div>
           `;
           logsEl.append(row);
@@ -239,8 +239,8 @@ async function fetchAdminMonitoringData(manual = false) {
     const counts = data.queue?.counts || {};
     if (detail) {
       detail.innerHTML = `
-        <span style="background: #e0f2fe; color: #0369a1; font-weight: 600;">🗄️ Database: ${escapeHTML(data.database?.status || 'HEALTHY')} (Supabase PG)</span>
-        <span style="background: #e8f8f0; color: #16a34a; font-weight: 600;">⚡ Hàng đợi: ${escapeHTML(data.queue?.status || 'READY')}</span>
+        <span style="background: #e0f2fe; color: #0369a1; font-weight: 600;">Database: ${escapeHTML(data.database?.status || 'HEALTHY')} (Supabase PG)</span>
+        <span style="background: #e8f8f0; color: #16a34a; font-weight: 600;">Hàng đợi: ${escapeHTML(data.queue?.status || 'READY')}</span>
         <span>Bài chờ duyệt: <strong>${counts.validation_QUEUED ?? 0}</strong></span>
         <span>Trận chờ đấu: <strong>${counts.job_QUEUED ?? 0}</strong></span>
         <span>Trận đang chạy: <strong style="color:#1a6bf0;">${counts.job_RUNNING ?? 0}</strong></span>

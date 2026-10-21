@@ -3,11 +3,29 @@ window.viewSubmissionCode = function(subId) {
   const title = document.getElementById("code-viewer-title") || document.getElementById("view-code-modal-title");
   const meta = document.getElementById("code-viewer-meta");
   const box = document.getElementById("code-viewer-box") || document.getElementById("view-code-content-a");
+  const infoBar = document.getElementById("code-viewer-info-bar");
   if (!modal) return;
 
   const sub = (window._lastSubmissionsCache || []).find(s => s.submission_id === subId);
   if (title) title.textContent = `Bài nộp: ${subId}`;
-  if (meta) meta.textContent = sub ? `Đội: ${sub.team_name} • Round ${sub.round_number} (${sub.language || 'PYTHON'})` : "";
+  if (meta) meta.textContent = sub ? `Đội: ${sub.team_name} · Round ${sub.round_number} (${sub.language || 'PYTHON'})` : "";
+  
+  if (infoBar && sub) {
+    const d = new Date((sub.submitted_at || Date.now() / 1000) * (sub.submitted_at > 1e11 ? 1 : 1000));
+    const timeStr = isNaN(d.getTime()) ? "—" : d.toLocaleTimeString('vi-VN') + " · " + d.toLocaleDateString('vi-VN');
+    infoBar.innerHTML = `
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; font-size: 12px; color: #475569;">
+        <div>Đội thi đấu: <strong style="color: #0f172a;">${escapeHtml(sub.team_name || '—')}</strong> (MSSV: <strong>${escapeHtml(sub.student_id || '—')}</strong>)</div>
+        <div>Thời gian nộp: <strong style="color: #0f172a;">${timeStr}</strong></div>
+        <div>Ngôn ngữ: <strong>${escapeHtml(sub.language || 'PYTHON')}</strong></div>
+        <div>Trạng thái: <span style="font-weight: 700; color: ${sub.is_valid ? '#16a34a' : '#dc2626'};">${sub.is_valid ? 'Hợp Lệ' : 'Không Hợp Lệ'}</span></div>
+      </div>
+    `;
+    infoBar.style.display = "block";
+  } else if (infoBar) {
+    infoBar.style.display = "none";
+  }
+
   const codeContent = sub ? (sub.code || sub.code_content || "") : "";
   if (box) box.textContent = codeContent || "# Không thể tải nội dung mã nguồn của bài nộp này.";
 
@@ -94,11 +112,63 @@ async function loadMatchSubmissions(matchId) {
 
 
 function openCodeViewerModal(record) {
-  document.getElementById("code-viewer-title").textContent=`Mã lệnh đã chạy ở hiệp ${record.round_number}`;
-  document.getElementById("code-viewer-meta").textContent="Chỉ hiển thị mã nguồn mà tài khoản được phép xem.";
-  const sources=[];
+  document.getElementById("code-viewer-title").textContent = `Mã lệnh đã chạy ở hiệp ${record.round_number}`;
+  document.getElementById("code-viewer-meta").textContent = "Chỉ hiển thị mã nguồn mà tài khoản được phép xem.";
+  
+  const infoBar = document.getElementById("code-viewer-info-bar");
+  if (infoBar) {
+    const match = (typeof currentTournamentData !== 'undefined' && typeof currentActiveMatchId !== 'undefined')
+      ? currentTournamentData?.matches?.[currentActiveMatchId] : null;
+    const subs = match?.submissions_history || window._lastSubmissionsCache || [];
+    const subA = subs.filter(s => s.round_number === record.round_number && (s.side === 'team_a' || s.team_name === record.team_a_name)).pop();
+    const subB = subs.filter(s => s.round_number === record.round_number && (s.side === 'team_b' || s.team_name === record.team_b_name)).pop();
+
+    const formatTs = (ts) => {
+      if (!ts) return "—";
+      const d = new Date(ts > 1e11 ? ts : ts * 1000);
+      return isNaN(d.getTime()) ? "—" : d.toLocaleTimeString('vi-VN') + " · " + d.toLocaleDateString('vi-VN');
+    };
+
+    const roundTimeStr = formatTs(record.timestamp);
+    const subTimeA = subA ? formatTs(subA.submitted_at) : (roundTimeStr !== "—" ? roundTimeStr : "—");
+    const subTimeB = subB ? formatTs(subB.submitted_at) : (roundTimeStr !== "—" ? roundTimeStr : "—");
+
+    const teamAName = record.team_a_name || match?.team_a?.team_name || "Đội Đỏ";
+    const teamBName = record.team_b_name || match?.team_b?.team_name || "Đội Xanh";
+    const sidA = subA?.student_id || match?.team_a?.student_id || "—";
+    const sidB = subB?.student_id || match?.team_b?.student_id || "—";
+    const subIdA = subA?.submission_id || record.sub_a_id || "—";
+    const subIdB = subB?.submission_id || record.sub_b_id || "—";
+
+    infoBar.innerHTML = `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; line-height: 1.5;">
+        <div style="background: #ffffff; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <div style="font-weight: 600; color: #0f172a; margin-bottom: 2px;">Hiệp đấu #${record.round_number}</div>
+          <div style="color: #64748b; font-size: 11.5px;">Thời gian thi đấu: <strong style="color: #0f172a;">${roundTimeStr}</strong></div>
+          ${record.winner_name ? `<div style="color: #15803d; font-size: 11.5px; margin-top: 2px;">Thắng hiệp: <strong>${escapeHtml(record.winner_name)}</strong></div>` : ''}
+        </div>
+        ${record.team_a_code ? `
+          <div style="background: #ffffff; padding: 8px 12px; border-radius: 6px; border: 1px solid #fecaca; border-left: 3px solid #ef4444;">
+            <div style="font-weight: 600; color: #b91c1c; margin-bottom: 2px;">Đội Đỏ: ${escapeHtml(teamAName)} (MSSV: ${escapeHtml(sidA)})</div>
+            <div style="color: #64748b; font-size: 11.5px;">Mã bài nộp: <code>${escapeHtml(subIdA)}</code> · ${record.team_a_lang || 'PYTHON'}</div>
+            <div style="color: #64748b; font-size: 11.5px; margin-top: 2px;">Thời gian nộp: <strong style="color: #0f172a;">${subTimeA}</strong></div>
+          </div>
+        ` : ''}
+        ${record.team_b_code ? `
+          <div style="background: #ffffff; padding: 8px 12px; border-radius: 6px; border: 1px solid #bfdbfe; border-left: 3px solid #3b82f6;">
+            <div style="font-weight: 600; color: #1d4ed8; margin-bottom: 2px;">Đội Xanh: ${escapeHtml(teamBName)} (MSSV: ${escapeHtml(sidB)})</div>
+            <div style="color: #64748b; font-size: 11.5px;">Mã bài nộp: <code>${escapeHtml(subIdB)}</code> · ${record.team_b_lang || 'PYTHON'}</div>
+            <div style="color: #64748b; font-size: 11.5px; margin-top: 2px;">Thời gian nộp: <strong style="color: #0f172a;">${subTimeB}</strong></div>
+          </div>
+        ` : ''}
+      </div>
+    `;
+    infoBar.style.display = "block";
+  }
+
+  const sources = [];
   if (record.team_a_code) sources.push(`Đội Đỏ (${record.team_a_lang || "PYTHON"})\n${record.team_a_code}`);
   if (record.team_b_code) sources.push(`Đội Xanh (${record.team_b_lang || "PYTHON"})\n${record.team_b_code}`);
-  document.getElementById("code-viewer-box").textContent=sources.join("\n\n") || "Không có quyền xem mã nguồn hiệp này.";
-  document.getElementById("modal-view-code").style.display="flex";
+  document.getElementById("code-viewer-box").textContent = sources.join("\n\n") || "Không có quyền xem mã nguồn hiệp này.";
+  document.getElementById("modal-view-code").style.display = "flex";
 }

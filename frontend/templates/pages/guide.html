@@ -1,40 +1,87 @@
 <section class="tab-pane" id="tab-guide">
-  <div class="content-header-row">
+  <div class="content-header-row" style="margin-bottom: 20px;">
     <div>
-      <h1 class="page-title page-title-icon"><svg class="arena-icon " aria-hidden="true" focusable="false"><use href="#icon-book"></use></svg>Hướng dẫn thi đấu</h1>
-      <p class="page-subtitle">Luật thi đấu Ô Ăn Tù Tì V2 trên bàn cờ 9×9 và tài liệu lập trình bot.</p>
+      <h1 class="page-title" style="margin: 0; font-size: 20px; font-weight: 700; color: #0f172a;">Hướng dẫn thi đấu</h1>
+      <p class="page-subtitle" style="margin-top: 4px; font-size: 13px; color: #64748b;">Luật thi đấu Ô Ăn Tù Tì V2 trên bàn cờ 9×9 và tài liệu lập trình bot.</p>
     </div>
   </div>
 
   <div class="guide-cards-grid">
+    <!-- Thẻ 1: Thể thức & Mục tiêu -->
     <div class="content-card guide-card">
-      <h3 class="panel-title">1. Luật Ô Ăn Tù Tì V2 trên Bàn Cờ 9×9</h3>
-      <p class="guide-p">Mỗi bên điều khiển 9 quân cờ gồm: <strong>3 Búa, 3 Bao, 3 Kéo</strong>.</p>
+      <h3 class="panel-title" style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+        1. Thể thức thi đấu & Mục tiêu chiến thắng
+      </h3>
+      <p class="guide-p" style="margin-top: 0;">Trận đấu diễn ra trên bàn cờ lưới <strong>9×9 (81 ô)</strong> giữa hai đội Đỏ và Xanh:</p>
       <ul class="guide-list">
-        <li><strong>Bàn cờ:</strong> Kích thước 9×9. Đội Đỏ bắt đầu tại hàng 7, Đội Xanh bắt đầu tại hàng 1.</li>
-        <li><strong>Cứ điểm đích:</strong> Đội Đỏ cần chiếm cứ điểm đích tại ô <code>[col 8, row 0]</code>. Đội Xanh cần chiếm ô <code>[col 0, row 8]</code>.</li>
-        <li><strong>Quy tắc ăn quân:</strong> Búa ăn Kéo, Kéo ăn Bao, Bao ăn Búa. Quân cùng loại va chạm thì quân phòng thủ thắng.</li>
-        <li><strong>Nước đi:</strong> Hai đội đi lần lượt, một nước mỗi bên. Đội đi trước đổi qua từng hiệp. Không giới hạn số nước mỗi hiệp; tiếp tục đến khi một bên chiếm cứ điểm địch hoặc tiêu diệt toàn bộ quân đối phương.</li>
-        <li><strong>Không có hòa:</strong> Chiếm căn cứ hoặc quét sạch quân đối thủ để thắng. Bot lỗi hoặc quá thời gian bị xử thua hiệp.</li>
-        <li><strong>Thể thức Bo5:</strong> Tối đa 5 hiệp, đội thắng 3 hiệp kết thúc trận. Lịch vòng đấu do Ban tổ chức đặt; vòng trước phải hoàn tất trước khi bắt đầu vòng sau.</li>
-        <li><strong>Điều kiện thắng:</strong> Chiếm cứ điểm đối phương trước, hoặc tiêu diệt toàn bộ quân đối phương.</li>
+        <li><strong>Lực lượng ban đầu:</strong> Mỗi đội sở hữu 9 quân cờ gồm <strong>3 Búa, 3 Bao, 3 Kéo</strong>. Đội Đỏ xuất phát ở hàng 7, Đội Xanh xuất phát ở hàng 1.</li>
+        <li><strong>Căn cứ đối phương:</strong> Căn cứ Đội Xanh nằm tại ô <code>[8, 0]</code> (mục tiêu của Đỏ). Căn cứ Đội Đỏ nằm tại ô <code>[0, 8]</code> (mục tiêu của Xanh).</li>
+        <li><strong>Điều kiện thắng hiệp:</strong> Đưa một quân bất kỳ đột kích vào ô căn cứ của đối phương trước, HOẶC tiêu diệt toàn bộ 9 quân của đối phương.</li>
+        <li><strong>Thể thức trận Bo5:</strong> Đấu tối đa 5 hiệp; đội đầu tiên thắng đủ 3 hiệp sẽ giành chiến thắng chung cuộc. Không có kết quả hòa.</li>
       </ul>
     </div>
 
+    <!-- Thẻ 2: Di chuyển & Khắc chế -->
     <div class="content-card guide-card">
-      <h3 class="panel-title">2. Cấu trúc hàm lập trình Bot (Python 3.10)</h3>
-      <p class="guide-p">Bot nộp bài cần cung cấp hàm <code>decide_move(game_state)</code>:</p>
-      <pre class="guide-code-box"><code>def decide_move(game_state):
-    """
-    game_state bao gồm:
-    - my_pieces: danh sách tọa độ và loại quân của bạn
-    - opp_pieces: danh sách tọa độ quân đối phương
-    - board_size: 9
-    - turn_number: số thứ tự lượt đi
-    - remaining_cards: số thẻ còn lại
-    """
-    # Trả về nước đi hợp lệ: "ROCK", "PAPER", hoặc "SCISSORS"
-    return "ROCK"</code></pre>
+      <h3 class="panel-title" style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+        2. Quy tắc di chuyển & Giao tranh
+      </h3>
+      <p class="guide-p" style="margin-top: 0;">Hai đội luân phiên ra quyết định từng nước đi (Đội đi trước hoán đổi qua từng hiệp):</p>
+      <ul class="guide-list">
+        <li><strong>Cơ chế ra quyết định:</strong> Bot trả về một trong ba loại quân <code>"ROCK"</code>, <code>"PAPER"</code>, hoặc <code>"SCISSORS"</code>. Hệ thống sẽ điều phối quân tương ứng tiến lên hoặc tấn công kẻ địch lân cận.</li>
+        <li><strong>Quy tắc khắc chế:</strong>
+          <span style="display: block; margin-top: 4px; padding: 6px 10px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0; font-family: var(--font-mono); font-size: 12px;">
+            Búa (ROCK) thắng Kéo · Kéo (SCISSORS) thắng Bao · Bao (PAPER) thắng Búa
+          </span>
+        </li>
+        <li><strong>Va chạm cùng loại:</strong> Khi hai quân cùng loại chạm nhau, quân <strong>phòng thủ</strong> (đang đứng yên tại ô) luôn chiến thắng và tiêu diệt quân tấn công.</li>
+        <li><strong>Ô đặc biệt (nếu có):</strong> Ô dịch chuyển tức thời (Portal), Ô tiến hóa (Evolve) hoặc Ô bẫy (Trap) ở các vòng nâng cao theo cấu hình Ban tổ chức.</li>
+      </ul>
+    </div>
+
+    <!-- Thẻ 3: Mẫu code Python & C++ -->
+    <div class="content-card guide-card">
+      <h3 class="panel-title" style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+        3. Cấu trúc mã nguồn Bot (Python & C++)
+      </h3>
+      <p class="guide-p" style="margin-top: 0;">Bot nộp bài cần hỗ trợ một trong hai ngôn ngữ chuẩn sau:</p>
+      
+      <div style="margin-bottom: 12px;">
+        <div style="font-weight: 600; font-size: 12.5px; color: #334155; margin-bottom: 4px;">Python 3 (Hàm chuẩn)</div>
+        <pre class="guide-code-box" style="margin: 0; padding: 12px;"><code>def decide_move(game_state):
+    # game_state: remaining_cards, my_pieces, opponent_pieces, turn_number...
+    cards = game_state.get("remaining_cards", {})
+    available = [c for c, count in cards.items() if count > 0]
+    return available[0] if available else "ROCK"</code></pre>
+      </div>
+
+      <div>
+        <div style="font-weight: 600; font-size: 12.5px; color: #334155; margin-bottom: 4px;">C++17 (STDIN / STDOUT)</div>
+        <pre class="guide-code-box" style="margin: 0; padding: 12px;"><code>#include &lt;iostream&gt;
+#include &lt;string&gt;
+
+int main() {
+    std::string state_line;
+    if (std::getline(std::cin, state_line)) {
+        std::cout &lt;&lt; "ROCK" &lt;&lt; std::endl;
+    }
+    return 0;
+}</code></pre>
+      </div>
+    </div>
+
+    <!-- Thẻ 4: Môi trường & Quy chế Sandbox -->
+    <div class="content-card guide-card">
+      <h3 class="panel-title" style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+        4. Môi trường Sandbox & Giới hạn tài nguyên
+      </h3>
+      <p class="guide-p" style="margin-top: 0;">Mọi bot thi đấu được thực thi tự động trong môi trường hộp cát độc lập:</p>
+      <ul class="guide-list">
+        <li><strong>Thời gian thực thi:</strong> Tối đa <strong>1.0 giây (1000 ms)</strong> cho mỗi lượt gọi hàm/nước đi. Quá thời gian (Time Limit Exceeded - TLE) sẽ bị xử thua hiệp đấu.</li>
+        <li><strong>Bộ nhớ cho phép:</strong> Tối đa <strong>64 MB</strong> RAM.</li>
+        <li><strong>An toàn mã nguồn:</strong> Bị cấm gọi lệnh hệ thống, ghi file hoặc truy cập mạng Internet. Vi phạm sẽ bị máy chấm ngắt ngay lập tức.</li>
+        <li><strong>Bảo toàn ngoại tuyến:</strong> Khi phòng thi mất kết nối mạng, bài nộp được lưu cục bộ trên trình duyệt và tự động đồng bộ khi có kết nối trở lại.</li>
+      </ul>
     </div>
   </div>
 </section>
