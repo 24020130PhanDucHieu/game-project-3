@@ -21,7 +21,12 @@ func (s *QualifierRecords) QueueCounts(ctx context.Context) (map[string]int, err
 			if err = rows.Scan(&kind, &status, &n); err != nil {
 				return nil, err
 			}
-			if status == "PENDING" {status = "QUEUED"}; if status == "ERROR" {status = "FAILED"}
+			if status == "PENDING" {
+				status = "QUEUED"
+			}
+			if status == "ERROR" {
+				status = "FAILED"
+			}
 			counts[kind+"_"+status] += n
 		}
 		return counts, rows.Err()
@@ -45,7 +50,12 @@ func (s *QualifierRecords) QueueCounts(ctx context.Context) (map[string]int, err
 		if err := json.Unmarshal(raw, &item); err != nil {
 			return nil, err
 		}
-		if item.Status == "PENDING" {item.Status = "QUEUED"}; if item.Status == "ERROR" {item.Status = "FAILED"}
+		if item.Status == "PENDING" {
+			item.Status = "QUEUED"
+		}
+		if item.Status == "ERROR" {
+			item.Status = "FAILED"
+		}
 		if item.Status == "QUEUED" || item.Status == "RUNNING" || item.Status == "FAILED" {
 			counts[kind+"_"+item.Status]++
 		}
@@ -53,66 +63,37 @@ func (s *QualifierRecords) QueueCounts(ctx context.Context) (map[string]int, err
 	return counts, nil
 }
 
-// DatabaseStats returns storage and connection statistics for Supabase / PostgreSQL.
+// DatabaseStats reports measured values. Query failures must never become sample data.
 func (s *QualifierRecords) DatabaseStats(ctx context.Context) (map[string]interface{}, error) {
-	stats := map[string]interface{}{
-		"provider": "Supabase PostgreSQL",
-		"status":   "READY",
+	if s.db == nil {
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if s.failed != nil {
+			return nil, s.failed
+		}
+		return map[string]interface{}{"provider": "Local File Storage", "record_count": len(s.items)}, nil
 	}
-	if s.db != nil {
-		pool := s.db.Stats()
-		stats["pool_open"] = pool.OpenConnections
-		stats["pool_in_use"] = pool.InUse
-		stats["pool_idle"] = pool.Idle
-		stats["pool_max_open"] = pool.MaxOpenConnections
-
-		var dbSize string
-		var dbBytes int64
-		_ = s.db.QueryRowContext(ctx, `SELECT pg_size_pretty(pg_database_size(current_database())), pg_database_size(current_database())`).Scan(&dbSize, &dbBytes)
-		if dbSize == "" {
-			dbSize = "24.5 MB"
-		}
-		stats["db_size"] = dbSize
-		stats["db_bytes"] = dbBytes
-
-		var tablesSize string
-		_ = s.db.QueryRowContext(ctx, `SELECT pg_size_pretty(COALESCE(sum(pg_total_relation_size(c.oid)), 0)) FROM pg_class c WHERE relname IN ('arena_qualifier_records', 'arena_tournaments')`).Scan(&tablesSize)
-		if tablesSize == "" {
-			tablesSize = "3.2 MB"
-		}
-		stats["tables_size"] = tablesSize
-
-		var qualifierRecordsCount int
-		_ = s.db.QueryRowContext(ctx, `SELECT count(*) FROM arena_qualifier_records`).Scan(&qualifierRecordsCount)
-		stats["record_count"] = qualifierRecordsCount
-
-		var activeConns int
-		_ = s.db.QueryRowContext(ctx, `SELECT count(*) FROM pg_stat_activity WHERE datname = current_database()`).Scan(&activeConns)
-		if activeConns == 0 {
-			activeConns = pool.OpenConnections
-		}
-		stats["active_connections"] = activeConns
-
-		return stats, nil
+	var size, tables string
+	var bytes int64
+	var records, connections int
+	err := s.db.QueryRowContext(ctx, `SELECT pg_size_pretty(pg_database_size(current_database())), pg_database_size(current_database()),
+ (SELECT pg_size_pretty(COALESCE(sum(pg_total_relation_size(c.oid)),0)::bigint) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname=current_schema() AND c.relname IN ('arena_qualifier_records','tournaments','arena_accounts')),
+ (SELECT count(*) FROM arena_qualifier_records),
+ (SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND state='active')`).Scan(&size, &bytes, &tables, &records, &connections)
+	if err != nil {
+		return nil, err
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	stats["provider"] = "Local File Storage"
-	stats["record_count"] = len(s.items)
-	stats["db_size"] = "< 5 MB"
-	stats["tables_size"] = "< 2 MB"
-	stats["pool_open"] = 1
-	stats["pool_in_use"] = 1
-	stats["pool_idle"] = 0
-	stats["active_connections"] = 1
-	return stats, nil
+	pool := s.db.Stats()
+	return map[string]interface{}{"provider": "PostgreSQL", "db_size": size, "db_bytes": bytes, "tables_size": tables, "record_count": records, "active_connections": connections, "pool_open": pool.OpenConnections, "pool_in_use": pool.InUse, "pool_idle": pool.Idle, "pool_max_open": pool.MaxOpenConnections}, nil
 }
 
-// OptimizeDatabase runs lightweight cleanup or ANALYZE to reclaim space.
+// ANALYZE refreshes planner statistics; it does not reclaim disk or rebuild indexes.
 func (s *QualifierRecords) OptimizeDatabase(ctx context.Context) (string, error) {
-	if s.db != nil {
-		_, _ = s.db.ExecContext(ctx, `ANALYZE arena_qualifier_records`)
-		return "Đã đồng bộ thống kê và tối ưu chỉ mục bảng Supabase thành công.", nil
+	if s.db == nil {
+		return "Kho lưu trữ tệp không cần ANALYZE.", nil
 	}
-	return "Đã tối ưu hóa bộ nhớ dữ liệu thành công.", nil
+	if _, err := s.db.ExecContext(ctx, `ANALYZE arena_qualifier_records`); err != nil {
+		return "", err
+	}
+	return "Đã cập nhật thống kê truy vấn. Thao tác này không thu hồi dung lượng ổ đĩa.", nil
 }

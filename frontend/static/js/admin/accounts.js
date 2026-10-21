@@ -133,7 +133,7 @@ async function fetchAdminMonitoringData(manual = false) {
     if (currentAppRole !== 'ADMIN') return;
     const capEl = document.getElementById('monitor-cluster-capacity');
     if (capEl && data.worker_pool) {
-      capEl.textContent = `Tổng sức chứa: ${data.worker_pool.capacity ?? '4'} trận song song · Đang chạy: ${data.worker_pool.in_flight ?? '0'}`;
+      capEl.textContent = `Tổng sức chứa: ${data.worker_pool.capacity ?? '—'} trận song song · Đang chạy: ${data.worker_pool.in_flight ?? '0'}`;
     }
     const nodesEl = document.getElementById('monitor-nodes');
     if (nodesEl) {
@@ -143,8 +143,8 @@ async function fetchAdminMonitoringData(manual = false) {
         const node = nodes[idx];
         const isReady = node.status === 'READY';
         const isServer1 = idx === 0 || (node.host && node.host.includes('127.0.0.1'));
-        const publicIP = isServer1 ? '13.250.49.111' : '13.212.114.254';
-        const roleLabel = isServer1 ? 'Gateway & Máy Chấm 1' : 'Máy Chấm Độc Lập 2 (Compute)';
+        const publicIP = safeEscapeHtml(node.host || 'Chưa xác định');
+        const roleLabel = 'Worker theo cấu hình gateway';
 
         const card = document.createElement('div');
         card.className = 'monitor-node';
@@ -168,27 +168,27 @@ async function fetchAdminMonitoringData(manual = false) {
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; padding-top: 8px; border-top: 1px dashed #e2e8f0; font-size: 12px;">
             <div>
               <span style="color: #64748b; display: block; font-size: 11px;">Đang chạy / Sức chứa</span>
-              <strong style="color: #1e293b; font-size: 13px;">${node.active ?? 0} / ${node.capacity ?? 2} slots</strong>
+              <strong style="color: #1e293b; font-size: 13px;">${node.active ?? '—'} / ${node.capacity ?? '—'} slots</strong>
             </div>
             <div>
               <span style="color: #64748b; display: block; font-size: 11px;">Độ trễ phản hồi</span>
-              <strong style="color: ${Number(node.latency_ms) < 50 ? '#16a34a' : '#d97706'}; font-size: 13px;">${node.latency_ms ?? 0} ms</strong>
+              <strong style="color: ${Number(node.latency_ms) < 50 ? '#16a34a' : '#d97706'}; font-size: 13px;">${node.latency_ms ?? '—'} ms</strong>
             </div>
             <div>
               <span style="color: #64748b; display: block; font-size: 11px;">Tốc độ xử lý TB</span>
-              <strong style="color: #059669; font-size: 13px;">${node.avg_duration_ms ?? 42} ms/trận</strong>
+              <strong style="color: #059669; font-size: 13px;">${node.finished > 0 ? node.avg_duration_ms : '—'} ms/lượt</strong>
             </div>
             <div>
-              <span style="color: #64748b; display: block; font-size: 11px;">Tổng trận đã chấm</span>
-              <strong style="color: #1a6bf0; font-size: 13px;">${node.dispatched ?? 0} trận</strong>
+              <span style="color: #64748b; display: block; font-size: 11px;">Lượt đã giao</span>
+              <strong style="color: #1a6bf0; font-size: 13px;">${node.dispatched ?? 0} lượt</strong>
             </div>
             <div>
               <span style="color: #64748b; display: block; font-size: 11px;">Trận vòng loại</span>
               <strong style="color: #7c3aed; font-size: 13px;">${node.qualifier_games ?? 0} trận</strong>
             </div>
             <div>
-              <span style="color: #64748b; display: block; font-size: 11px;">Tỷ lệ thành công</span>
-              <strong style="color: #16a34a; font-size: 13px;">${node.success_rate ?? '100%'}</strong>
+              <span style="color: #64748b; display: block; font-size: 11px;">Không lỗi hạ tầng</span>
+              <strong style="color: #16a34a; font-size: 13px;">${node.success_rate ?? '—'}</strong>
             </div>
           </div>
         `;
@@ -216,7 +216,7 @@ async function fetchAdminMonitoringData(manual = false) {
           const badgeBg = isNode1 ? '#e0f2fe' : '#ede9fe';
           const badgeColor = isNode1 ? '#0369a1' : '#6d28d9';
           const badgeBorder = isNode1 ? '#bae6fd' : '#ddd6fe';
-          const badgeText = isNode1 ? 'Máy 1 (13.250.49.111)' : 'Máy 2 (13.212.114.254)';
+          const badgeText = safeEscapeHtml(item.worker_name || 'Worker');
 
           row.innerHTML = `
             <div style="display: flex; align-items: center; gap: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
@@ -239,8 +239,8 @@ async function fetchAdminMonitoringData(manual = false) {
     const counts = data.queue?.counts || {};
     if (detail) {
       detail.innerHTML = `
-        <span style="background: #e0f2fe; color: #0369a1; font-weight: 600;">Database: ${escapeHTML(data.database?.status || 'HEALTHY')} (Supabase PG)</span>
-        <span style="background: #e8f8f0; color: #16a34a; font-weight: 600;">Hàng đợi: ${escapeHTML(data.queue?.status || 'READY')}</span>
+        <span style="background: #e0f2fe; color: #0369a1; font-weight: 600;">Database: ${escapeHTML(data.database?.status || 'UNKNOWN')} (Supabase PG)</span>
+        <span style="background: #e8f8f0; color: #16a34a; font-weight: 600;">Hàng đợi: ${escapeHTML(data.queue?.status || 'UNKNOWN')}</span>
         <span>Bài chờ duyệt: <strong>${counts.validation_QUEUED ?? 0}</strong></span>
         <span>Trận chờ đấu: <strong>${counts.job_QUEUED ?? 0}</strong></span>
         <span>Trận đang chạy: <strong style="color:#1a6bf0;">${counts.job_RUNNING ?? 0}</strong></span>
@@ -279,17 +279,17 @@ async function fetchAdminMonitoringData(manual = false) {
 
     // Supabase Database & Memory stats
     const dbSizeEl = document.getElementById('monitor-db-size');
-    if (dbSizeEl && data.database) dbSizeEl.textContent = data.database.db_size || '24.5 MB';
+    if (dbSizeEl && data.database) dbSizeEl.textContent = data.database.db_size || 'Chưa đo được';
     const dbProvEl = document.getElementById('monitor-db-provider');
     if (dbProvEl && data.database) dbProvEl.textContent = data.database.provider || 'Supabase PostgreSQL';
     const tablesSizeEl = document.getElementById('monitor-tables-size');
-    if (tablesSizeEl && data.database) tablesSizeEl.textContent = data.database.tables_size || '3.2 MB';
+    if (tablesSizeEl && data.database) tablesSizeEl.textContent = data.database.tables_size || 'Chưa đo được';
     const recordsEl = document.getElementById('monitor-records-count');
     if (recordsEl && data.database) recordsEl.textContent = `${data.database.record_count ?? 0} bản ghi dữ liệu`;
     const dbPoolEl = document.getElementById('monitor-db-pool');
     if (dbPoolEl && data.database) dbPoolEl.textContent = `${data.database.pool_in_use ?? 0} in-use · ${data.database.pool_idle ?? 0} idle`;
     const dbConnsEl = document.getElementById('monitor-db-conns');
-    if (dbConnsEl && data.database) dbConnsEl.textContent = `${data.database.active_connections ?? 1} kết nối hoạt động`;
+    if (dbConnsEl && data.database) dbConnsEl.textContent = `${data.database.active_connections ?? '—'} kết nối hoạt động`;
     const heapSizeEl = document.getElementById('monitor-heap-size');
     if (heapSizeEl && data.server) heapSizeEl.textContent = `${Number(data.server.memory_alloc_mb || 0).toFixed(1)} MB heap`;
     const heapSysEl = document.getElementById('monitor-heap-sys');

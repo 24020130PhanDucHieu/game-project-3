@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -86,9 +87,9 @@ func NewHTTPBotRunnerAdapter(workerURL string) *HTTPBotRunnerAdapter {
 		totalDurationMs: make([]int64, len(workers)),
 		recentLogs:      make([]WorkerEventLog, 0, 50),
 		active:          make([]int, len(workers)), cooldown: make([]time.Time, len(workers)),
-		dispatched:      make([]uint64, len(workers)), finished: make([]uint64, len(workers)), failed: make([]uint64, len(workers)), qualifierGames: make([]uint64, len(workers)),
+		dispatched: make([]uint64, len(workers)), finished: make([]uint64, len(workers)), failed: make([]uint64, len(workers)), qualifierGames: make([]uint64, len(workers)),
 		reportedCapacity: make([]int, len(workers)),
-		perWorker:       perWorker, token: os.Getenv("WORKER_TOKEN"), attemptTimeout: time.Duration(timeout) * time.Second,
+		perWorker:        perWorker, token: os.Getenv("WORKER_TOKEN"), attemptTimeout: time.Duration(timeout) * time.Second,
 		expectedRelease: os.Getenv("WORKER_RELEASE"),
 		slots:           make(chan struct{}, concurrency),
 		workerURL:       workerURL,
@@ -164,8 +165,6 @@ func (a *HTTPBotRunnerAdapter) Mutate(currentTournament interface{}, action stri
 		return nil, fmt.Errorf("lỗi mã hóa JSON: %w", err)
 	}
 
-	startedAt := time.Now()
-
 	// Workers are stateless: only the gateway commits tournament/results to SQL.
 	// Retry on a different worker only for transport errors or temporary overload.
 	tried := map[int]bool{}
@@ -177,14 +176,32 @@ func (a *HTTPBotRunnerAdapter) Mutate(currentTournament interface{}, action stri
 			return nil, acquireErr
 		}
 		tried[index] = true
-		if action == "qualifier-game" { a.poolMu.Lock(); a.qualifierGames[index]++; a.poolMu.Unlock() }
+		if action == "qualifier-game" {
+			a.poolMu.Lock()
+			a.qualifierGames[index]++
+			a.poolMu.Unlock()
+		}
+		startedAt := time.Now()
+		finishAttempt := func(failed bool) {
+			a.releaseWorker(index, failed)
+			host := ""
+			if address, parseErr := url.Parse(a.workers[index]); parseErr == nil {
+				host = address.Host
+			}
+			a.recordEventLog(WorkerEventLog{
+				Timestamp: time.Now().Format(time.RFC3339), WorkerIndex: index,
+				WorkerName: fmt.Sprintf("Máy chấm %d", index+1), WorkerHost: host,
+				Action: action, Detail: formatActionDetail(action, params),
+				DurationMs: time.Since(startedAt).Milliseconds(), Success: !failed,
+			})
+		}
 		url := a.workers[index]
 		attemptCtx, attemptCancel := context.WithTimeout(ctx, a.attemptTimeout)
 		var request *http.Request
 		request, err = http.NewRequestWithContext(attemptCtx, http.MethodPost, url, bytes.NewReader(jsonData))
 		if err != nil {
 			attemptCancel()
-			a.releaseWorker(index, true)
+			finishAttempt(true)
 			continue
 		}
 		request.Header.Set("Content-Type", "application/json")
@@ -194,14 +211,14 @@ func (a *HTTPBotRunnerAdapter) Mutate(currentTournament interface{}, action stri
 		resp, err = a.client.Do(request)
 		if err != nil {
 			attemptCancel()
-			a.releaseWorker(index, true)
+			finishAttempt(true)
 			continue
 		}
 		if a.expectedRelease != "" && resp.Header.Get("X-Arena-Release") != a.expectedRelease {
 			_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 65536))
 			resp.Body.Close()
 			attemptCancel()
-			a.releaseWorker(index, true)
+			finishAttempt(true)
 			err = fmt.Errorf("worker release mismatch; refusing result")
 			continue
 		}
@@ -210,7 +227,7 @@ func (a *HTTPBotRunnerAdapter) Mutate(currentTournament interface{}, action stri
 			_, _ = ioutil.ReadAll(io.LimitReader(resp.Body, 65536))
 			resp.Body.Close()
 			attemptCancel()
-			a.releaseWorker(index, true)
+			finishAttempt(true)
 			continue
 		}
 		// Read before releasing the slot: headers alone do not mean the judge
@@ -224,23 +241,7 @@ func (a *HTTPBotRunnerAdapter) Mutate(currentTournament interface{}, action stri
 		if err == nil && resp.StatusCode == http.StatusOK && !json.Valid(bodyBytes) {
 			err = fmt.Errorf("worker returned invalid JSON")
 		}
-		a.releaseWorker(index, err != nil || resp.StatusCode == 429 || resp.StatusCode >= 500)
-		duration := time.Since(startedAt).Milliseconds()
-		isServer1 := index == 0 || strings.Contains(url, "127.0.0.1")
-		publicIP := "13.212.114.254"
-		if isServer1 {
-			publicIP = "13.250.49.111"
-		}
-		a.recordEventLog(WorkerEventLog{
-			Timestamp:   time.Now().Format("15:04:05"),
-			WorkerIndex: index,
-			WorkerName:  fmt.Sprintf("Máy chấm %d", index+1),
-			WorkerHost:  fmt.Sprintf("%s (%s)", publicIP, url),
-			Action:      action,
-			Detail:      formatActionDetail(action, params),
-			DurationMs:  duration,
-			Success:     err == nil && resp != nil && resp.StatusCode == http.StatusOK,
-		})
+		finishAttempt(err != nil || resp.StatusCode == 429 || resp.StatusCode >= 500)
 		if err != nil {
 			continue
 		}

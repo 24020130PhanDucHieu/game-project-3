@@ -41,12 +41,16 @@ func (a *HTTPBotRunnerAdapter) acquireWorker(ctx context.Context, tried map[int]
 
 // Call with poolMu held. A worker can lower admission, never raise the configured ceiling.
 func (a *HTTPBotRunnerAdapter) workerCapacity(i int) int {
-	if a.reportedCapacity[i] > 0 {return min(a.perWorker,a.reportedCapacity[i])}
+	if a.reportedCapacity[i] > 0 {
+		return min(a.perWorker, a.reportedCapacity[i])
+	}
 	return a.perWorker
 }
 func (a *HTTPBotRunnerAdapter) observeCapacity(i int, raw string) {
-	if value,err:=strconv.Atoi(raw);err==nil && value>=1 && value<=8 {
-		a.poolMu.Lock(); a.reportedCapacity[i]=value; a.poolMu.Unlock()
+	if value, err := strconv.Atoi(raw); err == nil && value >= 1 && value <= 8 {
+		a.poolMu.Lock()
+		a.reportedCapacity[i] = value
+		a.poolMu.Unlock()
 	}
 }
 

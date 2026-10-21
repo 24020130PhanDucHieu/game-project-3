@@ -32,16 +32,16 @@ func (a *HTTPBotRunnerAdapter) Monitor(ctx context.Context) map[string]interface
 			if finished > 0 && len(a.totalDurationMs) > i && a.totalDurationMs[i] > 0 {
 				avgMs = a.totalDurationMs[i] / int64(finished)
 			}
-			if avgMs == 0 && finished > 0 {
-				avgMs = 42
-			}
-			successRate := 100.0
-			totalAttempts := finished + a.failed[i]
+			successRate := 0.0
+			totalAttempts := finished
 			if totalAttempts > 0 {
-				successRate = float64(finished) * 100.0 / float64(totalAttempts)
+				successRate = float64(finished-a.failed[i]) * 100.0 / float64(totalAttempts)
 			}
 			node["avg_duration_ms"] = avgMs
-			node["success_rate"] = fmt.Sprintf("%.1f%%", successRate)
+			node["success_rate"] = nil
+			if finished > 0 {
+				node["success_rate"] = fmt.Sprintf("%.1f%%", successRate)
+			}
 			a.poolMu.Unlock()
 			u, err := url.Parse(address)
 			if err == nil {

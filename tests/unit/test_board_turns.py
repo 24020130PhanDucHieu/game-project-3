@@ -9,6 +9,19 @@ from app.repository.database import Database
 
 
 class BoardRulesTests(unittest.TestCase):
+    def test_replay_omission_preserves_results_and_selected_rules(self):
+        for rule in ('COMBO_0', 'COMBO_7', 'COMBO_8', 'COMBO_15'):
+            with self.subTest(rule=rule):
+                def decide(code, state):
+                    return next(k for k,v in state['remaining_cards'].items() if v), None
+                with patch('app.engine.board.BotRunner.run_python_code', side_effect=decide):
+                    full=simulate_board('a','b',stage_rule=rule,tie_seed='replay-parity')
+                    lean=simulate_board('a','b',stage_rule=rule,tie_seed='replay-parity',record_replay=False)
+                self.assertTrue(full['board_steps'])
+                self.assertEqual(lean['board_steps'], [])
+                self.assertEqual({k:v for k,v in full.items() if k!='board_steps'}, {k:v for k,v in lean.items() if k!='board_steps'})
+                self.assertEqual(bool(full['mystery_tiles']),bool(int(rule.split('_')[1]) & 8))
+
     def test_validation_state_matches_first_real_turn_for_every_rule(self):
         from app.sandbox.runner import BotRunner
         rules = ('STAGE_1_STANDARD', 'STAGE_2_MUTATED', 'RULE_REVERSE', 'RULE_FOG',

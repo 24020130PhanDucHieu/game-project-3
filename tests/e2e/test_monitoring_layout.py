@@ -21,6 +21,8 @@ with sync_playwright() as p:
     page.evaluate("fetchAdminMonitoringData()")
     assert "1/2" in page.locator("#monitor-worker-status").inner_text()
     assert "Cập nhật" in page.locator("#monitor-last-updated").inner_text()
+    assert "42 ms" not in page.locator("#monitor-nodes").inner_text()
+    assert "13.250.49.111" not in page.locator("#monitor-nodes").inner_text()
     assert page.locator("#monitor-unsubmitted-list img").count() == 0
     page.evaluate("() => { window.fetch = async () => {throw new Error('offline')}; }")
     page.evaluate("fetchAdminMonitoringData()")

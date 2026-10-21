@@ -35,10 +35,7 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
     pieces = initial_board(stage_rule, seed=tie_seed)
 
     mystery_tiles = copy.deepcopy(initial_rules.get("mystery_tiles", {}))
-    if not mystery_tiles or not mystery_tiles.get("evolve"):
-        from app.engine.board_rules import generate_mystery_tiles
-        mystery_tiles = generate_mystery_tiles(tie_seed)
-    special_mode = True
+    special_mode = bool(initial_rules.get("special_tiles", False))
 
     evolve_tiles_set = set(tuple(c) for c in mystery_tiles.get("evolve", []))
     portal_warp_map = {}
