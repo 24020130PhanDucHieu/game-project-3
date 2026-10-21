@@ -1,13 +1,17 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"log"
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -249,8 +253,37 @@ func main() {
 	log.Printf("  Database Storage: %s", cfg.DBPath)
 	log.Printf("=====================================================")
 
-	if err := r.Run(listenAddress); err != nil {
-		log.Fatalf("Server failed to start: %v", err)
+	var listener net.Listener
+	var listenErr error
+	deadline := time.Now().Add(15 * time.Second)
+	for {
+		listener, listenErr = net.Listen("tcp", listenAddress)
+		if listenErr == nil {
+			break
+		}
+		if !strings.Contains(listenErr.Error(), "already in use") || time.Now().After(deadline) {
+			log.Fatalf("Server failed to start: %v", listenErr)
+		}
+		log.Printf("Port %s is busy (address already in use), retrying in 250ms...", listenAddress)
+		time.Sleep(250 * time.Millisecond)
+	}
+
+	srv := &http.Server{
+		Handler: r,
+	}
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-quit
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = srv.Shutdown(ctx)
+		_ = listener.Close()
+	}()
+
+	if err := srv.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		log.Fatalf("Server exited with error: %v", err)
 	}
 }
 

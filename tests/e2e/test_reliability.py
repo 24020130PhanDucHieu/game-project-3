@@ -87,7 +87,21 @@ class LocalArena:
 
     def restart_gateway(self):
         self.gateway.terminate()
-        self.gateway.wait(timeout=10)
+        try:
+            self.gateway.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            self.gateway.kill()
+            self.gateway.wait()
+        for _ in range(50):
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                    s.settimeout(0.1)
+                    if s.connect_ex(("127.0.0.1", self.gateway_port)) != 0:
+                        break
+            except Exception:
+                break
+            time.sleep(0.1)
+        time.sleep(0.15)
         self.start_gateway()
 
     def __exit__(self, *args):
