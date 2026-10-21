@@ -179,7 +179,14 @@
     <div class="arena-admin-realtime-column" id="arena-admin-realtime-col" style="display: none;">
       <div class="content-card board-card realtime-board-card">
         <div class="board-top-status-bar realtime-board-header">
-          <span class="board-title-label"><svg class="arena-icon" aria-hidden="true"><use href="#icon-activity"></use></svg>BÀN ĐẤU REALTIME</span>
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <span class="board-title-label"><svg class="arena-icon" aria-hidden="true"><use href="#icon-activity"></use></svg>BÀN ĐẤU REALTIME</span>
+            <span class="board-legend-label piece-legend" aria-label="Búa thắng Kéo; Kéo thắng Bao; Bao thắng Búa">
+              <span><svg class="arena-icon" aria-hidden="true"><use href="#icon-hand-rock"></use></svg>Búa</span>
+              <span><svg class="arena-icon" aria-hidden="true"><use href="#icon-hand-paper"></use></svg>Bao</span>
+              <span><svg class="arena-icon" aria-hidden="true"><use href="#icon-hand-scissors"></use></svg>Kéo</span>
+            </span>
+          </div>
           <span class="live-state-pill is-waiting" id="realtime-battle-status-badge">Chờ nộp bot</span>
         </div>
 

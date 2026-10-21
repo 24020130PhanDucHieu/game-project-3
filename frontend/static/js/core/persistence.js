@@ -68,10 +68,11 @@ function syncLiveRoundBoard(match) {
     if (index === drawnIndex) { if (progress === 1) clearInterval(liveRoundTimer); return; }
     drawnIndex = index;
     const step = steps[index];
-    if (currentAppRole === "ADMIN") renderRealtimeChessboard(step.red_pieces, step.blue_pieces, step.clash_event);
+    const stepTiles = step.mystery_tiles || record?.mystery_tiles;
+    if (currentAppRole === "ADMIN") renderRealtimeChessboard(step.red_pieces, step.blue_pieces, step.clash_event, stepTiles);
     if (currentAppRole === 'TEAM' || (currentAppRole !== "ADMIN" && !readArenaViewState().inlineRound)) {
       inlinePlaybackCurrentIdx = index;
-      renderChessboard(step.red_pieces, step.blue_pieces, step.clash_event);
+      renderChessboard(step.red_pieces, step.blue_pieces, step.clash_event, stepTiles);
       const indicator = document.getElementById("playback-step-indicator");
       if (indicator) indicator.textContent = `Hiệp ${record.round_number}: Bước ${index + 1} / ${steps.length}`;
       setBattleCommentary(document.getElementById("arena-commentary-ticker"), step.log);

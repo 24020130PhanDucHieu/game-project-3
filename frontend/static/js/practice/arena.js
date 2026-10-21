@@ -58,7 +58,7 @@ async function handlePracticeMatch(source = "studio") {
   }
 }
 
-function initPracticeChessboardGrid() {
+function initPracticeChessboardGrid(mysteryTiles = null) {
   const boardEl = document.getElementById("practice-chessboard-9x9");
   if (!boardEl) return;
   boardEl.innerHTML = "";
@@ -83,6 +83,9 @@ function initPracticeChessboardGrid() {
       }
       boardEl.appendChild(cell);
     }
+  }
+  if (typeof applyMysteryTiles === "function") {
+    applyMysteryTiles(boardEl, mysteryTiles);
   }
 }
 
@@ -160,7 +163,8 @@ async function openPracticeArenaModal(simResult) {
   const ticker = document.getElementById("practice-commentary-ticker");
   if (ticker) setBattleCommentary(ticker, "Bắt đầu trận đấu thử nghiệm 9x9… Đang triển khai quân cờ!");
 
-  initPracticeChessboardGrid();
+  const mysteryTiles = simResult?.mystery_tiles || simResult?.rules?.mystery_tiles;
+  initPracticeChessboardGrid(mysteryTiles);
 
   const initPieces = getInitialBoardPieces();
   renderPracticeChessboard(initPieces.red, initPieces.blue);

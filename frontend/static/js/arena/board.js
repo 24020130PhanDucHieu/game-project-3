@@ -1,4 +1,52 @@
-function initChessboardGrid() {
+function applyMysteryTiles(boardEl, mysteryTiles) {
+  if (!boardEl) return;
+  // Xóa các ô đặc biệt cũ nếu có
+  boardEl.querySelectorAll(".cell-evolve, .cell-portal, .cell-trap").forEach(el => {
+    el.classList.remove("cell-evolve", "cell-portal", "cell-trap");
+    if (!el.classList.contains("cell-target-red") && !el.classList.contains("cell-target-blue")) {
+      el.removeAttribute("title");
+    }
+  });
+
+  const evolveList = mysteryTiles?.evolve || [[4, 4]];
+  for (const item of evolveList) {
+    const c = Array.isArray(item) ? item[0] : item.col;
+    const r = Array.isArray(item) ? item[1] : item.row;
+    const cell = boardEl.querySelector(`.board-cell[data-col="${c}"][data-row="${r}"]`);
+    if (cell && !cell.classList.contains("cell-target-red") && !cell.classList.contains("cell-target-blue")) {
+      cell.classList.add("cell-evolve");
+      cell.title = `Ô Tiến Hóa [${c}, ${r}]: Đổi hệ Kéo ➔ Búa ➔ Bao ➔ Kéo`;
+    }
+  }
+
+  const portalList = mysteryTiles?.portals || [[[2, 2], [6, 6]], [[2, 6], [6, 2]]];
+  for (const pair of portalList) {
+    const p1 = pair[0], p2 = pair[1];
+    const cell1 = boardEl.querySelector(`.board-cell[data-col="${p1[0]}"][data-row="${p1[1]}"]`);
+    const cell2 = boardEl.querySelector(`.board-cell[data-col="${p2[0]}"][data-row="${p2[1]}"]`);
+    if (cell1 && !cell1.classList.contains("cell-target-red") && !cell1.classList.contains("cell-target-blue")) {
+      cell1.classList.add("cell-portal");
+      cell1.title = `Cổng Dịch Chuyển Không Gian: Nhảy tức thì tới [${p2[0]}, ${p2[1]}]`;
+    }
+    if (cell2 && !cell2.classList.contains("cell-target-red") && !cell2.classList.contains("cell-target-blue")) {
+      cell2.classList.add("cell-portal");
+      cell2.title = `Cổng Dịch Chuyển Không Gian: Nhảy tức thì tới [${p1[0]}, ${p1[1]}]`;
+    }
+  }
+
+  const trapList = mysteryTiles?.traps || [[3, 4], [5, 4], [4, 1], [4, 7]];
+  for (const item of trapList) {
+    const c = Array.isArray(item) ? item[0] : item.col;
+    const r = Array.isArray(item) ? item[1] : item.row;
+    const cell = boardEl.querySelector(`.board-cell[data-col="${c}"][data-row="${r}"]`);
+    if (cell && !cell.classList.contains("cell-target-red") && !cell.classList.contains("cell-target-blue")) {
+      cell.classList.add("cell-trap");
+      cell.title = `Ô Bẫy Mìn Ẩn [${c}, ${r}]: Kích nổ loại bỏ quân dẫm phải`;
+    }
+  }
+}
+
+function initChessboardGrid(mysteryTiles = null) {
   const boardEl = document.getElementById("chessboard-9x9");
   if (!boardEl) return;
   boardEl.innerHTML = "";
@@ -26,31 +74,10 @@ function initChessboardGrid() {
         cell.title = "Cứ điểm Đích của Đội Xanh [0, 8]";
       }
 
-      // Ô Tiến Hóa (Evolve Tile) tại trung tâm [4, 4]
-      if (c === 4 && r === 4) {
-        cell.classList.add("cell-evolve");
-        cell.title = "Ô Tiến Hóa [4, 4]: Đổi hệ Kéo ➔ Búa ➔ Bao ➔ Kéo";
-      }
-
-      // Ô Cổng Dịch Chuyển (Portal / Warp) đối xứng [2, 2] <-> [6, 6] và [2, 6] <-> [6, 2]
-      if ((c === 2 && r === 2) || (c === 6 && r === 6)) {
-        cell.classList.add("cell-portal");
-        cell.title = "Cổng Dịch Chuyển Không Gian: Nhảy tức thì giữa [2, 2] ⟷ [6, 6]";
-      }
-      if ((c === 2 && r === 6) || (c === 6 && r === 2)) {
-        cell.classList.add("cell-portal");
-        cell.title = "Cổng Dịch Chuyển Không Gian: Nhảy tức thì giữa [2, 6] ⟷ [6, 2]";
-      }
-
-      // Ô Bẫy / Mìn (Trap Tile) ẩn tại các vị trí xung yếu
-      if ((c === 3 && r === 4) || (c === 5 && r === 4) || (c === 4 && r === 1) || (c === 4 && r === 7)) {
-        cell.classList.add("cell-trap");
-        cell.title = "Ô Bẫy Mìn Ẩn: Kích nổ loại bỏ quân dẫm phải";
-      }
-
       boardEl.appendChild(cell);
     }
   }
+  applyMysteryTiles(boardEl, mysteryTiles);
 }
 
 function getInitialBoardPieces(ruleId = "STAGE_1_STANDARD") {
@@ -75,7 +102,7 @@ function getInitialBoardPieces(ruleId = "STAGE_1_STANDARD") {
   return { red, blue };
 }
 
-function renderChessboard(redPieces, bluePieces, clashEvent = null) {
+function renderChessboard(redPieces, bluePieces, clashEvent = null, mysteryTiles = null) {
   const match = currentTournamentData?.matches?.[currentActiveMatchId] || currentMatchData;
   const rule = currentTournamentData?.stage_rules?.[match?.round_level]?.rule_id || currentTournamentData?.stage_rule;
   if (currentAppRole === 'TEAM' && (ruleBits(rule) & 4)) {
@@ -88,7 +115,9 @@ function renderChessboard(redPieces, bluePieces, clashEvent = null) {
   if (!boardEl) return;
 
   if (boardEl.children.length !== 81) {
-    initChessboardGrid();
+    initChessboardGrid(mysteryTiles);
+  } else if (mysteryTiles) {
+    applyMysteryTiles(boardEl, mysteryTiles);
   }
 
   updateBoardPieces(boardEl, redPieces, bluePieces, clashEvent);
@@ -111,7 +140,7 @@ function renderChessboard(redPieces, bluePieces, clashEvent = null) {
 }
 
 // BÀN ĐẤU THỜI GIAN THỰC REALTIME DUEL (DÀNH RIÊNG CHO ADMIN)
-function initRealtimeChessboardGrid() {
+function initRealtimeChessboardGrid(mysteryTiles = null) {
   const boardEl = document.getElementById("realtime-chessboard-9x9");
   if (!boardEl) return;
   boardEl.innerHTML = "";
@@ -133,39 +162,20 @@ function initRealtimeChessboardGrid() {
         cell.title = "Cứ điểm Đích của Đội Xanh [0, 8]";
       }
 
-      // Ô Tiến Hóa tại trung tâm [4, 4]
-      if (c === 4 && r === 4) {
-        cell.classList.add("cell-evolve");
-        cell.title = "Ô Tiến Hóa [4, 4]: Đổi hệ Kéo ➔ Búa ➔ Bao ➔ Kéo";
-      }
-
-      // Ô Cổng Dịch Chuyển đối xứng
-      if ((c === 2 && r === 2) || (c === 6 && r === 6)) {
-        cell.classList.add("cell-portal");
-        cell.title = "Cổng Dịch Chuyển Không Gian: Nhảy tức thì giữa [2, 2] ⟷ [6, 6]";
-      }
-      if ((c === 2 && r === 6) || (c === 6 && r === 2)) {
-        cell.classList.add("cell-portal");
-        cell.title = "Cổng Dịch Chuyển Không Gian: Nhảy tức thì giữa [2, 6] ⟷ [6, 2]";
-      }
-
-      // Ô Bẫy / Mìn ẩn
-      if ((c === 3 && r === 4) || (c === 5 && r === 4) || (c === 4 && r === 1) || (c === 4 && r === 7)) {
-        cell.classList.add("cell-trap");
-        cell.title = "Ô Bẫy Mìn Ẩn: Kích nổ loại bỏ quân dẫm phải";
-      }
-
       boardEl.appendChild(cell);
     }
   }
+  applyMysteryTiles(boardEl, mysteryTiles);
 }
 
-function renderRealtimeChessboard(redPieces, bluePieces, clashEvent = null) {
+function renderRealtimeChessboard(redPieces, bluePieces, clashEvent = null, mysteryTiles = null) {
   const boardEl = document.getElementById("realtime-chessboard-9x9");
   if (!boardEl) return;
 
   if (boardEl.children.length !== 81) {
-    initRealtimeChessboardGrid();
+    initRealtimeChessboardGrid(mysteryTiles);
+  } else if (mysteryTiles) {
+    applyMysteryTiles(boardEl, mysteryTiles);
   }
 
   updateBoardPieces(boardEl, redPieces, bluePieces, clashEvent);

@@ -6,31 +6,50 @@ function renderVisualBattleArena(match) {
   const previewRule = configuredRule?.rule_id || currentTournamentData?.stage_rule || "STAGE_1_STANDARD";
 
   // PHÂN QUYỀN GIAO DIỆN PHÒNG ĐẤU:
-  // Nếu là ADMIN: Ẩn cột nộp code, hiện cột bàn đấu realtime với nhật ký nước đi trực tiếp!
-  // Đổi tiêu đề cột trái thành " BÀN PHÁT LẠI (REPLAY HIỆP ĐẤU)"
+  // Nếu là ADMIN: Bỏ bảng phát lại ở trên (vì bên dưới đã có Replay), phóng to bàn đấu Realtime toàn màn hình
   const studioCol = document.getElementById("arena-studio-col");
   const adminRealtimeCol = document.getElementById("arena-admin-realtime-col");
+  const boardCol = document.querySelector(".arena-board-column");
+  const layoutContainer = document.querySelector(".match-arena-2col-layout");
   const boardTitleLabel = document.getElementById("board-card-title-label");
   const playbackBar = document.getElementById('match-playback-bar');
   if (playbackBar) playbackBar.style.display = currentAppRole === 'TEAM' ? 'none' : '';
 
+  const lastRound = match.rounds_history?.[match.rounds_history.length - 1];
+  const mysteryTiles = lastRound?.mystery_tiles || match.mystery_tiles || match.rules?.mystery_tiles;
+
   if (currentAppRole === "ADMIN") {
     if (studioCol) studioCol.style.display = "none";
+    if (boardCol) boardCol.style.display = "none";
     if (adminRealtimeCol) adminRealtimeCol.style.display = "block";
-    if (boardTitleLabel) boardTitleLabel.textContent = "BÀN PHÁT LẠI (REPLAY HIỆP ĐẤU)";
-    if (document.getElementById("realtime-chessboard-9x9")?.children.length !== 81) initRealtimeChessboardGrid();
+    if (layoutContainer) layoutContainer.classList.add("admin-realtime-single-mode");
+
+    const rtBoard = document.getElementById("realtime-chessboard-9x9");
+    if (rtBoard) {
+      if (rtBoard.children.length !== 81) {
+        initRealtimeChessboardGrid(mysteryTiles);
+      } else if (mysteryTiles) {
+        applyMysteryTiles(rtBoard, mysteryTiles);
+      }
+    }
+
     if (!isMatchRunning) {
-      const lastRound = match.rounds_history?.[match.rounds_history.length - 1];
       const steps = lastRound?.board_steps || [];
       const progress = match.round_status === 'ROUND_FINISHED' ? Math.max(0, Math.min(1, (Date.now()/1000 - (match.intermission_ends_at - 5))/5)) : 1;
       const lastStep = steps[Math.min(steps.length-1, Math.floor(progress*steps.length))];
       const initPieces = getInitialBoardPieces(previewRule);
-      renderRealtimeChessboard(lastStep?.red_pieces || initPieces.red, lastStep?.blue_pieces || initPieces.blue, null);
+      renderRealtimeChessboard(lastStep?.red_pieces || initPieces.red, lastStep?.blue_pieces || initPieces.blue, null, mysteryTiles);
     }
   } else {
     if (studioCol) studioCol.style.display = "block";
+    if (boardCol) boardCol.style.display = "block";
     if (adminRealtimeCol) adminRealtimeCol.style.display = "none";
+    if (layoutContainer) layoutContainer.classList.remove("admin-realtime-single-mode");
     if (boardTitleLabel) boardTitleLabel.textContent = "BÀN ĐẤU LIVE · 9×9";
+    const boardEl = document.getElementById("chessboard-9x9");
+    if (boardEl && mysteryTiles) {
+      applyMysteryTiles(boardEl, mysteryTiles);
+    }
   }
 
   // Round indicator

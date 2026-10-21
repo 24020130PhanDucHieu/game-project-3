@@ -29,17 +29,18 @@ EVOLVE_CYCLE = {
 
 def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1,
                    stage_rule="STAGE_1_STANDARD", tie_seed=None, reuse_sandbox=False,
-                   special_tiles=None):
+                   special_tiles=True):
     tie_seed = tie_seed or secrets.token_hex(16)
     initial_rules = board_rules(stage_rule, seed=tie_seed)
-    if special_tiles is not None:
-        initial_rules["special_tiles"] = special_tiles
-        if special_tiles and not initial_rules.get("mystery_tiles"):
-            initial_rules["mystery_tiles"] = {
-                "evolve": [(4, 4)],
-                "portals": [((2, 2), (6, 6)), ((2, 6), (6, 2))],
-                "traps": [(3, 4), (5, 4), (4, 1), (4, 7)]
-            }
+    if special_tiles is not False:
+        initial_rules["special_tiles"] = True
+        if not initial_rules.get("mystery_tiles"):
+            from app.engine.board_rules import generate_mystery_tiles
+            initial_rules["mystery_tiles"] = generate_mystery_tiles(tie_seed)
+    else:
+        initial_rules["special_tiles"] = False
+        initial_rules["mystery_tiles"] = {}
+
     special_mode = bool(initial_rules.get("special_tiles", False))
     pieces = initial_board(stage_rule, seed=tie_seed)
     if special_mode and not any(p["type"] == "JOKER" for p in pieces["team_a"]):
@@ -49,7 +50,16 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                     p["type"] = "JOKER"
                     p["steps_left"] = 5
                     break
-    active_traps = set(tuple(c) for c in initial_rules.get("mystery_tiles", {}).get("traps", []))
+
+    mystery_tiles = copy.deepcopy(initial_rules.get("mystery_tiles", {}))
+    evolve_tiles_set = set(tuple(c) for c in mystery_tiles.get("evolve", []))
+    portal_warp_map = {}
+    for pair in mystery_tiles.get("portals", []):
+        p1, p2 = tuple(pair[0]), tuple(pair[1])
+        portal_warp_map[p1] = p2
+        portal_warp_map[p2] = p1
+    active_traps = set(tuple(c) for c in mystery_tiles.get("traps", []))
+
     targets = {"team_a": (8, 0), "team_b": (0, 8)}
     names = {"team_a": "Đỏ", "team_b": "Xanh"}
     colors = {"team_a": "red", "team_b": "blue"}
@@ -77,6 +87,7 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                       "active_side": side, "cycle": cycle,
                       "red_pieces": copy.deepcopy(pieces["team_a"]),
                       "blue_pieces": copy.deepcopy(pieces["team_b"]), "clash_event": clash,
+                      "mystery_tiles": copy.deepcopy(mystery_tiles),
                       "log": log, "red_alive": len(alive("team_a")), "blue_alive": len(alive("team_b"))})
 
     snapshot(f"Đi lần lượt. Đội {names[first]} đi trước; không giới hạn số nước. Chiếm căn cứ hoặc quét sạch quân đối thủ để thắng.")
@@ -177,8 +188,8 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                     attacker["steps_left"] = attacker.get("steps_left", 5) - 1
 
                 # Check Portal Warp
-                if special_mode and destination in PORTAL_WARP_MAP:
-                    warp_target = PORTAL_WARP_MAP[destination]
+                if special_mode and destination in portal_warp_map:
+                    warp_target = portal_warp_map[destination]
                     if not any(p["alive"] and (p["col"], p["row"]) == warp_target for p in own if p is not attacker):
                         origin_portal = destination
                         destination = warp_target
@@ -200,7 +211,7 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                     log = f"Đội {names[side]} điều quân ({attacker['type']}) tới [{destination[0]},{destination[1]}]."
 
                 # Check Evolve Tile
-                if special_mode and destination in EVOLVE_TILES_SET and attacker["type"] in EVOLVE_CYCLE:
+                if special_mode and destination in evolve_tiles_set and attacker["type"] in EVOLVE_CYCLE:
                     old_type = attacker["type"]
                     attacker["type"] = EVOLVE_CYCLE[old_type]
                     evolve_msg = f" 🌀 [Ô Tiến Hóa] ({old_type}) tiến hóa thành ({attacker['type']})!"
@@ -245,6 +256,7 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                 "pref_move_a": histories["team_a"][0]["my_move"] if histories["team_a"] else "ROCK",
                 "pref_move_b": histories["team_b"][0]["my_move"] if histories["team_b"] else "ROCK",
                 "bot_errors": errors, "first_side": first, "tie_break_seed": tie_seed,
+                "mystery_tiles": copy.deepcopy(mystery_tiles),
                 "rules": initial_rules}
     finally:
         for process in wasi_processes.values():

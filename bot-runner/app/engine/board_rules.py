@@ -21,6 +21,49 @@ def shuffled_pattern(seed, has_joker=False):
     rng.shuffle(pattern)
     return pattern
 
+def generate_mystery_tiles(seed='validation'):
+    """Sinh ngẫu nhiên các ô đặc biệt theo từng trận đấu (dựa trên seed), đối xứng công bằng cho cả 2 đội."""
+    rng = random.Random(str(seed) + ':tiles')
+    evolve = [(4, 4)]
+    occupied = {(4, 4), (0, 8), (8, 0)}
+
+    # Sinh 2 cặp Cổng dịch chuyển đối xứng: 1 cổng ở hàng 2..3, cổng đối ứng ở hàng 5..6
+    portal_candidates = []
+    for r in (2, 3):
+        for c in range(1, 8):
+            p1 = (c, r)
+            p2 = (8 - c, 8 - r)
+            if p1 != p2 and p1 not in occupied and p2 not in occupied:
+                portal_candidates.append((p1, p2))
+    rng.shuffle(portal_candidates)
+    portal_pairs = portal_candidates[:2] if portal_candidates else [((2, 2), (6, 6)), ((2, 6), (6, 2))]
+    for p1, p2 in portal_pairs:
+        occupied.add(p1)
+        occupied.add(p2)
+
+    # Sinh 2 cặp Bẫy mìn đối xứng (4 bẫy mìn ngẫu nhiên tại các vị trí giao chiến)
+    trap_candidates = []
+    for r in (2, 3, 4):
+        for c in range(0, 9):
+            t1 = (c, r)
+            t2 = (8 - c, 8 - r)
+            if t1 != t2 and t1 not in occupied and t2 not in occupied:
+                trap_candidates.append((t1, t2))
+    rng.shuffle(trap_candidates)
+    trap_pairs = trap_candidates[:2] if trap_candidates else [((3, 4), (5, 4)), ((4, 1), (4, 7))]
+    traps = []
+    for t1, t2 in trap_pairs:
+        traps.extend([t1, t2])
+        occupied.add(t1)
+        occupied.add(t2)
+
+    return {
+        "evolve": evolve,
+        "portals": portal_pairs,
+        "traps": traps
+    }
+
+
 def board_rules(rule_id, cycle=1, seed='validation'):
     bits = combination_bits(rule_id)
     special_tiles = (rule_id in ("RULE_SPECIAL_TILES", "STAGE_SPECIAL_TILES", "STAGE_MYSTERY_TILES") or bool(bits & 8))
@@ -40,11 +83,7 @@ def board_rules(rule_id, cycle=1, seed='validation'):
         counts = {move: pattern.count(move) for move in counts}
     reverse = reverse or bool(bits & 2)
     fog = fog or bool(bits & 4)
-    mystery_tiles = {
-        "evolve": [(4, 4)],
-        "portals": [((2, 2), (6, 6)), ((2, 6), (6, 2))],
-        "traps": [(3, 4), (5, 4), (4, 1), (4, 7)]
-    } if special_tiles else {}
+    mystery_tiles = generate_mystery_tiles(seed) if special_tiles else {}
     return {"id": rule_id, "initial_pieces": counts, "fog": fog,
             "shuffle": bool(bits & 1),
             "reverse": reverse, "special_tiles": special_tiles,

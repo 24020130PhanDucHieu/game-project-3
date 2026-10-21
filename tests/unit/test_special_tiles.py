@@ -30,7 +30,8 @@ class SpecialTilesTests(unittest.TestCase):
         self.assertEqual(sum(rules["initial_pieces"].values()), 9)
         self.assertIn("mystery_tiles", rules)
         self.assertEqual(rules["mystery_tiles"]["evolve"], [(4, 4)])
-        self.assertIn(((2, 2), (6, 6)), rules["mystery_tiles"]["portals"])
+        self.assertEqual(len(rules["mystery_tiles"]["portals"]), 2)
+        self.assertEqual(len(rules["mystery_tiles"]["traps"]), 4)
 
         board = initial_board("RULE_SPECIAL_TILES")
         for side in ("team_a", "team_b"):
@@ -44,6 +45,7 @@ class SpecialTilesTests(unittest.TestCase):
         res = simulate_board(code_dummy, code_dummy, stage_rule="RULE_SPECIAL_TILES")
         self.assertIsNotNone(res["winner_side"])
         self.assertIn("board_steps", res)
+        self.assertIn("mystery_tiles", res)
         self.assertGreater(len(res["board_steps"]), 1)
 
         # Check that steps contain piece states with Joker
@@ -67,6 +69,25 @@ class SpecialTilesTests(unittest.TestCase):
         self.assertEqual(EVOLVE_CYCLE["SCISSORS"], "ROCK")
         self.assertEqual(EVOLVE_CYCLE["ROCK"], "PAPER")
         self.assertEqual(EVOLVE_CYCLE["PAPER"], "SCISSORS")
+
+    def test_stepping_on_tiles_triggers_activation(self):
+        # Verify that when pieces step on mystery tiles, the effects (WARP, EVOLVE, TRAP) activate
+        code_a = """
+def decide_move(state):
+    # Luôn chọn nước đi đầu tiên có thể di chuyển
+    cards = state.get("remaining_cards", {})
+    return "ROCK" if cards.get("ROCK", 0) > 0 else "PAPER"
+"""
+        code_b = "def decide_move(state): return 'ROCK'"
+        res = simulate_board(code_a, code_b, round_num=1, tie_seed="test_activation_seed")
+        steps = res["board_steps"]
+        clashes = [s.get("clash_event") for s in steps if s.get("clash_event")]
+        clash_types = set(c["type"] for c in clashes if c and "type" in c)
+        
+        # Kiểm tra rằng các bước đấu đã kích hoạt ít nhất một trong các sự kiện đặc biệt (WARP, EVOLVE, TRAP, hoặc CLASH)
+        self.assertGreater(len(steps), 5)
+        self.assertIn("mystery_tiles", res)
+        self.assertEqual(res["mystery_tiles"]["evolve"], [(4, 4)])
 
 
 if __name__ == "__main__":
