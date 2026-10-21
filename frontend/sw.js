@@ -1,5 +1,5 @@
 // Static app only: API, sessions and submissions are never handled by this worker.
-const CACHE='arena-static-4.26';
+const CACHE='arena-static-4.28';
 self.addEventListener('install',event=>event.waitUntil((async()=>{
   const response=await fetch('/offline-assets.json',{cache:'no-store'});
   if(!response.ok)throw new Error('Offline asset manifest unavailable');
