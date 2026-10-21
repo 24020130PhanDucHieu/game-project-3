@@ -45,13 +45,30 @@
 }
 
 #realtime-chessboard-9x9 {
-  width: min(530px, 92vw);
-  height: min(530px, 92vw);
-  background: #f8fafc;
+  width: min(530px, 100%);
+  height: auto;
+  aspect-ratio: 1;
+  box-sizing: border-box;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-rows: repeat(9, minmax(0, 1fr));
+  gap: 2px;
+  background: #b8c8dc;
   border: 2px solid #cbd5e1;
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
 }
+
+#realtime-chessboard-9x9 .board-cell { min-width:0; min-height:0; border-radius:3px; }
+#realtime-chessboard-9x9 .board-cell.cell-alt { background:#e6edf6; }
+#realtime-chessboard-9x9 .board-piece { max-width:88%; max-height:88%; }
+.monitor-panel { color:#e2e8f0; }
+.monitor-panel .panel-title, .monitor-panel #monitor-last-updated { color:#e2e8f0; }
+.monitor-nodes { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin-top:16px; }
+.monitor-node { padding:14px; border:1px solid #526176; border-radius:10px; line-height:1.7; overflow-wrap:anywhere; background:#172337; }
+.monitor-node strong { display:block; color:#fff; }
+.monitor-node small { display:block; color:#cbd5e1; }
+.monitor-note { margin-top:12px; color:#cbd5e1; font-size:13px; line-height:1.7; }
+@media(max-width:600px) { .realtime-board-card { padding:14px !important; } }
 
 .live-state-pill {
   display: inline-flex;

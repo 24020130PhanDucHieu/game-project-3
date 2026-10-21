@@ -48,6 +48,7 @@ jobs:
       - name: Check browser test dependencies
         run: python -c "import requests; from playwright.sync_api import sync_playwright"
       - run: python -m playwright install --with-deps chrome
+      - run: python tests/e2e/test_monitoring_layout.py
       - run: go build -o bin/arena-verification ./cmd/server
         working-directory: backend
       - run: python tests/e2e/test_offline_submission_sync.py

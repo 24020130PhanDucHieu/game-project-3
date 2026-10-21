@@ -67,7 +67,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not initialize accounts: %v", err)
 	}
-	aHandler := &httpHandler.AccountsHandler{Store: accounts, Service: tournamentService, WorkerReady: botRunnerAdapter.Ready}
+	aHandler := &httpHandler.AccountsHandler{Store: accounts, Service: tournamentService, WorkerReady: botRunnerAdapter.Ready, WorkerMonitor: botRunnerAdapter.Monitor}
 	mHandler.Accounts = accounts
 	mHandler.AccountSync = aHandler.ImportLegacy
 	sessions.CheckStudent = func(id string) (bool, error) {
@@ -81,6 +81,8 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not initialize qualifier storage: %v", err)
 	}
+	aHandler.DatabaseReady = qualifierStore.Ready
+	aHandler.QueueCounts = qualifierStore.QueueCounts
 	lostLease, err := qualifierStore.GatewayLease()
 	if err != nil {
 		log.Fatalf("Cannot acquire gateway writer lease: %v", err)

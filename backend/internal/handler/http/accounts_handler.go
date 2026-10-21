@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"regexp"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -19,10 +20,13 @@ import (
 var adminMonitorStartTime = time.Now()
 
 type AccountsHandler struct {
-	Store       *repository.Accounts
-	Service     *service.TournamentService
-	WorkerReady func(context.Context) error
-	mu          sync.Mutex
+	Store         *repository.Accounts
+	Service       *service.TournamentService
+	WorkerReady   func(context.Context) error
+	WorkerMonitor func(context.Context) map[string]interface{}
+	DatabaseReady func(context.Context) error
+	QueueCounts   func(context.Context) (map[string]int, error)
+	mu            sync.Mutex
 }
 
 // Monitoring returns live real-time metrics of servers, judges, and contest submissions.
@@ -33,14 +37,41 @@ func (h *AccountsHandler) Monitoring(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
 	defer cancel()
 
-	workerStatus := "READY"
-	if h.WorkerReady != nil {
+	workerStatus := "UNKNOWN"
+	if h.WorkerReady != nil && h.WorkerMonitor == nil {
+		workerStatus = "READY"
 		if err := h.WorkerReady(ctx); err != nil {
 			workerStatus = "DEGRADED"
 		}
 	}
+	pool := map[string]interface{}{"status": workerStatus}
+	if h.WorkerMonitor != nil {
+		pool = h.WorkerMonitor(ctx)
+	}
+	dbStatus := "UNKNOWN"
+	dbCtx, dbCancel := context.WithTimeout(c.Request.Context(), 2*time.Second)
+	defer dbCancel()
+	if h.DatabaseReady != nil {
+		dbStatus = "READY"
+		if h.DatabaseReady(dbCtx) != nil {
+			dbStatus = "UNAVAILABLE"
+		}
+	}
 
-	accountsList, _ := h.Store.List()
+	queue := gin.H{"status": "UNKNOWN"}
+	if h.QueueCounts != nil {
+		counts, err := h.QueueCounts(dbCtx)
+		if err != nil {
+			queue["status"] = "UNAVAILABLE"
+		} else {
+			queue["status"], queue["counts"] = "READY", counts
+		}
+	}
+	accountsList, accountsErr := h.Store.List()
+	if accountsErr != nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"detail": "Không thể đọc dữ liệu giám sát tài khoản"})
+		return
+	}
 	totalAccounts := len(accountsList)
 
 	tournaments := h.Service.GetAllTournaments()
@@ -51,8 +82,21 @@ func (h *AccountsHandler) Monitoring(c *gin.Context) {
 	var submittedCount int
 	var unsubmittedTeams []string
 
-	for _, raw := range tournaments {
+	ids := make([]string, 0, len(tournaments))
+	for id := range tournaments {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		raw := tournaments[id]
 		t, _ := raw.(map[string]interface{})
+		if selected := c.Query("tournament_id"); selected != "" {
+			if selected == id {
+				activeTourn = t
+				break
+			}
+			continue
+		}
 		if status, _ := t["status"].(string); status == "RUNNING" || activeTourn == nil {
 			activeTourn = t
 		}
@@ -93,7 +137,8 @@ func (h *AccountsHandler) Monitoring(c *gin.Context) {
 
 	c.Header("Cache-Control", "no-store")
 	c.JSON(http.StatusOK, gin.H{
-		"status":    "HEALTHY",
+		"database":  gin.H{"status": dbStatus},
+		"queue":     queue,
 		"timestamp": time.Now().Format(time.RFC3339),
 		"server": gin.H{
 			"uptime_seconds":  time.Since(adminMonitorStartTime).Seconds(),
@@ -103,12 +148,14 @@ func (h *AccountsHandler) Monitoring(c *gin.Context) {
 			"memory_sys_mb":   float64(m.Sys) / 1024 / 1024,
 			"gc_cycles":       m.NumGC,
 		},
-		"worker_pool": gin.H{
-			"status":  workerStatus,
-			"judges":  []string{"13.250.49.111 (Gateway / Judge 1)", "13.212.114.254 (Judge 2)"},
-			"sandbox": "ISOLATED_PYTHON_CPP",
-		},
+		"worker_pool": pool,
 		"contest": gin.H{
+			"tournament_name": func() interface{} {
+				if activeTourn != nil {
+					return activeTourn["name"]
+				}
+				return "Chưa chọn giải"
+			}(),
 			"total_registered_accounts": totalAccounts,
 			"total_tournaments":         totalTournaments,
 			"enrolled_teams":            enrolledTeamsCount,

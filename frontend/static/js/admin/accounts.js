@@ -107,14 +107,32 @@ async function enrollAccount(event) {
   finally { button.disabled = false; }
 }
 
+let monitoringLoading = false;
 async function fetchAdminMonitoringData(manual = false) {
-  if (currentAppRole !== 'ADMIN') return;
+  if (currentAppRole !== 'ADMIN' || monitoringLoading) return;
+  monitoringLoading = true;
   const lastUpdatedEl = document.getElementById('monitor-last-updated');
   if (manual && lastUpdatedEl) lastUpdatedEl.textContent = 'Đang tải...';
   try {
-    const res = await fetch(`${API_BASE}/api/admin/monitoring`, { cache: 'no-store' });
+    const selected = typeof currentTournamentId !== 'undefined' ? currentTournamentId : '';
+    const res = await fetch(`${API_BASE}/api/admin/monitoring?tournament_id=${encodeURIComponent(selected || '')}`, { cache: 'no-store', signal: AbortSignal.timeout(12000) });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
+    if (currentAppRole !== 'ADMIN') return;
+    const nodesEl = document.getElementById('monitor-nodes');
+    if (nodesEl) {
+      nodesEl.replaceChildren();
+      for (const node of data.worker_pool?.nodes || []) {
+        const card = document.createElement('div'); card.className = 'monitor-node';
+        for (const [tag, value] of [['strong', `${node.name} · ${node.status}`], ['small', node.host], ['small', `${node.active}/${node.capacity} tác vụ đang chạy · phản hồi ${node.latency_ms} ms`]]) {
+          const el = document.createElement(tag); el.textContent = value; card.append(el);
+        }
+        nodesEl.append(card);
+      }
+    }
+    const detail = document.getElementById('monitor-system-detail');
+    const counts = data.queue?.counts || {};
+    if (detail) detail.textContent = `Database: ${data.database?.status || 'UNKNOWN'} · Hàng đợi: ${data.queue?.status || 'UNKNOWN'} · Bài chưa hoàn tất: ${counts.validation_QUEUED ?? '—'} · Trận chờ: ${counts.job_QUEUED ?? '—'} · Trận đang chạy: ${counts.job_RUNNING ?? '—'} · Trận lỗi: ${counts.job_FAILED ?? '—'}`;
     
     // Server & Host
     const sStatus = document.getElementById('monitor-server-status');
@@ -128,14 +146,14 @@ async function fetchAdminMonitoringData(manual = false) {
     const wStatus = document.getElementById('monitor-worker-status');
     if (wStatus && data.worker_pool) {
       const isReady = data.worker_pool.status === 'READY';
-      wStatus.textContent = isReady ? 'Sẵn sàng (Dual Node)' : 'Cảnh báo (' + data.worker_pool.status + ')';
+      wStatus.textContent = `${data.worker_pool.ready ?? '—'}/${data.worker_pool.total ?? '—'} máy sẵn sàng · ${data.worker_pool.status}`;
       wStatus.style.color = isReady ? '#10B981' : '#EF4444';
     }
 
     // Memory & Uptime
     const memEl = document.getElementById('monitor-memory-val');
     if (memEl && data.server) {
-      memEl.textContent = `${data.server.memory_alloc_mb.toFixed(1)} MB RAM`;
+      memEl.textContent = `${Number(data.server.memory_alloc_mb).toFixed(1)} MB heap Go`;
     }
     const upEl = document.getElementById('monitor-uptime-val');
     if (upEl && data.server) {
@@ -156,7 +174,7 @@ async function fetchAdminMonitoringData(manual = false) {
 
     if (data.contest) {
       if (subRatio) subRatio.textContent = `${data.contest.submitted_teams} / ${data.contest.enrolled_teams} Đội nộp`;
-      if (accVal) accVal.textContent = `Tổng ĐK: ${data.contest.total_registered_accounts} TK · ${data.contest.total_tournaments} Giải`;
+      if (accVal) accVal.textContent = `${data.contest.tournament_name || 'Giải đang theo dõi'} · Tổng ${data.contest.total_registered_accounts} tài khoản`;
 
       const pct = data.contest.enrolled_teams > 0 ? Math.round((data.contest.submitted_teams / data.contest.enrolled_teams) * 100) : 0;
       if (progPercent) progPercent.textContent = `${pct}%`;
@@ -167,7 +185,11 @@ async function fetchAdminMonitoringData(manual = false) {
           unsubmittedBox.style.display = 'block';
           if (unsubmittedTitle) unsubmittedTitle.textContent = `⚠️ Có ${data.contest.unsubmitted_count} đội trong giải chưa nộp mã nguồn:`;
           if (unsubmittedList) {
-            unsubmittedList.innerHTML = (data.contest.unsubmitted_teams || []).map(t => `<div style="padding:2px 0;">• ${escapeHTML(t)}</div>`).join('');
+            unsubmittedList.replaceChildren();
+            for (const team of data.contest.unsubmitted_teams || []) {
+              const row = document.createElement('div'); row.textContent = `• ${team}`;
+              unsubmittedList.append(row);
+            }
           }
         } else {
           unsubmittedBox.style.display = 'none';
@@ -180,7 +202,12 @@ async function fetchAdminMonitoringData(manual = false) {
       lastUpdatedEl.textContent = 'Cập nhật: ' + now.toLocaleTimeString();
     }
   } catch (err) {
-    if (lastUpdatedEl) lastUpdatedEl.textContent = 'Lỗi kết nối';
+    if (lastUpdatedEl) lastUpdatedEl.textContent = 'Mất kết nối · số liệu cũ, chưa xác minh';
+    for (const id of ['monitor-server-status', 'monitor-worker-status']) {
+      const el = document.getElementById(id); if (el) el.textContent = 'Chưa xác minh';
+    }
+  } finally {
+    monitoringLoading = false;
   }
 }
 
@@ -198,7 +225,6 @@ setInterval(() => {
   }
   if (!document.hidden && document.querySelector('#tab-admin-console.active') && !document.getElementById('dialog-enroll-account')?.open) {
     loadRegisteredAccounts();
-    fetchAdminMonitoringData();
   }
 }, 10000);
 
