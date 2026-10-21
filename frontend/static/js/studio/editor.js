@@ -154,6 +154,7 @@ function setupStudioControls() {
   });
   const dryrun = document.getElementById("btn-studio-dryrun");
   dryrun?.addEventListener("click", async () => {
+    if (!navigator.onLine) { notifyInfo('Đang mất kết nối', 'Mã vẫn lưu trên thiết bị. Kết nối lại máy chủ để kiểm tra mã.'); return; }
     if (!editor.value.trim()) { notifyWarning("Chưa có mã", "Hãy viết mã bot trước khi kiểm tra."); return; }
     dryrun.disabled = true;
     const dryrunLabel = dryrun.querySelector("span");

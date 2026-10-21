@@ -23,7 +23,9 @@ function renderAccountRows() {
   if (!body || currentAppRole !== 'ADMIN') return;
   const query = (document.getElementById('account-search')?.value || '').trim().toLocaleLowerCase();
   const items = registeredAccounts.filter(a => `${a.student_id} ${a.team_name}`.toLocaleLowerCase().includes(query));
-  document.getElementById('admin-credentials-status').textContent = `${items.length} / ${registeredAccounts.length} tài khoản`;
+  const unavailable = registeredAccounts.filter(a => a.password_available === false).length;
+  document.getElementById('admin-credentials-status').textContent = `${items.length} / ${registeredAccounts.length} tài khoản` +
+    (unavailable ? ` · ${unavailable} mật khẩu chưa đọc được. Cần khôi phục khóa mã hóa cũ; đội vẫn dùng mật khẩu đã đăng ký để đăng nhập.` : '');
   body.replaceChildren();
   if (!items.length) {
     body.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Chưa có tài khoản phù hợp.</td></tr>';
@@ -31,7 +33,7 @@ function renderAccountRows() {
   }
   for (const account of items) {
     const row = document.createElement('tr');
-    for (const value of [account.team_name, account.student_id, account.password]) {
+    for (const value of [account.team_name, account.student_id, account.password_available === false ? 'Chưa đọc được — thiếu khóa mã hóa cũ' : account.password]) {
       const cell = document.createElement('td');
       cell.textContent = value;
       cell.style.overflowWrap = 'anywhere';

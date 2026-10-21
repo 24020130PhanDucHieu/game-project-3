@@ -1,8 +1,8 @@
 [Unit]
 Description=Arena Go API
-Wants=network-online.target
+Wants=network-online.target arena-worker.service
 After=network-online.target arena-worker.service
-Requires=arena-worker.service
+# Worker outages must not stop durable submission acceptance at the gateway.
 
 [Service]
 User=arena

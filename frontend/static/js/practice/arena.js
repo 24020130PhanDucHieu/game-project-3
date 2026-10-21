@@ -2,6 +2,7 @@
 // 7.3. THỬ NGHIỆM VỚI BOT MẪU TRÊN BÀN CỜ 9x9 (PRACTICE MODE)
 // =============================================================================
 async function handlePracticeMatch(source = "studio") {
+  if (!navigator.onLine) { notifyInfo('Đang mất kết nối', 'Bạn vẫn có thể soạn và lưu bài. Chạy thử với boss cần kết nối lại máy chủ.'); return; }
   const qualifier = source === "qualifier";
   if (currentAppRole !== "TEAM" && currentAppRole !== "ADMIN") return;
 

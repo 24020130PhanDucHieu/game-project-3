@@ -8,7 +8,7 @@
     if (ancestors.includes(name)) throw new Error(`Circular template include: ${name}`);
     if (!/^[\w/-]+\.html$/.test(name) || name.includes("..")) throw new Error("Invalid template path");
     if (!loaded.has(name)) {
-      loaded.set(name, fetch(`/templates/${name}?v=4.22`, { cache: "no-cache" }).then(response => {
+      loaded.set(name, fetch(`/templates/${name}?v=4.23`, { cache: "no-cache" }).then(response => {
         if (!response.ok) throw new Error(`Template unavailable: ${name}`);
         return response.text();
       }));

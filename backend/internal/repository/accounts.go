@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"log"
 	"os"
 	"path/filepath"
 	"sort"
@@ -222,12 +223,18 @@ func (s *Accounts) Create(id, name, password string) error {
 	if err != nil {
 		return err
 	}
-	nonce := make([]byte, s.cipher.NonceSize())
-	if _, err = rand.Read(nonce); err != nil {
+	sealed, err := s.sealPassword(id, password)
+	if err != nil {
 		return err
 	}
-	sealed := s.cipher.Seal(nonce, nonce, []byte(password), []byte(id))
-	return s.save(Account{StudentID: id, TeamName: strings.TrimSpace(name), Hash: string(hash), Secret: base64.StdEncoding.EncodeToString(sealed), CreatedAt: time.Now().UTC()}, true)
+	return s.save(Account{StudentID: id, TeamName: strings.TrimSpace(name), Hash: string(hash), Secret: sealed, CreatedAt: time.Now().UTC()}, true)
+}
+func (s *Accounts) sealPassword(id, password string) (string, error) {
+	nonce := make([]byte, s.cipher.NonceSize())
+	if _, err := rand.Read(nonce); err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(s.cipher.Seal(nonce, nonce, []byte(password), []byte(id))), nil
 }
 func (s *Accounts) Authenticate(id, password string) (Account, error) {
 	a, err := s.Get(id)
@@ -237,7 +244,36 @@ func (s *Accounts) Authenticate(id, password string) (Account, error) {
 	if a.Deleted {
 		return a, ErrAccountMissing
 	}
-	return a, bcrypt.CompareHashAndPassword([]byte(a.Hash), []byte(password))
+	if err = bcrypt.CompareHashAndPassword([]byte(a.Hash), []byte(password)); err != nil {
+		return a, err
+	}
+	if _, err = s.Password(a); err == nil {
+		return a, nil
+	}
+	// A verified login supplies the original password even when an old
+	// encryption key was lost. Repair only its ciphertext, never the hash.
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	current, err := s.get(a.StudentID)
+	if err != nil {
+		return Account{}, err
+	}
+	if current.Deleted {
+		return Account{}, ErrAccountMissing
+	}
+	if current.Hash != a.Hash {
+		return Account{}, errors.New("Account credentials changed; sign in again")
+	}
+	sealed, err := s.sealPassword(a.StudentID, password)
+	if err == nil {
+		current.Secret = sealed
+		err = s.save(current, false)
+		if err == nil {
+			return current, nil
+		}
+	}
+	log.Printf("[Accounts] Verified login succeeded; ciphertext repair deferred")
+	return a, nil
 }
 func (s *Accounts) Password(a Account) (string, error) {
 	raw, err := base64.StdEncoding.DecodeString(a.Secret)

@@ -24,6 +24,10 @@ function app(){
  a.navigator.locks.request=async(_,opts,fn)=>fn({});
  a.currentTeamStudentId='alice';a.navigator.onLine=true;
  a.fetch=async()=>new Response('{}',{status:503});await a.outbox.flush();assert.equal(a.outbox.rows().length,1,'busy preserves submission');
+ a.fetch=async()=>new Response('{}',{status:401});await a.outbox.flush();
+ assert.equal(a.outbox.rows().length,1,'expired login preserves submission');
+ assert.equal(a.outbox.rows()[0].awaitingAuth,true);
+ assert.ok(!a.outbox.rows()[0].error,'login expiry must not permanently reject queued code');
  a.fetch=async()=>new Response('{}',{status:200});await a.outbox.flush();assert.equal(a.outbox.rows().length,1,'HTTP 200 without receipt must not lose code');
  a.fetch=async()=>new Response(JSON.stringify({detail:'deadline passed'}),{status:400});await a.outbox.flush();assert.equal(a.outbox.rows()[0].error,'deadline passed','no false success on rejection');
  // A successful acknowledgement alone removes the queued payload.

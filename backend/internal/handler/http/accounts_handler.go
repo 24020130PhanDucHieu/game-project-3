@@ -103,11 +103,9 @@ func (h *AccountsHandler) List(c *gin.Context) {
 	items := []gin.H{}
 	for _, a := range accounts {
 		password, err := h.Store.Password(a)
-		if err != nil {
-			c.JSON(503, gin.H{"detail": "Không thể giải mã mật khẩu. Kiểm tra khóa mã hóa tài khoản trên máy chủ."})
-			return
-		}
-		items = append(items, gin.H{"student_id": a.StudentID, "team_name": a.TeamName, "password": password})
+		// A missing historical encryption key must not hide the entire registry.
+		// Authentication still uses the independent bcrypt hash.
+		items = append(items, gin.H{"student_id": a.StudentID, "team_name": a.TeamName, "password": password, "password_available": err == nil})
 	}
 	c.JSON(200, items)
 }

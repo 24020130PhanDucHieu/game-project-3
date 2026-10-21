@@ -21,6 +21,8 @@ const arenaOutbox = (() => {
     const blocked=list.find(r=>r.error);
     label.textContent = blocked ? `Bài chưa được nhận: ${blocked.error}` : list.length ? `${list.length} bài đã lưu trên máy, ${navigator.onLine?'đang chờ gửi':'chưa có mạng'}. Chưa được server xác nhận.` : 'Đang offline. Bài nộp sẽ được lưu trên thiết bị này.';
     box.appendChild(label);
+    if (!blocked && navigator.onLine && list.some(r=>r.awaitingAuth)) label.textContent = 'Phiên đăng nhập hết hạn. Đăng nhập lại cùng tài khoản để tự gửi bài đã lưu.';
+    if (!list.length && !navigator.onLine) label.textContent = 'Đang offline: vẫn soạn và lưu bài được. Kiểm tra mã/chạy với boss cần kết nối lại máy chủ.';
     if(list.length){
       for(const [text,action] of [['Tải bản dự phòng',download],['Gửi lại',()=>{for(const r of rows()){r.error='';save(r);}schedule(0);}],['Bỏ bài bị từ chối',()=>{download();for(const r of rows())if(r.error)localStorage.removeItem(prefix+r.id);status();schedule(0);}]]){
         const b=document.createElement('button');b.textContent=text;b.className='btn-outline';b.style.margin='8px 6px 0 0';b.onclick=action;box.appendChild(b);
@@ -37,6 +39,7 @@ const arenaOutbox = (() => {
     const abort=new AbortController(),timeout=setTimeout(()=>abort.abort(),45000);
     try{
       const response=await fetch(API_BASE+row.path,{method:'POST',headers:{'Content-Type':'application/json','X-Submission-Id':row.id},body:JSON.stringify(row.payload),signal:abort.signal});
+      if(response.status===401){row.awaitingAuth=true;save(row);return null;}
       if([408,425,429].includes(response.status)||response.status>=500)return null;
       const data=await response.json();
       if(!response.ok){row.error=data.detail||`HTTP ${response.status}`;save(row);return {blocked:true,data};}
