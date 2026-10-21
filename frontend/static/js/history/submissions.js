@@ -148,16 +148,22 @@ function openCodeViewerModal(record) {
           ${record.winner_name ? `<div style="color: #15803d; font-size: 11.5px; margin-top: 2px;">Thắng hiệp: <strong>${escapeHtml(record.winner_name)}</strong></div>` : ''}
         </div>
         ${record.team_a_code ? `
-          <div style="background: #ffffff; padding: 8px 12px; border-radius: 6px; border: 1px solid #fecaca; border-left: 3px solid #ef4444;">
-            <div style="font-weight: 600; color: #b91c1c; margin-bottom: 2px;">Đội Đỏ: ${escapeHtml(teamAName)} (MSSV: ${escapeHtml(sidA)})</div>
-            <div style="color: #64748b; font-size: 11.5px;">Mã bài nộp: <code>${escapeHtml(subIdA)}</code> · ${record.team_a_lang || 'PYTHON'}</div>
+          <div id="card-view-team-a" style="background: #ffffff; padding: 8px 12px; border-radius: 6px; border: 1px solid #fecaca; border-left: 3px solid #ef4444; cursor: pointer; transition: all 0.2s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 600; color: #b91c1c;">Đội Đỏ: ${escapeHtml(teamAName)}</span>
+              <span style="font-size: 10px; background: #fee2e2; color: #b91c1c; padding: 1px 6px; border-radius: 4px; font-weight: 700;">Xem code Đỏ</span>
+            </div>
+            <div style="color: #64748b; font-size: 11.5px; margin-top: 2px;">MSSV: <strong>${escapeHtml(sidA)}</strong> · <code>${escapeHtml(subIdA)}</code> (${record.team_a_lang || 'PYTHON'})</div>
             <div style="color: #64748b; font-size: 11.5px; margin-top: 2px;">Thời gian nộp: <strong style="color: #0f172a;">${subTimeA}</strong></div>
           </div>
         ` : ''}
         ${record.team_b_code ? `
-          <div style="background: #ffffff; padding: 8px 12px; border-radius: 6px; border: 1px solid #bfdbfe; border-left: 3px solid #3b82f6;">
-            <div style="font-weight: 600; color: #1d4ed8; margin-bottom: 2px;">Đội Xanh: ${escapeHtml(teamBName)} (MSSV: ${escapeHtml(sidB)})</div>
-            <div style="color: #64748b; font-size: 11.5px;">Mã bài nộp: <code>${escapeHtml(subIdB)}</code> · ${record.team_b_lang || 'PYTHON'}</div>
+          <div id="card-view-team-b" style="background: #ffffff; padding: 8px 12px; border-radius: 6px; border: 1px solid #bfdbfe; border-left: 3px solid #3b82f6; cursor: pointer; transition: all 0.2s ease;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-weight: 600; color: #1d4ed8;">Đội Xanh: ${escapeHtml(teamBName)}</span>
+              <span style="font-size: 10px; background: #dbeafe; color: #1d4ed8; padding: 1px 6px; border-radius: 4px; font-weight: 700;">Xem code Xanh</span>
+            </div>
+            <div style="color: #64748b; font-size: 11.5px; margin-top: 2px;">MSSV: <strong>${escapeHtml(sidB)}</strong> · <code>${escapeHtml(subIdB)}</code> (${record.team_b_lang || 'PYTHON'})</div>
             <div style="color: #64748b; font-size: 11.5px; margin-top: 2px;">Thời gian nộp: <strong style="color: #0f172a;">${subTimeB}</strong></div>
           </div>
         ` : ''}
@@ -166,9 +172,95 @@ function openCodeViewerModal(record) {
     infoBar.style.display = "block";
   }
 
-  const sources = [];
-  if (record.team_a_code) sources.push(`Đội Đỏ (${record.team_a_lang || "PYTHON"})\n${record.team_a_code}`);
-  if (record.team_b_code) sources.push(`Đội Xanh (${record.team_b_lang || "PYTHON"})\n${record.team_b_code}`);
-  document.getElementById("code-viewer-box").textContent = sources.join("\n\n") || "Không có quyền xem mã nguồn hiệp này.";
+  const teamAName = record.team_a_name || "Đội Đỏ";
+  const teamBName = record.team_b_name || "Đội Xanh";
+  const tabsContainer = document.getElementById("code-viewer-tabs");
+  const codeBox = document.getElementById("code-viewer-box");
+
+  function switchCodeTab(targetTab) {
+    if (tabsContainer) {
+      tabsContainer.querySelectorAll(".code-tab-switch").forEach(btn => {
+        const isSelected = btn.dataset.tab === targetTab;
+        if (btn.dataset.tab === 'team_a') {
+          btn.style.background = isSelected ? '#ef4444' : '#ffffff';
+          btn.style.color = isSelected ? '#ffffff' : '#b91c1c';
+          btn.style.borderColor = isSelected ? '#dc2626' : '#fca5a5';
+        } else if (btn.dataset.tab === 'team_b') {
+          btn.style.background = isSelected ? '#3b82f6' : '#ffffff';
+          btn.style.color = isSelected ? '#ffffff' : '#1d4ed8';
+          btn.style.borderColor = isSelected ? '#2563eb' : '#93c5fd';
+        } else {
+          btn.style.background = isSelected ? '#0f172a' : '#ffffff';
+          btn.style.color = isSelected ? '#ffffff' : '#334155';
+          btn.style.borderColor = isSelected ? '#0f172a' : '#cbd5e1';
+        }
+        btn.style.fontWeight = isSelected ? '700' : '500';
+      });
+    }
+
+    const cardA = document.getElementById("card-view-team-a");
+    const cardB = document.getElementById("card-view-team-b");
+    if (cardA) cardA.style.boxShadow = targetTab === 'team_a' ? '0 0 0 2px #ef4444' : 'none';
+    if (cardB) cardB.style.boxShadow = targetTab === 'team_b' ? '0 0 0 2px #3b82f6' : 'none';
+
+    if (targetTab === 'team_a') {
+      codeBox.textContent = record.team_a_code || "Không có quyền xem mã nguồn Đội Đỏ.";
+    } else if (targetTab === 'team_b') {
+      codeBox.textContent = record.team_b_code || "Không có quyền xem mã nguồn Đội Xanh.";
+    } else if (targetTab === 'both') {
+      const parts = [];
+      if (record.team_a_code) parts.push(`# ==========================================\n# ĐỘI ĐỎ (${teamAName}) - ${record.team_a_lang || 'PYTHON'}\n# ==========================================\n\n${record.team_a_code}`);
+      if (record.team_b_code) parts.push(`# ==========================================\n# ĐỘI XANH (${teamBName}) - ${record.team_b_lang || 'PYTHON'}\n# ==========================================\n\n${record.team_b_code}`);
+      codeBox.textContent = parts.join("\n\n\n") || "Không có quyền xem mã nguồn.";
+    }
+  }
+
+  if (tabsContainer) {
+    tabsContainer.replaceChildren();
+    if (record.team_a_code && record.team_b_code) {
+      tabsContainer.style.display = "flex";
+      const btnA = document.createElement("button");
+      btnA.className = "btn btn-sm btn-outline code-tab-switch";
+      btnA.dataset.tab = "team_a";
+      btnA.textContent = `Đội Đỏ: ${teamAName} (${record.team_a_lang || 'PYTHON'})`;
+      btnA.onclick = () => switchCodeTab("team_a");
+
+      const btnB = document.createElement("button");
+      btnB.className = "btn btn-sm btn-outline code-tab-switch";
+      btnB.dataset.tab = "team_b";
+      btnB.textContent = `Đội Xanh: ${teamBName} (${record.team_b_lang || 'PYTHON'})`;
+      btnB.onclick = () => switchCodeTab("team_b");
+
+      const btnBoth = document.createElement("button");
+      btnBoth.className = "btn btn-sm btn-outline code-tab-switch";
+      btnBoth.dataset.tab = "both";
+      btnBoth.textContent = "Xem cả hai đội";
+      btnBoth.onclick = () => switchCodeTab("both");
+
+      tabsContainer.append(btnA, btnB, btnBoth);
+    } else if (record.team_a_code || record.team_b_code) {
+      tabsContainer.style.display = "flex";
+      const onlyBtn = document.createElement("button");
+      onlyBtn.className = "btn btn-sm btn-outline code-tab-switch";
+      const isRed = Boolean(record.team_a_code);
+      onlyBtn.dataset.tab = isRed ? "team_a" : "team_b";
+      onlyBtn.textContent = isRed ? `Đội Đỏ: ${teamAName} (${record.team_a_lang || 'PYTHON'})` : `Đội Xanh: ${teamBName} (${record.team_b_lang || 'PYTHON'})`;
+      onlyBtn.onclick = () => switchCodeTab(isRed ? "team_a" : "team_b");
+      tabsContainer.append(onlyBtn);
+    } else {
+      tabsContainer.style.display = "none";
+    }
+  }
+
+  // Hook card clicks
+  const cardA = document.getElementById("card-view-team-a");
+  if (cardA) cardA.onclick = () => switchCodeTab("team_a");
+  const cardB = document.getElementById("card-view-team-b");
+  if (cardB) cardB.onclick = () => switchCodeTab("team_b");
+
+  // Default tab: team_a if present, else team_b
+  const initialTab = record.team_a_code ? "team_a" : (record.team_b_code ? "team_b" : "both");
+  switchCodeTab(initialTab);
+
   document.getElementById("modal-view-code").style.display = "flex";
 }

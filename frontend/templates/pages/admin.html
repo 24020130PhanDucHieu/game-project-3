@@ -70,21 +70,60 @@
     <!-- Hàng đợi & Trạng thái lưu trữ -->
     <div class="monitor-queue" id="monitor-system-detail" style="margin-top: 14px;">Đang đọc database và hàng đợi…</div>
 
-    <!-- Thanh tiến độ nộp bài trực quan -->
-    <div style="margin-top: 16px; padding: 14px 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc;">
-      <div class="monitor-progress-label" style="margin: 0 0 8px 0;">
-        <span style="font-weight: 600; color: #334155;">Tỷ lệ đội thi hoàn thành nộp mã nguồn</span>
-        <span id="monitor-progress-percent" style="font-weight: 700; color: #1a6bf0;">0%</span>
-      </div>
-      <div class="monitor-progress" style="height: 8px; background: #e2e8f0; border-radius: 4px;">
-        <div id="monitor-progress-bar" style="background: linear-gradient(90deg, #1a6bf0, #16a34a); border-radius: 4px; transition: width 0.4s ease;"></div>
-      </div>
-      <div id="monitor-unsubmitted-box" style="display:none; margin-top: 10px;">
-        <div class="monitor-progress-label" style="margin: 0;">
-          <span id="monitor-unsubmitted-title" style="color: #dc2626; font-weight: 600;"></span>
-          <button class="btn-outline" type="button" style="padding: 2px 8px; font-size: 11px;" onclick="toggleUnsubmittedList()">Danh sách</button>
+    <!-- Kiểm soát bộ nhớ & Database Supabase -->
+    <div style="margin-top: 14px; padding: 14px 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #ffffff;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+        <div>
+          <span style="font-weight: 700; color: #0f172a; font-size: 13px;">Kiểm soát bộ nhớ & Cơ sở dữ liệu (Supabase PostgreSQL)</span>
+          <span style="display: block; font-size: 11px; color: #64748b; margin-top: 2px;">Giám sát dung lượng lưu trữ, kết nối pool và tài nguyên máy chủ</span>
         </div>
-        <div id="monitor-unsubmitted-list" style="display:none; margin-top: 8px; border-radius: 6px; border: 1px solid #fecaca; background: #fff5f5; color: #991b1b;"></div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <button class="btn btn-sm btn-outline" type="button" onclick="fetchAdminMonitoringData(true)" style="font-size: 11.5px; padding: 3px 10px;">Làm mới</button>
+          <button class="btn btn-sm btn-outline" type="button" id="btn-optimize-db" onclick="optimizeSupabaseDatabase()" style="font-size: 11.5px; padding: 3px 10px; color: #0369a1; border-color: #bae6fd;">Tối ưu bộ nhớ DB</button>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+        <div style="padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <span style="display: block; font-size: 11px; color: #64748b;">Dung lượng Database</span>
+          <strong id="monitor-db-size" style="font-size: 13.5px; color: #0f172a;">Đang đọc…</strong>
+          <span id="monitor-db-provider" style="display: block; font-size: 10.5px; color: #0284c7; margin-top: 2px;">Supabase PostgreSQL</span>
+        </div>
+        <div style="padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <span style="display: block; font-size: 11px; color: #64748b;">Bộ nhớ bảng Arena</span>
+          <strong id="monitor-tables-size" style="font-size: 13.5px; color: #0f172a;">Đang đọc…</strong>
+          <span id="monitor-records-count" style="display: block; font-size: 10.5px; color: #64748b; margin-top: 2px;">— bản ghi</span>
+        </div>
+        <div style="padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <span style="display: block; font-size: 11px; color: #64748b;">Kết nối Pool (In-Use / Idle)</span>
+          <strong id="monitor-db-pool" style="font-size: 13.5px; color: #16a34a;">Đang đọc…</strong>
+          <span id="monitor-db-conns" style="display: block; font-size: 10.5px; color: #64748b; margin-top: 2px;">Active connections</span>
+        </div>
+        <div style="padding: 10px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <span style="display: block; font-size: 11px; color: #64748b;">Bộ nhớ Heap Server Go</span>
+          <strong id="monitor-heap-size" style="font-size: 13.5px; color: #0f172a;">Đang đọc…</strong>
+          <span id="monitor-heap-sys" style="display: block; font-size: 10.5px; color: #64748b; margin-top: 2px;">System Allocated</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Thanh tiến độ nộp bài trực quan -->
+    <div style="margin-top: 14px; padding: 14px 16px; border: 1px solid #e2e8f0; border-radius: 10px; background: #ffffff;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+        <span style="font-weight: 600; color: #1e293b; font-size: 13px;">Tỷ lệ đội thi hoàn thành nộp mã nguồn</span>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span id="monitor-submission-counts" style="font-size: 12px; color: #64748b;">0 / 0 đội</span>
+          <span id="monitor-progress-percent" style="font-weight: 700; color: #1a6bf0; font-size: 13px; min-width: 36px; text-align: right;">0%</span>
+        </div>
+      </div>
+      <div class="monitor-progress" style="height: 7px; background: #f1f5f9; border-radius: 4px; overflow: hidden;">
+        <div id="monitor-progress-bar" style="background: linear-gradient(90deg, #1a6bf0, #16a34a); height: 100%; border-radius: 4px; transition: width 0.4s ease; width: 0%;"></div>
+      </div>
+      <div id="monitor-unsubmitted-box" style="display:none; margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: #f8fafc; border: 1px solid #e2e8f0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span id="monitor-unsubmitted-title" style="color: #475569; font-weight: 600; font-size: 12px;">Chưa nộp mã nguồn</span>
+          <button class="btn btn-sm btn-outline" type="button" style="padding: 2px 10px; font-size: 11px; border-radius: 4px;" onclick="toggleUnsubmittedList()">Xem danh sách</button>
+        </div>
+        <div id="monitor-unsubmitted-list" style="display:none; margin-top: 10px; max-height: 180px; overflow-y: auto;"></div>
       </div>
     </div>
   </div>

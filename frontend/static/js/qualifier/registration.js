@@ -24,6 +24,10 @@ async function openQualifierEvents() {
     for (const event of events) {
       const card = document.createElement('div'); card.className = 'qualifier-event-option';
       const title = document.createElement('strong'); title.textContent = event.name;
+      const detail = document.createElement('p');
+      const phaseLabel = (typeof qualifierPhaseLabels !== 'undefined' && qualifierPhaseLabels[event.status]) || (event.status === 'OPEN' ? 'Đang mở' : 'Đã đóng');
+      const deadlineStr = event.deadline ? new Date(event.deadline * 1000).toLocaleString('vi-VN') : '—';
+      detail.textContent = `${phaseLabel} · Hạn ${deadlineStr} · Top ${event.top_k || 8}`;
       const button = document.createElement('button'); button.className = 'btn btn-outline'; button.textContent = event.id === qualifierId ? 'Đang chọn' : 'Chọn giải';
       button.onclick = () => { dialog.close(); selectQualifier(event.id); };
       card.append(title, detail, button);
@@ -33,7 +37,7 @@ async function openQualifierEvents() {
         delBtn.style.color = '#ef4444';
         delBtn.style.borderColor = '#fca5a5';
         delBtn.style.marginLeft = '8px';
-        delBtn.textContent = '🗑️ Xóa';
+        delBtn.textContent = 'Xóa';
         delBtn.onclick = async (e) => {
           e.stopPropagation();
           await deleteCurrentQualifier(event.id);

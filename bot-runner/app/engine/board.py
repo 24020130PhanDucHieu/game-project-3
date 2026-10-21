@@ -32,10 +32,14 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                    record_replay=True):
     tie_seed = tie_seed or secrets.token_hex(16)
     initial_rules = board_rules(stage_rule, seed=tie_seed)
-    special_mode = bool(initial_rules.get("special_tiles", False))
     pieces = initial_board(stage_rule, seed=tie_seed)
 
     mystery_tiles = copy.deepcopy(initial_rules.get("mystery_tiles", {}))
+    if not mystery_tiles or not mystery_tiles.get("evolve"):
+        from app.engine.board_rules import generate_mystery_tiles
+        mystery_tiles = generate_mystery_tiles(tie_seed)
+    special_mode = True
+
     evolve_tiles_set = set(tuple(c) for c in mystery_tiles.get("evolve", []))
     portal_warp_map = {}
     for pair in mystery_tiles.get("portals", []):
@@ -69,11 +73,16 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
     def snapshot(log, side=None, clash=None, cycle=0):
         if not record_replay:
             return
+        current_tiles = {
+            "evolve": [list(c) for c in evolve_tiles_set],
+            "portals": [list(pair) for pair in mystery_tiles.get("portals", [])],
+            "traps": [list(c) for c in active_traps]
+        }
         steps.append({"step_idx": len(steps), "turn_label": f"Nước {len(steps)} · Đội {names[side]}" if side else "Bắt đầu hiệp đấu",
                       "active_side": side, "cycle": cycle,
                       "red_pieces": [dict(p) for p in pieces["team_a"]],
                       "blue_pieces": [dict(p) for p in pieces["team_b"]], "clash_event": clash,
-                      "mystery_tiles": {k: [list(c) for c in v] if isinstance(v, list) else v for k, v in mystery_tiles.items()},
+                      "mystery_tiles": current_tiles,
                       "log": log, "red_alive": len(alive("team_a")), "blue_alive": len(alive("team_b"))})
 
     snapshot(f"Đi lần lượt. Đội {names[first]} đi trước; không giới hạn số nước. Chiếm căn cứ hoặc quét sạch quân đối thủ để thắng.")
@@ -109,7 +118,8 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
             active_rules = board_rules(stage_rule, cycle, seed=tie_seed)
             fog, reverse = active_rules["fog"], active_rules["reverse"]
             has_joker_now = any(p["type"] == "JOKER" for p in own)
-            card_types = ALL_MOVES if (special_mode or has_joker_now) else MOVES
+            has_joker_mode = bool(initial_rules.get("has_joker", False)) or has_joker_now
+            card_types = ALL_MOVES if has_joker_mode else MOVES
             cards = {move: sum(p["type"] == move for p in own) for move in card_types}
             if fog:
                 history = [{k: v for k, v in entry.items() if k not in ("opponent_move", "their_move")} for entry in histories[side]]
@@ -129,7 +139,7 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                                else BotRunner.run_python_code(codes[side], state))
             except Exception as exc:
                 move, error = None, str(exc)
-            allowed_moves = ALL_MOVES if (special_mode or has_joker_now) else MOVES
+            allowed_moves = ALL_MOVES if has_joker_mode else MOVES
             if error or move not in allowed_moves:
                 errors[side] = str(error or "Nước đi không hợp lệ.")
                 winner, reason = opponent, f"Đội {names[side]} bị xử thua: bot lỗi hoặc quá thời gian."

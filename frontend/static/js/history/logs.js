@@ -37,11 +37,22 @@ function renderCategorizedLogs(record, visibleStep = null) {
   const moves = visibleStep === null ? allMoves : allMoves.slice(0, visibleStep + 1);
   if (context) context.textContent = `${moves.length} / ${allMoves.length} diễn biến · Mỗi nước đi được lưu theo hiệp đấu.`;
   if (round) round.textContent = `Hiệp ${record.round_number}`;
+
+  const getEventTag = (m) => {
+    const type = m.clash_event?.type;
+    const txt = String(m.log || '');
+    if (type === 'WARP' || txt.includes('Cổng Dịch Chuyển')) return '<span class="event-tag" style="background:#ede9fe; color:#6d28d9; border:1px solid #ddd6fe;">Dịch chuyển</span>';
+    if (type === 'EVOLVE' || txt.includes('Tiến Hóa')) return '<span class="event-tag" style="background:#e8f8f0; color:#15803d; border:1px solid #bbf7d0;">Tiến hóa</span>';
+    if (type === 'TRAP' || txt.includes('BẪY MÌN')) return '<span class="event-tag" style="background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;">Bẫy nổ</span>';
+    if (m.is_clash) return '<span class="event-tag">Giao chiến</span>';
+    return '';
+  };
+
   replaceLogContent(moveList, moves.length ? moves.map((move, index) => `
     <article class="event-row ${move.is_clash ? "event-clash" : ""}">
       <span class="event-marker">${move.is_clash ? arenaIcon("swords") : index + 1}</span>
       <div class="event-body">
-        <div class="event-heading"><strong>${escapeHtml(move.turn_label || `Nước ${index + 1}`)}</strong>${move.is_clash ? '<span class="event-tag">Giao chiến</span>' : ""}</div>
+        <div class="event-heading"><strong>${escapeHtml(move.turn_label || `Nước ${index + 1}`)}</strong>${getEventTag(move)}</div>
         <p class="event-message">${formatBattleLog(String(move.log || "").replace(/^Lượt\s+\d+\s*:\s*/i, ""))}</p>
         <div class="event-survivors"><span class="red"><i class="team-color-dot"></i>Đỏ ${Number(move.red_alive ?? 0)}</span><span class="blue"><i class="team-color-dot"></i>Xanh ${Number(move.blue_alive ?? 0)}</span></div>
       </div>

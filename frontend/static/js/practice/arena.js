@@ -100,7 +100,7 @@ function renderPracticeChessboard(redPieces, bluePieces, clashEvent = null) {
   const cells = boardEl.querySelectorAll(".board-cell");
   cells.forEach(cell => {
     cell.innerHTML = "";
-    cell.classList.remove("cell-clash");
+    cell.classList.remove("cell-clash", "cell-trap-explode", "cell-warp-active", "cell-evolve-active");
   });
 
   let blueAlive = 0;
@@ -147,7 +147,19 @@ function renderPracticeChessboard(redPieces, bluePieces, clashEvent = null) {
   if (clashEvent && typeof clashEvent.col === "number" && typeof clashEvent.row === "number") {
     const clashCell = boardEl.querySelector(`.board-cell[data-col="${clashEvent.col}"][data-row="${clashEvent.row}"]`);
     if (clashCell) {
-      clashCell.classList.add("cell-clash");
+      if (clashEvent.type === 'TRAP') {
+        clashCell.classList.add('cell-trap-explode');
+      } else if (clashEvent.type === 'WARP') {
+        clashCell.classList.add('cell-warp-active');
+        if (typeof clashEvent.from_col === "number" && typeof clashEvent.from_row === "number") {
+          const fromCell = boardEl.querySelector(`.board-cell[data-col="${clashEvent.from_col}"][data-row="${clashEvent.from_row}"]`);
+          if (fromCell) fromCell.classList.add('cell-warp-active');
+        }
+      } else if (clashEvent.type === 'EVOLVE') {
+        clashCell.classList.add('cell-evolve-active');
+      } else {
+        clashCell.classList.add('cell-clash');
+      }
     }
   }
 }
@@ -174,6 +186,9 @@ async function openPracticeArenaModal(simResult) {
     for (let i = 0; i < steps.length; i++) {
       if (modal.style.display === "none" || practiceSimCancelToken) break;
       const st = steps[i];
+      if (st.mystery_tiles && typeof applyMysteryTiles === "function") {
+        applyMysteryTiles(document.getElementById("practice-chessboard-9x9"), st.mystery_tiles);
+      }
       renderPracticeChessboard(st.red_pieces, st.blue_pieces, st.clash_event);
       if (ticker) setBattleCommentary(ticker, st.log || `Bước ${st.step}`);
       await new Promise(r => setTimeout(r, 220));

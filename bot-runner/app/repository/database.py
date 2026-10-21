@@ -1063,6 +1063,7 @@ def decide_move(game_state):
             "final_red_alive": sim_res.get("final_red_alive", 9),
             "final_blue_alive": sim_res.get("final_blue_alive", 9),
             "simulation": sim_res,
+            "mystery_tiles": sim_res.get("mystery_tiles", {}),
             "user_result": user_result,
             "user_side": side,
             "benchmark_name": boss_name
@@ -1351,6 +1352,9 @@ def decide_move(game_state):
     @staticmethod
     def simulate_9x9_board_match(team_a_code: str, team_b_code: str, team_a_lang: str = "PYTHON", team_b_lang: str = "PYTHON", round_num: int = 1, stage_rule: str = "STAGE_1_STANDARD", tie_seed: str = None) -> dict:
         from app.engine.board import simulate_board
+        if not tie_seed:
+            import uuid
+            tie_seed = uuid.uuid4().hex
         return simulate_board(team_a_code, team_b_code, team_a_lang, team_b_lang, round_num, stage_rule, tie_seed, reuse_sandbox=True)
 
     @staticmethod
@@ -1541,6 +1545,7 @@ def decide_move(game_state):
             "final_red_alive": sim_res["final_red_alive"],
             "final_blue_alive": sim_res["final_blue_alive"],
             "board_steps": sim_res["board_steps"],
+            "mystery_tiles": sim_res.get("mystery_tiles", {}),
             "move_logs": move_logs,
             "bot_logs": bot_logs,
             "system_logs": system_logs,
@@ -1548,6 +1553,7 @@ def decide_move(game_state):
             "timestamp": time.time()
         }
         match["rounds_history"].append(round_record)
+        match["mystery_tiles"] = sim_res.get("mystery_tiles", {})
         match["battle_running"] = False
 
         is_completed = False

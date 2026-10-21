@@ -126,11 +126,14 @@ function renderVisualBattleArena(match) {
     const liveProgress = match.round_status === 'ROUND_FINISHED' ? Math.max(0,Math.min(1,(Date.now()/1000-(match.intermission_ends_at-5))/5)) : 1;
     inlinePlaybackCurrentIdx = currentAppRole === 'TEAM' ? Math.min(lastR.board_steps.length-1,Math.floor(liveProgress*lastR.board_steps.length)) : state.inlineRound === lastR.round_number ? Math.min(state.inlineStep ?? lastR.board_steps.length - 1, lastR.board_steps.length - 1) : lastR.board_steps.length - 1;
     const step = lastR.board_steps[inlinePlaybackCurrentIdx];
-    renderChessboard(step.red_pieces, step.blue_pieces, step.clash_event);
+    const tiles = step.mystery_tiles || lastR.mystery_tiles || match.mystery_tiles;
+    renderChessboard(step.red_pieces, step.blue_pieces, step.clash_event, tiles);
     const indicator = document.getElementById("playback-step-indicator");
     if (indicator) indicator.textContent = `Hiệp ${lastR.round_number}: Bước ${inlinePlaybackCurrentIdx + 1} / ${lastR.board_steps.length}`;
   } else if (!isMatchRunning) {
-    const pieces = getInitialBoardPieces(previewRule); renderChessboard(pieces.red, pieces.blue, null);
+    const pieces = getInitialBoardPieces(previewRule);
+    const previewTiles = match?.mystery_tiles || lastR?.mystery_tiles || null;
+    renderChessboard(pieces.red, pieces.blue, null, previewTiles);
     inlinePlaybackCurrentIdx = 0;
     const indicator = document.getElementById("playback-step-indicator");
     if (indicator) indicator.textContent = "Chưa có dữ liệu phát lại";

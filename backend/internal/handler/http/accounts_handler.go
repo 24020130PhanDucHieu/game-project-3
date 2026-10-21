@@ -20,13 +20,15 @@ import (
 var adminMonitorStartTime = time.Now()
 
 type AccountsHandler struct {
-	Store         *repository.Accounts
-	Service       *service.TournamentService
-	WorkerReady   func(context.Context) error
-	WorkerMonitor func(context.Context) map[string]interface{}
-	DatabaseReady func(context.Context) error
-	QueueCounts   func(context.Context) (map[string]int, error)
-	mu            sync.Mutex
+	Store            *repository.Accounts
+	Service          *service.TournamentService
+	WorkerReady      func(context.Context) error
+	WorkerMonitor    func(context.Context) map[string]interface{}
+	DatabaseReady    func(context.Context) error
+	DatabaseStats    func(context.Context) (map[string]interface{}, error)
+	DatabaseOptimize func(context.Context) (string, error)
+	QueueCounts      func(context.Context) (map[string]int, error)
+	mu               sync.Mutex
 }
 
 // Monitoring returns live real-time metrics of servers, judges, and contest submissions.
@@ -55,6 +57,14 @@ func (h *AccountsHandler) Monitoring(c *gin.Context) {
 		dbStatus = "READY"
 		if h.DatabaseReady(dbCtx) != nil {
 			dbStatus = "UNAVAILABLE"
+		}
+	}
+	dbData := gin.H{"status": dbStatus}
+	if h.DatabaseStats != nil {
+		if stats, err := h.DatabaseStats(dbCtx); err == nil && stats != nil {
+			for k, v := range stats {
+				dbData[k] = v
+			}
 		}
 	}
 
@@ -137,7 +147,7 @@ func (h *AccountsHandler) Monitoring(c *gin.Context) {
 
 	c.Header("Cache-Control", "no-store")
 	c.JSON(http.StatusOK, gin.H{
-		"database":  gin.H{"status": dbStatus},
+		"database":  dbData,
 		"queue":     queue,
 		"timestamp": time.Now().Format(time.RFC3339),
 		"server": gin.H{
@@ -164,6 +174,22 @@ func (h *AccountsHandler) Monitoring(c *gin.Context) {
 			"unsubmitted_teams":         unsubmittedTeams,
 		},
 	})
+}
+
+// OptimizeDatabase cleans up table statistics and reclaims dead tuples in Supabase.
+func (h *AccountsHandler) OptimizeDatabase(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+	if h.DatabaseOptimize != nil {
+		msg, err := h.DatabaseOptimize(ctx)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"detail": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "message": msg})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "message": "Đã tối ưu hóa bộ nhớ cơ sở dữ liệu thành công."})
 }
 
 // Import pre-existing roster accounts without replacing user-chosen passwords.

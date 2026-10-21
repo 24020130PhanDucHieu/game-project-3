@@ -87,6 +87,8 @@ func main() {
 	}
 	aHandler.DatabaseReady = qualifierStore.Ready
 	aHandler.QueueCounts = qualifierStore.QueueCounts
+	aHandler.DatabaseStats = qualifierStore.DatabaseStats
+	aHandler.DatabaseOptimize = qualifierStore.OptimizeDatabase
 	lostLease, err := qualifierStore.GatewayLease()
 	if err != nil {
 		log.Fatalf("Cannot acquire gateway writer lease: %v", err)
@@ -187,6 +189,7 @@ func main() {
 		api.DELETE("/admin/accounts/:studentId", adminOnly, aHandler.Delete)
 		api.POST("/admin/accounts/:studentId/enroll", adminOnly, aHandler.Enroll)
 		api.GET("/admin/monitoring", adminOnly, aHandler.Monitoring)
+		api.POST("/admin/database/optimize", adminOnly, aHandler.OptimizeDatabase)
 		matchSession := requireSession(sessions, false, true)
 		matchAdmin := requireSession(sessions, true, true)
 		api.GET("/qualifiers", qHandler.List)

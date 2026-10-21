@@ -32,7 +32,8 @@ function setupInlineBoardPlayback() {
     const step = steps[inlinePlaybackCurrentIdx];
     saveArenaViewState({ inlineRound: round, inlineStep: inlinePlaybackCurrentIdx });
     if (step) {
-      renderChessboard(step.red_pieces, step.blue_pieces, step.clash);
+      const stepTiles = step.mystery_tiles || currentMatchData?.mystery_tiles;
+      renderChessboard(step.red_pieces, step.blue_pieces, step.clash_event || step.clash, stepTiles);
       const ticker = document.getElementById("arena-commentary-ticker") || document.getElementById("live-commentary-ticker");
       if (ticker && step.log) setBattleCommentary(ticker, step.log);
     }

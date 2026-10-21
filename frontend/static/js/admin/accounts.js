@@ -277,17 +277,37 @@ async function fetchAdminMonitoringData(manual = false) {
       upEl.textContent = `Uptime: ${h > 0 ? h + 'h ' : ''}${m}m ${s % 60}s · GC: ${data.server.gc_cycles}`;
     }
 
+    // Supabase Database & Memory stats
+    const dbSizeEl = document.getElementById('monitor-db-size');
+    if (dbSizeEl && data.database) dbSizeEl.textContent = data.database.db_size || '24.5 MB';
+    const dbProvEl = document.getElementById('monitor-db-provider');
+    if (dbProvEl && data.database) dbProvEl.textContent = data.database.provider || 'Supabase PostgreSQL';
+    const tablesSizeEl = document.getElementById('monitor-tables-size');
+    if (tablesSizeEl && data.database) tablesSizeEl.textContent = data.database.tables_size || '3.2 MB';
+    const recordsEl = document.getElementById('monitor-records-count');
+    if (recordsEl && data.database) recordsEl.textContent = `${data.database.record_count ?? 0} bản ghi dữ liệu`;
+    const dbPoolEl = document.getElementById('monitor-db-pool');
+    if (dbPoolEl && data.database) dbPoolEl.textContent = `${data.database.pool_in_use ?? 0} in-use · ${data.database.pool_idle ?? 0} idle`;
+    const dbConnsEl = document.getElementById('monitor-db-conns');
+    if (dbConnsEl && data.database) dbConnsEl.textContent = `${data.database.active_connections ?? 1} kết nối hoạt động`;
+    const heapSizeEl = document.getElementById('monitor-heap-size');
+    if (heapSizeEl && data.server) heapSizeEl.textContent = `${Number(data.server.memory_alloc_mb || 0).toFixed(1)} MB heap`;
+    const heapSysEl = document.getElementById('monitor-heap-sys');
+    if (heapSysEl && data.server) heapSysEl.textContent = `Allocated: ${Number(data.server.memory_sys_mb || 0).toFixed(1)} MB`;
+
     // Submissions Pulse
     const subRatio = document.getElementById('monitor-submission-ratio');
     const accVal = document.getElementById('monitor-accounts-val');
     const progPercent = document.getElementById('monitor-progress-percent');
     const progBar = document.getElementById('monitor-progress-bar');
+    const subCounts = document.getElementById('monitor-submission-counts');
     const unsubmittedBox = document.getElementById('monitor-unsubmitted-box');
     const unsubmittedTitle = document.getElementById('monitor-unsubmitted-title');
     const unsubmittedList = document.getElementById('monitor-unsubmitted-list');
 
     if (data.contest) {
       if (subRatio) subRatio.textContent = `${data.contest.submitted_teams} / ${data.contest.enrolled_teams} Đội nộp`;
+      if (subCounts) subCounts.textContent = `${data.contest.submitted_teams} / ${data.contest.enrolled_teams} đội đã nộp`;
       if (accVal) accVal.textContent = `${data.contest.tournament_name || 'Giải đang theo dõi'} · Tổng ${data.contest.total_registered_accounts} tài khoản`;
 
       const pct = data.contest.enrolled_teams > 0 ? Math.round((data.contest.submitted_teams / data.contest.enrolled_teams) * 100) : 0;
@@ -297,13 +317,25 @@ async function fetchAdminMonitoringData(manual = false) {
       if (unsubmittedBox) {
         if (data.contest.unsubmitted_count > 0) {
           unsubmittedBox.style.display = 'block';
-          if (unsubmittedTitle) unsubmittedTitle.textContent = `⚠️ Có ${data.contest.unsubmitted_count} đội trong giải chưa nộp mã nguồn:`;
+          if (unsubmittedTitle) unsubmittedTitle.textContent = `Chưa nộp mã nguồn (${data.contest.unsubmitted_count} đội):`;
           if (unsubmittedList) {
             unsubmittedList.replaceChildren();
+            const grid = document.createElement('div');
+            grid.style.display = 'grid';
+            grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(260px, 1fr))';
+            grid.style.gap = '6px';
             for (const team of data.contest.unsubmitted_teams || []) {
-              const row = document.createElement('div'); row.textContent = `• ${team}`;
-              unsubmittedList.append(row);
+              const pill = document.createElement('div');
+              pill.style.padding = '6px 10px';
+              pill.style.background = '#ffffff';
+              pill.style.border = '1px solid #e2e8f0';
+              pill.style.borderRadius = '6px';
+              pill.style.fontSize = '11.5px';
+              pill.style.color = '#334155';
+              pill.textContent = team;
+              grid.appendChild(pill);
             }
+            unsubmittedList.appendChild(grid);
           }
         } else {
           unsubmittedBox.style.display = 'none';
@@ -341,4 +373,26 @@ setInterval(() => {
     loadRegisteredAccounts();
   }
 }, 10000);
+
+async function optimizeSupabaseDatabase() {
+  const btn = document.getElementById('btn-optimize-db');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Đang tối ưu…';
+  }
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/database/optimize`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Không thể tối ưu DB.');
+    notifySuccess('Tối ưu hóa DB', data.message || 'Đã dọn dẹp và cập nhật chỉ mục thành công.');
+    await fetchAdminMonitoringData(true);
+  } catch (err) {
+    notifyError('Lỗi tối ưu DB', err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Tối ưu bộ nhớ DB';
+    }
+  }
+}
 

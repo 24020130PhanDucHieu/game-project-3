@@ -130,11 +130,27 @@ function renderChessboard(redPieces, bluePieces, clashEvent = null, mysteryTiles
   if (countRedEl) countRedEl.textContent = `${redAliveCount}/9 quân`;
   if (countBlueEl) countBlueEl.textContent = `${blueAliveCount}/9 quân`;
 
-  // Hiệu ứng lóe sáng tại ô va chạm / ăn quân
+  // Hiệu ứng lóe sáng tại ô va chạm / kích hoạt ô đặc biệt
+  boardEl.querySelectorAll('.cell-clash, .cell-trap-explode, .cell-warp-active, .cell-evolve-active').forEach(cell => {
+    cell.classList.remove('cell-clash', 'cell-trap-explode', 'cell-warp-active', 'cell-evolve-active');
+  });
+
   if (clashEvent && typeof clashEvent.col === "number" && typeof clashEvent.row === "number") {
     const clashCell = boardEl.querySelector(`.board-cell[data-col="${clashEvent.col}"][data-row="${clashEvent.row}"]`);
     if (clashCell) {
-      clashCell.classList.add("cell-clash");
+      if (clashEvent.type === 'TRAP') {
+        clashCell.classList.add('cell-trap-explode');
+      } else if (clashEvent.type === 'WARP') {
+        clashCell.classList.add('cell-warp-active');
+        if (typeof clashEvent.from_col === "number" && typeof clashEvent.from_row === "number") {
+          const fromCell = boardEl.querySelector(`.board-cell[data-col="${clashEvent.from_col}"][data-row="${clashEvent.from_row}"]`);
+          if (fromCell) fromCell.classList.add('cell-warp-active');
+        }
+      } else if (clashEvent.type === 'EVOLVE') {
+        clashCell.classList.add('cell-evolve-active');
+      } else {
+        clashCell.classList.add('cell-clash');
+      }
     }
   }
 }
