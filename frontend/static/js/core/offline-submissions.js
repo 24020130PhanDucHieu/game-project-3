@@ -33,7 +33,8 @@ const arenaOutbox = (() => {
     const stateBadge=document.createElement('span');
     stateBadge.style.cssText=`font-size:11px; padding:2px 8px; border-radius:10px; font-weight:600; background:${navigator.onLine?'#dcfce7':'#f1f5f9'}; color:${navigator.onLine?'#166534':'#64748b'};`;
     stateBadge.textContent=navigator.onLine?'Đang gửi...':'Đang chờ mạng';
-    headRow.append(title, stateBadge);
+    headRow.appendChild(title);
+    headRow.appendChild(stateBadge);
     box.appendChild(headRow);
 
     const label=document.createElement('div');
