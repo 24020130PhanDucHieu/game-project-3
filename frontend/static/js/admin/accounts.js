@@ -107,6 +107,18 @@ async function enrollAccount(event) {
   finally { button.disabled = false; }
 }
 
+function safeEscapeHtml(str) {
+  if (typeof escapeHtml === 'function') return escapeHtml(str);
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+const escapeHTML = safeEscapeHtml;
+
 let monitoringLoading = false;
 async function fetchAdminMonitoringData(manual = false) {
   if (currentAppRole !== 'ADMIN' || monitoringLoading) return;
