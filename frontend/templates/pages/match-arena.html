@@ -196,6 +196,37 @@
           </div>
         </div>
 
+        <!-- Thanh Tua Nước Đi & Tốc Độ Trận Đấu Realtime -->
+        <div class="realtime-playback-toolbar" style="margin-top: 12px; margin-bottom: 12px; padding: 12px 14px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <strong style="color: #0f172a; font-size: 12.5px;">🎬 Xem Diễn Biến Từng Nước Đi:</strong>
+              <span id="realtime-timeline-step-label" style="color: #1a6bf0; font-weight: 700;">Bước 0 / 0</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="color: #64748b; font-size: 11.5px; font-weight: 500;">Tốc độ:</span>
+              <select id="realtime-playback-speed" class="input-text-sm" style="padding: 2px 8px; font-size: 11.5px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; font-weight: 600;">
+                <option value="500">0.5x (Chậm, 500ms)</option>
+                <option value="250" selected>1.0x (Chuẩn, 250ms)</option>
+                <option value="120">2.0x (Nhanh, 120ms)</option>
+                <option value="40">4.0x (Siêu tốc)</option>
+              </select>
+            </div>
+          </div>
+          <!-- Thanh trượt tua nước đi -->
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+            <input type="range" id="realtime-step-slider" min="0" max="0" value="0" style="width: 100%; height: 6px; border-radius: 3px; accent-color: #1a6bf0; cursor: pointer;">
+          </div>
+          <!-- Các nút điều khiển chính -->
+          <div style="display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-sm btn-outline" id="btn-rt-first" type="button" title="Về nước đầu tiên">⏮ Đầu hiệp</button>
+            <button class="btn btn-sm btn-outline" id="btn-rt-prev" type="button" title="Lùi 1 nước">◀ Lùi 1 nước</button>
+            <button class="btn btn-sm btn-primary" id="btn-rt-play" type="button" style="min-width: 125px; font-weight: 700;">▶ Chạy trận đấu</button>
+            <button class="btn btn-sm btn-outline" id="btn-rt-next" type="button" title="Tiến 1 nước">Tiến 1 nước ▶</button>
+            <button class="btn btn-sm btn-outline" id="btn-rt-last" type="button" title="Nhảy tới kết thúc">⏭ Cuối hiệp</button>
+          </div>
+        </div>
+
         <div class="live-action-card">
           <div class="live-action-heading">
             <div class="live-action-title"><span class="live-action-pulse"></span><strong>Live Action</strong></div>

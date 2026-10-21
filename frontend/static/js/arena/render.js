@@ -34,11 +34,26 @@ function renderVisualBattleArena(match) {
     }
 
     if (!isMatchRunning) {
-      const steps = lastRound?.board_steps || [];
-      const progress = match.round_status === 'ROUND_FINISHED' ? Math.max(0, Math.min(1, (Date.now()/1000 - (match.intermission_ends_at - 5))/5)) : 1;
-      const lastStep = steps[Math.min(steps.length-1, Math.floor(progress*steps.length))];
-      const initPieces = getInitialBoardPieces(previewRule);
-      renderRealtimeChessboard(lastStep?.red_pieces || initPieces.red, lastStep?.blue_pieces || initPieces.blue, null, mysteryTiles);
+      if (typeof realtimePlaybackTimer !== "undefined" && realtimePlaybackTimer !== null) {
+        // Đang tự động chạy hoạt ảnh nước đi cờ, không ghi đè bàn cờ
+      } else {
+        const steps = lastRound?.board_steps || [];
+        const initPieces = getInitialBoardPieces(previewRule);
+        if (steps.length > 0) {
+          const curIdx = typeof realtimePlaybackIdx !== "undefined" && realtimePlaybackIdx < steps.length ? realtimePlaybackIdx : (steps.length - 1);
+          const currentStep = steps[curIdx];
+          renderRealtimeChessboard(currentStep?.red_pieces || initPieces.red, currentStep?.blue_pieces || initPieces.blue, currentStep?.clash_event, mysteryTiles);
+          const slider = document.getElementById("realtime-step-slider");
+          if (slider) {
+            slider.max = steps.length - 1;
+            slider.value = curIdx;
+          }
+          const label = document.getElementById("realtime-timeline-step-label");
+          if (label) label.textContent = `Bước ${curIdx + 1} / ${steps.length}`;
+        } else {
+          renderRealtimeChessboard(initPieces.red, initPieces.blue, null, mysteryTiles);
+        }
+      }
     }
   } else {
     if (studioCol) studioCol.style.display = "block";
@@ -108,7 +123,7 @@ function renderVisualBattleArena(match) {
   const lastR = currentAppRole === 'TEAM' ? match.rounds_history?.at(-1) : inlineReplayRecord(match);
   if (!isMatchRunning && lastR?.board_steps?.length) {
     const state = readArenaViewState();
-    const liveProgress = match.round_status === 'ROUND_FINISHED' ? Math.max(0,Math.min(1,(Date.now()/1000-(match.intermission_ends_at-5))/5)) : 1;
+    const liveProgress = match.round_status === 'ROUND_FINISHED' ? Math.max(0,Math.min(1,(Date.now()/1000-(match.intermission_ends_at-25))/25)) : 1;
     inlinePlaybackCurrentIdx = currentAppRole === 'TEAM' ? Math.min(lastR.board_steps.length-1,Math.floor(liveProgress*lastR.board_steps.length)) : state.inlineRound === lastR.round_number ? Math.min(state.inlineStep ?? lastR.board_steps.length - 1, lastR.board_steps.length - 1) : lastR.board_steps.length - 1;
     const step = lastR.board_steps[inlinePlaybackCurrentIdx];
     renderChessboard(step.red_pieces, step.blue_pieces, step.clash_event);

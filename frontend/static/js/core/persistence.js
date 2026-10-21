@@ -63,13 +63,22 @@ function syncLiveRoundBoard(match) {
     if (countdown && match.intermission_ends_at) countdown.textContent = Math.max(0, Math.ceil(match.intermission_ends_at - Date.now() / 1000));
     if (!record?.board_steps?.length) { renderLiveAction(match, null, null); return; }
     const steps = record.board_steps;
-    const progress = match.round_status === "ROUND_FINISHED" ? Math.max(0, Math.min(1, (Date.now() / 1000 - (match.intermission_ends_at - 5)) / 5)) : 1;
+    const intermissionDuration = 25;
+    const progress = match.round_status === "ROUND_FINISHED" ? Math.max(0, Math.min(1, (Date.now() / 1000 - (match.intermission_ends_at - intermissionDuration)) / intermissionDuration)) : 1;
     const index = Math.min(steps.length - 1, Math.floor(progress * steps.length));
     if (index === drawnIndex) { if (progress === 1) clearInterval(liveRoundTimer); return; }
     drawnIndex = index;
     const step = steps[index];
     const stepTiles = step.mystery_tiles || record?.mystery_tiles;
-    if (currentAppRole === "ADMIN") renderRealtimeChessboard(step.red_pieces, step.blue_pieces, step.clash_event, stepTiles);
+    if (currentAppRole === "ADMIN") {
+      if (typeof realtimePlaybackTimer === "undefined" || realtimePlaybackTimer === null) {
+        renderRealtimeChessboard(step.red_pieces, step.blue_pieces, step.clash_event, stepTiles);
+        const slider = document.getElementById("realtime-step-slider");
+        if (slider) { slider.max = steps.length - 1; slider.value = index; }
+        const label = document.getElementById("realtime-timeline-step-label");
+        if (label) label.textContent = `Bước ${index + 1} / ${steps.length}`;
+      }
+    }
     if (currentAppRole === 'TEAM' || (currentAppRole !== "ADMIN" && !readArenaViewState().inlineRound)) {
       inlinePlaybackCurrentIdx = index;
       renderChessboard(step.red_pieces, step.blue_pieces, step.clash_event, stepTiles);
@@ -77,8 +86,10 @@ function syncLiveRoundBoard(match) {
       if (indicator) indicator.textContent = `Hiệp ${record.round_number}: Bước ${index + 1} / ${steps.length}`;
       setBattleCommentary(document.getElementById("arena-commentary-ticker"), step.log);
     }
-    renderLiveAction(match, record, step, index);
-    renderCategorizedLogs(record, index);
+    if (currentAppRole !== "ADMIN" || typeof realtimePlaybackTimer === "undefined" || realtimePlaybackTimer === null) {
+      renderLiveAction(match, record, step, index);
+      renderCategorizedLogs(record, index);
+    }
     if (progress === 1) clearInterval(liveRoundTimer);
   };
   draw();

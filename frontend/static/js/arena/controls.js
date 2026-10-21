@@ -59,6 +59,9 @@ function setupMatchRoomControls() {
 
   // Điều khiển xem lại từng bước trực tiếp trên bàn cờ 9×9
   setupInlineBoardPlayback();
+  if (typeof setupRealtimeBoardPlayback === "function") {
+    setupRealtimeBoardPlayback();
+  }
 
   // Nút Vào Nộp Bot Đội Đỏ / Đội Xanh
   document.querySelectorAll(".btn-jump-to-studio").forEach(btn => {
@@ -90,7 +93,17 @@ async function handleRefereeStartBattle() {
     broadcastCrossTabSync("MATCH_UPDATED");
     notifySuccess(`Hiệp ${result.round_record?.round_number || match.current_round_idx} đã hoàn tất`,result.reason || result.message || "");
   } catch (error) { notifyError("Không chạy được hiệp",error.message); }
-  finally { isMatchRunning=false; if (currentTournamentId===tournamentId && currentTournamentData?.matches?.[matchId]) renderMatchRoomData(currentTournamentData.matches[matchId]); }
+  finally {
+    isMatchRunning=false;
+    if (currentTournamentId===tournamentId && currentTournamentData?.matches?.[matchId]) {
+      renderMatchRoomData(currentTournamentData.matches[matchId]);
+      if (currentAppRole === "ADMIN" && typeof startRealtimeAutoPlay === "function") {
+        setTimeout(() => {
+          startRealtimeAutoPlay(true);
+        }, 50);
+      }
+    }
+  }
 }
 
 async function handleQuickFillDemo() {

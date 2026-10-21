@@ -1555,10 +1555,10 @@ def decide_move(game_state):
             is_completed = True
             self.complete_bracket_match(tourn, match)
         else:
-            # Round hoàn tất, chuẩn bị thời gian hiển thị kết quả 5 giây
+            # Round hoàn tất, chuẩn bị thời gian xem diễn biến trận đấu 25 giây
             match["status"] = "IN_PROGRESS"
             match["round_status"] = "ROUND_FINISHED"
-            match["intermission_ends_at"] = time.time() + 5.0
+            match["intermission_ends_at"] = time.time() + 25.0
 
         self.save_tournaments_to_file()
         return {

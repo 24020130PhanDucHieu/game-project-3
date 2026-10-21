@@ -97,3 +97,177 @@ function setupInlineBoardPlayback() {
     };
   }
 }
+
+// =============================================================================
+// ĐIỀU KHIỂN PHÁT LẠI TRÊN BÀN ĐẤU REALTIME CHO ADMIN
+// =============================================================================
+let realtimePlaybackIdx = 0;
+let realtimePlaybackTimer = null;
+
+function getActiveRealtimeSteps() {
+  const match = currentTournamentData?.matches?.[currentActiveMatchId];
+  if (match?.rounds_history && match.rounds_history.length > 0) {
+    const lastR = match.rounds_history[match.rounds_history.length - 1];
+    if (lastR.board_steps && lastR.board_steps.length > 0) {
+      return { round: lastR.round_number, steps: lastR.board_steps, record: lastR, match };
+    }
+  }
+  return { round: 1, steps: [], record: null, match: null };
+}
+
+function renderRealtimeStep(index) {
+  const { round, steps, record, match } = getActiveRealtimeSteps();
+  if (steps.length === 0) {
+    const label = document.getElementById("realtime-timeline-step-label");
+    if (label) label.textContent = `Hiệp ${round}: Chưa có bước cờ`;
+    return;
+  }
+  if (index < 0) index = 0;
+  if (index >= steps.length) index = steps.length - 1;
+  realtimePlaybackIdx = index;
+
+  const slider = document.getElementById("realtime-step-slider");
+  if (slider) {
+    slider.max = steps.length - 1;
+    slider.value = index;
+  }
+  const label = document.getElementById("realtime-timeline-step-label");
+  if (label) {
+    label.textContent = `Bước ${index + 1} / ${steps.length}`;
+  }
+
+  const step = steps[index];
+  const stepTiles = step.mystery_tiles || record?.mystery_tiles;
+  renderRealtimeChessboard(step.red_pieces, step.blue_pieces, step.clash_event, stepTiles);
+  if (match && record) {
+    renderLiveAction(match, record, step, index);
+    if (typeof renderCategorizedLogs === "function") {
+      renderCategorizedLogs(record, index);
+    }
+  }
+}
+
+function startRealtimeAutoPlay(fromBeginning = false) {
+  const { steps } = getActiveRealtimeSteps();
+  if (steps.length === 0) return;
+
+  if (realtimePlaybackTimer) {
+    clearInterval(realtimePlaybackTimer);
+    realtimePlaybackTimer = null;
+  }
+
+  if (fromBeginning || realtimePlaybackIdx >= steps.length - 1) {
+    realtimePlaybackIdx = 0;
+  }
+  renderRealtimeStep(realtimePlaybackIdx);
+
+  const btnPlay = document.getElementById("btn-rt-play");
+  if (btnPlay) btnPlay.textContent = "⏸ Tạm dừng";
+
+  const getSpeed = () => {
+    const sel = document.getElementById("realtime-playback-speed");
+    return sel ? parseInt(sel.value, 10) || 250 : 250;
+  };
+
+  const tick = () => {
+    if (realtimePlaybackIdx < steps.length - 1) {
+      realtimePlaybackIdx++;
+      renderRealtimeStep(realtimePlaybackIdx);
+    } else {
+      clearInterval(realtimePlaybackTimer);
+      realtimePlaybackTimer = null;
+      if (btnPlay) btnPlay.textContent = "▶ Chạy trận đấu";
+    }
+  };
+
+  realtimePlaybackTimer = setInterval(tick, getSpeed());
+}
+
+function setupRealtimeBoardPlayback() {
+  const btnFirst = document.getElementById("btn-rt-first");
+  const btnPrev = document.getElementById("btn-rt-prev");
+  const btnPlay = document.getElementById("btn-rt-play");
+  const btnNext = document.getElementById("btn-rt-next");
+  const btnLast = document.getElementById("btn-rt-last");
+  const slider = document.getElementById("realtime-step-slider");
+  const speedSel = document.getElementById("realtime-playback-speed");
+
+  if (btnFirst) {
+    btnFirst.onclick = () => {
+      clearInterval(realtimePlaybackTimer);
+      realtimePlaybackTimer = null;
+      if (btnPlay) btnPlay.textContent = "▶ Chạy trận đấu";
+      renderRealtimeStep(0);
+    };
+  }
+
+  if (btnPrev) {
+    btnPrev.onclick = () => {
+      clearInterval(realtimePlaybackTimer);
+      realtimePlaybackTimer = null;
+      if (btnPlay) btnPlay.textContent = "▶ Chạy trận đấu";
+      if (realtimePlaybackIdx > 0) {
+        renderRealtimeStep(realtimePlaybackIdx - 1);
+      }
+    };
+  }
+
+  if (btnNext) {
+    btnNext.onclick = () => {
+      clearInterval(realtimePlaybackTimer);
+      realtimePlaybackTimer = null;
+      if (btnPlay) btnPlay.textContent = "▶ Chạy trận đấu";
+      const { steps } = getActiveRealtimeSteps();
+      if (realtimePlaybackIdx < steps.length - 1) {
+        renderRealtimeStep(realtimePlaybackIdx + 1);
+      }
+    };
+  }
+
+  if (btnLast) {
+    btnLast.onclick = () => {
+      clearInterval(realtimePlaybackTimer);
+      realtimePlaybackTimer = null;
+      if (btnPlay) btnPlay.textContent = "▶ Chạy trận đấu";
+      const { steps } = getActiveRealtimeSteps();
+      if (steps.length > 0) {
+        renderRealtimeStep(steps.length - 1);
+      }
+    };
+  }
+
+  if (btnPlay) {
+    btnPlay.onclick = () => {
+      const { steps } = getActiveRealtimeSteps();
+      if (steps.length === 0) {
+        notifyInfo("Chưa có diễn biến", "Chưa có bước cờ nào trong hiệp này để chạy.");
+        return;
+      }
+      if (realtimePlaybackTimer) {
+        clearInterval(realtimePlaybackTimer);
+        realtimePlaybackTimer = null;
+        btnPlay.textContent = "▶ Chạy trận đấu";
+      } else {
+        startRealtimeAutoPlay(realtimePlaybackIdx >= steps.length - 1);
+      }
+    };
+  }
+
+  if (slider) {
+    slider.oninput = (e) => {
+      clearInterval(realtimePlaybackTimer);
+      realtimePlaybackTimer = null;
+      if (btnPlay) btnPlay.textContent = "▶ Chạy trận đấu";
+      const val = parseInt(e.target.value, 10);
+      renderRealtimeStep(val);
+    };
+  }
+
+  if (speedSel) {
+    speedSel.onchange = () => {
+      if (realtimePlaybackTimer) {
+        startRealtimeAutoPlay(false);
+      }
+    };
+  }
+}
