@@ -50,6 +50,14 @@ func (h *QualifierHandler) Configure(c *gin.Context) {
 	e.Seed = ""
 	c.JSON(200, e)
 }
+func (h *QualifierHandler) Delete(c *gin.Context) {
+	id := c.Param("qid")
+	if err := h.Service.DeleteEvent(id); err != nil {
+		qualifierError(c, err)
+		return
+	}
+	c.JSON(200, gin.H{"status": "SUCCESS", "message": "Đã xóa vòng loại."})
+}
 func (h *QualifierHandler) Detail(c *gin.Context) {
 	id := c.Param("qid")
 	e, err := h.Service.Event(id)

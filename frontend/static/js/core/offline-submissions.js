@@ -24,14 +24,142 @@ const arenaOutbox = (() => {
     if (!blocked && navigator.onLine && list.some(r=>r.awaitingAuth)) label.textContent = 'Phiên đăng nhập hết hạn. Đăng nhập lại cùng tài khoản để tự gửi bài đã lưu.';
     if (!list.length && !navigator.onLine) label.textContent = '📴 Đang ngắt mạng (Phòng thi Offline): Bạn vẫn soạn mã, bấm Kiểm tra mã (Offline Validator) và Nộp bài vào máy bình thường.';
     if(list.length){
-      for(const [text,action] of [['Tải bản dự phòng',download],['Gửi lại',()=>{for(const r of rows()){r.error='';save(r);}schedule(0);}],['Bỏ bài bị từ chối',()=>{download();for(const r of rows())if(r.error)localStorage.removeItem(prefix+r.id);status();schedule(0);}]]){
+      const actions = [
+        ['👁️ Xem bài đã lưu', openOfflineManager],
+        ['💾 Tải file code', () => exportSourceFile()],
+        ['🚀 Gửi lại', () => { for(const r of rows()){r.error='';save(r);} schedule(0); }]
+      ];
+      if (blocked) {
+        actions.push(['Bỏ bài bị từ chối', () => { exportSourceFile(); for(const r of rows()) if(r.error) localStorage.removeItem(prefix+r.id); status(); schedule(0); }]);
+      }
+      for(const [text,action] of actions){
         const b=document.createElement('button');b.textContent=text;b.className='btn-outline';b.style.margin='8px 6px 0 0';b.onclick=action;box.appendChild(b);
       }
     }
   }
-  function download(){
-    const url=URL.createObjectURL(new Blob([JSON.stringify(rows(),null,2)],{type:'application/json'}));
-    const a=document.createElement('a');a.href=url;a.download='arena-bai-cho-dong-bo.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+
+  function esc(s) {
+    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function exportSourceFile(row) {
+    const list = rows();
+    const target = row || list[list.length - 1];
+    if (!target) {
+      if (typeof notifyInfo === 'function') notifyInfo('Không có bài nộp', 'Chưa có bài nào trong bộ đệm offline.');
+      return;
+    }
+    const code = target.payload?.code_content || target.payload?.code || '';
+    const lang = (target.payload?.language || 'PYTHON').toUpperCase();
+    const ext = lang === 'CPP' ? '.cpp' : '.py';
+    const student = currentTeamStudentId || 'team';
+    const timeStr = new Date(target.created).toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const filename = `bot_${student}_${timeStr}${ext}`;
+    const cmt = ext === '.cpp' ? '//' : '#';
+    const content = `${cmt} ==========================================================\n` +
+      `${cmt} BẢN SAO LƯU MÃ NGUỒN BOT OFFLINE\n` +
+      `${cmt} Thí sinh (MSSV): ${student}\n` +
+      `${cmt} Thời gian lưu: ${new Date(target.created).toLocaleString('vi-VN')}\n` +
+      `${cmt} Ngôn ngữ: ${lang}\n` +
+      `${cmt} ==========================================================\n\n` + code;
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    if (typeof notifySuccess === 'function') {
+      notifySuccess('Đã xuất file mã nguồn', `Đã tải về máy: ${filename}`);
+    }
+  }
+
+  function download() {
+    exportSourceFile();
+  }
+
+  function openOfflineManager() {
+    let dialog = document.getElementById('arena-offline-dialog');
+    if (!dialog) {
+      dialog = document.createElement('dialog');
+      dialog.id = 'arena-offline-dialog';
+      dialog.className = 'stage-schedule-dialog';
+      document.body.appendChild(dialog);
+    }
+    const list = rows();
+    dialog.innerHTML = `
+      <div class="card-head-compact" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <h3 style="margin: 0; font-size: 18px; color: #0f172a;">📦 Quản Lý Bài Nộp Ngoại Tuyến (Offline Safe-Buffer)</h3>
+        <button type="button" class="btn-outline" aria-label="Đóng hộp thoại" onclick="this.closest('dialog').close()" style="border-radius: 50%; width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center; font-size: 18px;">×</button>
+      </div>
+      <div style="margin-bottom: 14px;">
+        ${navigator.onLine 
+          ? `<span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; background: #dcfce7; color: #15803d; font-size: 12.5px; font-weight: 600;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></span>🟢 Đã kết nối Internet · Sẵn sàng tự động gửi bài</span>`
+          : `<span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 20px; background: #fee2e2; color: #b91c1c; font-size: 12.5px; font-weight: 600;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ef4444;"></span>🔴 Đang ngắt mạng · Mọi bài nộp đã được lưu an toàn trên máy này</span>`
+        }
+      </div>
+      <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">
+        Khi phòng thi bị rớt mạng hoặc ngắt kết nối, bài của bạn không bao giờ bị mất. Bạn có thể xem lại mã, sao chép hoặc tải trực tiếp file mã nguồn <code>.py</code> / <code>.cpp</code> về máy. Khi có mạng trở lại, hệ thống sẽ tự động đồng bộ lên máy chấm.
+      </p>
+      <div id="arena-offline-items-list" style="max-height: 55vh; overflow-y: auto; display: flex; flex-direction: column; gap: 14px;">
+        ${list.length === 0 ? '<div style="padding: 24px; text-align: center; color: #64748b; background: #f8fafc; border-radius: 12px;">Chưa có bài nộp nào đang chờ trong hàng đợi offline.</div>' : ''}
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; padding-top: 14px; border-top: 1px solid #e2e8f0;">
+        <button class="btn btn-outline" type="button" onclick="this.closest('dialog').close()">Đóng</button>
+        ${list.length > 0 ? `<button class="btn btn-primary" type="button" id="btn-offline-flush-modal">🚀 Gửi toàn bộ bài lên server ngay</button>` : ''}
+      </div>
+    `;
+
+    const container = dialog.querySelector('#arena-offline-items-list');
+    list.forEach((row, idx) => {
+      const code = row.payload?.code_content || row.payload?.code || '';
+      const lang = (row.payload?.language || 'PYTHON').toUpperCase();
+      const ext = lang === 'CPP' ? '.cpp' : '.py';
+      const timeStr = new Date(row.created).toLocaleTimeString('vi-VN') + ' - ' + new Date(row.created).toLocaleDateString('vi-VN');
+      const itemEl = document.createElement('div');
+      itemEl.style.cssText = 'border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.03);';
+      itemEl.innerHTML = `
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+          <div>
+            <strong style="color: #0f172a; font-size: 13.5px;">Bài nộp #${idx + 1}</strong>
+            <span style="font-size: 12px; color: #64748b; margin-left: 8px;">🕒 ${timeStr}</span>
+          </div>
+          <span style="display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 700; background: ${lang === 'CPP' ? '#f0fdf4' : '#eff6ff'}; color: ${lang === 'CPP' ? '#166534' : '#1e40af'}; border: 1px solid ${lang === 'CPP' ? '#bbf7d0' : '#bfdbfe'};">
+            ${lang === 'CPP' ? 'C++ (.cpp)' : 'Python 3 (.py)'}
+          </span>
+        </div>
+        <pre style="background: #0f172a; color: #f8fafc; padding: 12px; border-radius: 8px; max-height: 160px; overflow: auto; font-size: 12px; font-family: Consolas, Monaco, monospace; line-height: 1.5; margin: 0 0 10px 0;">${esc(code)}</pre>
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; gap: 6px;">
+            <button class="btn btn-sm btn-outline btn-copy-offline-code" type="button">📋 Sao chép mã</button>
+            <button class="btn btn-sm btn-outline btn-dl-offline-file" type="button">💾 Tải file ${ext}</button>
+          </div>
+          <button class="btn btn-sm btn-outline btn-del-offline-item" type="button" style="color: #ef4444; border-color: #fca5a5;">🗑️ Bỏ bản này</button>
+        </div>
+      `;
+
+      itemEl.querySelector('.btn-copy-offline-code').onclick = () => {
+        navigator.clipboard.writeText(code).then(() => {
+          if (typeof notifySuccess === 'function') notifySuccess('Đã sao chép mã', 'Mã nguồn đã được sao chép vào bộ nhớ tạm.');
+        });
+      };
+      itemEl.querySelector('.btn-dl-offline-file').onclick = () => exportSourceFile(row);
+      itemEl.querySelector('.btn-del-offline-item').onclick = () => {
+        localStorage.removeItem(prefix + row.id);
+        status();
+        openOfflineManager();
+      };
+      container.appendChild(itemEl);
+    });
+
+    const btnFlush = dialog.querySelector('#btn-offline-flush-modal');
+    if (btnFlush) {
+      btnFlush.onclick = () => {
+        for (const r of rows()) { r.error = ''; save(r); }
+        schedule(0);
+        dialog.close();
+        if (typeof notifyInfo === 'function') notifyInfo('Đang gửi lại', 'Đang kết nối server để gửi bài nộp...');
+      };
+    }
+
+    dialog.showModal();
   }
   function schedule(delay=3000+Math.random()*12000){clearTimeout(retryTimer);retryTimer=setTimeout(flush,delay);}
   async function deliver(row){

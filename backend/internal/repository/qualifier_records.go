@@ -357,3 +357,34 @@ func (s *QualifierRecords) Lease(id string) (func(), error) {
 	}
 	return func() { conn.ExecContext(context.Background(), `SELECT pg_advisory_unlock($1)`, key); conn.Close() }, nil
 }
+
+func (s *QualifierRecords) DeleteQualifier(id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.views = map[string]qualifierView{}
+	if s.failed != nil {
+		return s.failed
+	}
+	if s.db != nil {
+		_, err := s.db.Exec(`DELETE FROM arena_qualifier_records WHERE key=$1 OR key LIKE $2 OR key LIKE $3 OR key LIKE $4`,
+			"event:"+id, "participant:"+id+":%", "submission:"+id+":%", "job:"+id+":%")
+		return err
+	}
+	prefixes := []string{"event:" + id, "participant:" + id + ":", "submission:" + id + ":", "job:" + id + ":"}
+	for key := range s.items {
+		matches := false
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(key, prefix) || key == "event:"+id {
+				matches = true
+				break
+			}
+		}
+		if matches {
+			delete(s.items, key)
+			sum := sha256.Sum256([]byte(key))
+			file := filepath.Join(s.dir, hex.EncodeToString(sum[:])+".record")
+			_ = os.Remove(file)
+		}
+	}
+	return nil
+}

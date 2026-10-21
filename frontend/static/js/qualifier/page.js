@@ -38,7 +38,7 @@ async function loadQualifierPage() {
       document.getElementById('qualifier-search').value=saved.q||'';document.getElementById('qualifier-filter').value=saved.filter||'';
       qualifierViewLoadedKey=qualifierStateKey();
     }
-    if(!qualifierId){qualifierData=null;renderQualifierRegistration(null);document.getElementById('qualifier-submit').disabled=true;document.getElementById('qualifier-summary').textContent=list.length?'Chọn một giải vòng loại để xem thông tin.':'Chưa có vòng loại. Admin có thể tạo vòng loại mới.';for(const key of ['config','freeze','start','pause','reopen','promote','test-bots'])document.getElementById(`qualifier-${key}`).disabled=true;renderQualifierTable('qualifier-ranking',[]);renderQualifierTable('qualifier-teams',[]);return;}
+    if(!qualifierId){qualifierData=null;renderQualifierRegistration(null);document.getElementById('qualifier-submit').disabled=true;document.getElementById('qualifier-summary').textContent=list.length?'Chọn một giải vòng loại để xem thông tin.':'Chưa có vòng loại. Admin có thể tạo vòng loại mới.';for(const key of ['config','freeze','start','pause','reopen','promote','test-bots','delete','delete-top']){const el=document.getElementById(`qualifier-${key}`);if(el)el.disabled=true;}renderQualifierTable('qualifier-ranking',[]);renderQualifierTable('qualifier-teams',[]);return;}
     const requested=qualifierId;const data=await qualifierAPI(`/${requested}`);if(requested!==qualifierId||identity!==`${currentAppRole}:${currentTeamStudentId}`)return;qualifierData=data;
     const e=data.event;
     renderQualifierRegistration(data);
@@ -53,6 +53,8 @@ async function loadQualifierPage() {
     document.getElementById('qualifier-reopen').disabled=!['OPEN','CLOSING','LOCKED'].includes(e.status)||e.current_round!==0||e.total!==0;
     document.getElementById('qualifier-start').disabled=!['LOCKED','PAUSED'].includes(e.status)||e.eligible<e.top_k;
     document.getElementById('qualifier-promote').disabled=e.status!=='FINISHED';
+    const delBtn=document.getElementById('qualifier-delete');if(delBtn)delBtn.disabled=e.status==='RUNNING';
+    const delTop=document.getElementById('qualifier-delete-top');if(delTop)delTop.disabled=e.status==='RUNNING';
     renderQualifierOwn(data);
     const rank=await qualifierAPI(`/${requested}/ranking?page=${qualifierRankPage}`);if(requested!==qualifierId)return;
     qualifierRankTotal=rank.total;renderQualifierTable('qualifier-ranking',rank.items.map(p=>[p.rank,`${p.team_name} (${p.student_id})`,Number(p.elo).toFixed(2),`${p.wins} / ${p.played}`]));
@@ -96,6 +98,28 @@ async function qualifierAction(action){
   const button=document.getElementById(action==='promote'?'qualifier-promote':`qualifier-${action}`);if(button?.disabled)return;if(button)button.disabled=true;
   try{await qualifierAPI(`/${qualifierId}/actions/${action}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tournament_id:target})});await loadQualifierPage();if(action==='promote'){await loadTournamentsList();notifySuccess('Đã chốt đội','Đội đã được ghép vào bảng đấu chính.');}}catch(err){notifyError('Không thể thực hiện',err.message);}finally{loadQualifierPage();}
 }
+
+async function deleteCurrentQualifier(targetId) {
+  const id = targetId || qualifierId;
+  if (!id || currentAppRole !== 'ADMIN') return;
+  const eventName = (targetId && targetId !== qualifierId) ? 'giải này' : (qualifierData?.event?.name || 'giải này');
+  if (!await confirmAction(`Bạn có chắc chắn muốn xóa vĩnh viễn vòng loại "${eventName}"?\nToàn bộ danh sách đăng ký, bài nộp và kết quả của giải này sẽ bị xóa.`, {
+    title: 'Xóa giải vòng loại',
+    confirmText: 'Xóa giải vĩnh viễn'
+  })) return;
+  try {
+    await qualifierAPI(`/${id}`, { method: 'DELETE' });
+    notifySuccess('Đã xóa vòng loại', `Vòng loại "${eventName}" đã được xóa thành công.`);
+    if (id === qualifierId) {
+      qualifierId = '';
+      localStorage.removeItem('qualifier-id');
+    }
+    await loadQualifierPage();
+  } catch (err) {
+    notifyError('Không thể xóa', err.message);
+  }
+}
+
 setInterval(()=>{if(!document.hidden&&document.getElementById('tab-qualifier')?.classList.contains('active'))loadQualifierPage();},15000 + Math.random()*5000);
 
 function openQualifierReopen(){

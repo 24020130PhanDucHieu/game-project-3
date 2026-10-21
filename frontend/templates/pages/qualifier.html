@@ -6,7 +6,13 @@
     <div class="qualifier-actions"><button class="btn btn-outline" type="button" onclick="openQualifierEvents()">Các giải đấu vòng loại</button><button class="btn btn-primary" type="button" id="qualifier-register" onclick="registerQualifier()">Đăng ký thi</button></div>
   </div>
   <div class="content-card" id="qualifier-event-card" hidden>
-    <label for="qualifier-select">Giải đang xem</label><select id="qualifier-select" class="input-text-sm" onchange="selectQualifier(this.value)"></select>
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <label for="qualifier-select">Giải đang xem</label>
+        <select id="qualifier-select" class="input-text-sm" onchange="selectQualifier(this.value)"></select>
+        <button class="btn btn-sm btn-outline admin-only" type="button" id="qualifier-delete-top" style="color: #ef4444; border-color: #fca5a5;" onclick="deleteCurrentQualifier()" title="Xóa vòng loại này">🗑️ Xóa giải</button>
+      </div>
+    </div>
     <p id="qualifier-summary" aria-live="polite">Chưa có vòng loại.</p>
     <progress id="qualifier-progress" max="1" value="0" style="width:100%;"></progress>
     <div class="toolbar-btn-group admin-only">
@@ -15,6 +21,7 @@
       <button class="btn btn-primary" type="button" id="qualifier-start" onclick="qualifierAction('start')">Bắt đầu / tiếp tục</button>
       <button class="btn btn-outline" type="button" id="qualifier-pause" onclick="qualifierAction('pause')" disabled>Tạm dừng sau lượt này</button>
       <button class="btn btn-outline" type="button" id="qualifier-reopen" onclick="openQualifierReopen()" disabled>Gia hạn nhận bài</button>
+      <button class="btn btn-outline" style="color: #ef4444; border-color: #fca5a5;" type="button" id="qualifier-delete" onclick="deleteCurrentQualifier()">Xóa giải này</button>
     </div>
   </div>
   <div class="content-card" id="qualifier-team-card" hidden>

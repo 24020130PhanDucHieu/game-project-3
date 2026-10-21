@@ -125,6 +125,15 @@ func (s *Service) Events() ([]Event, error) {
 	sort.Slice(list, func(i, j int) bool { return list[i].Deadline > list[j].Deadline })
 	return list, nil
 }
+func (s *Service) DeleteEvent(id string) error {
+	s.mu.Lock()
+	if s.running[id] {
+		s.mu.Unlock()
+		return errors.New("Không thể xóa vòng loại đang thi đấu. Vui lòng tạm dừng trước khi xóa.")
+	}
+	s.mu.Unlock()
+	return s.Store.DeleteQualifier(id)
+}
 func (s *Service) Participants(id string) (map[string]Participant, error) {
 	rows, err := s.Store.List("participant:" + id + ":")
 	return decodeParticipants(rows, err)

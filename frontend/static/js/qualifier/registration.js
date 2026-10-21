@@ -24,10 +24,24 @@ async function openQualifierEvents() {
     for (const event of events) {
       const card = document.createElement('div'); card.className = 'qualifier-event-option';
       const title = document.createElement('strong'); title.textContent = event.name;
-      const detail = document.createElement('p'); detail.textContent = `${qualifierPhaseLabels[event.status]} · Hạn ${new Date(event.deadline*1000).toLocaleString('vi-VN')} · Top ${event.top_k}`;
       const button = document.createElement('button'); button.className = 'btn btn-outline'; button.textContent = event.id === qualifierId ? 'Đang chọn' : 'Chọn giải';
       button.onclick = () => { dialog.close(); selectQualifier(event.id); };
-      card.append(title, detail, button); list.append(card);
+      card.append(title, detail, button);
+      if (currentAppRole === 'ADMIN') {
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn btn-outline btn-sm';
+        delBtn.style.color = '#ef4444';
+        delBtn.style.borderColor = '#fca5a5';
+        delBtn.style.marginLeft = '8px';
+        delBtn.textContent = '🗑️ Xóa';
+        delBtn.onclick = async (e) => {
+          e.stopPropagation();
+          await deleteCurrentQualifier(event.id);
+          openQualifierEvents();
+        };
+        card.append(delBtn);
+      }
+      list.append(card);
     }
   } catch (err) { list.textContent = err.message; }
 }
