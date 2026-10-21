@@ -13,13 +13,15 @@ def install_worker_admission(app):
         capacity = int(os.environ.get("WORKER_CAPACITY", "1"))
     except ValueError:
         capacity = 1
-    slots = threading.BoundedSemaphore(max(1, min(8, capacity)))
+    capacity = max(1, min(8, capacity))
+    slots = threading.BoundedSemaphore(capacity)
 
     @app.middleware("http")
     async def admit(request, call_next):
         if request.url.path != "/mutate-tournament":
             response = await call_next(request)
             response.headers["X-Arena-Release"] = release
+            response.headers["X-Worker-Capacity"] = str(capacity)
             return response
         if token and not secrets.compare_digest(
             request.headers.get("X-Worker-Token", ""), token
@@ -29,11 +31,12 @@ def install_worker_admission(app):
         if not slots.acquire(blocking=False):
             return JSONResponse(
                 {"detail": "Worker busy; retry on another worker"},
-                status_code=429, headers={"Retry-After": "2", "X-Arena-Release": release},
+                status_code=429, headers={"Retry-After": "2", "X-Arena-Release": release, "X-Worker-Capacity": str(capacity)},
             )
         try:
             response = await call_next(request)
             response.headers["X-Arena-Release"] = release
+            response.headers["X-Worker-Capacity"] = str(capacity)
             return response
         finally:
             slots.release()

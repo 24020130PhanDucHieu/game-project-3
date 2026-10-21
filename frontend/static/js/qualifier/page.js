@@ -61,7 +61,7 @@ async function loadQualifierPage() {
       const query=encodeURIComponent(document.getElementById('qualifier-search').value);const filter=encodeURIComponent(document.getElementById('qualifier-filter').value);
       const teams=await qualifierAPI(`/${requested}/teams?page=${qualifierTeamsPage}&q=${query}&filter=${filter}`);if(requested!==qualifierId)return;
       qualifierTeamsTotal=teams.total;const labels={NOT_SUBMITTED:'Chưa nộp',PENDING:'Đã nhận · Đang chấm',INVALID:'Chưa có bản hợp lệ',VALID:'Có bản hợp lệ',LOCKED:'Đã khóa'};
-      renderQualifierTable('qualifier-teams',teams.items.map(p=>[p.test_bot?'Thử nghiệm':p.student_id,p.team_name,labels[p.status],p.elo||1200]));
+      renderQualifierTable('qualifier-teams',teams.items.map(p=>[p.test_bot?'Thử nghiệm':p.student_id,p.team_name,labels[p.status],Number(p.elo ?? 1200).toFixed(2)]));
       document.getElementById('qualifier-teams-page').textContent=`Trang ${qualifierTeamsPage} / ${Math.max(1,Math.ceil(teams.total/50))} · ${teams.total} đội`;
       const response=await fetch(`${API_BASE}/api/tournaments/list`);if(!response.ok)throw new Error('Không tải được giải chính.');const tournaments=await response.json();
       const target=document.getElementById('qualifier-target');const selected=target.value;target.replaceChildren(new Option(`Chọn giải chính ${e.top_k} đội`,''));

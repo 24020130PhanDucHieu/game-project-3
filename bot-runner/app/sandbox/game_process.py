@@ -67,7 +67,7 @@ try:
             fn=scope.get("decide_move")
             if not callable(fn): raise ValueError("Thieu decide_move")
             move=fn(state)
-            if not isinstance(move,str) or move.upper() not in ("ROCK","PAPER","SCISSORS"): raise ValueError("Nuoc di khong hop le")
+            if not isinstance(move,str) or move.upper() not in ("ROCK","PAPER","SCISSORS","JOKER"): raise ValueError("Nuoc di khong hop le")
             print(json.dumps({"move":move.upper()}),flush=True)
         except BaseException as exc:
             print(json.dumps({"error":str(exc)[:2000]}),flush=True)

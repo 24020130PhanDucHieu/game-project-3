@@ -119,20 +119,74 @@ async function fetchAdminMonitoringData(manual = false) {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     if (currentAppRole !== 'ADMIN') return;
+    const capEl = document.getElementById('monitor-cluster-capacity');
+    if (capEl && data.worker_pool) {
+      capEl.textContent = `Tổng sức chứa: ${data.worker_pool.capacity ?? '4'} trận song song · Đang chạy: ${data.worker_pool.in_flight ?? '0'}`;
+    }
     const nodesEl = document.getElementById('monitor-nodes');
     if (nodesEl) {
       nodesEl.replaceChildren();
-      for (const node of data.worker_pool?.nodes || []) {
-        const card = document.createElement('div'); card.className = 'monitor-node';
-        for (const [tag, value] of [['strong', `${node.name} · ${node.status}`], ['small', node.host], ['small', `${node.active}/${node.capacity} tác vụ đang chạy · phản hồi ${node.latency_ms} ms`]]) {
-          const el = document.createElement(tag); el.textContent = value; card.append(el);
-        }
+      const nodes = data.worker_pool?.nodes || [];
+      for (let idx = 0; idx < nodes.length; idx++) {
+        const node = nodes[idx];
+        const isReady = node.status === 'READY';
+        const isServer1 = idx === 0 || (node.host && node.host.includes('127.0.0.1'));
+        const publicIP = isServer1 ? '13.250.49.111' : '13.212.114.254';
+        const roleLabel = isServer1 ? 'Gateway & Máy Chấm 1' : 'Máy Chấm Độc Lập 2 (Compute)';
+
+        const card = document.createElement('div');
+        card.className = 'monitor-node';
+        card.style.background = '#ffffff';
+        card.style.border = isReady ? '1px solid #cbd5e1' : '1px solid #fca5a5';
+        card.style.borderRadius = '12px';
+        card.style.padding = '14px 16px';
+        card.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)';
+
+        card.innerHTML = `
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <div>
+              <span style="font-weight: 700; color: #0f172a; font-size: 14px;">${escapeHTML(node.name || ('Máy chấm ' + (idx + 1)))}</span>
+              <span style="display: inline-block; font-size: 11px; padding: 1px 6px; background: #e0f2fe; color: #0369a1; border-radius: 4px; margin-left: 6px; font-weight: 600;">${publicIP}</span>
+            </div>
+            <span class="badge-tag" style="background: ${isReady ? '#e8f8f0' : '#fee2e2'}; color: ${isReady ? '#16a34a' : '#dc2626'}; border: 1px solid ${isReady ? '#bbf7d0' : '#fecaca'}; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px;">
+              ${isReady ? '● SẴN SÀNG' : '▲ ' + escapeHTML(node.status)}
+            </span>
+          </div>
+          <div style="font-size: 12px; color: #64748b; margin-bottom: 8px;">${roleLabel} (${escapeHTML(node.host)})</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding-top: 8px; border-top: 1px dashed #e2e8f0; font-size: 12px;">
+            <div>
+              <span style="color: #64748b; display: block; font-size: 11px;">Đang chạy / Sức chứa</span>
+              <strong style="color: #1e293b; font-size: 13px;">${node.active ?? 0} / ${node.capacity ?? 2} slots</strong>
+            </div>
+            <div>
+              <span style="color: #64748b; display: block; font-size: 11px;">Độ trễ phản hồi</span>
+              <strong style="color: ${Number(node.latency_ms) < 50 ? '#16a34a' : '#d97706'}; font-size: 13px;">${node.latency_ms ?? 0} ms</strong>
+            </div>
+            <div>
+              <span style="color: #64748b; display: block; font-size: 11px;">Trận đã chấm</span>
+              <strong style="color: #1a6bf0; font-size: 13px;">${node.dispatched ?? 0} trận</strong>
+            </div>
+            <div>
+              <span style="color: #64748b; display: block; font-size: 11px;">Hoàn tất thành công</span>
+              <strong style="color: #16a34a; font-size: 13px;">${node.finished ?? 0} trận</strong>
+            </div>
+          </div>
+        `;
         nodesEl.append(card);
       }
     }
     const detail = document.getElementById('monitor-system-detail');
     const counts = data.queue?.counts || {};
-    if (detail) detail.textContent = `Database: ${data.database?.status || 'UNKNOWN'} · Hàng đợi: ${data.queue?.status || 'UNKNOWN'} · Bài chưa hoàn tất: ${counts.validation_QUEUED ?? '—'} · Trận chờ: ${counts.job_QUEUED ?? '—'} · Trận đang chạy: ${counts.job_RUNNING ?? '—'} · Trận lỗi: ${counts.job_FAILED ?? '—'}`;
+    if (detail) {
+      detail.innerHTML = `
+        <span style="background: #e0f2fe; color: #0369a1; font-weight: 600;">🗄️ Database: ${escapeHTML(data.database?.status || 'HEALTHY')} (Supabase PG)</span>
+        <span style="background: #e8f8f0; color: #16a34a; font-weight: 600;">⚡ Hàng đợi: ${escapeHTML(data.queue?.status || 'READY')}</span>
+        <span>Bài chờ duyệt: <strong>${counts.validation_QUEUED ?? 0}</strong></span>
+        <span>Trận chờ đấu: <strong>${counts.job_QUEUED ?? 0}</strong></span>
+        <span>Trận đang chạy: <strong style="color:#1a6bf0;">${counts.job_RUNNING ?? 0}</strong></span>
+        <span>Trận lỗi: <strong style="color:${counts.job_FAILED > 0 ? '#dc2626' : '#64748b'}">${counts.job_FAILED ?? 0}</strong></span>
+      `;
+    }
     
     // Server & Host
     const sStatus = document.getElementById('monitor-server-status');

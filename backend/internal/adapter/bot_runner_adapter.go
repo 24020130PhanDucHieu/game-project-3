@@ -31,6 +31,11 @@ type HTTPBotRunnerAdapter struct {
 	slots           chan struct{}
 	poolMu          sync.Mutex
 	active          []int
+	dispatched      []uint64
+	finished        []uint64
+	failed          []uint64
+	qualifierGames  []uint64
+	reportedCapacity []int
 	cooldown        []time.Time
 	perWorker       int
 	token           string
@@ -66,6 +71,8 @@ func NewHTTPBotRunnerAdapter(workerURL string) *HTTPBotRunnerAdapter {
 	}
 	return &HTTPBotRunnerAdapter{
 		active: make([]int, len(workers)), cooldown: make([]time.Time, len(workers)),
+		dispatched: make([]uint64,len(workers)), finished: make([]uint64,len(workers)), failed: make([]uint64,len(workers)), qualifierGames: make([]uint64,len(workers)),
+		reportedCapacity: make([]int,len(workers)),
 		perWorker: perWorker, token: os.Getenv("WORKER_TOKEN"), attemptTimeout: time.Duration(timeout) * time.Second,
 		expectedRelease: os.Getenv("WORKER_RELEASE"),
 		slots:           make(chan struct{}, concurrency),
@@ -113,6 +120,7 @@ func (a *HTTPBotRunnerAdapter) Mutate(currentTournament interface{}, action stri
 			return nil, acquireErr
 		}
 		tried[index] = true
+		if action == "qualifier-game" { a.poolMu.Lock(); a.qualifierGames[index]++; a.poolMu.Unlock() }
 		url := a.workers[index]
 		attemptCtx, attemptCancel := context.WithTimeout(ctx, a.attemptTimeout)
 		var request *http.Request
@@ -140,6 +148,7 @@ func (a *HTTPBotRunnerAdapter) Mutate(currentTournament interface{}, action stri
 			err = fmt.Errorf("worker release mismatch; refusing result")
 			continue
 		}
+		a.observeCapacity(index, resp.Header.Get("X-Worker-Capacity"))
 		if (resp.StatusCode == 429 || resp.StatusCode >= 500) && offset+1 < len(a.workers) {
 			_, _ = ioutil.ReadAll(io.LimitReader(resp.Body, 65536))
 			resp.Body.Close()

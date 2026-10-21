@@ -28,7 +28,8 @@ EVOLVE_CYCLE = {
 
 
 def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1,
-                   stage_rule="STAGE_1_STANDARD", tie_seed=None, reuse_sandbox=False):
+                   stage_rule="STAGE_1_STANDARD", tie_seed=None, reuse_sandbox=False,
+                   record_replay=True):
     tie_seed = tie_seed or secrets.token_hex(16)
     initial_rules = board_rules(stage_rule, seed=tie_seed)
     special_mode = bool(initial_rules.get("special_tiles", False))
@@ -66,11 +67,13 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
         return abs(piece["col"] - col) + abs(piece["row"] - row)
 
     def snapshot(log, side=None, clash=None, cycle=0):
+        if not record_replay:
+            return
         steps.append({"step_idx": len(steps), "turn_label": f"Nước {len(steps)} · Đội {names[side]}" if side else "Bắt đầu hiệp đấu",
                       "active_side": side, "cycle": cycle,
-                      "red_pieces": copy.deepcopy(pieces["team_a"]),
-                      "blue_pieces": copy.deepcopy(pieces["team_b"]), "clash_event": clash,
-                      "mystery_tiles": copy.deepcopy(mystery_tiles),
+                      "red_pieces": [dict(p) for p in pieces["team_a"]],
+                      "blue_pieces": [dict(p) for p in pieces["team_b"]], "clash_event": clash,
+                      "mystery_tiles": {k: [list(c) for c in v] if isinstance(v, list) else v for k, v in mystery_tiles.items()},
                       "log": log, "red_alive": len(alive("team_a")), "blue_alive": len(alive("team_b"))})
 
     snapshot(f"Đi lần lượt. Đội {names[first]} đi trước; không giới hạn số nước. Chiếm căn cứ hoặc quét sạch quân đối thủ để thắng.")
@@ -108,20 +111,17 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
             has_joker_now = any(p["type"] == "JOKER" for p in own)
             card_types = ALL_MOVES if (special_mode or has_joker_now) else MOVES
             cards = {move: sum(p["type"] == move for p in own) for move in card_types}
-            history = copy.deepcopy(histories[side])
             if fog:
-                for entry in history:
-                    entry.pop("opponent_move", None)
-                    entry.pop("their_move", None)
-            enemy_view = copy.deepcopy(enemy)
-            if fog:
-                for piece in enemy_view:
-                    piece.pop("type", None)
+                history = [{k: v for k, v in entry.items() if k not in ("opponent_move", "their_move")} for entry in histories[side]]
+                enemy_view = [{k: v for k, v in p.items() if k != "type"} for p in enemy]
+            else:
+                history = [dict(entry) for entry in histories[side]]
+                enemy_view = [dict(p) for p in enemy]
             state = {"my_hp": 100, "remaining_cards": cards, "turn_number": cycle,
                      "ply_number": ply + 1, "active_side": side, "history": history,
-                     "my_pieces": copy.deepcopy(own), "opponent_pieces": enemy_view,
+                     "my_pieces": [dict(p) for p in own], "opponent_pieces": enemy_view,
                      "target": list(targets[side]), "reverse_rule": reverse,
-                     "rules": copy.deepcopy(active_rules)}
+                     "rules": dict(active_rules)}
             try:
                 move, error = (wasi_processes[side].decide(state) if side in wasi_processes
                                else BotRunner.run_cpp_binary(executables[side], state) if languages[side] == "CPP"

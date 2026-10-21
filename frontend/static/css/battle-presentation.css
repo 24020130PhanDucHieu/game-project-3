@@ -61,13 +61,31 @@
 #realtime-chessboard-9x9 .board-cell { min-width:0; min-height:0; border-radius:3px; }
 #realtime-chessboard-9x9 .board-cell.cell-alt { background:#e6edf6; }
 #realtime-chessboard-9x9 .board-piece { max-width:88%; max-height:88%; }
-.monitor-panel { color:#e2e8f0; }
-.monitor-panel .panel-title, .monitor-panel #monitor-last-updated { color:#e2e8f0; }
-.monitor-nodes { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin-top:16px; }
-.monitor-node { padding:14px; border:1px solid #526176; border-radius:10px; line-height:1.7; overflow-wrap:anywhere; background:#172337; }
-.monitor-node strong { display:block; color:#fff; }
-.monitor-node small { display:block; color:#cbd5e1; }
-.monitor-note { margin-top:12px; color:#cbd5e1; font-size:13px; line-height:1.7; }
+.monitor-panel { color:#334155; margin-bottom:24px; }
+.monitor-heading { gap:16px; flex-wrap:wrap; }
+.monitor-panel .panel-title { color:#10223c; }
+.monitor-refresh { display:flex; gap:12px; align-items:center; font-size:12px; color:#64748b; flex-wrap:wrap; }
+.monitor-summary { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:18px; }
+.monitor-summary > div { padding:14px; border:1px solid #e2e8f0; border-radius:10px; background:#f8fafc; }
+.monitor-summary span,.monitor-summary small { display:block; font-size:12px; color:#64748b; }
+.monitor-summary strong { display:block; margin:6px 0; font-size:16px; color:#1d4ed8; }
+.monitor-nodes { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin-top:14px; }
+.monitor-node { padding:14px; border:1px solid #dce5ef; border-radius:10px; line-height:1.8; overflow-wrap:anywhere; }
+.monitor-node strong { display:block; color:#183153; }
+.monitor-node small { display:block; color:#526780; }
+.monitor-note { margin:8px 0; color:#64748b; font-size:12px; line-height:1.7; }
+.monitor-queue { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+.monitor-queue span { padding:6px 10px; border-radius:6px; background:#f1f5f9; font-size:12px; }
+.monitor-details { margin-top:12px; border-top:1px solid #e8edf4; padding-top:12px; font-size:13px; }
+.monitor-details summary { cursor:pointer; font-weight:600; }
+.monitor-progress-label { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:12px 0 8px; }
+.monitor-progress { height:6px; background:#e8edf4; border-radius:4px; overflow:hidden; }
+#monitor-progress-bar { height:100%; background:#2563eb; width:0; }
+#monitor-unsubmitted-list { max-height:160px; overflow:auto; padding:10px; background:#f8fafc; line-height:1.8; }
+.board-cell.cell-portal::before { color:#4f46e5; font-size:20px; font-weight:600; }
+.board-cell.cell-evolve::before { color:#15803d; font-size:20px; font-weight:600; }
+.board-cell.cell-trap::before { color:#be123c; font-size:22px; font-weight:500; }
+@media(max-width:650px) { .monitor-summary { grid-template-columns:1fr; } }
 @media(max-width:600px) { .realtime-board-card { padding:14px !important; } }
 
 .live-state-pill {

@@ -76,7 +76,7 @@ def mutate_tournament(req: MutateRequest):
             return {"status": "SUCCESS", "tournament": new_t}
         elif action == "qualifier-game":
             from app.engine.board import simulate_board
-            result = simulate_board(p.get("code_a") or "", p.get("code_b") or "", p.get("language_a") or "PYTHON", p.get("language_b") or "PYTHON", 1 if p.get("first") == 1 else 2, "STAGE_1_STANDARD", p.get("seed"), reuse_sandbox=True)
+            result = simulate_board(p.get("code_a") or "", p.get("code_b") or "", p.get("language_a") or "PYTHON", p.get("language_b") or "PYTHON", 1 if p.get("first") == 1 else 2, "STAGE_1_STANDARD", p.get("seed"), reuse_sandbox=True, record_replay=False)
             return {key: result[key] for key in ("winner_side", "win_reason", "final_red_alive", "final_blue_alive", "first_side", "bot_errors")}
         elif action == "import-qualified":
             tournament = stateless_db.tournaments[t_id]

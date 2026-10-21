@@ -24,7 +24,9 @@ func (a *HTTPBotRunnerAdapter) Monitor(ctx context.Context) map[string]interface
 			started := time.Now()
 			node := map[string]interface{}{"name": fmt.Sprintf("Máy chấm %d", i+1), "status": "UNREACHABLE"}
 			a.poolMu.Lock()
-			node["active"], node["capacity"] = a.active[i], a.perWorker
+			node["active"], node["capacity"] = a.active[i], a.workerCapacity(i)
+			node["configured_capacity"], node["reported_capacity"] = a.perWorker, a.reportedCapacity[i]
+			node["dispatched"], node["finished"], node["failed"], node["qualifier_games"] = a.dispatched[i], a.finished[i], a.failed[i], a.qualifierGames[i]
 			a.poolMu.Unlock()
 			u, err := url.Parse(address)
 			if err == nil {
@@ -45,6 +47,7 @@ func (a *HTTPBotRunnerAdapter) Monitor(ctx context.Context) map[string]interface
 						node["status"] = "UNHEALTHY"
 						if decodeErr == nil && res.StatusCode == 200 && strings.EqualFold(body.Status, "HEALTHY") {
 							node["status"] = "READY"
+							a.observeCapacity(i,res.Header.Get("X-Worker-Capacity"))
 						}
 						if a.expectedRelease != "" && res.Header.Get("X-Arena-Release") != a.expectedRelease {
 							node["status"] = "RELEASE_MISMATCH"

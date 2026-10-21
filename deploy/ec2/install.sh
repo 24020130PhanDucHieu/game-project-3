@@ -10,6 +10,9 @@ id arena-worker >/dev/null 2>&1 || useradd --system --home-dir /var/lib/arena-wo
 install -d -o arena -g arena -m 0700 /var/lib/arena
 install -d -o arena-worker -g arena-worker -m 0700 /var/lib/arena-worker
 install -d -o root -g root -m 0700 /etc/arena
+if [ ! -f /etc/arena-worker.env ]; then
+    echo "WORKER_CAPACITY=2" > /etc/arena-worker.env
+fi
 mkdir -p /opt/arena/app/data
 chmod 755 /opt/arena/app/server
 if [ -f /opt/arena/app/deploy/ec2/check.sh ]; then
