@@ -84,6 +84,75 @@ function validateBotCodeOffline(codeStr, language = "PYTHON", ruleId = "STAGE_1_
 }
 
 /**
+ * Thay thế nội dung bên trong chuỗi (bao gồm triple-quoted docstring """ và ''')
+ * bằng khoảng trắng, giữ nguyên số dòng (\n) và thụt lề để phân tích cú pháp chuẩn xác.
+ */
+function maskPythonStrings(codeStr) {
+  let result = "";
+  let i = 0;
+  const len = codeStr.length;
+
+  while (i < len) {
+    // 1. Triple double quotes """
+    if (codeStr.slice(i, i + 3) === '"""') {
+      result += '   ';
+      i += 3;
+      while (i < len && codeStr.slice(i, i + 3) !== '"""') {
+        result += codeStr[i] === '\n' ? '\n' : ' ';
+        i++;
+      }
+      if (i < len) {
+        result += '   ';
+        i += 3;
+      }
+      continue;
+    }
+
+    // 2. Triple single quotes '''
+    if (codeStr.slice(i, i + 3) === "'''") {
+      result += '   ';
+      i += 3;
+      while (i < len && codeStr.slice(i, i + 3) !== "'''") {
+        result += codeStr[i] === '\n' ? '\n' : ' ';
+        i++;
+      }
+      if (i < len) {
+        result += '   ';
+        i += 3;
+      }
+      continue;
+    }
+
+    // 3. Single / Double quoted string
+    if (codeStr[i] === '"' || codeStr[i] === "'") {
+      const quote = codeStr[i];
+      result += ' ';
+      i++;
+      while (i < len && codeStr[i] !== quote && codeStr[i] !== '\n') {
+        if (codeStr[i] === '\\' && i + 1 < len) {
+          result += '  ';
+          i += 2;
+        } else {
+          result += ' ';
+          i++;
+        }
+      }
+      if (i < len && codeStr[i] === quote) {
+        result += ' ';
+        i++;
+      }
+      continue;
+    }
+
+    // Ký tự code thông thường
+    result += codeStr[i];
+    i++;
+  }
+
+  return result;
+}
+
+/**
  * Kiểm tra mã Python 3.10 Offline
  */
 function validatePythonOffline(codeStr, ruleId) {
@@ -131,8 +200,11 @@ function validatePythonOffline(codeStr, ruleId) {
     };
   }
 
-  // 3. Kiểm tra tính đóng mở ngoặc (), [], {}
-  const bracketResult = checkBalancedBrackets(codeStr);
+  // Làm sạch chuỗi và docstring để phân tích chính xác các khối lệnh & dấu ngoặc
+  const maskedCode = maskPythonStrings(codeStr);
+
+  // 3. Kiểm tra tính đóng mở ngoặc (), [], {} trên mã nguồn đã làm sạch chuỗi
+  const bracketResult = checkBalancedBrackets(maskedCode);
   if (!bracketResult.valid) {
     return {
       is_valid: false,
@@ -140,36 +212,36 @@ function validatePythonOffline(codeStr, ruleId) {
     };
   }
 
-  // 4. Kiểm tra dấu hai chấm sau các khối lệnh if, elif, else, for, while, def
-  const lines = codeStr.split("\n");
+  // 4. Kiểm tra dấu hai chấm sau các khối lệnh và thụt lề
+  const lines = maskedCode.split("\n");
+  const rawLines = codeStr.split("\n");
+  const BLOCK_START_REGEX = /^(?:def\s+[a-zA-Z0-9_]+\s*\(|class\s+[a-zA-Z0-9_]+|if\b|elif\b|else\b|for\b|while\b|try\b|except\b|finally\b|with\b)/;
+
   for (let i = 0; i < lines.length; i++) {
-    const rawLine = lines[i];
-    // Bỏ qua chú thích inline
-    const codePart = rawLine.split("#")[0].trim();
+    const codePart = lines[i].split("#")[0].trim();
     if (!codePart) continue;
 
-    const blockMatch = codePart.match(/^(def\s+[a-zA-Z0-9_]+\s*\([^)]*\)|if\b.*|elif\b.*|else|for\b.*|while\b.*|try|except\b.*|finally)$/);
-    if (blockMatch && !codePart.endsWith(":")) {
-      return {
-        is_valid: false,
-        error_message: `Lỗi cú pháp dòng ${i + 1}: Thiếu dấu hai chấm ':' ở cuối câu lệnh '${codePart}'.`
-      };
-    }
+    const isBlockStart = BLOCK_START_REGEX.test(codePart);
+    if (isBlockStart) {
+      if (!codePart.endsWith(":")) {
+        return {
+          is_valid: false,
+          error_message: `Lỗi cú pháp dòng ${i + 1}: Thiếu dấu hai chấm ':' ở cuối câu lệnh '${rawLines[i].trim()}'.`
+        };
+      }
 
-    // Kiểm tra thụt lề ngay sau dấu hai chấm
-    if (codePart.endsWith(":") && i + 1 < lines.length) {
-      // Tìm dòng code tiếp theo không rỗng và không phải comment
+      // Kiểm tra thụt lề ngay sau dấu hai chấm
       let nextIdx = i + 1;
-      while (nextIdx < lines.length && (!lines[nextIdx].trim() || lines[nextIdx].trim().startsWith("#"))) {
+      while (nextIdx < lines.length && !lines[nextIdx].split("#")[0].trim()) {
         nextIdx++;
       }
       if (nextIdx < lines.length) {
-        const curIndent = (rawLine.match(/^[ \t]*/) || [""])[0].length;
+        const curIndent = (lines[i].match(/^[ \t]*/) || [""])[0].length;
         const nextIndent = (lines[nextIdx].match(/^[ \t]*/) || [""])[0].length;
         if (nextIndent <= curIndent) {
           return {
             is_valid: false,
-            error_message: `Lỗi thụt đầu dòng (IndentationError) dòng ${nextIdx + 1}: Khối lệnh sau câu lệnh '${codePart}' cần thụt lề vào trong.`
+            error_message: `Lỗi thụt đầu dòng (IndentationError) dòng ${nextIdx + 1}: Khối lệnh sau câu lệnh '${rawLines[i].trim()}' cần thụt lề vào trong.`
           };
         }
       }

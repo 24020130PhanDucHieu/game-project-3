@@ -118,4 +118,34 @@ assert.equal(res9.is_valid, false, 'Forbidden C++ system call must fail');
 // 10. Exam offline mode toggle
 assert.equal(isOfflineExamMode(), true, 'Should be in offline exam mode when navigator.onLine is false');
 
-console.log('ALL 10 OFFLINE VALIDATOR UNIT TESTS PASSED!');
+// 11. Real template code with docstring containing colons
+const templatePy = `# -*- coding: utf-8 -*-
+import random
+
+def decide_move(game_state):
+    """
+    Chiến thuật Tân sinh viên K69 qua từng Round:
+    game_state cung cấp:
+    - my_hp: Lượng máu hiện tại (int)
+    - remaining_cards: Thẻ còn lại {"ROCK": 3, "PAPER": 3, "SCISSORS": 3}
+    - turn_number: Số thứ tự round đang đấu (1 -> 5)
+    - history: Danh sách nước đi các round trước
+    """
+    cards = game_state.get("remaining_cards", {})
+    available = [c for c, count in cards.items() if count > 0]
+    if not available:
+        return "ROCK"
+
+    turn = game_state.get("turn_number", 1)
+    # Chiến thuật thích ứng: Ví dụ ở round lẻ ưu tiên Búa
+    if turn % 2 == 1 and "ROCK" in available:
+        return "ROCK"
+
+    return random.choice(available)
+`;
+const res11 = validateBotCodeOffline(templatePy, 'PYTHON');
+assert.equal(res11.is_valid, true, `Template code must pass offline validation, got: ${res11.error_message}`);
+assert.equal(res11.test_move, 'ROCK');
+
+console.log('ALL 11 OFFLINE VALIDATOR UNIT TESTS PASSED!');
+
