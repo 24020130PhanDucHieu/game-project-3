@@ -1,2 +1,4 @@
 # Only test tooling; never installed inside student sandboxes.
 httpx==0.28.1
+requests>=2.32,<3
+playwright>=1.48,<2
