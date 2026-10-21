@@ -13,6 +13,22 @@ from app.engine.rules import GameRulesEngine
 
 
 class SpecialTilesTests(unittest.TestCase):
+    def test_special_tiles_are_opt_in_and_do_not_overlap(self):
+        from app.engine.board_rules import generate_mystery_tiles
+        for bits in range(16):
+            rule = f"COMBO_{bits}"
+            rules = board_rules(rule, seed="opt-in")
+            self.assertEqual(rules["special_tiles"], bool(bits & 8))
+            pieces = initial_board(rule, seed="opt-in")
+            for side in pieces.values():
+                self.assertEqual(sum(p["type"] == "JOKER" for p in side), int(bool(bits & 8)))
+        for seed in range(200):
+            tiles = generate_mystery_tiles(seed)
+            coords = tiles["evolve"] + tiles["traps"] + [p for pair in tiles["portals"] for p in pair]
+            self.assertEqual(len(coords), 9)
+            self.assertEqual(len(set(coords)), 9)
+            self.assertEqual(tiles, generate_mystery_tiles(seed))
+
     def test_joker_rules_and_counters(self):
         # Joker beats Rock, Paper, Scissors in both standard and reverse modes
         for std in ("ROCK", "PAPER", "SCISSORS"):
@@ -79,7 +95,7 @@ def decide_move(state):
     return "ROCK" if cards.get("ROCK", 0) > 0 else "PAPER"
 """
         code_b = "def decide_move(state): return 'ROCK'"
-        res = simulate_board(code_a, code_b, round_num=1, tie_seed="test_activation_seed")
+        res = simulate_board(code_a, code_b, round_num=1, stage_rule="RULE_SPECIAL_TILES", tie_seed="test_activation_seed")
         steps = res["board_steps"]
         clashes = [s.get("clash_event") for s in steps if s.get("clash_event")]
         clash_types = set(c["type"] for c in clashes if c and "type" in c)

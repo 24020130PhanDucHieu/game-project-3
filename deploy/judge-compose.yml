@@ -11,14 +11,14 @@ services:
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     pids_limit: 128
-    mem_limit: 1536m
-    cpus: 2
+    mem_limit: ${JUDGE_MEMORY_LIMIT:-700m}
+    cpus: ${JUDGE_CPUS:-1.5}
     tmpfs:
-      - /tmp:size=536870912,mode=1777
+      - /tmp:size=134217728,mode=1777
     environment:
       ENVIRONMENT: production
       PYTHONDONTWRITEBYTECODE: "1"
-      WORKER_CAPACITY: ${WORKER_CAPACITY:-2}
+      WORKER_CAPACITY: ${WORKER_CAPACITY:-1}
       WORKER_RELEASE: ${ARENA_RELEASE:?Set the exact deployed Git commit}
       WORKER_TOKEN: ${WORKER_TOKEN:?Set a shared private worker token}
     ports:

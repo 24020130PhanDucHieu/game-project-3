@@ -50,12 +50,17 @@ def generate_mystery_tiles(seed='validation'):
             if t1 != t2 and t1 not in occupied and t2 not in occupied:
                 trap_candidates.append((t1, t2))
     rng.shuffle(trap_candidates)
-    trap_pairs = trap_candidates[:2] if trap_candidates else [((3, 4), (5, 4)), ((4, 1), (4, 7))]
+    # A middle-row pair can occur in both orientations. Reserve cells while
+    # selecting so two pairs never collapse into the same two traps.
     traps = []
-    for t1, t2 in trap_pairs:
+    for t1, t2 in trap_candidates:
+        if t1 in occupied or t2 in occupied:
+            continue
         traps.extend([t1, t2])
         occupied.add(t1)
         occupied.add(t2)
+        if len(traps) == 4:
+            break
 
     return {
         "evolve": evolve,

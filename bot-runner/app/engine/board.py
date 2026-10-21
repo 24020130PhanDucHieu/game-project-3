@@ -28,28 +28,11 @@ EVOLVE_CYCLE = {
 
 
 def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1,
-                   stage_rule="STAGE_1_STANDARD", tie_seed=None, reuse_sandbox=False,
-                   special_tiles=True):
+                   stage_rule="STAGE_1_STANDARD", tie_seed=None, reuse_sandbox=False):
     tie_seed = tie_seed or secrets.token_hex(16)
     initial_rules = board_rules(stage_rule, seed=tie_seed)
-    if special_tiles is not False:
-        initial_rules["special_tiles"] = True
-        if not initial_rules.get("mystery_tiles"):
-            from app.engine.board_rules import generate_mystery_tiles
-            initial_rules["mystery_tiles"] = generate_mystery_tiles(tie_seed)
-    else:
-        initial_rules["special_tiles"] = False
-        initial_rules["mystery_tiles"] = {}
-
     special_mode = bool(initial_rules.get("special_tiles", False))
     pieces = initial_board(stage_rule, seed=tie_seed)
-    if special_mode and not any(p["type"] == "JOKER" for p in pieces["team_a"]):
-        for side in ("team_a", "team_b"):
-            for p in pieces[side]:
-                if p["col"] == 4:
-                    p["type"] = "JOKER"
-                    p["steps_left"] = 5
-                    break
 
     mystery_tiles = copy.deepcopy(initial_rules.get("mystery_tiles", {}))
     evolve_tiles_set = set(tuple(c) for c in mystery_tiles.get("evolve", []))
@@ -121,10 +104,6 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
             cycle = ply // 2 + 1
             own, enemy = alive(side), alive(opponent)
             active_rules = board_rules(stage_rule, cycle, seed=tie_seed)
-            if special_mode:
-                active_rules["special_tiles"] = True
-                if not active_rules.get("mystery_tiles"):
-                    active_rules["mystery_tiles"] = initial_rules.get("mystery_tiles", {})
             fog, reverse = active_rules["fog"], active_rules["reverse"]
             has_joker_now = any(p["type"] == "JOKER" for p in own)
             card_types = ALL_MOVES if (special_mode or has_joker_now) else MOVES

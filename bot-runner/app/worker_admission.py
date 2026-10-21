@@ -10,9 +10,9 @@ def install_worker_admission(app):
     token = os.environ.get("WORKER_TOKEN", "")
     release = os.environ.get("WORKER_RELEASE", "")
     try:
-        capacity = int(os.environ.get("WORKER_CAPACITY", "2"))
+        capacity = int(os.environ.get("WORKER_CAPACITY", "1"))
     except ValueError:
-        capacity = 2
+        capacity = 1
     slots = threading.BoundedSemaphore(max(1, min(8, capacity)))
 
     @app.middleware("http")
@@ -24,11 +24,12 @@ def install_worker_admission(app):
         if token and not secrets.compare_digest(
             request.headers.get("X-Worker-Token", ""), token
         ):
-            return JSONResponse({"detail": "Worker authentication required"}, status_code=401)
+            return JSONResponse({"detail": "Worker authentication required"}, status_code=401,
+                                headers={"X-Arena-Release": release})
         if not slots.acquire(blocking=False):
             return JSONResponse(
                 {"detail": "Worker busy; retry on another worker"},
-                status_code=429, headers={"Retry-After": "2"},
+                status_code=429, headers={"Retry-After": "2", "X-Arena-Release": release},
             )
         try:
             response = await call_next(request)

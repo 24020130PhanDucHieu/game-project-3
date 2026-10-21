@@ -51,3 +51,29 @@ func TestWorkerPoolRetriesOverloadButNotInvalidCode(t *testing.T) {
 		})
 	}
 }
+
+func TestWorkerPoolRetriesIncompleteAndMalformedResults(t *testing.T) {
+	for _, broken := range []string{"truncated", "invalid-json"} {
+		t.Run(broken, func(t *testing.T) {
+			first := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if broken == "truncated" {
+					w.Header().Set("Content-Length", "1000")
+				}
+				fmt.Fprint(w, `{"unfinished":`)
+			}))
+			defer first.Close()
+			second := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { fmt.Fprint(w, `{"worker":"healthy"}`) }))
+			defer second.Close()
+			pool := NewHTTPBotRunnerAdapter(first.URL + "," + second.URL)
+			got, err := pool.Mutate(nil, "validate-code", nil)
+			if err != nil || got["worker"] != "healthy" {
+				t.Fatalf("fallback failed: %v %v", got, err)
+			}
+			pool.poolMu.Lock()
+			defer pool.poolMu.Unlock()
+			if pool.active[0] != 0 || pool.active[1] != 0 || len(pool.slots) != 0 {
+				t.Fatal("capacity leaked")
+			}
+		})
+	}
+}

@@ -29,7 +29,9 @@ class TestWorkerAdmission(unittest.IsolatedAsyncioTestCase):
             return {"status": "HEALTHY"}
 
         async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://worker") as client:
-            self.assertEqual((await client.post("/mutate-tournament")).status_code, 401)
+            denied = await client.post("/mutate-tournament")
+            self.assertEqual(denied.status_code, 401)
+            self.assertEqual(denied.headers["x-arena-release"], "fixture-release")
             self.assertFalse(entered.is_set())
             headers = {"X-Worker-Token": "fixture"}
             first = asyncio.create_task(client.post("/mutate-tournament", headers=headers))
@@ -38,6 +40,7 @@ class TestWorkerAdmission(unittest.IsolatedAsyncioTestCase):
                 busy = await client.post("/mutate-tournament", headers=headers)
                 self.assertEqual(busy.status_code, 429)
                 self.assertEqual(busy.headers["retry-after"], "2")
+                self.assertEqual(busy.headers["x-arena-release"], "fixture-release")
                 health = await client.get("/health")
                 self.assertEqual(health.status_code, 200)
                 self.assertEqual(health.headers["x-arena-release"], "fixture-release")

@@ -59,7 +59,13 @@ docker compose --env-file /etc/arena/judge.env -f deploy/judge-compose.yml up -d
 docker compose --env-file /etc/arena/judge.env -f deploy/judge-compose.yml ps
 ```
 
-Compose đặt filesystem chỉ đọc, bỏ Linux capabilities, giới hạn RAM/CPU/PID và xoay log. Cấu hình mẫu dành 2 CPU, tối đa 1.5 GiB RAM cho container; đây là giới hạn cấu hình, chưa phải cam kết đủ cho mọi bot. Chọn máy và số tác vụ theo đo tải thực tế. Dùng cùng image digest cho mọi máy khi phát hành chính thức; nhãn commit tự khai không thay thế việc kiểm tra image.
+Compose đặt filesystem chỉ đọc, bỏ Linux capabilities, giới hạn RAM/CPU/PID và xoay log. Cấu hình mặc định cho worker nhỏ: 1 tác vụ, RAM tối đa 700 MiB, CPU tối đa 1.5 core, tmpfs 128 MiB (tính trong giới hạn RAM). Có thể đặt `JUDGE_MEMORY_LIMIT` và `JUDGE_CPUS` theo máy thực tế. Đây là giới hạn cấu hình, chưa phải cam kết đủ cho mọi bot. Dùng cùng image digest cho mọi máy khi phát hành chính thức; nhãn commit tự khai không thay thế việc kiểm tra image.
+
+### Hai máy chấm nhỏ
+
+Đặt gateway `WORKER_CONCURRENCY=1`, `JUDGE_CONCURRENCY=2`, `VALIDATION_WORKERS=2`, `QUALIFIER_WORKERS=2`; mỗi worker `WORKER_CAPACITY=1`. `WORKER_URLS` phải có hai địa chỉ worker khác nhau, dùng private IP và cùng token/release. Đây là hai máy worker ngoài gateway; nếu gateway cũng chấm, tài nguyên API và worker sẽ cạnh tranh.
+
+Gateway giữ slot đến khi đọc xong phản hồi; chuyển worker khi body bị đứt hoặc JSON hỏng. Giới hạn phản hồi 64 MiB để tránh một worker làm cạn bộ nhớ gateway. Không thử lại lỗi mã nguồn HTTP 400. Không giảm timeout tùy tiện vì trận hợp lệ có thể kéo dài. Mất một worker làm giảm thông lượng; hết worker thì bài đã nhận vẫn chờ theo cơ chế phục hồi vòng loại. Luồng trận chính chưa được chuyển toàn bộ sang durable queue.
 
 Sau đó cập nhật môi trường gateway và khởi động lại gateway ngoài giờ thi. `/ready` kiểm tra toàn bộ worker; một máy lỗi làm readiness đỏ dù pool vẫn có thể chấm bằng máy còn lại. `/health` chỉ phản ánh API còn hoạt động. Không tự khởi động lại cả hệ thống chỉ vì một worker mất readiness.
 

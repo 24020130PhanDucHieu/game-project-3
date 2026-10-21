@@ -42,7 +42,7 @@ func NewHTTPBotRunnerAdapter(workerURL string) *HTTPBotRunnerAdapter {
 	concurrency, _ := strconv.Atoi(os.Getenv("JUDGE_CONCURRENCY"))
 	perWorker, _ := strconv.Atoi(os.Getenv("WORKER_CONCURRENCY"))
 	if perWorker < 1 || perWorker > 8 {
-		perWorker = 2
+		perWorker = 1
 	}
 	workers := []string{}
 	seen := map[string]bool{}
@@ -106,6 +106,7 @@ func (a *HTTPBotRunnerAdapter) Mutate(currentTournament interface{}, action stri
 	// Retry on a different worker only for transport errors or temporary overload.
 	tried := map[int]bool{}
 	var resp *http.Response
+	var bodyBytes []byte
 	for offset := 0; offset < len(a.workers); offset++ {
 		index, acquireErr := a.acquireWorker(ctx, tried)
 		if acquireErr != nil {
@@ -146,18 +147,28 @@ func (a *HTTPBotRunnerAdapter) Mutate(currentTournament interface{}, action stri
 			a.releaseWorker(index, true)
 			continue
 		}
-		defer attemptCancel()
-		defer a.releaseWorker(index, resp.StatusCode == 429 || resp.StatusCode >= 500)
+		// Read before releasing the slot: headers alone do not mean the judge
+		// finished delivering a result. A broken body can fail over as well.
+		bodyBytes, err = io.ReadAll(io.LimitReader(resp.Body, 64*1024*1024+1))
+		resp.Body.Close()
+		attemptCancel()
+		if err == nil && len(bodyBytes) > 64*1024*1024 {
+			err = fmt.Errorf("worker response exceeds 64 MiB")
+		}
+		if err == nil && resp.StatusCode == http.StatusOK && !json.Valid(bodyBytes) {
+			err = fmt.Errorf("worker returned invalid JSON")
+		}
+		a.releaseWorker(index, err != nil || resp.StatusCode == 429 || resp.StatusCode >= 500)
+		if err != nil {
+			continue
+		}
 		break
 	}
 	if err != nil {
 		return nil, fmt.Errorf("không thể kết nối Game Engine Worker: %w", err)
 	}
-	defer resp.Body.Close()
-
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("lỗi đọc dữ liệu phản hồi: %w", err)
+	if resp == nil {
+		return nil, fmt.Errorf("no worker response")
 	}
 
 	if resp.StatusCode != http.StatusOK {
