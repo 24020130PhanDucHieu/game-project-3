@@ -1,8 +1,10 @@
 """Smoke probe for the local hardened judge image, with fixture credentials only."""
+import os
 import time
 import requests
 
-BASE = "http://127.0.0.1:55440"
+port = os.environ.get("JUDGE_TEST_PORT", "55440")
+BASE = f"http://127.0.0.1:{port}"
 headers = {"X-Worker-Token": "local-test-token"}
 deadline = time.monotonic()+30
 while True:

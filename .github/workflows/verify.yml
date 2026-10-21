@@ -64,6 +64,10 @@ jobs:
           ARENA_TEST_SERVER: ${{ github.workspace }}/backend/bin/arena-verification
       - name: Verify read-only production judge image
         run: |
+          docker rm -f arena-judge-smoke 2>/dev/null || true
           docker build -t arena-judge:verification bot-runner
-          docker run --rm -d --name arena-judge-smoke --read-only --cap-drop ALL --security-opt no-new-privileges --pids-limit 128 --memory 1536m --cpus 2 --tmpfs /tmp:rw,size=512m -e WORKER_TOKEN=local-test-token -e WORKER_RELEASE=verification -e WORKER_CAPACITY=2 -p 127.0.0.1:55440:8001 arena-judge:verification
-          python tests/e2e/test_judge_image.py
+          docker run --rm -d --name arena-judge-smoke --read-only --cap-drop ALL --security-opt no-new-privileges --pids-limit 128 --memory 1536m --cpus 2 --tmpfs /tmp:rw,size=512m -e WORKER_TOKEN=local-test-token -e WORKER_RELEASE=verification -e WORKER_CAPACITY=2 -p 127.0.0.1::8001 arena-judge:verification
+          PORT=$(docker port arena-judge-smoke 8001/tcp | sed 's/.*://')
+          echo "Assigned judge smoke test port: $PORT"
+          JUDGE_TEST_PORT="$PORT" python tests/e2e/test_judge_image.py
+          docker stop arena-judge-smoke 2>/dev/null || true
