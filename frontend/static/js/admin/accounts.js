@@ -15,7 +15,10 @@ async function loadRegisteredAccounts() {
     renderAccountRows();
   } catch (err) {
     if (status) status.textContent = err.message;
-  } finally { accountsLoading = false; }
+  } finally { 
+    accountsLoading = false; 
+    fetchAdminMonitoringData();
+  }
 }
 
 function renderAccountRows() {
@@ -104,6 +107,88 @@ async function enrollAccount(event) {
   finally { button.disabled = false; }
 }
 
+async function fetchAdminMonitoringData(manual = false) {
+  if (currentAppRole !== 'ADMIN') return;
+  const lastUpdatedEl = document.getElementById('monitor-last-updated');
+  if (manual && lastUpdatedEl) lastUpdatedEl.textContent = 'Đang tải...';
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/monitoring`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    
+    // Server & Host
+    const sStatus = document.getElementById('monitor-server-status');
+    if (sStatus) sStatus.textContent = 'HOẠT ĐỘNG (200 OK)';
+    const sInfo = document.getElementById('monitor-server-info');
+    if (sInfo && data.server) {
+      sInfo.textContent = `CPU: ${data.server.cpu_cores} Cores · Goroutines: ${data.server.goroutines}`;
+    }
+
+    // Worker Pool
+    const wStatus = document.getElementById('monitor-worker-status');
+    if (wStatus && data.worker_pool) {
+      const isReady = data.worker_pool.status === 'READY';
+      wStatus.textContent = isReady ? 'Sẵn sàng (Dual Node)' : 'Cảnh báo (' + data.worker_pool.status + ')';
+      wStatus.style.color = isReady ? '#10B981' : '#EF4444';
+    }
+
+    // Memory & Uptime
+    const memEl = document.getElementById('monitor-memory-val');
+    if (memEl && data.server) {
+      memEl.textContent = `${data.server.memory_alloc_mb.toFixed(1)} MB RAM`;
+    }
+    const upEl = document.getElementById('monitor-uptime-val');
+    if (upEl && data.server) {
+      const s = Math.floor(data.server.uptime_seconds);
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      upEl.textContent = `Uptime: ${h > 0 ? h + 'h ' : ''}${m}m ${s % 60}s · GC: ${data.server.gc_cycles}`;
+    }
+
+    // Submissions Pulse
+    const subRatio = document.getElementById('monitor-submission-ratio');
+    const accVal = document.getElementById('monitor-accounts-val');
+    const progPercent = document.getElementById('monitor-progress-percent');
+    const progBar = document.getElementById('monitor-progress-bar');
+    const unsubmittedBox = document.getElementById('monitor-unsubmitted-box');
+    const unsubmittedTitle = document.getElementById('monitor-unsubmitted-title');
+    const unsubmittedList = document.getElementById('monitor-unsubmitted-list');
+
+    if (data.contest) {
+      if (subRatio) subRatio.textContent = `${data.contest.submitted_teams} / ${data.contest.enrolled_teams} Đội nộp`;
+      if (accVal) accVal.textContent = `Tổng ĐK: ${data.contest.total_registered_accounts} TK · ${data.contest.total_tournaments} Giải`;
+
+      const pct = data.contest.enrolled_teams > 0 ? Math.round((data.contest.submitted_teams / data.contest.enrolled_teams) * 100) : 0;
+      if (progPercent) progPercent.textContent = `${pct}%`;
+      if (progBar) progBar.style.width = `${pct}%`;
+
+      if (unsubmittedBox) {
+        if (data.contest.unsubmitted_count > 0) {
+          unsubmittedBox.style.display = 'block';
+          if (unsubmittedTitle) unsubmittedTitle.textContent = `⚠️ Có ${data.contest.unsubmitted_count} đội trong giải chưa nộp mã nguồn:`;
+          if (unsubmittedList) {
+            unsubmittedList.innerHTML = (data.contest.unsubmitted_teams || []).map(t => `<div style="padding:2px 0;">• ${escapeHTML(t)}</div>`).join('');
+          }
+        } else {
+          unsubmittedBox.style.display = 'none';
+        }
+      }
+    }
+
+    if (lastUpdatedEl) {
+      const now = new Date();
+      lastUpdatedEl.textContent = 'Cập nhật: ' + now.toLocaleTimeString();
+    }
+  } catch (err) {
+    if (lastUpdatedEl) lastUpdatedEl.textContent = 'Lỗi kết nối';
+  }
+}
+
+function toggleUnsubmittedList() {
+  const el = document.getElementById('monitor-unsubmitted-list');
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
 // Refresh the visible admin registry without resetting search or scroll position.
 setInterval(() => {
   if (currentAppRole !== 'ADMIN') {
@@ -111,5 +196,9 @@ setInterval(() => {
     document.getElementById('tbody-team-credentials')?.replaceChildren();
     return;
   }
-  if (!document.hidden && document.querySelector('#tab-admin-console.active') && !document.getElementById('dialog-enroll-account')?.open) loadRegisteredAccounts();
+  if (!document.hidden && document.querySelector('#tab-admin-console.active') && !document.getElementById('dialog-enroll-account')?.open) {
+    loadRegisteredAccounts();
+    fetchAdminMonitoringData();
+  }
 }, 10000);
+

@@ -67,7 +67,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not initialize accounts: %v", err)
 	}
-	aHandler := &httpHandler.AccountsHandler{Store: accounts, Service: tournamentService}
+	aHandler := &httpHandler.AccountsHandler{Store: accounts, Service: tournamentService, WorkerReady: botRunnerAdapter.Ready}
 	mHandler.Accounts = accounts
 	mHandler.AccountSync = aHandler.ImportLegacy
 	sessions.CheckStudent = func(id string) (bool, error) {
@@ -180,6 +180,7 @@ func main() {
 		api.GET("/admin/accounts", adminOnly, aHandler.List)
 		api.DELETE("/admin/accounts/:studentId", adminOnly, aHandler.Delete)
 		api.POST("/admin/accounts/:studentId/enroll", adminOnly, aHandler.Enroll)
+		api.GET("/admin/monitoring", adminOnly, aHandler.Monitoring)
 		matchSession := requireSession(sessions, false, true)
 		matchAdmin := requireSession(sessions, true, true)
 		api.GET("/qualifiers", qHandler.List)
