@@ -13,6 +13,8 @@ function renderQualifierRegistration(data) {
   const button = document.getElementById('qualifier-register');
   button.textContent = !team ? 'Đăng nhập để đăng ký' : registered ? 'Đã đăng ký' : open ? 'Đăng ký thi' : data ? 'Đã đóng đăng ký' : 'Đăng ký thi';
   button.disabled = team && (registered || Boolean(data && !open));
+  button.hidden = registered;
+  document.getElementById('qualifier-registration-card').hidden = currentAppRole === 'ADMIN' || registered;
 }
 async function openQualifierEvents() {
   const dialog = document.getElementById('qualifier-events-dialog');

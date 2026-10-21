@@ -50,5 +50,5 @@ async function checkQualifierCode(){
 }
 async function submitQualifierCode(){
   const button=document.getElementById('qualifier-submit');if(button.disabled)return;button.disabled=true;
-  try{await arenaOutbox.submit(`/api/qualifiers/${qualifierId}/submissions`,{code:document.getElementById('qualifier-code').value,language:document.getElementById('qualifier-language').value});notifyInfo('Đã lưu trên thiết bị','Bài sẽ tự gửi khi có mạng. Chưa được server xác nhận.');}catch(err){notifyError('Không lưu được bài',err.message);}finally{button.disabled=qualifierData?.event.status!=='OPEN'||Date.now()/1000>=qualifierData?.event.deadline;}
+  try{await arenaOutbox.submit(`/api/qualifiers/${qualifierId}/submissions`,{code:document.getElementById('qualifier-code').value,language:document.getElementById('qualifier-language').value});}catch(err){notifyError('Không lưu được bài',err.message);}finally{button.disabled=qualifierData?.event.status!=='OPEN'||Date.now()/1000>=qualifierData?.event.deadline;}
 }

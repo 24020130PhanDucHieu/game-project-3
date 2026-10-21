@@ -15,6 +15,10 @@ function updateRoleUI() {
     document.getElementById('qualifier-my-results')?.replaceChildren();
   }
   if (currentAppRole !== 'ADMIN') {
+    document.getElementById('qualifier-submission-dialog')?.close();
+    document.getElementById('qualifier-submission-code')?.replaceChildren();
+    document.getElementById('qualifier-submission-meta')?.replaceChildren();
+    document.getElementById('qualifier-submission-select')?.replaceChildren();
     registeredAccounts = [];
     enrollingAccount = null;
     document.getElementById('tbody-team-credentials')?.replaceChildren();

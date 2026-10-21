@@ -63,7 +63,12 @@ async function loadQualifierPage() {
       const query=encodeURIComponent(document.getElementById('qualifier-search').value);const filter=encodeURIComponent(document.getElementById('qualifier-filter').value);
       const teams=await qualifierAPI(`/${requested}/teams?page=${qualifierTeamsPage}&q=${query}&filter=${filter}`);if(requested!==qualifierId)return;
       qualifierTeamsTotal=teams.total;const labels={NOT_SUBMITTED:'Chưa nộp',PENDING:'Đã nhận · Đang chấm',INVALID:'Chưa có bản hợp lệ',VALID:'Có bản hợp lệ',LOCKED:'Đã khóa'};
-      renderQualifierTable('qualifier-teams',teams.items.map(p=>[p.test_bot?'Thử nghiệm':p.student_id,p.team_name,labels[p.status],Number(p.elo ?? 1200).toFixed(2)]));
+      renderQualifierTable('qualifier-teams',teams.items.map(p=>[p.test_bot?'Thử nghiệm':p.student_id,p.team_name,labels[p.status],Number(p.elo ?? 1200).toFixed(2),p.submitted_at?new Date(p.submitted_at*1000).toLocaleString('vi-VN'):'Chưa nộp']));
+      teams.items.forEach((p,index)=>{
+        const button=document.createElement('button'); button.className='btn-outline'; button.textContent='Xem bài';
+        button.onclick=()=>openQualifierSubmission(requested,p.student_id,p.team_name);
+        document.getElementById('qualifier-teams').rows[index].insertCell().appendChild(button);
+      });
       document.getElementById('qualifier-teams-page').textContent=`Trang ${qualifierTeamsPage} / ${Math.max(1,Math.ceil(teams.total/50))} · ${teams.total} đội`;
       const response=await fetch(`${API_BASE}/api/tournaments/list`);if(!response.ok)throw new Error('Không tải được giải chính.');const tournaments=await response.json();
       const target=document.getElementById('qualifier-target');const selected=target.value;target.replaceChildren(new Option(`Chọn giải chính ${e.top_k} đội`,''));
@@ -72,7 +77,33 @@ async function loadQualifierPage() {
   }catch(err){if(document.getElementById('tab-qualifier').classList.contains('active'))document.getElementById('qualifier-summary').textContent=err.message;}
   finally{qualifierLoading=false;}
 }
-function renderQualifierTable(id,rows){const body=document.getElementById(id);body.replaceChildren();if(!rows.length){const row=body.insertRow();const cell=row.insertCell();cell.colSpan=4;cell.textContent='Chưa có dữ liệu.';return;}for(const values of rows){const row=body.insertRow();for(const value of values)row.insertCell().textContent=String(value);}}
+function renderQualifierTable(id,rows){const body=document.getElementById(id);body.replaceChildren();if(!rows.length){const row=body.insertRow();const cell=row.insertCell();cell.colSpan=id==='qualifier-teams'?6:4;cell.textContent='Chưa có dữ liệu.';return;}for(const values of rows){const row=body.insertRow();for(const value of values)row.insertCell().textContent=String(value);}}
+
+let qualifierSubmissionRequest=0;
+async function openQualifierSubmission(eventId,studentId,name){
+  if(currentAppRole!=='ADMIN')return;
+  const request=++qualifierSubmissionRequest;
+  const dialog=document.getElementById('qualifier-submission-dialog');
+  const select=document.getElementById('qualifier-submission-select');
+  const meta=document.getElementById('qualifier-submission-meta');
+  const code=document.getElementById('qualifier-submission-code');
+  document.getElementById('qualifier-submission-title').textContent=`Bài nộp · ${name} (${studentId})`;
+  select.replaceChildren();code.textContent='';meta.textContent='Đang tải…';
+  if(!dialog.open)dialog.showModal();
+  try{
+    const data=await qualifierAPI(`/${encodeURIComponent(eventId)}?student_id=${encodeURIComponent(studentId)}`);
+    if(request!==qualifierSubmissionRequest||currentAppRole!=='ADMIN'||!dialog.open)return;
+    const history=data.history||[];
+    for(const [index,s] of history.entries())select.add(new Option(`${new Date(s.at*1000).toLocaleString('vi-VN')} · ${s.language} · ${s.status==='QUEUED'?'Đang chấm':s.valid?'Hợp lệ':'Không hợp lệ'}`,String(index)));
+    const render=()=>{
+      const s=history[Number(select.value)];
+      if(!s){meta.textContent='Đội chưa có bài nộp.';code.textContent='';return;}
+      meta.textContent=`Mã bài: ${s.id}${s.id===data.participant?.locked_id?' · Bản đã khóa':s.id===data.participant?.valid_id?' · Bản hợp lệ đang sử dụng':''}${s.error?' · '+s.error:''}`;
+      code.textContent=s.code||'';
+    };
+    select.onchange=render;render();
+  }catch(error){if(request===qualifierSubmissionRequest)meta.textContent=error.message;}
+}
 function qualifierPage(kind,delta){if(kind==='teams')qualifierTeamsPage=Math.max(1,Math.min(Math.max(1,Math.ceil(qualifierTeamsTotal/50)),qualifierTeamsPage+delta));else qualifierRankPage=Math.max(1,Math.min(Math.max(1,Math.ceil(qualifierRankTotal/50)),qualifierRankPage+delta));saveQualifierState();loadQualifierPage();}
 let qualifierSearchTimer;
 function qualifierFilterChanged(){qualifierTeamsPage=1;saveQualifierState();clearTimeout(qualifierSearchTimer);qualifierSearchTimer=setTimeout(loadQualifierPage,300);}

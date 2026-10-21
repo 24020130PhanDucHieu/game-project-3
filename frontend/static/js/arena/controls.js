@@ -97,11 +97,6 @@ async function handleRefereeStartBattle() {
     isMatchRunning=false;
     if (currentTournamentId===tournamentId && currentTournamentData?.matches?.[matchId]) {
       renderMatchRoomData(currentTournamentData.matches[matchId]);
-      if (currentAppRole === "ADMIN" && typeof startRealtimeAutoPlay === "function") {
-        setTimeout(() => {
-          startRealtimeAutoPlay(true);
-        }, 50);
-      }
     }
   }
 }

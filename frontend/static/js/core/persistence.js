@@ -53,19 +53,25 @@ let liveRoundTimer = null;
 let liveRoundKey = "";
 function syncLiveRoundBoard(match) {
   const record = match.rounds_history?.[match.rounds_history.length - 1];
-  const key = `${currentTournamentId}:${currentActiveMatchId}:${currentAppRole}:${match.round_status}:${match.battle_running}:${match.all_teams_ready}:${record?.round_number}:${match.intermission_ends_at}`;
+  const key = `${currentTournamentId}:${currentActiveMatchId}:${currentAppRole}:${record?.round_number}:${record?.board_steps?.length}`;
   if (key === liveRoundKey) return;
   liveRoundKey = key;
   clearInterval(liveRoundTimer);
+  if(currentAppRole==='ADMIN'){
+    clearInterval(realtimePlaybackTimer); realtimePlaybackTimer=null;
+    if(record?.board_steps?.length)startRealtimeAutoPlay(true);
+    else renderLiveAction(match,null,null);
+    return;
+  }
+  const playbackStarted=Date.now();
   let drawnIndex = -1;
   const draw = () => {
     const countdown = document.getElementById("countdown-num");
     if (countdown && match.intermission_ends_at) countdown.textContent = Math.max(0, Math.ceil(match.intermission_ends_at - Date.now() / 1000));
     if (!record?.board_steps?.length) { renderLiveAction(match, null, null); return; }
     const steps = record.board_steps;
-    const intermissionDuration = 5;
-    const progress = match.round_status === "ROUND_FINISHED" ? Math.max(0, Math.min(1, (Date.now() / 1000 - (match.intermission_ends_at - intermissionDuration)) / intermissionDuration)) : 1;
-    const index = Math.min(steps.length - 1, Math.floor(progress * steps.length));
+    const progress = Math.min(1,(Date.now()-playbackStarted)/(Math.max(1,steps.length-1)*250));
+    const index = Math.min(steps.length - 1, Math.floor(progress * (steps.length-1)));
     if (index === drawnIndex) { if (progress === 1) clearInterval(liveRoundTimer); return; }
     drawnIndex = index;
     const step = steps[index];
@@ -93,7 +99,7 @@ function syncLiveRoundBoard(match) {
     if (progress === 1) clearInterval(liveRoundTimer);
   };
   draw();
-  if (match.round_status === "ROUND_FINISHED" && match.intermission_ends_at > Date.now() / 1000) liveRoundTimer = setInterval(draw, 100);
+  if(record?.board_steps?.length>1)liveRoundTimer = setInterval(draw, 50);
 }
 function studioDraftKey() { return `${arenaViewKey()}:draft:${currentStudioSide || "none"}`; }
 function saveStudioDraft() {

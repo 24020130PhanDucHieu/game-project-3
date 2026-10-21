@@ -33,17 +33,17 @@
     </div>
     <textarea id="qualifier-code" class="ide-editor" rows="14" style="width:100%;" aria-label="Mã nguồn vòng loại" oninput="saveQualifierDraft()" placeholder="def decide_move(game_state):&#10;    return 'ROCK'"></textarea>
     <button class="btn btn-primary" type="button" id="qualifier-submit" onclick="submitQualifierCode()">Nộp bot</button>
-      <div class="qualifier-practice-tools">
+      <details><summary>Chạy thử với Boss (không tính ELO)</summary><div class="qualifier-practice-tools">
         <select id="qualifier-boss" class="input-text-sm" aria-label="Boss chạy thử"><option value="RANDOM">Boss ngẫu nhiên</option><option value="AGGRESSIVE">Boss hiếu chiến</option><option value="ADAPTIVE">Boss phản đòn</option></select>
         <button class="btn btn-outline" type="button" id="qualifier-practice" onclick="handlePracticeMatch('qualifier')">Chạy thử với Boss</button>
         <small>Chạy thử không nộp bài và không tính ELO.</small>
-      </div>
+      </div></details>
     <details><summary>Lịch sử bài nộp và kết quả của đội</summary><div id="qualifier-my-history"></div><div id="qualifier-my-results"></div></details>
   </div>
   <div class="content-card admin-only" id="qualifier-admin-teams-card" hidden>
     <h3 class="panel-title">Đội đã đăng ký</h3><p class="text-muted">Chỉ các đội đăng ký vòng loại này mới xuất hiện ở đây.</p>
     <div class="ide-toolbar-row"><input id="qualifier-search" class="input-text-sm" placeholder="Tìm mã sinh viên / tên đội" oninput="qualifierFilterChanged()"><select id="qualifier-filter" class="input-text-sm" onchange="qualifierFilterChanged()"><option value="">Tất cả</option><option value="NOT_SUBMITTED">Chưa nộp</option><option value="PENDING">Đã nhận · Đang chấm</option><option value="INVALID">Chưa có bản hợp lệ</option><option value="VALID">Có bản hợp lệ</option><option value="LOCKED">Đã khóa</option></select></div>
-    <div class="table-responsive"><table class="table-clean"><thead><tr><th>Mã sinh viên</th><th>Đội</th><th>Trạng thái</th><th>ELO</th></tr></thead><tbody id="qualifier-teams"></tbody></table></div>
+    <div class="table-responsive"><table class="table-clean"><thead><tr><th>Mã sinh viên</th><th>Đội</th><th>Trạng thái</th><th>ELO</th><th>Nộp gần nhất</th><th>Bài nộp</th></tr></thead><tbody id="qualifier-teams"></tbody></table></div>
     <div class="qualifier-pagination"><button class="btn-outline" onclick="qualifierPage('teams',-1)">Trước</button><span id="qualifier-teams-page"></span><button class="btn-outline" onclick="qualifierPage('teams',1)">Sau</button></div>
   </div>
   <div class="content-card" id="qualifier-ranking-card" hidden>
@@ -54,6 +54,11 @@
     <p class="text-muted admin-only">Tạo giải chính trống tại Bảng đấu với số đội đúng top K, rồi chọn giải để chốt.</p>
   </div>
 </section>
+<dialog class="stage-schedule-dialog" id="qualifier-submission-dialog">
+  <div class="card-head-compact"><h3 id="qualifier-submission-title">Bài nộp</h3><button type="button" aria-label="Đóng hộp thoại" onclick="this.closest('dialog').close()">×</button></div>
+  <select id="qualifier-submission-select" class="input-text-sm" aria-label="Chọn phiên bản bài nộp"></select>
+  <p id="qualifier-submission-meta" role="status"></p><pre id="qualifier-submission-code"></pre>
+</dialog>
 <dialog class="stage-schedule-dialog" id="qualifier-config-dialog"><form onsubmit="saveQualifierConfig(event)">
   <div class="card-head-compact"><h3>Cấu hình vòng loại</h3><button type="button" class="btn-outline" aria-label="Đóng hộp thoại" onclick="document.getElementById('qualifier-config-dialog').close()">×</button></div>
   <label>Tên vòng loại<input id="qualifier-config-name" class="login-input-field" required maxlength="100"></label>

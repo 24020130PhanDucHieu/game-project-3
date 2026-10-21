@@ -219,7 +219,6 @@ function setupStudioControls() {
       const payload={side,code_content:code,language:language.value,round_number:round,explanation:document.getElementById('studio-rule-note')?.value || ''};
       if(currentAppRole==='TEAM'){
         await arenaOutbox.submit(`/api/tournaments/${tournamentId}/matches/${matchId}/code`,payload);
-        notifyInfo('Đã lưu trên thiết bị','Bài sẽ tự gửi khi có mạng. Chưa được server xác nhận.');
       }else{
         const response=await fetch(`${API_BASE}/api/tournaments/${tournamentId}/matches/${matchId}/code`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
         const result=await response.json();if(!response.ok)throw new Error(result.detail||'Submission failed');

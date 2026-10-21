@@ -235,7 +235,7 @@ func (h *QualifierHandler) Teams(c *gin.Context) {
 		if filter != "" && filter != status {
 			continue
 		}
-		items = append(items, gin.H{"student_id": p.SID, "team_name": p.Name, "test_bot": p.TestBot, "status": status, "elo": p.Elo, "wins": p.Wins, "played": p.Played})
+		items = append(items, gin.H{"student_id": p.SID, "team_name": p.Name, "test_bot": p.TestBot, "status": status, "elo": p.Elo, "wins": p.Wins, "played": p.Played, "submitted_at": p.SubmittedAt})
 	}
 	sort.Slice(items, func(i, j int) bool { return items[i]["student_id"].(string) < items[j]["student_id"].(string) })
 	page := qualifierPage(c)

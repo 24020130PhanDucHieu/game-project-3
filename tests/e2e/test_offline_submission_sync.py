@@ -25,6 +25,8 @@ def run():
             arena.tab(page,'tab-qualifier')
             page.evaluate('(id)=>selectQualifier(id)',qid)
             expect(page.locator('#qualifier-submit')).to_be_enabled()
+            assert page.locator('#tab-qualifier .admin-only:visible').count()==0
+            assert not page.locator('#qualifier-registration-card').is_visible()
             page.locator('#qualifier-code').fill(arena.CODE)
             page.context.set_offline(True)
             page.locator('#qualifier-submit').click()
@@ -41,6 +43,21 @@ def run():
                 after=arena.api('GET',f'/api/qualifiers/{qid}',token=token)
             assert len(after['history'])==1 and after['history'][0]['valid'],after
             assert after['participant']['valid_id']==after['history'][0]['id']
+            admin_detail=arena.api('GET',f'/api/qualifiers/{qid}?student_id=27778888',token=admin)
+            assert admin_detail['history'][0]['code']==arena.CODE
+            teams=arena.api('GET',f'/api/qualifiers/{qid}/teams',token=admin)
+            assert teams['items'][0]['submitted_at']>0
+            arena.api('GET',f'/api/qualifiers/{qid}/teams',token=token,expected=403)
+            arena.api('POST','/api/teams/register',{'student_id':'27778889','team_name':'Other team','password':'offline123'},expected=201)
+            other=arena.api('POST','/api/teams/login',{'username':'27778889','password':'offline123'})['session_token']
+            private=arena.api('GET',f'/api/qualifiers/{qid}?student_id=27778888',token=other)
+            assert not private.get('history'),'team cannot read another team code'
+            page.evaluate("token=>{sessionStorage.setItem('arenaSessionToken',token);currentAppRole='ADMIN';updateRoleUI();}",admin)
+            page.evaluate('(id)=>openQualifierSubmission(id,"27778888","Offline team")',qid)
+            expect(page.locator('#qualifier-submission-code')).to_have_text(arena.CODE)
+            page.evaluate("()=>{currentAppRole='TEAM';updateRoleUI();}")
+            assert not page.locator('#qualifier-submission-dialog').is_visible()
+            assert page.locator('#qualifier-submission-code').inner_text()==''
             assert not errors,errors
             print('PASS offline submit: no server write offline, automatic reconnect, one validated stored submission',flush=True)
         finally:browser.close()

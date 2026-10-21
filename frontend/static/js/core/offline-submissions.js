@@ -22,7 +22,8 @@ const arenaOutbox = (() => {
       document.body.appendChild(box);
     }
     const list=rows(); box.replaceChildren();
-    box.hidden = !list.length && navigator.onLine;
+    // Avoid flashing the offline panel during a normal, fast online submission.
+    box.hidden = navigator.onLine && (!list.length || list.every(r=>!r.error&&!r.awaitingAuth&&Date.now()-r.created<1000));
     const blocked=list.find(r=>r.error);
 
     const headRow=document.createElement('div');
@@ -32,7 +33,7 @@ const arenaOutbox = (() => {
     title.textContent='Bài nộp ngoại tuyến';
     const stateBadge=document.createElement('span');
     stateBadge.style.cssText=`font-size:11px; padding:2px 8px; border-radius:10px; font-weight:600; background:${navigator.onLine?'#dcfce7':'#f1f5f9'}; color:${navigator.onLine?'#166534':'#64748b'};`;
-    stateBadge.textContent=navigator.onLine?'Đang gửi...':'Đang chờ mạng';
+    stateBadge.textContent=blocked?'Cần xử lý':list.some(r=>r.awaitingAuth)?'Cần đăng nhập':navigator.onLine?'Chờ xác nhận':'Đang chờ mạng';
     headRow.appendChild(title);
     headRow.appendChild(stateBadge);
     box.appendChild(headRow);
@@ -232,9 +233,12 @@ const arenaOutbox = (() => {
     if(!owner())throw new Error('Đăng nhập tài khoản đội trước khi lưu bài offline.');
     if(new TextEncoder().encode(payload.code||payload.code_content||'').length>65536)throw new Error('Mã nguồn tối đa 64 KB.');
     if(rows().length>=20)throw new Error('Còn 20 bài chờ đồng bộ. Hãy kết nối mạng hoặc tải bản dự phòng.');
+    const duplicate=rows().find(r=>r.path===path&&JSON.stringify(r.payload)===JSON.stringify(payload)&&!r.error);
+    if(duplicate){status();schedule(0);return {queued:true};}
     const row={id:crypto.randomUUID(),owner:owner(),path,payload,created:Date.now()};
     try{save(row);}catch{throw new Error('Thiết bị không lưu được bài. Hãy tải mã nguồn ra file; bài chưa được nhận.');}
-    status();schedule(0);
+    status();schedule(0);setTimeout(status,1100);
+    if(!navigator.onLine)notifyInfo('Đã lưu trên thiết bị','Bài sẽ tự gửi khi có mạng. Chưa được server xác nhận.');
     return {queued:true};
   }
   window.addEventListener('online',()=>{status();schedule();});

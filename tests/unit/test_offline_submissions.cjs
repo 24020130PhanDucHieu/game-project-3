@@ -13,7 +13,10 @@ function app(){
  vm.createContext(context);vm.runInContext(fs.readFileSync('frontend/static/js/core/offline-submissions.js','utf8')+'\nglobalThis.outbox=arenaOutbox;',context);return context;
 }
 (async()=>{
- let a=app();await a.outbox.submit('/api/qualifiers/q/submissions',{code:'return 1',language:'PYTHON'});
+ let a=app();let notices=0;a.notifyInfo=()=>notices++;
+ await a.outbox.submit('/api/qualifiers/q/submissions',{code:'return 1',language:'PYTHON'});
+ await a.outbox.submit('/api/qualifiers/q/submissions',{code:'return 1',language:'PYTHON'});
+ assert.equal(notices,1,'repeated offline click should not duplicate toast or payload');
  assert.equal(a.outbox.rows().length,1);await a.outbox.flush();assert.equal(a.outbox.rows().length,1);
  a=app();assert.equal(a.outbox.rows().length,1,'survives reload');
  a.currentTeamStudentId='bob';assert.equal(a.outbox.rows().length,0,'account isolation');await a.outbox.flush();
@@ -35,7 +38,9 @@ function app(){
  const originalID=row.id;
  a.fetch=async(url,init)=>{assert.equal(init.headers['X-Submission-Id'],originalID);return new Response('{"valid":true}',{status:200});};
  await a.outbox.flush();assert.equal(a.outbox.rows().length,0);
+ notices=0;a.notifyInfo=()=>notices++;
  await a.outbox.submit('/api/qualifiers/q/submissions',{code:'queued'});
+ assert.equal(notices,0,'online submission must not announce offline storage');
  a.fetch=async()=>new Response('{"status":"QUEUED","id":"durable-id","at":123,"valid":false}',{status:202});
  let warned=false;a.notifyWarning=()=>{warned=true};
  await a.outbox.flush();

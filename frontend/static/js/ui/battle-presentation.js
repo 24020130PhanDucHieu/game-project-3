@@ -44,7 +44,7 @@ function renderLiveAction(match, record, step, index = 0) {
   const ready = Boolean(match.all_teams_ready);
   if (badge) {
     badge.className = `live-state-pill ${running ? "is-running" : match.status === "COMPLETED" || match.round_status === "ROUND_FINISHED" ? "is-complete" : "is-waiting"}`;
-    badge.textContent = running ? "Đang thực thi" : match.status === "COMPLETED" ? "Đã kết thúc" : match.round_status === "ROUND_FINISHED" ? "Hiệp hoàn tất" : ready ? "Sẵn sàng" : "Chờ nộp bot";
+    badge.textContent = running ? "Đang thực thi" : step && index < record.board_steps.length-1 ? `Đang phát hiệp ${record.round_number}` : step ? `Đã phát xong hiệp ${record.round_number}` : match.status === "COMPLETED" ? "Đã kết thúc" : match.round_status === "ROUND_FINISHED" ? "Hiệp hoàn tất" : ready ? "Sẵn sàng" : "Chờ nộp bot";
   }
   if (caption) caption.textContent = step && !running ? `Hiệp ${record.round_number} · ${step.turn_label || `Nước ${index + 1}`}` : `Hiệp ${match.current_round_idx || 1}`;
   if (counter) counter.textContent = step && !running ? `Bước ${index + 1} / ${record.board_steps.length}` : "";
