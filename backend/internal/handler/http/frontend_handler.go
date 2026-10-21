@@ -54,6 +54,26 @@ func RegisterFrontendRoutes(router *gin.Engine) bool {
 			log.Printf("Could not render frontend: %v", err)
 		}
 	})
+	router.GET("/sw.js", func(c *gin.Context) {
+		c.Header("Content-Type", "application/javascript")
+		c.Header("Cache-Control", "no-cache")
+		c.File(filepath.Join(root, "sw.js"))
+	})
+	router.GET("/offline-assets.json", func(c *gin.Context) {
+		c.Header("Content-Type", "application/json")
+		manifestPath := filepath.Join(root, "offline-assets.json")
+		if _, err := os.Stat(manifestPath); err == nil {
+			c.File(manifestPath)
+			return
+		}
+		c.JSON(200, []string{
+			"/",
+			"/static/css/arena.css",
+			"/static/js/app.js",
+			"/static/js/core/offline-validator.js",
+			"/static/js/core/offline-submissions.js",
+		})
+	})
 	router.StaticFS("/static", http.FS(os.DirFS(filepath.Join(root, "static"))))
 	router.StaticFS("/assets", http.FS(os.DirFS(filepath.Join(root, "assets"))))
 	return true

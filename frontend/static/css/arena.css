@@ -401,3 +401,40 @@
   font-weight: 600;
   color: var(--text-muted);
 }
+
+/* BANNER CHẾ ĐỘ THI OFFLINE (NGẮT MẠNG) */
+.offline-exam-pill-banner {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  color: #f8fafc;
+  border-bottom: 2px solid #3b82f6;
+  padding: 8px 16px;
+  font-size: 13px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  position: sticky;
+  top: 0;
+}
+
+.offline-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.offline-pulse-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #f59e0b;
+  border-radius: 50%;
+  animation: pulseWarning 1.5s infinite;
+}
+
+@keyframes pulseWarning {
+  0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); }
+  70% { transform: scale(1.2); box-shadow: 0 0 0 8px rgba(245, 158, 11, 0); }
+  100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
+}
+

@@ -154,22 +154,52 @@ function setupStudioControls() {
   });
   const dryrun = document.getElementById("btn-studio-dryrun");
   dryrun?.addEventListener("click", async () => {
-    if (!navigator.onLine) { notifyInfo('Đang mất kết nối', 'Mã vẫn lưu trên thiết bị. Kết nối lại máy chủ để kiểm tra mã.'); return; }
     if (!editor.value.trim()) { notifyWarning("Chưa có mã", "Hãy viết mã bot trước khi kiểm tra."); return; }
+    const match = currentTournamentData?.matches?.[currentActiveMatchId];
+    const configured = currentTournamentData?.stage_rules?.[match?.round_level];
+    const ruleId = configured?.rule_id || currentTournamentData?.stage_rule || 'STAGE_1_STANDARD';
+
+    // Nếu đang mất kết nối hoặc ở chế độ thi offline: kiểm tra cú pháp trực tiếp trên trình duyệt
+    if (!navigator.onLine || (typeof isOfflineExamMode === "function" && isOfflineExamMode())) {
+      if (typeof validateBotCodeOffline === "function") {
+        const offlineResult = validateBotCodeOffline(editor.value, language.value, ruleId);
+        if (offlineResult.is_valid) {
+          notifySuccess("Kiểm tra Offline: Hợp lệ", offlineResult.message);
+        } else {
+          notifyWarning("Kiểm tra Offline: Cú pháp lỗi", offlineResult.error_message);
+        }
+      } else {
+        notifyInfo('Đang mất kết nối', 'Mã vẫn lưu trên thiết bị. Kết nối lại máy chủ để kiểm tra mã.');
+      }
+      return;
+    }
+
     dryrun.disabled = true;
     const dryrunLabel = dryrun.querySelector("span");
     if (dryrunLabel) dryrunLabel.textContent = "Đang kiểm tra…";
     dryrun.setAttribute("aria-busy", "true");
     try {
-      const match = currentTournamentData?.matches?.[currentActiveMatchId];
-      const configured = currentTournamentData?.stage_rules?.[match?.round_level];
       if (configured?.hidden || configured?.publish_at > Date.now()/1000) throw new Error('Chờ công bố luật vòng đấu.');
-      const response = await fetch(`${API_BASE}/api/bots/validate`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({code_content:editor.value,language:language.value,rule_id:configured?.rule_id || currentTournamentData?.stage_rule || 'STAGE_1_STANDARD'}) });
+      const response = await fetch(`${API_BASE}/api/bots/validate`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({code_content:editor.value,language:language.value,rule_id:ruleId}) });
       const result = await response.json();
       if (!response.ok) throw new Error(result.detail || "Không kiểm tra được mã.");
       if (result.is_valid) notifySuccess("Mã hợp lệ", `Sandbox đã thực thi bot (${result.execution_time_ms || 0}ms).`);
       else notifyWarning("Mã không hợp lệ", result.error_message || "Bot không trả về nước đi hợp lệ.");
-    } catch (error) { notifyError("Không kiểm tra được mã",error.message); }
+    } catch (error) {
+      if (!navigator.onLine || error.message.includes("fetch") || error.message.includes("Network")) {
+        if (typeof validateBotCodeOffline === "function") {
+          const offlineResult = validateBotCodeOffline(editor.value, language.value, ruleId);
+          if (offlineResult.is_valid) {
+            notifySuccess("Kiểm tra Offline (Mất mạng)", offlineResult.message);
+            return;
+          } else {
+            notifyWarning("Kiểm tra Offline: Cú pháp lỗi", offlineResult.error_message);
+            return;
+          }
+        }
+      }
+      notifyError("Không kiểm tra được mã",error.message);
+    }
     finally {
       dryrun.disabled = false;
       dryrun.removeAttribute("aria-busy");

@@ -17,9 +17,36 @@ function renderQualifierOwn(data){
 async function loadQualifierFile(input){const file=input.files?.[0];if(!file)return;if(file.size>65536){notifyWarning('File quá lớn','Giới hạn 64 KB.');return;}document.getElementById('qualifier-code').value=await file.text();document.getElementById('qualifier-language').value=file.name.toLowerCase().endsWith('.cpp')?'CPP':'PYTHON';saveQualifierDraft();input.value='';}
 async function loadQualifierTemplate(){const language=document.getElementById('qualifier-language').value;try{const response=await fetch(`/assets/bots_sdk/bot_template.${language==='CPP'?'cpp':'py'}`);if(!response.ok)throw new Error('Không tải được mã mẫu.');document.getElementById('qualifier-code').value=await response.text();saveQualifierDraft();}catch(err){notifyError('Không tải được mẫu',err.message);}}
 async function checkQualifierCode(){
-  if(!navigator.onLine){notifyInfo('Đang mất kết nối','Mã vẫn lưu trên thiết bị. Kết nối lại máy chủ để kiểm tra mã và chạy thử.');return;}
+  const codeVal = document.getElementById('qualifier-code').value;
+  const langVal = document.getElementById('qualifier-language').value;
+  if (!codeVal.trim()) { notifyWarning('Chưa có mã', 'Hãy viết mã bot trước khi kiểm tra.'); return; }
+  if (!navigator.onLine || (typeof isOfflineExamMode === 'function' && isOfflineExamMode())) {
+    if (typeof validateBotCodeOffline === 'function') {
+      const res = validateBotCodeOffline(codeVal, langVal);
+      if (res.is_valid) notifySuccess('Kiểm tra Offline: Hợp lệ', res.message);
+      else notifyWarning('Kiểm tra Offline: Cú pháp lỗi', res.error_message);
+    } else {
+      notifyInfo('Đang mất kết nối', 'Mã vẫn lưu trên thiết bị. Kết nối lại máy chủ để kiểm tra mã và chạy thử.');
+    }
+    return;
+  }
   const button=document.getElementById('qualifier-check');if(button.disabled)return;button.disabled=true;
-  try{const response=await fetch(`${API_BASE}/api/bots/validate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code_content:document.getElementById('qualifier-code').value,language:document.getElementById('qualifier-language').value})});const data=await response.json();if(!response.ok)throw new Error(data.detail||'Không kiểm tra được bot.');if(data.is_valid)notifySuccess('Bot hợp lệ','Có thể nộp bài.');else notifyWarning('Bot chưa hợp lệ',data.error_message||'Kiểm tra lại mã nguồn.');}catch(err){notifyError('Không kiểm tra được',err.message);}finally{button.disabled=false;}
+  try{
+    const response=await fetch(`${API_BASE}/api/bots/validate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code_content:codeVal,language:langVal})});
+    const data=await response.json();
+    if(!response.ok)throw new Error(data.detail||'Không kiểm tra được bot.');
+    if(data.is_valid)notifySuccess('Bot hợp lệ','Có thể nộp bài.');
+    else notifyWarning('Bot chưa hợp lệ',data.error_message||'Kiểm tra lại mã nguồn.');
+  }catch(err){
+    if (!navigator.onLine || err.message.includes('fetch') || err.message.includes('Network')) {
+      if (typeof validateBotCodeOffline === 'function') {
+        const res = validateBotCodeOffline(codeVal, langVal);
+        if (res.is_valid) { notifySuccess('Kiểm tra Offline (Mất mạng)', res.message); return; }
+        else { notifyWarning('Kiểm tra Offline: Cú pháp lỗi', res.error_message); return; }
+      }
+    }
+    notifyError('Không kiểm tra được',err.message);
+  }finally{button.disabled=false;}
 }
 async function submitQualifierCode(){
   const button=document.getElementById('qualifier-submit');if(button.disabled)return;button.disabled=true;
