@@ -29,5 +29,17 @@ class TestGameRulesEngine(unittest.TestCase):
         result = GameRulesEngine.check_clash("SCISSORS", "ROCK", is_reverse=True)
         self.assertEqual(result, 1)
 
+    def test_joker_beats_all_standard_pieces(self):
+        for piece in ("ROCK", "PAPER", "SCISSORS"):
+            self.assertEqual(GameRulesEngine.check_clash("JOKER", piece), 1)
+            self.assertEqual(GameRulesEngine.check_clash(piece, "JOKER"), -1)
+            # Joker also beats all in reverse mode
+            self.assertEqual(GameRulesEngine.check_clash("JOKER", piece, is_reverse=True), 1)
+            self.assertEqual(GameRulesEngine.check_clash(piece, "JOKER", is_reverse=True), -1)
+
+    def test_joker_vs_joker_draw(self):
+        self.assertEqual(GameRulesEngine.check_clash("JOKER", "JOKER"), 0)
+        self.assertEqual(GameRulesEngine.check_clash("JOKER", "JOKER", is_reverse=True), 0)
+
 if __name__ == "__main__":
     unittest.main()

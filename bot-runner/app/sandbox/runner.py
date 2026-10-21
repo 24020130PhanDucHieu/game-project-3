@@ -196,7 +196,7 @@ class BotRunner:
                 t_elapsed = time.time() - t0
                 if run_err:
                     return ValidationResult(False, f"Lỗi thực thi C++: {run_err}")
-                if move not in ["ROCK", "PAPER", "SCISSORS"]:
+                if move not in ["ROCK", "PAPER", "SCISSORS", "JOKER"]:
                     return ValidationResult(False, f"Output C++ không hợp lệ: '{move}'")
                 return ValidationResult(True, None, test_move=move, execution_time_ms=round(t_elapsed * 1000, 2))
             finally:

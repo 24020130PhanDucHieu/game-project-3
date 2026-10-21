@@ -3,6 +3,7 @@ const PIECE_ICONS = {
   "ROCK": "BÚA",
   "PAPER": "BAO",
   "SCISSORS": "KÉO",
+  "JOKER": "JOKER",
   "UNKNOWN": "Quân đối thủ chưa rõ loại",
   "PENDING": "Chờ xếp quân khi bắt đầu hiệp"
 };

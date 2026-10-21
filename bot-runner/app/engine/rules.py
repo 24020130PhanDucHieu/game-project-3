@@ -76,7 +76,13 @@ class GameRulesEngine:
         """
         if move_a == move_b:
             return 0
-            
+
+        # Quân Joker (Đa Năng): thắng bất kỳ quân nào, hòa khi đối đầu Joker
+        if move_a == "JOKER":
+            return 1
+        if move_b == "JOKER":
+            return -1
+
         # Ma trận thắng cổ điển: Búa thắng Kéo, Kéo thắng Bao, Bao thắng Búa
         normal_wins = {
             ("ROCK", "SCISSORS"): True,

@@ -5,18 +5,20 @@ const BOARD_RULE_PRESETS = {
   RULE_FOG: { name: 'Sương mù', description: '3 Búa, 3 Bao, 3 Kéo. Tương khắc chuẩn. Bot thấy vị trí nhưng không thấy loại quân đối phương hoặc nước chọn trong lịch sử đối thủ.' },
   RULE_MUTATED_FOG: { name: 'Quân lệch + sương mù', description: '5 Búa, 2 Bao, 2 Kéo. Tương khắc chuẩn. Bot không thấy loại quân hoặc nước chọn của đối thủ.' },
   STAGE_3_REVERSE_FOG: { name: 'Sương mù + đảo lượt lẻ (luật cũ)', description: '3 quân mỗi loại; ẩn loại quân đối phương, đảo tương khắc ở lượt lẻ của mỗi đội.' },
-  STAGE_4_FINALS: { name: 'Chung kết biến thể (luật cũ)', description: '2 Búa, 4 Bao, 3 Kéo; sương mù, đảo tương khắc mỗi lượt chia hết cho 3.' }
+  STAGE_4_FINALS: { name: 'Chung kết biến thể (luật cũ)', description: '2 Búa, 4 Bao, 3 Kéo; sương mù, đảo tương khắc mỗi lượt chia hết cho 3.' },
+  RULE_SPECIAL_TILES: { name: 'Ô đặc biệt & Joker', description: 'Ô Tiến Hóa (4,4), Cổng Dịch Chuyển (2,2)⟷(6,6), Bẫy Mìn và mỗi đội có 1 Quân Joker Vàng (di chuyển tối đa 5 bước).' }
 };
 const RULE_OPTIONS = [
   {bit:1, name:'Trộn quân', detail:'9 quân mỗi bên, số lượng từng loại và vị trí ngẫu nhiên theo hiệp.'},
   {bit:2, name:'Đảo tương khắc', detail:'Búa thắng Bao · Bao thắng Kéo · Kéo thắng Búa.'},
-  {bit:4, name:'Sương mù', detail:'Quân đối thủ hiện dấu ?; bot không nhận loại quân đối thủ.'}
+  {bit:4, name:'Sương mù', detail:'Quân đối thủ hiện dấu ?; bot không nhận loại quân đối thủ.'},
+  {bit:8, name:'Ô đặc biệt & Joker', detail:'Ô Tiến Hóa (4,4), Cổng Dịch Chuyển (2,2)⟷(6,6), Bẫy Mìn và Quân Joker Vàng.'}
 ];
 function ruleBits(id) {
-  if (/^COMBO_[0-7]$/.test(id)) return Number(id.slice(-1));
-  return {STAGE_2_MUTATED:1,RULE_REVERSE:2,RULE_FOG:4,RULE_MUTATED_FOG:5,STAGE_3_REVERSE_FOG:6,STAGE_4_FINALS:7}[id] || 0;
+  if (/^COMBO_\d+$/.test(id)) return Number(id.slice(6));
+  return {STAGE_2_MUTATED:1,RULE_REVERSE:2,RULE_FOG:4,RULE_MUTATED_FOG:5,STAGE_3_REVERSE_FOG:6,STAGE_4_FINALS:7,RULE_SPECIAL_TILES:8}[id] || 0;
 }
-for (let bits=0; bits<8; bits++) {
+for (let bits=0; bits<16; bits++) {
   const chosen = RULE_OPTIONS.filter(option => bits & option.bit);
   BOARD_RULE_PRESETS[`COMBO_${bits}`] = {
     name: chosen.map(option => option.name).join(' + ') || 'Luật chuẩn',

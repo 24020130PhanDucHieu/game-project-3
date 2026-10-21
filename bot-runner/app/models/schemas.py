@@ -13,13 +13,15 @@ class MoveType:
     ROCK = "ROCK"
     PAPER = "PAPER"
     SCISSORS = "SCISSORS"
-    ALL = [ROCK, PAPER, SCISSORS]
+    JOKER = "JOKER"
+    ALL = [ROCK, PAPER, SCISSORS, JOKER]
 
 class TournamentStage:
     STAGE_1_STANDARD = "STAGE_1_STANDARD"       # 15 thẻ đều (5-5-5), 100 HP, sát thương 15
     STAGE_2_MUTATED = "STAGE_2_MUTATED"         # 7 Búa, 3 Bao, 5 Kéo; Hiệp chẵn x2 sát thương (30 HP)
     STAGE_3_REVERSE_FOG = "STAGE_3_REVERSE_FOG" # Hiệp lẻ đảo tương khắc; Sương mù ẩn bài đối thủ
     STAGE_4_FINALS = "STAGE_4_FINALS"           # Cấu hình luật động do Server truyền (Meta-Injection)
+    STAGE_5_SPECIAL_TILES = "RULE_SPECIAL_TILES" # Ô Tiến hóa, Cổng dịch chuyển, Bẫy mìn, Joker
 
 class BotLanguage:
     PYTHON = "PYTHON"

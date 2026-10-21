@@ -10,13 +10,46 @@ from app.engine.board_rules import board_rules, initial_board
 from app.sandbox.runner import BotRunner
 
 MOVES = ("ROCK", "PAPER", "SCISSORS")
+ALL_MOVES = ("ROCK", "PAPER", "SCISSORS", "JOKER")
+
+PORTAL_WARP_MAP = {
+    (2, 2): (6, 6),
+    (6, 6): (2, 2),
+    (2, 6): (6, 2),
+    (6, 2): (2, 6)
+}
+EVOLVE_TILES_SET = {(4, 4)}
+TRAP_TILES_SET = {(3, 4), (5, 4), (4, 1), (4, 7)}
+EVOLVE_CYCLE = {
+    "SCISSORS": "ROCK",
+    "ROCK": "PAPER",
+    "PAPER": "SCISSORS"
+}
 
 
 def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1,
-                   stage_rule="STAGE_1_STANDARD", tie_seed=None, reuse_sandbox=False):
+                   stage_rule="STAGE_1_STANDARD", tie_seed=None, reuse_sandbox=False,
+                   special_tiles=None):
     tie_seed = tie_seed or secrets.token_hex(16)
     initial_rules = board_rules(stage_rule, seed=tie_seed)
+    if special_tiles is not None:
+        initial_rules["special_tiles"] = special_tiles
+        if special_tiles and not initial_rules.get("mystery_tiles"):
+            initial_rules["mystery_tiles"] = {
+                "evolve": [(4, 4)],
+                "portals": [((2, 2), (6, 6)), ((2, 6), (6, 2))],
+                "traps": [(3, 4), (5, 4), (4, 1), (4, 7)]
+            }
+    special_mode = bool(initial_rules.get("special_tiles", False))
     pieces = initial_board(stage_rule, seed=tie_seed)
+    if special_mode and not any(p["type"] == "JOKER" for p in pieces["team_a"]):
+        for side in ("team_a", "team_b"):
+            for p in pieces[side]:
+                if p["col"] == 4:
+                    p["type"] = "JOKER"
+                    p["steps_left"] = 5
+                    break
+    active_traps = set(tuple(c) for c in initial_rules.get("mystery_tiles", {}).get("traps", []))
     targets = {"team_a": (8, 0), "team_b": (0, 8)}
     names = {"team_a": "Đỏ", "team_b": "Xanh"}
     colors = {"team_a": "red", "team_b": "blue"}
@@ -76,9 +109,15 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
             opponent = "team_b" if side == "team_a" else "team_a"
             cycle = ply // 2 + 1
             own, enemy = alive(side), alive(opponent)
-            cards = {move: sum(p["type"] == move for p in own) for move in MOVES}
             active_rules = board_rules(stage_rule, cycle, seed=tie_seed)
+            if special_mode:
+                active_rules["special_tiles"] = True
+                if not active_rules.get("mystery_tiles"):
+                    active_rules["mystery_tiles"] = initial_rules.get("mystery_tiles", {})
             fog, reverse = active_rules["fog"], active_rules["reverse"]
+            has_joker_now = any(p["type"] == "JOKER" for p in own)
+            card_types = ALL_MOVES if (special_mode or has_joker_now) else MOVES
+            cards = {move: sum(p["type"] == move for p in own) for move in card_types}
             history = copy.deepcopy(histories[side])
             if fog:
                 for entry in history:
@@ -100,7 +139,8 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                                else BotRunner.run_python_code(codes[side], state))
             except Exception as exc:
                 move, error = None, str(exc)
-            if error or move not in MOVES:
+            allowed_moves = ALL_MOVES if (special_mode or has_joker_now) else MOVES
+            if error or move not in allowed_moves:
                 errors[side] = str(error or "Nước đi không hợp lệ.")
                 winner, reason = opponent, f"Đội {names[side]} bị xử thua: bot lỗi hoặc quá thời gian."
                 snapshot(reason, side, cycle=cycle)
@@ -108,7 +148,8 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
             histories[side].append({"turn": cycle, "ply": ply + 1, "my_move": move})
             for other_entry in histories[opponent][-1:]:
                 other_entry["opponent_move"] = other_entry["their_move"] = move
-            candidates = sorted(own, key=lambda p: (p["type"] != move, distance(p, side), p["id"]))
+            movable = [p for p in own if not (p["type"] == "JOKER" and p.get("steps_left", 5) <= 0)]
+            candidates = sorted(movable or own, key=lambda p: (p["type"] != move, distance(p, side), p["id"]))
             attacker, destination = None, None
             # Favor a winning adjacent capture; same-type encounters favor defense.
             for candidate in candidates:
@@ -132,10 +173,53 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
             clash = None
             log = f"Đội {names[side]} không có ô di chuyển hợp lệ, bỏ lượt."
             if attacker:
-                defender = next((p for p in enemy if (p["col"], p["row"]) == destination), None)
-                attacker["col"], attacker["row"] = destination
-                log = f"Đội {names[side]} điều quân ({attacker['type']}) tới [{destination[0]},{destination[1]}]."
-                if defender:
+                if attacker["type"] == "JOKER":
+                    attacker["steps_left"] = attacker.get("steps_left", 5) - 1
+
+                # Check Portal Warp
+                if special_mode and destination in PORTAL_WARP_MAP:
+                    warp_target = PORTAL_WARP_MAP[destination]
+                    if not any(p["alive"] and (p["col"], p["row"]) == warp_target for p in own if p is not attacker):
+                        origin_portal = destination
+                        destination = warp_target
+                        attacker["col"], attacker["row"] = destination
+                        defender = next((p for p in enemy if (p["col"], p["row"]) == destination), None)
+                        if defender:
+                            log = f"⚡ [Cổng Dịch Chuyển] Quân ({attacker['type']}) của Đội {names[side]} nhảy từ [{origin_portal[0]},{origin_portal[1]}] sang [{destination[0]},{destination[1]}] tập kích ({defender['type']}) đối thủ!"
+                        else:
+                            log = f"⚡ [Cổng Dịch Chuyển] Quân ({attacker['type']}) của Đội {names[side]} nhảy từ [{origin_portal[0]},{origin_portal[1]}] sang [{destination[0]},{destination[1]}] sau lưng đối thủ!"
+                        clash = {"type": "WARP", "from_col": origin_portal[0], "from_row": origin_portal[1],
+                                 "col": destination[0], "row": destination[1], "log": log}
+                    else:
+                        attacker["col"], attacker["row"] = destination
+                        defender = next((p for p in enemy if (p["col"], p["row"]) == destination), None)
+                        log = f"Đội {names[side]} điều quân ({attacker['type']}) tới [{destination[0]},{destination[1]}]."
+                else:
+                    attacker["col"], attacker["row"] = destination
+                    defender = next((p for p in enemy if (p["col"], p["row"]) == destination), None)
+                    log = f"Đội {names[side]} điều quân ({attacker['type']}) tới [{destination[0]},{destination[1]}]."
+
+                # Check Evolve Tile
+                if special_mode and destination in EVOLVE_TILES_SET and attacker["type"] in EVOLVE_CYCLE:
+                    old_type = attacker["type"]
+                    attacker["type"] = EVOLVE_CYCLE[old_type]
+                    evolve_msg = f" 🌀 [Ô Tiến Hóa] ({old_type}) tiến hóa thành ({attacker['type']})!"
+                    log += evolve_msg
+                    if not clash:
+                        clash = {"type": "EVOLVE", "col": destination[0], "row": destination[1],
+                                 "old_type": old_type, "new_type": attacker["type"], "log": log}
+
+                # Check Trap Tile
+                if special_mode and destination in active_traps:
+                    active_traps.remove(destination)
+                    attacker["alive"] = False
+                    if defender:
+                        defender["alive"] = False
+                        log = f"💥 [BẪY MÌN PHÁT NỔ] Cả quân ({attacker['type']}) của Đội {names[side]} và ({defender['type']}) của Đội {names[opponent]} dẫm bẫy tại [{destination[0]},{destination[1]}] và cùng bị loại bỏ!"
+                    else:
+                        log = f"💥 [BẪY MÌN PHÁT NỔ] Quân ({attacker['type']}) của Đội {names[side]} dẫm bẫy mìn ẩn tại [{destination[0]},{destination[1]}] và bị loại bỏ!"
+                    clash = {"type": "TRAP", "col": destination[0], "row": destination[1], "side": colors[side], "log": log}
+                elif defender and attacker["alive"] and defender["alive"]:
                     outcome = GameRulesEngine.check_clash(attacker["type"], defender["type"], reverse)
                     winning_side = side if outcome == 1 else opponent
                     losing_piece = defender if outcome == 1 else attacker

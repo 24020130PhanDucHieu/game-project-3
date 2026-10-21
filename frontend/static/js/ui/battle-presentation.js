@@ -2,7 +2,8 @@
 const BATTLE_MOVES = {
   ROCK: { label: "Búa", icon: "hand-rock" },
   PAPER: { label: "Bao", icon: "hand-paper" },
-  SCISSORS: { label: "Kéo", icon: "hand-scissors" }
+  SCISSORS: { label: "Kéo", icon: "hand-scissors" },
+  JOKER: { label: "Joker", icon: "sparkles" }
 };
 
 function pieceIcon(type) {
@@ -20,8 +21,8 @@ function pieceChip(type) {
 function formatBattleLog(value) {
   const text = String(value ?? "");
   // Replace both historical emoji + Vietnamese labels and engine move tokens.
-  const pattern = /(?<![\p{L}\p{N}_])(?:[👊✊✋🖐✌✂🔨🪨]\uFE0F?\s*)?(ROCK|PAPER|SCISSORS|Búa|Bao|Kéo)(?![\p{L}\p{N}_])/giu;
-  const names = { ROCK: "ROCK", PAPER: "PAPER", SCISSORS: "SCISSORS", "BÚA": "ROCK", BAO: "PAPER", "KÉO": "SCISSORS" };
+  const pattern = /(?<![\p{L}\p{N}_])(?:[👊✊✋🖐✌✂🔨🪨⭐🃏]\uFE0F?\s*)?(ROCK|PAPER|SCISSORS|JOKER|Búa|Bao|Kéo|Joker)(?![\p{L}\p{N}_])/giu;
+  const names = { ROCK: "ROCK", PAPER: "PAPER", SCISSORS: "SCISSORS", JOKER: "JOKER", "BÚA": "ROCK", BAO: "PAPER", "KÉO": "SCISSORS" };
   let html = "", offset = 0;
   for (const token of text.matchAll(pattern)) {
     html += escapeHtml(text.slice(offset, token.index)) + pieceChip(names[token[1].toUpperCase()]);

@@ -26,6 +26,28 @@ function initChessboardGrid() {
         cell.title = "Cứ điểm Đích của Đội Xanh [0, 8]";
       }
 
+      // Ô Tiến Hóa (Evolve Tile) tại trung tâm [4, 4]
+      if (c === 4 && r === 4) {
+        cell.classList.add("cell-evolve");
+        cell.title = "Ô Tiến Hóa [4, 4]: Đổi hệ Kéo ➔ Búa ➔ Bao ➔ Kéo";
+      }
+
+      // Ô Cổng Dịch Chuyển (Portal / Warp) đối xứng [2, 2] <-> [6, 6] và [2, 6] <-> [6, 2]
+      if ((c === 2 && r === 2) || (c === 6 && r === 6)) {
+        cell.classList.add("cell-portal");
+        cell.title = "Cổng Dịch Chuyển Không Gian: Nhảy tức thì giữa [2, 2] ⟷ [6, 6]";
+      }
+      if ((c === 2 && r === 6) || (c === 6 && r === 2)) {
+        cell.classList.add("cell-portal");
+        cell.title = "Cổng Dịch Chuyển Không Gian: Nhảy tức thì giữa [2, 6] ⟷ [6, 2]";
+      }
+
+      // Ô Bẫy / Mìn (Trap Tile) ẩn tại các vị trí xung yếu
+      if ((c === 3 && r === 4) || (c === 5 && r === 4) || (c === 4 && r === 1) || (c === 4 && r === 7)) {
+        cell.classList.add("cell-trap");
+        cell.title = "Ô Bẫy Mìn Ẩn: Kích nổ loại bỏ quân dẫm phải";
+      }
+
       boardEl.appendChild(cell);
     }
   }
@@ -38,11 +60,18 @@ function getInitialBoardPieces(ruleId = "STAGE_1_STANDARD") {
     STAGE_4_FINALS: [2, 4, 3]
   }[ruleId];
   const moves = ["ROCK", "PAPER", "SCISSORS"];
-  const typesPattern = /^COMBO_[1357]$/.test(ruleId) ? Array(9).fill('PENDING') : counts
-    ? moves.flatMap((type, index) => Array(counts[index]).fill(type))
-    : [...moves, ...moves, ...moves];
-  const red = typesPattern.map((t, i) => ({ id: `r_${i}`, col: i, row: 7, type: t, alive: true }));
-  const blue = typesPattern.map((t, i) => ({ id: `b_${i}`, col: i, row: 1, type: t, alive: true }));
+  let typesPattern;
+  if (ruleId === "RULE_SPECIAL_TILES" || (typeof ruleBits === "function" && (ruleBits(ruleId) & 8))) {
+    typesPattern = ["ROCK", "PAPER", "SCISSORS", "ROCK", "JOKER", "PAPER", "SCISSORS", "ROCK", "PAPER"];
+  } else if (/^COMBO_[13579]$/.test(ruleId) || /^COMBO_1[135]$/.test(ruleId)) {
+    typesPattern = Array(9).fill('PENDING');
+  } else {
+    typesPattern = counts
+      ? moves.flatMap((type, index) => Array(counts[index]).fill(type))
+      : [...moves, ...moves, ...moves];
+  }
+  const red = typesPattern.map((t, i) => ({ id: `r_${i}`, col: i, row: 7, type: t, alive: true, ...(t === "JOKER" ? { steps_left: 5 } : {}) }));
+  const blue = typesPattern.map((t, i) => ({ id: `b_${i}`, col: i, row: 1, type: t, alive: true, ...(t === "JOKER" ? { steps_left: 5 } : {}) }));
   return { red, blue };
 }
 
@@ -103,6 +132,29 @@ function initRealtimeChessboardGrid() {
         cell.classList.add("cell-target-blue");
         cell.title = "Cứ điểm Đích của Đội Xanh [0, 8]";
       }
+
+      // Ô Tiến Hóa tại trung tâm [4, 4]
+      if (c === 4 && r === 4) {
+        cell.classList.add("cell-evolve");
+        cell.title = "Ô Tiến Hóa [4, 4]: Đổi hệ Kéo ➔ Búa ➔ Bao ➔ Kéo";
+      }
+
+      // Ô Cổng Dịch Chuyển đối xứng
+      if ((c === 2 && r === 2) || (c === 6 && r === 6)) {
+        cell.classList.add("cell-portal");
+        cell.title = "Cổng Dịch Chuyển Không Gian: Nhảy tức thì giữa [2, 2] ⟷ [6, 6]";
+      }
+      if ((c === 2 && r === 6) || (c === 6 && r === 2)) {
+        cell.classList.add("cell-portal");
+        cell.title = "Cổng Dịch Chuyển Không Gian: Nhảy tức thì giữa [2, 6] ⟷ [6, 2]";
+      }
+
+      // Ô Bẫy / Mìn ẩn
+      if ((c === 3 && r === 4) || (c === 5 && r === 4) || (c === 4 && r === 1) || (c === 4 && r === 7)) {
+        cell.classList.add("cell-trap");
+        cell.title = "Ô Bẫy Mìn Ẩn: Kích nổ loại bỏ quân dẫm phải";
+      }
+
       boardEl.appendChild(cell);
     }
   }
@@ -137,7 +189,7 @@ function updateBoardPieces(board, red, blue, clash) {
         node.dataset.type = p.type; node.innerHTML = pieceIcon(p.type);
         node.setAttribute('aria-label', PIECE_ICONS[p.type] || '?');
       }
-      node.title = `${color === 'red' ? 'Đỏ' : 'Xanh'}: ${p.type} (${p.col}, ${p.row})`;
+      node.title = `${color === 'red' ? 'Đỏ' : 'Xanh'}: ${p.type} (${p.col}, ${p.row})${p.steps_left !== undefined ? ` · ${p.steps_left}/5 bước` : ''}`;
       if (node.parentNode !== cell) {
         const previous = node.parentElement;
         const dx = previous ? previous.offsetLeft - cell.offsetLeft : 0;
@@ -152,6 +204,20 @@ function updateBoardPieces(board, red, blue, clash) {
   }
   existing.forEach(node => node.remove());
   const clashCell = clash ? board.children[clash.row * 9 + clash.col] : null;
-  board.querySelectorAll('.cell-clash').forEach(cell => { if (cell !== clashCell) cell.classList.remove('cell-clash'); });
-  clashCell?.classList.add('cell-clash');
+  board.querySelectorAll('.cell-clash, .cell-trap-explode, .cell-warp-active, .cell-evolve-active').forEach(cell => {
+    if (cell !== clashCell) {
+      cell.classList.remove('cell-clash', 'cell-trap-explode', 'cell-warp-active', 'cell-evolve-active');
+    }
+  });
+  if (clashCell && clash) {
+    if (clash.type === 'TRAP') {
+      clashCell.classList.add('cell-trap-explode');
+    } else if (clash.type === 'WARP') {
+      clashCell.classList.add('cell-warp-active');
+    } else if (clash.type === 'EVOLVE') {
+      clashCell.classList.add('cell-evolve-active');
+    } else {
+      clashCell.classList.add('cell-clash');
+    }
+  }
 }

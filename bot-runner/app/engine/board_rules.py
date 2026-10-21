@@ -3,19 +3,31 @@ import random
 
 
 def combination_bits(rule_id):
-    return int(rule_id[-1]) if rule_id in {f"COMBO_{i}" for i in range(8)} else 0
+    if str(rule_id).startswith("COMBO_"):
+        try:
+            return int(str(rule_id).split("_")[1])
+        except (IndexError, ValueError):
+            return 0
+    return 0
 
 
-def shuffled_pattern(seed):
+def shuffled_pattern(seed, has_joker=False):
     rng = random.Random(str(seed) + ':pieces')
     moves = ['ROCK', 'PAPER', 'SCISSORS']
-    pattern = moves + [rng.choice(moves) for _ in range(6)]
+    if has_joker:
+        pattern = ['ROCK', 'PAPER', 'SCISSORS', 'ROCK', 'PAPER', 'SCISSORS', 'ROCK', 'PAPER', 'JOKER']
+    else:
+        pattern = moves + [rng.choice(moves) for _ in range(6)]
     rng.shuffle(pattern)
     return pattern
 
 def board_rules(rule_id, cycle=1, seed='validation'):
+    bits = combination_bits(rule_id)
+    special_tiles = (rule_id in ("RULE_SPECIAL_TILES", "STAGE_SPECIAL_TILES", "STAGE_MYSTERY_TILES") or bool(bits & 8))
     counts = {"ROCK": 3, "PAPER": 3, "SCISSORS": 3}
-    if rule_id in ("STAGE_2_MUTATED", "RULE_MUTATED_FOG"):
+    if special_tiles:
+        counts = {"ROCK": 3, "PAPER": 3, "SCISSORS": 2, "JOKER": 1}
+    elif rule_id in ("STAGE_2_MUTATED", "RULE_MUTATED_FOG"):
         counts = {"ROCK": 5, "PAPER": 2, "SCISSORS": 2}
     elif rule_id == "STAGE_4_FINALS":
         counts = {"ROCK": 2, "PAPER": 4, "SCISSORS": 3}
@@ -23,15 +35,22 @@ def board_rules(rule_id, cycle=1, seed='validation'):
                rule_id == "STAGE_3_REVERSE_FOG" and cycle % 2 == 1 or
                rule_id == "STAGE_4_FINALS" and cycle % 3 == 0)
     fog = rule_id in ("RULE_FOG", "RULE_MUTATED_FOG", "STAGE_3_REVERSE_FOG", "STAGE_4_FINALS")
-    bits = combination_bits(rule_id)
     if bits & 1:
-        pattern = shuffled_pattern(seed)
+        pattern = shuffled_pattern(seed, has_joker=special_tiles)
         counts = {move: pattern.count(move) for move in counts}
     reverse = reverse or bool(bits & 2)
     fog = fog or bool(bits & 4)
+    mystery_tiles = {
+        "evolve": [(4, 4)],
+        "portals": [((2, 2), (6, 6)), ((2, 6), (6, 2))],
+        "traps": [(3, 4), (5, 4), (4, 1), (4, 7)]
+    } if special_tiles else {}
     return {"id": rule_id, "initial_pieces": counts, "fog": fog,
             "shuffle": bool(bits & 1),
-            "reverse": reverse, "board_size": 9, "max_moves": None,
+            "reverse": reverse, "special_tiles": special_tiles,
+            "has_joker": special_tiles,
+            "mystery_tiles": mystery_tiles,
+            "board_size": 9, "max_moves": None,
             "win_conditions": ["capture_base", "eliminate_opponent"]}
 
 
@@ -41,13 +60,19 @@ def match_rule(tournament, match):
 
 
 def initial_board(rule_id, seed='validation'):
-    counts = board_rules(rule_id, seed=seed)["initial_pieces"]
-    moves = ("ROCK", "PAPER", "SCISSORS")
-    pattern = (list(moves) * 3 if all(counts[m] == 3 for m in moves)
-               else [move for move in moves for _ in range(counts[move])])
+    rules = board_rules(rule_id, seed=seed)
+    counts = rules["initial_pieces"]
+    has_joker = rules.get("has_joker", False) or "JOKER" in counts
+    if has_joker:
+        pattern = ["ROCK", "PAPER", "SCISSORS", "ROCK", "JOKER", "PAPER", "SCISSORS", "ROCK", "PAPER"]
+    elif all(counts.get(m, 0) == 3 for m in ("ROCK", "PAPER", "SCISSORS")):
+        pattern = list(("ROCK", "PAPER", "SCISSORS")) * 3
+    else:
+        pattern = [move for move in ("ROCK", "PAPER", "SCISSORS") for _ in range(counts.get(move, 0))]
     if combination_bits(rule_id) & 1:
-        pattern = shuffled_pattern(seed)
+        pattern = shuffled_pattern(seed, has_joker=has_joker)
     return {side: [{"id": f"{prefix}_{i}", "col": i, "row": row,
-                    "type": kind, "alive": True} for i, kind in enumerate(
+                    "type": kind, "alive": True,
+                    **({"steps_left": 5} if kind == "JOKER" else {})} for i, kind in enumerate(
                         list(reversed(pattern)) if side == 'team_b' and combination_bits(rule_id) & 1 else pattern)]
             for side, prefix, row in (("team_a", "r", 7), ("team_b", "b", 1))}
