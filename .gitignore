@@ -33,6 +33,8 @@ bin/
 *.test
 *.out
 backend/server.exe
+*.tar.gz
+
 
 # Database & Runtime Data
 **/accounts_store.json

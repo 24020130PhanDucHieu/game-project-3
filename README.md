@@ -372,9 +372,36 @@ python scripts/build_frontend.py
 
 Đặt thư mục assets/publish là **`frontend/dist`**. Lệnh build ghép cùng các template mà Go sử dụng và chép JS, CSS, SDK sang thư mục này.
 
-Xem thêm: [docs/CLOUD_DEPLOYMENT.md](docs/CLOUD_DEPLOYMENT.md) · [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md)
+### Triển khai tự động lên AWS EC2 (CI/CD & CLI)
+
+Hệ thống hỗ trợ 2 hình thức tự động deploy lên AWS EC2:
+
+1. **Tự động qua GitHub Actions CI/CD** (`.github/workflows/deploy-aws.yml`):
+   - Kích hoạt tự động khi `push` vào nhánh `main` hoặc chạy thủ công qua `workflow_dispatch`.
+   - Tự động chạy bộ test kiểm tra, biên dịch Go binary (Linux amd64), đóng gói release, tải lên EC2 qua SSH, cập nhật dịch vụ systemd (`arena-worker`, `arena-api`), reload Caddy và kiểm tra sức khỏe (/health, /ready).
+   - Yêu cầu cấu hình GitHub Secrets: `AWS_EC2_SSH_KEY`, `AWS_EC2_HOST` (mặc định `13.250.49.111`), `AWS_EC2_USER` (mặc định `ubuntu`).
+
+2. **Deploy trực tiếp một lệnh từ máy cục bộ**:
+   ```bash
+   # Deploy đầy đủ (chạy test, build Linux, upload, restart, verify)
+   make deploy-aws
+   # hoặc:
+   python scripts/deploy_aws.py
+
+   # Deploy nhanh bỏ qua bước chạy test
+   make deploy-aws-quick
+
+   # Kiểm tra sức khỏe & chẩn đoán server AWS từ xa
+   make check-aws
+
+   # Rollback khẩn cấp về bản binary trước đó
+   make rollback-aws
+   ```
+
+Xem thêm: [docs/AWS_EC2.md](docs/AWS_EC2.md) · [docs/CLOUD_DEPLOYMENT.md](docs/CLOUD_DEPLOYMENT.md) · [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md)
 
 ---
+
 
 ## 🔒 Ghi chú Sandbox
 
@@ -413,7 +440,8 @@ Bot Python chạy trong subprocess có **timeout** và **giới hạn tài nguy�
 - [ ] Tối ưu logic reconnect WebSocket cho mạng không ổn định
 - [ ] Thêm API versioning cho tương thích ngược
 - [ ] Cải thiện error logging và monitoring
-- [ ] Thiết lập CI/CD pipeline tự động cho deploy
+- [x] Thiết lập CI/CD pipeline tự động cho deploy (GitHub Actions + scripts/deploy_aws.py)
+
 
 ---
 # Triển khai nhiều máy chấm

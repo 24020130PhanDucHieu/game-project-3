@@ -1,0 +1,137 @@
+name: Automated Deploy to AWS EC2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'bot-runner/**'
+      - 'frontend/**'
+      - 'database/**'
+      - 'deploy/**'
+      - 'scripts/**'
+      - '.github/workflows/deploy-aws.yml'
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip regression tests for emergency deploy'
+        required: false
+        type: boolean
+        default: false
+      rollback:
+        description: 'Rollback to previous server binary'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Build, Verify & Deploy to AWS EC2
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Python & Test Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r bot-runner/requirements.txt
+          pip install -r tests/requirements.txt
+
+      - name: Run Backend Tests
+        if: ${{ !inputs.skip_tests && !inputs.rollback }}
+        working-directory: backend
+        run: go test ./internal/adapter ./internal/auth ./internal/handler/http ./internal/middleware ./internal/observability
+
+      - name: Run Python & Security Tests
+        if: ${{ !inputs.skip_tests && !inputs.rollback }}
+        run: |
+          python -m py_compile bot-runner/main.py bot-runner/app/repository/database.py bot-runner/app/sandbox/runner.py
+          python -m unittest discover -s tests/unit -p 'test_*.py'
+          python -m unittest discover -s tests/security -p 'test_*.py'
+          node tests/unit/test_offline_submissions.cjs
+
+      - name: Build Frontend Static Distribution
+        run: python scripts/build_frontend.py
+
+      - name: Compile Go Server for Linux amd64
+        if: ${{ !inputs.rollback }}
+        working-directory: backend
+        env:
+          CGO_ENABLED: '0'
+          GOOS: 'linux'
+          GOARCH: 'amd64'
+        run: |
+          mkdir -p bin
+          go build -ldflags="-s -w" -o bin/server ./cmd/server
+
+      - name: Package EC2 Release Bundle
+        if: ${{ !inputs.rollback }}
+        run: python scripts/package_ec2.py --binary backend/bin/server --output arena-release.tar.gz
+
+      - name: Configure SSH Key
+        env:
+          EC2_KEY: ${{ secrets.AWS_EC2_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$EC2_KEY" > ~/.ssh/ec2_key.pem
+          chmod 600 ~/.ssh/ec2_key.pem
+
+      - name: Rollback Previous Release on AWS EC2
+        if: ${{ inputs.rollback }}
+        env:
+          AWS_HOST: ${{ secrets.AWS_EC2_HOST || '13.250.49.111' }}
+          AWS_USER: ${{ secrets.AWS_EC2_USER || 'ubuntu' }}
+        run: |
+          python scripts/deploy_aws.py \
+            --rollback \
+            --host "$AWS_HOST" \
+            --user "$AWS_USER" \
+            --key ~/.ssh/ec2_key.pem
+
+      - name: Deploy Release to AWS EC2
+        if: ${{ !inputs.rollback }}
+        env:
+          AWS_HOST: ${{ secrets.AWS_EC2_HOST || '13.250.49.111' }}
+          AWS_USER: ${{ secrets.AWS_EC2_USER || 'ubuntu' }}
+        run: |
+          python scripts/deploy_aws.py \
+            --skip-tests \
+            --host "$AWS_HOST" \
+            --user "$AWS_USER" \
+            --key ~/.ssh/ec2_key.pem
+
+      - name: Cleanup SSH Key
+        if: always()
+        run: rm -f ~/.ssh/ec2_key.pem
+
+      - name: Deployment Summary
+        if: always()
+        run: |
+          echo "### 🚀 AWS EC2 Deployment Status" >> $GITHUB_STEP_SUMMARY
+          echo "- **Host:** \`${{ secrets.AWS_EC2_HOST || '13.250.49.111' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Public URL:** [https://arena.${{ secrets.AWS_EC2_HOST || '13.250.49.111' }}.sslip.io](https://arena.${{ secrets.AWS_EC2_HOST || '13.250.49.111' }}.sslip.io)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Health:** \`https://arena.${{ secrets.AWS_EC2_HOST || '13.250.49.111' }}.sslip.io/health\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Readiness:** \`https://arena.${{ secrets.AWS_EC2_HOST || '13.250.49.111' }}.sslip.io/ready\`" >> $GITHUB_STEP_SUMMARY
