@@ -35,6 +35,7 @@ if hasattr(sys.stderr, "reconfigure"):
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_HOST = os.environ.get("AWS_EC2_HOST", "13.250.49.111")
+DEFAULT_WORKER_HOST = os.environ.get("AWS_EC2_WORKER_HOST", "13.212.114.254")
 DEFAULT_USER = os.environ.get("AWS_EC2_USER", "ubuntu")
 DEFAULT_KEY = os.environ.get("AWS_EC2_SSH_KEY_PATH", str(ROOT / "bot-backend-key.pem"))
 DEFAULT_HTTPS_URL = os.environ.get("AWS_BACKEND_URL", f"https://arena.{DEFAULT_HOST}.sslip.io")
@@ -171,6 +172,40 @@ echo "DEPLOY_EXTRACT_OK"
     success("Remote files unpacked and services reloaded.")
 
 
+def remote_deploy_worker(user, worker_host, key_path, local_archive):
+    if not worker_host:
+        return
+    log(f"Deploying worker update to secondary judge {worker_host}...", "WORKER")
+    remote_archive = "/tmp/arena-release-worker.tar.gz"
+    scp_cmd = [
+        "scp",
+        "-i", str(key_path),
+        "-o", "BatchMode=yes",
+        "-o", "StrictHostKeyChecking=no",
+        "-o", "ConnectTimeout=10",
+        str(local_archive),
+        f"{user}@{worker_host}:{remote_archive}",
+    ]
+    res = subprocess.run(scp_cmd, capture_output=True, text=True)
+    if res.returncode != 0:
+        log(f"Warning: Could not upload to secondary worker {worker_host}: {res.stderr.strip()}", "WARN")
+        return False
+
+    script = f"""set -eu
+sudo tar -xzf {remote_archive} -C /opt/arena/app
+rm -f {remote_archive}
+sudo systemctl restart arena-worker
+echo "WORKER_DEPLOY_OK"
+"""
+    res = ssh_command(user, worker_host, key_path, script, check=False)
+    if "WORKER_DEPLOY_OK" in res.stdout:
+        success(f"Secondary judge worker {worker_host} updated and restarted successfully.")
+        return True
+    else:
+        log(f"Warning: Secondary worker update had issues:\n{res.stdout}\n{res.stderr}", "WARN")
+        return False
+
+
 def verify_remote_health(https_url, user, host, key_path, retries=8, delay=2):
     log("Verifying remote deployment health...", "VERIFY")
 
@@ -256,6 +291,7 @@ def check_only(user, host, key_path, https_url):
 def main():
     parser = argparse.ArgumentParser(description="Automated AWS EC2 Deployment for Freshman Bot Arena")
     parser.add_argument("--host", default=DEFAULT_HOST, help=f"EC2 hostname or IP (default: {DEFAULT_HOST})")
+    parser.add_argument("--worker-host", default=DEFAULT_WORKER_HOST, help=f"Secondary EC2 worker IP (default: {DEFAULT_WORKER_HOST})")
     parser.add_argument("--user", default=DEFAULT_USER, help=f"SSH username (default: {DEFAULT_USER})")
     parser.add_argument("--key", default=DEFAULT_KEY, help=f"Path to SSH .pem private key (default: {DEFAULT_KEY})")
     parser.add_argument("--https-url", default=DEFAULT_HTTPS_URL, help=f"Public HTTPS endpoint (default: {DEFAULT_HTTPS_URL})")
@@ -281,8 +317,10 @@ def main():
     start_time = time.time()
     print("=" * 65)
     print("  FRESHMAN BOT ARENA -- AWS AUTOMATED DEPLOYMENT PIPELINE")
-    print(f"  Target: {args.user}@{args.host} ({args.https_url})")
-    print(f"  Key:    {key_path.name}")
+    print(f"  Primary:   {args.user}@{args.host} ({args.https_url})")
+    if args.worker_host:
+        print(f"  Secondary: {args.user}@{args.worker_host} (Worker Pool)")
+    print(f"  Key:       {key_path.name}")
     print("=" * 65)
 
     # 1. Preflight test suite
@@ -290,7 +328,6 @@ def main():
         run_preflight_tests()
     else:
         log("Pre-flight tests skipped (--skip-tests).", "SKIP")
-
 
     # 2. Build Linux Go binary
     linux_binary = ROOT / "backend" / "bin" / "server"
@@ -300,12 +337,16 @@ def main():
     archive_path = ROOT / "arena-release.tar.gz"
     package_release(linux_binary, archive_path)
 
-    # 4. Upload archive to EC2
+    # 4. Upload archive to EC2 primary
     remote_archive = f"/tmp/arena-release-{int(time.time())}.tar.gz"
     scp_upload(args.user, args.host, key_path, archive_path, remote_archive)
 
-    # 5. Remote deployment & service restart
+    # 5. Remote deployment & service restart on primary
     remote_deploy(args.user, args.host, key_path, remote_archive)
+
+    # 5b. Remote deployment on secondary worker host (if configured)
+    if args.worker_host:
+        remote_deploy_worker(args.user, args.worker_host, key_path, archive_path)
 
     # 6. Post-deployment verification
     healthy = verify_remote_health(args.https_url, args.user, args.host, key_path)
