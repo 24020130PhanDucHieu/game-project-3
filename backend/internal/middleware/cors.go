@@ -12,13 +12,26 @@ func CORSMiddleware(allowedOrigin string) gin.HandlerFunc {
 		origin := c.Request.Header.Get("Origin")
 		if origin != "" {
 			allowed := false
-			for _, candidate := range strings.Split(allowedOrigin, ",") {
-				candidate = strings.TrimSpace(candidate)
-				if candidate == "*" || candidate == origin {
-					allowed = true
-					break
+			// Always allow same-origin requests (scheme + host matches request host)
+			host := c.Request.Host
+			if strings.EqualFold(origin, "https://"+host) || strings.EqualFold(origin, "http://"+host) {
+				allowed = true
+			}
+			// Allow sslip.io domains
+			if strings.HasSuffix(origin, ".sslip.io") {
+				allowed = true
+			}
+
+			if !allowed {
+				for _, candidate := range strings.Split(allowedOrigin, ",") {
+					candidate = strings.TrimSpace(candidate)
+					if candidate == "*" || candidate == origin || strings.EqualFold(candidate, origin) {
+						allowed = true
+						break
+					}
 				}
 			}
+
 			if !allowed {
 				c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"detail": "Origin is not allowed"})
 				return
