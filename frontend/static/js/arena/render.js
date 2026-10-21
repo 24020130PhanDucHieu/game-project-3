@@ -123,7 +123,7 @@ function renderVisualBattleArena(match) {
   const lastR = currentAppRole === 'TEAM' ? match.rounds_history?.at(-1) : inlineReplayRecord(match);
   if (!isMatchRunning && lastR?.board_steps?.length) {
     const state = readArenaViewState();
-    const liveProgress = match.round_status === 'ROUND_FINISHED' ? Math.max(0,Math.min(1,(Date.now()/1000-(match.intermission_ends_at-25))/25)) : 1;
+    const liveProgress = match.round_status === 'ROUND_FINISHED' ? Math.max(0,Math.min(1,(Date.now()/1000-(match.intermission_ends_at-5))/5)) : 1;
     inlinePlaybackCurrentIdx = currentAppRole === 'TEAM' ? Math.min(lastR.board_steps.length-1,Math.floor(liveProgress*lastR.board_steps.length)) : state.inlineRound === lastR.round_number ? Math.min(state.inlineStep ?? lastR.board_steps.length - 1, lastR.board_steps.length - 1) : lastR.board_steps.length - 1;
     const step = lastR.board_steps[inlinePlaybackCurrentIdx];
     renderChessboard(step.red_pieces, step.blue_pieces, step.clash_event);

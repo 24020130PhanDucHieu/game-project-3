@@ -63,7 +63,7 @@ function syncLiveRoundBoard(match) {
     if (countdown && match.intermission_ends_at) countdown.textContent = Math.max(0, Math.ceil(match.intermission_ends_at - Date.now() / 1000));
     if (!record?.board_steps?.length) { renderLiveAction(match, null, null); return; }
     const steps = record.board_steps;
-    const intermissionDuration = 25;
+    const intermissionDuration = 5;
     const progress = match.round_status === "ROUND_FINISHED" ? Math.max(0, Math.min(1, (Date.now() / 1000 - (match.intermission_ends_at - intermissionDuration)) / intermissionDuration)) : 1;
     const index = Math.min(steps.length - 1, Math.floor(progress * steps.length));
     if (index === drawnIndex) { if (progress === 1) clearInterval(liveRoundTimer); return; }
