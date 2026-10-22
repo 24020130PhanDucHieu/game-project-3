@@ -485,3 +485,48 @@ func (h *TournamentHandler) SetRule(c *gin.Context) {
 		"stage":  res["tournament"].(map[string]interface{})["stage_rule"],
 	})
 }
+
+func (h *TournamentHandler) SwapBracket(c *gin.Context) {
+	id := c.Param("id")
+	var req struct {
+		Team1 string `json:"team_1"`
+		Team2 string `json:"team_2"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.Team1 == "" || req.Team2 == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Vui lòng chọn 2 đội cần hoán đổi cặp đấu."})
+		return
+	}
+	res, err := h.service.MutateTournament(id, "swap-bracket", map[string]interface{}{
+		"team_1": req.Team1,
+		"team_2": req.Team2,
+	})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}
+
+func (h *TournamentHandler) DisqualifyTeam(c *gin.Context) {
+	id := c.Param("id")
+	var req struct {
+		StudentID string `json:"student_id"`
+		Reason    string `json:"reason"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || req.StudentID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Vui lòng cung cấp mã sinh viên đội cần loại."})
+		return
+	}
+	if req.Reason == "" {
+		req.Reason = "Vi phạm quy chế"
+	}
+	res, err := h.service.MutateTournament(id, "disqualify-team", map[string]interface{}{
+		"student_id": req.StudentID,
+		"reason":    req.Reason,
+	})
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, res)
+}

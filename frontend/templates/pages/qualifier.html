@@ -77,7 +77,7 @@
     </div>
 
     <div id="qualifier-direct-toolbar" class="ide-toolbar-row">
-      <select id="qualifier-language" class="input-text-sm" aria-label="Ngôn ngữ" onchange="saveQualifierDraft()"><option value="PYTHON">Python (.py)</option><option value="CPP">C++ (.cpp)</option></select>
+      <select id="qualifier-language" class="input-text-sm" aria-label="Ngôn ngữ" onchange="onQualifierLanguageChange()"><option value="PYTHON">Python (.py)</option><option value="CPP">C++ (.cpp)</option></select>
       <label class="studio-tool-btn">Tải code lên<input id="qualifier-file" type="file" accept=".py,.cpp" onchange="loadQualifierFile(this)" hidden></label>
       <button class="studio-tool-btn" type="button" onclick="loadQualifierTemplate()">Nạp mẫu</button>
       <button class="studio-tool-btn" type="button" id="qualifier-check" onclick="checkQualifierCode()">Kiểm tra</button>

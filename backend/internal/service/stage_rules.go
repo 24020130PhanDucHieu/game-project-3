@@ -17,12 +17,12 @@ type StageRule struct {
 func ValidStageRule(id string) bool {
 	if len(id) >= 7 && id[:6] == "COMBO_" {
 		val, err := strconv.Atoi(id[6:])
-		if err == nil && val >= 0 && val <= 15 {
+		if err == nil && val >= 0 && val <= 31 {
 			return true
 		}
 	}
 	switch id {
-	case "STAGE_1_STANDARD", "STAGE_2_MUTATED", "RULE_REVERSE", "RULE_FOG", "RULE_SPECIAL_TILES", "STAGE_SPECIAL_TILES":
+	case "STAGE_1_STANDARD", "STAGE_2_MUTATED", "RULE_REVERSE", "RULE_FOG", "RULE_SPECIAL_TILES", "STAGE_SPECIAL_TILES", "RULE_OBSTACLES", "STAGE_OBSTACLES":
 		return true
 	}
 	return false

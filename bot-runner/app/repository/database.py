@@ -817,17 +817,34 @@ class Database:
             "capacity": num_teams
         }
 
-    def auto_schedule_tournament(self, tournament_id: str) -> dict:
+    def auto_schedule_tournament(self, tournament_id: str, fill_demo: bool = False) -> dict:
         import random
         tourn = self.tournaments.get(tournament_id)
         if not tourn:
             raise ValueError("Không tìm thấy giải đấu.")
         self.ensure_tournament_editable(tourn)
         num_teams = tourn["num_teams"]
-        teams = tourn.get("teams", [])
+        raw_teams = tourn.get("teams", [])
+
+        # Lọc sạch các đội hợp lệ: loại bỏ triệt để đội đã bị xóa, bị loại, hoặc trùng lặp
+        seen_sids = set()
+        valid_teams = []
+        for t in raw_teams:
+            sid = str(t.get("student_id", "")).strip().upper()
+            if not sid:
+                continue
+            if t.get("is_deleted") or t.get("disqualified") or t.get("status") in ("DISQUALIFIED", "DELETED"):
+                continue
+            if sid in seen_sids:
+                continue
+            seen_sids.add(sid)
+            valid_teams.append(t)
         
-        # Nếu chưa đủ số đội theo thể thức giải, tự động bổ sung đội mẫu để đủ điều kiện bốc thăm
-        if len(teams) < num_teams:
+        # Nếu chưa đủ số đội theo thể thức giải: báo lỗi rõ ràng trừ khi admin bật fill_demo
+        if len(valid_teams) < num_teams:
+            if not fill_demo:
+                raise ValueError(f"Không thể bốc thăm: Giải đấu yêu cầu {num_teams} đội nhưng hiện chỉ có {len(valid_teams)} đội hợp lệ (đã lọc các đội bị loại/xóa). Vui lòng bổ sung đội trước khi bốc thăm.")
+            
             demo_pool = [
                 ("K69_AlphaBot", "24020001", "ĐHQG Hà Nội"),
                 ("BK_DragonBot", "24020002", "ĐH Bách Khoa"),
@@ -862,25 +879,26 @@ class Database:
                 ("K69_Legends", "24023260", "CLB ICPC K69"),
                 ("AIO_MatrixBot", "24023370", "Viện CNTT")
             ]
-            existing_sids = {str(t.get("student_id", "")).strip().lower() for t in teams}
+            existing_sids = {str(t.get("student_id", "")).strip().upper() for t in valid_teams}
             for name, sid, uni in demo_pool:
-                if len(teams) >= num_teams:
+                if len(valid_teams) >= num_teams:
                     break
-                if sid.lower() not in existing_sids:
-                    teams.append({
-                        "seed": len(teams) + 1,
-                        "bot_id": f"bot_{sid}",
-                        "student_id": sid,
+                sid_upper = sid.strip().upper()
+                if sid_upper not in existing_sids:
+                    valid_teams.append({
+                        "seed": len(valid_teams) + 1,
+                        "bot_id": f"bot_{sid_upper}",
+                        "student_id": sid_upper,
                         "team_name": name,
                         "university": uni,
                         "code_content": "def decide_move(game_state):\n    return 'ROCK'",
                         "language": BotLanguage.PYTHON,
                         "elo": 1200
                     })
-                    existing_sids.add(sid.lower())
+                    existing_sids.add(sid_upper)
 
         # Bốc thăm sắp xếp ngẫu nhiên các đội vào sơ đồ thi đấu
-        teams_to_schedule = list(teams[:num_teams])
+        teams_to_schedule = list(valid_teams[:num_teams])
         random.shuffle(teams_to_schedule)
         for idx, t in enumerate(teams_to_schedule):
             t["seed"] = idx + 1
@@ -901,6 +919,85 @@ class Database:
             
         self.save_tournaments_to_file()
         return tourn
+
+    def swap_bracket_teams(self, tournament_id: str, student_id_1: str, student_id_2: str) -> dict:
+        tourn = self.tournaments.get(tournament_id)
+        if not tourn:
+            raise ValueError("Không tìm thấy giải đấu.")
+        self.ensure_tournament_editable(tourn)
+        s1 = str(student_id_1).strip().upper()
+        s2 = str(student_id_2).strip().upper()
+        if not s1 or not s2 or s1 == s2:
+            raise ValueError("Vui lòng chọn 2 đội khác nhau để hoán đổi cặp đấu.")
+
+        teams = tourn.get("teams", [])
+        idx1 = next((i for i, t in enumerate(teams) if t.get("student_id", "").strip().upper() == s1), -1)
+        idx2 = next((i for i, t in enumerate(teams) if t.get("student_id", "").strip().upper() == s2), -1)
+        if idx1 == -1 or idx2 == -1:
+            raise ValueError("Một trong hai đội không tồn tại trong danh sách thi đấu.")
+
+        # Hoán đổi seed và vị trí trong danh sách teams
+        teams[idx1], teams[idx2] = teams[idx2], teams[idx1]
+        teams[idx1]["seed"], teams[idx2]["seed"] = idx1 + 1, idx2 + 1
+        tourn["teams"] = teams
+
+        # Cập nhật các ô trận đấu ở Vòng 1 (Level 1)
+        for m in tourn.get("matches", {}).values():
+            if m.get("round_level") == 1:
+                for side in ("team_a", "team_b"):
+                    slot = m.get(side)
+                    if slot:
+                        cur_sid = str(slot.get("student_id", "")).strip().upper()
+                        if cur_sid == s1:
+                            m[side] = Database.make_team_slot(teams[idx1] if teams[idx1]["student_id"].strip().upper() == s2 else teams[idx2])
+                        elif cur_sid == s2:
+                            m[side] = Database.make_team_slot(teams[idx2] if teams[idx2]["student_id"].strip().upper() == s1 else teams[idx1])
+
+        self.save_tournaments_to_file()
+        return {
+            "status": "SUCCESS",
+            "message": f"Đã hoán đổi vị trí giữa đội {s1} và đội {s2}!",
+            "tournament": tourn
+        }
+
+    def disqualify_tournament_team(self, tournament_id: str, student_id: str, reason: str = "Vi phạm điều lệ") -> dict:
+        tourn = self.tournaments.get(tournament_id)
+        if not tourn:
+            raise ValueError("Không tìm thấy giải đấu.")
+        sid_clean = str(student_id).strip().upper()
+        team = next((t for t in tourn.get("teams", []) if t.get("student_id", "").strip().upper() == sid_clean), None)
+        if not team:
+            raise ValueError(f"Không tìm thấy đội có MSSV '{student_id}'.")
+
+        team["disqualified"] = True
+        team["disqualify_reason"] = reason
+
+        # Cập nhật trong tất cả các trận đấu hiện tại
+        for m in tourn.get("matches", {}).values():
+            for side in ("team_a", "team_b"):
+                slot = m.get(side)
+                if slot and str(slot.get("student_id", "")).strip().upper() == sid_clean:
+                    slot["disqualified"] = True
+                    slot["disqualify_reason"] = reason
+            # Nếu trận chưa thi đấu mà một đội bị loại, xử thắng cho đội còn lại
+            if not m.get("rounds_history") and m.get("status") != "COMPLETED":
+                t_a = m.get("team_a")
+                t_b = m.get("team_b")
+                if t_a and t_a.get("disqualified") and t_b and not t_b.get("disqualified"):
+                    m["status"] = "COMPLETED"
+                    m["winner"] = "team_b"
+                    m["win_reason"] = f"Đội {t_a.get('team_name')} bị loại ({reason})."
+                elif t_b and t_b.get("disqualified") and t_a and not t_a.get("disqualified"):
+                    m["status"] = "COMPLETED"
+                    m["winner"] = "team_a"
+                    m["win_reason"] = f"Đội {t_b.get('team_name')} bị loại ({reason})."
+
+        self.save_tournaments_to_file()
+        return {
+            "status": "SUCCESS",
+            "message": f"Đã xử loại đội {team.get('team_name')} ({sid_clean}): {reason}",
+            "tournament": tourn
+        }
 
     def authenticate_match_login(self, tournament_id: str, match_id: str, username: str, password: str, student_id: Optional[str] = None) -> dict:
         tourn = self.tournaments.get(tournament_id)

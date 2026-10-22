@@ -103,3 +103,208 @@ async function confirmAction(message, options = {}) {
 function promptAction(message, value = '') {
   return showAppActionDialog({title:'Cấu hình máy chủ', message, value, input:true, confirmText:'Lưu địa chỉ'});
 }
+
+// =============================================================================
+// TRUNG TÂM THÔNG BÁO (NOTIFICATION CENTER) - REALTIME & PERSISTENT
+// =============================================================================
+let currentNotifications = [];
+let unreadNotificationsCount = 0;
+let notifPollInterval = null;
+
+function getArenaAuthHeaders() {
+  const token = typeof getArenaSessionToken === 'function' ? getArenaSessionToken() : (sessionStorage.getItem('arena_session_token') || '');
+  return token ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } : { 'Content-Type': 'application/json' };
+}
+
+async function fetchNotifications() {
+  try {
+    const res = await fetch(`${API_BASE}/api/notifications`, {
+      headers: getArenaAuthHeaders(),
+      cache: 'no-store'
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    currentNotifications = data.notifications || [];
+    unreadNotificationsCount = data.unread_count || 0;
+    updateNotificationBadgeUI();
+    renderNotificationsList();
+  } catch {
+    // Fail silently in background
+  }
+}
+
+function updateNotificationBadgeUI() {
+  const badge = document.getElementById("sidebar-notif-badge");
+  if (badge) {
+    if (unreadNotificationsCount > 0) {
+      badge.textContent = unreadNotificationsCount > 99 ? "99+" : unreadNotificationsCount;
+      badge.style.display = "inline-flex";
+    } else {
+      badge.style.display = "none";
+    }
+  }
+}
+
+function openNotificationModal() {
+  const modal = document.getElementById("modal-notifications");
+  if (modal) modal.style.display = "flex";
+
+  const adminSection = document.getElementById("admin-broadcast-section");
+  if (adminSection) {
+    adminSection.style.display = currentAppRole === "ADMIN" ? "block" : "none";
+  }
+
+  fetchNotifications();
+}
+
+function closeNotificationModal() {
+  const modal = document.getElementById("modal-notifications");
+  if (modal) modal.style.display = "none";
+}
+
+function renderNotificationsList() {
+  const itemsContainer = document.getElementById("notifications-items");
+  const emptyState = document.getElementById("notifications-empty-state");
+  if (!itemsContainer) return;
+
+  if (!currentNotifications || currentNotifications.length === 0) {
+    if (emptyState) emptyState.style.display = "block";
+    itemsContainer.innerHTML = "";
+    return;
+  }
+
+  if (emptyState) emptyState.style.display = "none";
+
+  itemsContainer.innerHTML = currentNotifications.map(n => {
+    const isUnread = !n.is_read;
+    const bg = isUnread ? "#f0f7ff" : "#ffffff";
+    const border = isUnread ? "1px solid #bfdbfe" : "1px solid #e2e8f0";
+    const timeStr = new Date(n.created_at).toLocaleString('vi-VN');
+
+    let typeTag = '<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #e0f2fe; color: #0369a1; font-weight: 600;">HỆ THỐNG</span>';
+    if (n.event_type === "ANNOUNCEMENT") {
+      typeTag = '<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #fef3c7; color: #92400e; font-weight: 600;">BAN TỔ CHỨC</span>';
+    } else if (n.event_type === "SUBMISSION_EVALUATED") {
+      typeTag = '<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #dcfce7; color: #166534; font-weight: 600;">CHẤM ĐIỂM</span>';
+    } else if (n.event_type === "ROUND_SCHEDULE") {
+      typeTag = '<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #fae8ff; color: #86198f; font-weight: 600;">LỊCH THI</span>';
+    }
+
+    return `
+      <div class="notification-item ${isUnread ? 'unread' : ''}" 
+           onclick="handleNotificationClick('${n.id}', '${n.link_tab || ''}')"
+           style="background: ${bg}; border: ${border}; border-radius: 8px; padding: 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s ease; position: relative;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            ${typeTag}
+            <strong style="font-size: 13.5px; color: #0f172a;">${escapeHtml(n.title)}</strong>
+          </div>
+          <span style="font-size: 11px; color: #64748b; white-space: nowrap;">${timeStr}</span>
+        </div>
+        <p style="margin: 6px 0 0; font-size: 13px; color: #334155; line-height: 1.45;">${escapeHtml(n.message)}</p>
+        ${n.link_tab ? `<div style="margin-top: 6px; font-size: 11.5px; color: #2563eb; font-weight: 500;">👉 Bấm để chuyển đến xem nội dung</div>` : ''}
+        ${isUnread ? '<span style="position: absolute; right: 10px; bottom: 10px; width: 8px; height: 8px; border-radius: 50%; background: #2563eb;"></span>' : ''}
+      </div>
+    `;
+  }).join("");
+}
+
+async function handleNotificationClick(id, linkTab) {
+  await markNotificationAsRead(id);
+  if (linkTab) {
+    closeNotificationModal();
+    const tabTarget = linkTab.startsWith("tab-") ? linkTab : `tab-${linkTab}`;
+    if (typeof switchToTab === "function") {
+      switchToTab(tabTarget);
+    }
+  }
+}
+
+async function markNotificationAsRead(id) {
+  try {
+    await fetch(`${API_BASE}/api/notifications/read`, {
+      method: 'POST',
+      headers: getArenaAuthHeaders(),
+      body: JSON.stringify({ id })
+    });
+    const found = currentNotifications.find(n => n.id === id);
+    if (found && !found.is_read) {
+      found.is_read = true;
+      unreadNotificationsCount = Math.max(0, unreadNotificationsCount - 1);
+      updateNotificationBadgeUI();
+      renderNotificationsList();
+    }
+  } catch {}
+}
+
+async function markAllNotificationsAsRead() {
+  try {
+    await fetch(`${API_BASE}/api/notifications/read`, {
+      method: 'POST',
+      headers: getArenaAuthHeaders(),
+      body: JSON.stringify({ all: true })
+    });
+    currentNotifications.forEach(n => { n.is_read = true; });
+    unreadNotificationsCount = 0;
+    updateNotificationBadgeUI();
+    renderNotificationsList();
+    notifySuccess("Thông báo", "Đã đánh dấu tất cả thông báo là đã đọc.");
+  } catch (err) {
+    notifyError("Lỗi", "Không thể cập nhật trạng thái thông báo.");
+  }
+}
+
+async function handleAdminBroadcast(event) {
+  if (event) event.preventDefault();
+  const titleInp = document.getElementById("broadcast-title");
+  const msgInp = document.getElementById("broadcast-message");
+  const tabSel = document.getElementById("broadcast-tab");
+  const btn = document.getElementById("btn-broadcast-submit");
+
+  const title = (titleInp?.value || "").trim();
+  const message = (msgInp?.value || "").trim();
+  const linkTab = tabSel?.value || "overview";
+
+  if (!title || !message) {
+    notifyWarning("Thiếu thông tin", "Vui lòng nhập cả tiêu đề và nội dung thông báo.");
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Đang gửi...";
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/admin/notifications/broadcast`, {
+      method: 'POST',
+      headers: getArenaAuthHeaders(),
+      body: JSON.stringify({
+        title,
+        message,
+        event_type: "ANNOUNCEMENT",
+        link_tab: linkTab
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Không thể phát thông báo.");
+
+    notifySuccess("Phát thông báo thành công", `Đã gửi thông báo tới toàn thể thí sinh!`);
+    if (titleInp) titleInp.value = "";
+    if (msgInp) msgInp.value = "";
+    fetchNotifications();
+  } catch (err) {
+    notifyError("Lỗi phát thông báo", err.message);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "Gửi thông báo";
+    }
+  }
+}
+
+// Khởi chạy polling kiểm tra thông báo định kỳ mỗi 30 giây
+if (!notifPollInterval) {
+  notifPollInterval = setInterval(fetchNotifications, 30000);
+  setTimeout(fetchNotifications, 1000);
+}

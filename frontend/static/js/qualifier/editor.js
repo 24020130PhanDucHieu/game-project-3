@@ -4,6 +4,32 @@ let lastGitSubmissionInfo = { repo_url: '', commit_sha: '' };
 function qualifierDraftKey(){return `qualifier-draft:${API_BASE}:${qualifierId}:${currentTeamStudentId||'guest'}`;}
 function saveQualifierDraft(){if(currentAppRole!=='TEAM'||!qualifierId)return;localStorage.setItem(qualifierDraftKey(),JSON.stringify({code:document.getElementById('qualifier-code').value,language:document.getElementById('qualifier-language').value}));}
 
+function detectCodeLanguage(code) {
+  if (!code) return null;
+  if (code.includes('#include') || code.includes('std::') || code.includes('int main') || code.includes('using namespace std') || code.includes('cout <<')) {
+    return 'CPP';
+  }
+  if (code.includes('def ') || code.includes('import ') || code.includes('from ') || code.includes('print(') || code.includes('decide_move(')) {
+    return 'PYTHON';
+  }
+  return null;
+}
+
+function onQualifierLanguageChange() {
+  const codeArea = document.getElementById('qualifier-code');
+  const langSel = document.getElementById('qualifier-language');
+  if (!codeArea || !langSel) return;
+  const newLang = langSel.value;
+  const curCode = codeArea.value.trim();
+  const detected = detectCodeLanguage(curCode);
+
+  if (!curCode || (detected && detected !== newLang)) {
+    loadQualifierTemplate();
+  }
+  saveQualifierDraft();
+}
+
+
 function switchQualifierMode(mode){
   currentQualifierSubmitMode = mode;
   const btnGit = document.getElementById('btn-mode-github');
@@ -143,10 +169,14 @@ function renderQualifierOwn(data){
       metaInfo.innerHTML = '<span style="color:#64748b; font-weight:500;">ℹ️ Quyền Quản trị viên (kiểm tra & chạy thử bot, chỉ Đội thi mới nộp giải)</span>';
     } else if(!p.student_id){
       metaInfo.innerHTML = '<span style="color:#d97706; font-weight:500;">⚠️ Hãy bấm "Đăng ký thi" ở phía trên trước khi nộp bot</span>';
+    } else if(e.status === 'FINISHED'){
+      metaInfo.innerHTML = `<span style="color:#ef4444; font-weight:600;">🔒 Vòng loại đã kết thúc thi đấu · Ban tổ chức đã khóa nộp bài để tổng kết và bốc thăm giải chính.</span>`;
+    } else if(e.status === 'LOCKED'){
+      metaInfo.innerHTML = `<span style="color:#ef4444; font-weight:600;">🔒 Vòng loại đã được khóa nhận bài nộp để tiến hành chấm thi và xếp hạng.</span>`;
     } else if(e.status !== 'OPEN'){
-      metaInfo.innerHTML = `<span style="color:#ef4444; font-weight:500;">🔒 Vòng loại trạng thái: ${e.status}</span>`;
+      metaInfo.innerHTML = `<span style="color:#64748b; font-weight:600;">⏳ Vòng loại chưa mở nhận bài (Trạng thái: ${e.status}).</span>`;
     } else if(Date.now()/1000 >= e.deadline){
-      metaInfo.innerHTML = `<span style="color:#ef4444; font-weight:500;">🔒 Đã hết hạn nộp bài (${new Date(e.deadline*1000).toLocaleString('vi-VN')})</span>`;
+      metaInfo.innerHTML = `<span style="color:#ef4444; font-weight:600;">🔒 Đã hết hạn nộp bài (${new Date(e.deadline*1000).toLocaleString('vi-VN')}) · Cổng nộp bài tự động khóa theo giờ máy chủ.</span>`;
     } else {
       metaInfo.innerHTML = '<span style="color:#10b981; font-weight:500;">✅ Sẵn sàng nhận bài nộp</span>';
     }
@@ -175,7 +205,22 @@ function renderQualifierOwn(data){
   const pending=(data.history||[]).filter(s=>s.status==='QUEUED').length;
   const status=currentAppRole==='TEAM'?(p.locked_id?'Bài đã khóa':pending?`${pending} bài đã nhận, đang chờ chấm${p.valid_id?' · Có bản hợp lệ trước đó':''}`:p.valid_id?'Có bản hợp lệ sẵn sàng':'Chưa có bài hợp lệ'):'Đăng nhập tài khoản đội để nộp bot';
   document.getElementById('qualifier-my-status').textContent=`${status} · ELO ${Number(p.elo||1200).toFixed(2)} · Hạn ${new Date(e.deadline*1000).toLocaleString('vi-VN')}`;
-  const key=qualifierDraftKey();if(qualifierDraftKeyLoaded!==key){let draft={};try{draft=JSON.parse(localStorage.getItem(key)||'{}');}catch{}document.getElementById('qualifier-code').value=draft.code??p.code??'';document.getElementById('qualifier-language').value=draft.language||p.language||'PYTHON';qualifierDraftKeyLoaded=key;}
+  const key=qualifierDraftKey();
+  if(qualifierDraftKeyLoaded!==key){
+    let draft={};
+    try{draft=JSON.parse(localStorage.getItem(key)||'{}');}catch{}
+    const loadedCode = draft.code ?? p.code ?? '';
+    let loadedLang = draft.language || p.language;
+    const detected = detectCodeLanguage(loadedCode);
+    if(detected){
+      loadedLang = detected;
+    } else if(!loadedLang){
+      loadedLang = 'PYTHON';
+    }
+    document.getElementById('qualifier-code').value = loadedCode;
+    document.getElementById('qualifier-language').value = loadedLang;
+    qualifierDraftKeyLoaded=key;
+  }
   const history=document.getElementById('qualifier-my-history');history.replaceChildren();
   for(const submission of data.history||[]){
     const row=document.createElement('p');

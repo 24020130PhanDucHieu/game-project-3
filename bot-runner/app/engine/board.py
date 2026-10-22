@@ -36,6 +36,8 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
 
     mystery_tiles = copy.deepcopy(initial_rules.get("mystery_tiles", {}))
     special_mode = bool(initial_rules.get("special_tiles", False))
+    obstacles_list = [list(c) for c in initial_rules.get("obstacles", [])]
+    obstacles_set = set(tuple(c) for c in obstacles_list)
 
     evolve_tiles_set = set(tuple(c) for c in mystery_tiles.get("evolve", []))
     portal_warp_map = {}
@@ -73,13 +75,15 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
         current_tiles = {
             "evolve": [list(c) for c in evolve_tiles_set],
             "portals": [list(pair) for pair in mystery_tiles.get("portals", [])],
-            "traps": [list(c) for c in active_traps]
+            "traps": [list(c) for c in active_traps],
+            "obstacles": [list(c) for c in obstacles_list]
         }
         steps.append({"step_idx": len(steps), "turn_label": f"Nước {len(steps)} · Đội {names[side]}" if side else "Bắt đầu hiệp đấu",
                       "active_side": side, "cycle": cycle,
                       "red_pieces": [dict(p) for p in pieces["team_a"]],
                       "blue_pieces": [dict(p) for p in pieces["team_b"]], "clash_event": clash,
                       "mystery_tiles": current_tiles,
+                      "obstacles": [list(c) for c in obstacles_list],
                       "log": log, "red_alive": len(alive("team_a")), "blue_alive": len(alive("team_b"))})
 
     snapshot(f"Đi lần lượt. Đội {names[first]} đi trước; không giới hạn số nước. Chiếm căn cứ hoặc quét sạch quân đối thủ để thắng.")
@@ -128,6 +132,7 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                      "ply_number": ply + 1, "active_side": side, "history": history,
                      "my_pieces": [dict(p) for p in own], "opponent_pieces": enemy_view,
                      "target": list(targets[side]), "reverse_rule": reverse,
+                     "obstacles": [list(c) for c in obstacles_list],
                      "rules": dict(active_rules)}
             try:
                 move, error = (wasi_processes[side].decide(state) if side in wasi_processes
@@ -151,6 +156,7 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
             # Favor a winning adjacent capture; same-type encounters favor defense.
             for candidate in candidates:
                 victim = next((p for p in enemy if max(abs(candidate["col"] - p["col"]), abs(candidate["row"] - p["row"])) == 1
+                               and (p["col"], p["row"]) not in obstacles_set
                                and GameRulesEngine.check_clash(candidate["type"], p["type"], reverse) == 1), None)
                 if victim:
                     attacker, destination = candidate, (victim["col"], victim["row"])
@@ -162,6 +168,7 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                     col, row = candidate["col"], candidate["row"]
                     options = [(col, row + direction), (col + horizontal, row), (col + horizontal, row + direction)]
                     options = [cell for cell in options if all(0 <= x < 9 for x in cell)
+                               and cell not in obstacles_set
                                and not any((p["col"], p["row"]) == cell for p in own if p is not candidate)]
                     if options:
                         attacker = candidate
@@ -243,6 +250,7 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                 "pref_move_b": histories["team_b"][0]["my_move"] if histories["team_b"] else "ROCK",
                 "bot_errors": errors, "first_side": first, "tie_break_seed": tie_seed,
                 "mystery_tiles": copy.deepcopy(mystery_tiles),
+                "obstacles": copy.deepcopy(obstacles_list),
                 "rules": initial_rules}
     finally:
         for process in wasi_processes.values():

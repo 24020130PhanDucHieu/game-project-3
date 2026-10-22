@@ -1,10 +1,102 @@
 <section class="tab-pane" id="tab-profile">
-  <div class="profile-heading"><div><h2>Hồ sơ đội thi</h2><p class="text-muted">Thông tin tài khoản và tình hình thi đấu của bạn.</p></div><button class="btn btn-outline btn-sm" type="button" onclick="refreshTeamProfile()">Làm mới</button></div>
-  <div class="content-card profile-identity"><div class="profile-avatar" aria-hidden="true"><svg class="arena-icon"><use href="#icon-bot"></use></svg></div><div><span class="profile-eyebrow">ĐỘI THI ĐẤU</span><h3 id="profile-team-name">—</h3><p id="profile-student-id"></p></div></div>
-  <div class="profile-stats" id="profile-stats"></div>
-  <p class="text-muted">Thống kê trận và hiệp thuộc giải đang xem. Thắng 3 hiệp để thắng trận Bo5; ELO lấy từ bảng xếp hạng chung.</p>
-  <div class="profile-grid">
-    <div class="content-card"><h3>Thông tin đội</h3><dl class="profile-details" id="profile-details"></dl><p class="profile-footnote">Liên hệ Ban tổ chức nếu cần cập nhật thông tin tài khoản.</p></div>
-    <div class="content-card"><h3>Trận đấu của đội</h3><div id="profile-matches"></div><button class="btn btn-primary btn-sm" type="button" onclick="switchToTab('tab-bracket')">Đến bảng đấu</button></div>
+  <div class="content-header-row" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+    <div>
+      <h1 class="page-title" style="margin: 0; font-size: 20px; font-weight: 700; color: #0f172a;">Hồ sơ đội thi đấu</h1>
+      <p class="page-subtitle" style="margin-top: 4px; font-size: 13px; color: #64748b;">Thông tin thành viên, chỉ số chiến thuật và lịch sử tranh tài của đội.</p>
+    </div>
+    <div style="display: flex; gap: 8px;">
+      <button class="btn btn-outline btn-sm" type="button" onclick="openEditProfileModal()">
+        <svg class="arena-icon" aria-hidden="true" style="width: 15px; height: 15px;"><use href="#icon-code"></use></svg>
+        <span>Chỉnh sửa hồ sơ</span>
+      </button>
+      <button class="btn btn-outline btn-sm" type="button" onclick="refreshTeamProfile()">
+        <svg class="arena-icon" aria-hidden="true" style="width: 15px; height: 15px;"><use href="#icon-refresh"></use></svg>
+        <span>Làm mới</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Hero Identity Card -->
+  <div class="content-card profile-identity-card" style="display: flex; align-items: center; gap: 20px; padding: 20px; margin-bottom: 20px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; flex-wrap: wrap;">
+    <div class="profile-avatar" style="width: 68px; height: 68px; border-radius: 16px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">
+      <svg class="arena-icon" style="width: 36px; height: 36px;"><use href="#icon-bot"></use></svg>
+    </div>
+    <div style="flex: 1; min-width: 240px;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
+        <span class="user-role-pill" style="font-size: 11px;">ĐỘI TUYỂN CHÍNH THỨC</span>
+        <span class="badge-tag-soft" id="profile-pref-lang" style="font-size: 11px; text-transform: uppercase;">PYTHON 3</span>
+      </div>
+      <h2 id="profile-team-name" style="margin: 0; font-size: 22px; font-weight: 800; color: #0f172a;">—</h2>
+      <div style="display: flex; gap: 16px; margin-top: 6px; font-size: 13px; color: #64748b; flex-wrap: wrap;">
+        <span>Đội trưởng: <strong id="profile-captain-name" style="color: #334155;">—</strong> (<span id="profile-student-id">—</span>)</span>
+        <span>Đơn vị: <strong id="profile-university" style="color: #334155;">—</strong></span>
+      </div>
+      <p id="profile-bio" style="margin: 8px 0 0; font-size: 13px; color: #475569; font-style: italic;">Đội thi đấu BOT ARENA K69</p>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="profile-stats-grid" id="profile-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px;">
+    <div class="content-card" style="padding: 16px; text-align: center; border-radius: 10px; border-left: 4px solid #2563eb;">
+      <div style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Điểm ELO</div>
+      <div id="stat-profile-elo" style="font-size: 26px; font-weight: 800; color: #2563eb; margin: 4px 0;">—</div>
+      <div style="font-size: 11px; color: #94a3b8;">Bảng xếp hạng toàn hệ thống</div>
+    </div>
+    <div class="content-card" style="padding: 16px; text-align: center; border-radius: 10px; border-left: 4px solid #16a34a;">
+      <div style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Tỷ Lệ Thắng</div>
+      <div id="stat-profile-winrate" style="font-size: 26px; font-weight: 800; color: #16a34a; margin: 4px 0;">0%</div>
+      <div id="stat-profile-wl-ratio" style="font-size: 11px; color: #64748b;">0 thắng / 0 trận</div>
+    </div>
+    <div class="content-card" style="padding: 16px; text-align: center; border-radius: 10px; border-left: 4px solid #0284c7;">
+      <div style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Trận Bo5 Hoàn Tất</div>
+      <div id="stat-profile-matches" style="font-size: 26px; font-weight: 800; color: #0f172a; margin: 4px 0;">0</div>
+      <div style="font-size: 11px; color: #64748b;">Trong các giải tham gia</div>
+    </div>
+    <div class="content-card" style="padding: 16px; text-align: center; border-radius: 10px; border-left: 4px solid #d97706;">
+      <div style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Tổng Số Hiệp Thắng</div>
+      <div id="stat-profile-heats-won" style="font-size: 26px; font-weight: 800; color: #d97706; margin: 4px 0;">0</div>
+      <div id="stat-profile-heats-total" style="font-size: 11px; color: #64748b;">Trên tổng 0 hiệp đã đấu</div>
+    </div>
+  </div>
+
+  <div class="profile-layout-columns" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px;">
+    <!-- Cột 1: Danh sách thành viên & Thành tích -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      <div class="content-card" style="padding: 20px; border-radius: 12px;">
+        <h3 style="margin: 0 0 14px; font-size: 15px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+          <svg class="arena-icon text-primary"><use href="#icon-users"></use></svg>
+          Thành viên trong đội
+        </h3>
+        <div id="profile-members-list" style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+      <div class="content-card" style="padding: 20px; border-radius: 12px;">
+        <h3 style="margin: 0 0 14px; font-size: 15px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+          <svg class="arena-icon text-primary"><use href="#icon-trophy"></use></svg>
+          Thành tích & Danh hiệu
+        </h3>
+        <div id="profile-achievements-list">
+          <div style="font-size: 13px; color: #64748b; text-align: center; padding: 16px;">
+            Đang tranh tài tại mùa giải K69. Thành tích sẽ hiển thị khi kết thúc giải!
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cột 2: Lịch sử thi đấu -->
+    <div class="content-card" style="padding: 20px; border-radius: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+        <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+          <svg class="arena-icon text-primary"><use href="#icon-swords"></use></svg>
+          Lịch sử các trận đấu của đội
+        </h3>
+        <button class="btn btn-primary btn-sm" type="button" onclick="switchToTab('tab-bracket')">Đến bảng đấu</button>
+      </div>
+      <div id="profile-matches-container" style="display: flex; flex-direction: column; gap: 10px; max-height: 480px; overflow-y: auto;">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
   </div>
 </section>

@@ -12,18 +12,19 @@
 
     <div class="user-card-guest" id="user-card-guest-view">
       <div class="guest-card-top">
-        <div class="guest-avatar-circle"><svg class="arena-icon " aria-hidden="true" focusable="false"><use href="#icon-user"></use></svg>
-
-        </div>
+        <div class="guest-avatar-circle"><svg class="arena-icon " aria-hidden="true" focusable="false"><use href="#icon-user"></use></svg></div>
         <div class="guest-meta">
           <div class="guest-name">Khách tham quan</div>
           <p class="guest-desc">Đăng nhập để tham gia thi đấu và quản lý bot.</p>
         </div>
+        <button class="btn-notif-bell" id="btn-notif-guest" type="button" title="Trung tâm thông báo" onclick="openNotificationModal()">
+          <svg class="arena-icon" aria-hidden="true"><use href="#icon-bell"></use></svg>
+          <span class="notif-badge notif-badge-counter" style="display: none;">0</span>
+        </button>
       </div>
       <div class="guest-card-actions">
       <button class="btn-sidebar-login" id="btn-user-auth-action">
 <svg class="arena-icon " aria-hidden="true" focusable="false"><use href="#icon-user"></use></svg>
-
         <span>Đăng nhập</span>
       </button>
       <button class="btn-sidebar-register" type="button" onclick="showRegistrationPage()">Đăng ký đội thi</button>
@@ -32,13 +33,15 @@
 
     <div class="user-card-authenticated" id="user-card-auth-view" style="display: none;">
       <div class="auth-card-top">
-        <div class="auth-avatar-circle" id="user-auth-avatar">
-
-        </div>
+        <div class="auth-avatar-circle" id="user-auth-avatar"></div>
         <div class="auth-meta">
           <div class="auth-name" id="user-display-name">Đội RedBot</div>
           <div class="auth-sid" id="user-display-sid">K69A001</div>
         </div>
+        <button class="btn-notif-bell" id="btn-notif-auth" type="button" title="Trung tâm thông báo" onclick="openNotificationModal()">
+          <svg class="arena-icon" aria-hidden="true"><use href="#icon-bell"></use></svg>
+          <span class="notif-badge notif-badge-counter" style="display: none;">0</span>
+        </button>
       </div>
       <div class="auth-actions-row">
         <span class="user-role-pill" id="user-auth-pill">ĐỘI TUYỂN</span>

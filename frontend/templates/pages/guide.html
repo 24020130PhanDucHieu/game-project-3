@@ -83,5 +83,81 @@ int main() {
         <li><strong>Bảo toàn ngoại tuyến:</strong> Khi phòng thi mất kết nối mạng, bài nộp được lưu cục bộ trên trình duyệt và tự động đồng bộ khi có kết nối trở lại.</li>
       </ul>
     </div>
+
+    <!-- Thẻ 5: Hướng dẫn đóng gói và triển khai Bot bằng Docker -->
+    <div class="content-card guide-card" style="grid-column: 1 / -1;">
+      <h3 class="panel-title" style="font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 12px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">
+        🐳 5. Hướng dẫn đóng gói Bot bằng Docker cho Sinh viên
+      </h3>
+      <p class="guide-p" style="margin-top: 0;">
+        Đóng gói bot bằng Docker giúp đảm bảo thuật toán của bạn chạy đồng nhất 100% giữa máy cá nhân và hệ thống máy chủ chấm thi BOT ARENA.
+      </p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-bottom: 16px;">
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+          <strong style="color: #2563eb; font-size: 13px;">Bước 1: Chuẩn bị mã nguồn</strong>
+          <p style="font-size: 12.5px; color: #475569; margin: 4px 0 0 0;">
+            Đặt file <code>bot.py</code> hoặc <code>bot.cpp</code> cùng file <code>Dockerfile</code> trong thư mục dự án của đội.
+          </p>
+        </div>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+          <strong style="color: #2563eb; font-size: 13px;">Bước 2: Xây dựng Docker Image</strong>
+          <p style="font-size: 12.5px; color: #475569; margin: 4px 0 0 0;">
+            Chạy lệnh terminal: <br><code>docker build -t my-arena-bot:v1 .</code>
+          </p>
+        </div>
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+          <strong style="color: #2563eb; font-size: 13px;">Bước 3: Chạy thử cục bộ</strong>
+          <p style="font-size: 12.5px; color: #475569; margin: 4px 0 0 0;">
+            Thử nghiệm với dữ liệu giả lập: <br><code>docker run --rm -i --network=none my-arena-bot:v1</code>
+          </p>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 16px;">
+        <!-- Mẫu Dockerfile Python -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <strong style="font-size: 13px; color: #0f172a;">Dockerfile mẫu cho Python (Python 3.10)</strong>
+          </div>
+          <pre class="guide-code-box" style="margin: 0; padding: 12px; font-size: 12px;"><code># Sử dụng base image nhẹ chuẩn bảo mật
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Sao chép mã nguồn bot vào container
+COPY bot.py .
+
+# Chạy với quyền người dùng không đặc quyền (non-root) để bảo mật
+USER nobody
+
+# Lệnh khởi chạy bot
+ENTRYPOINT ["python", "-u", "bot.py"]</code></pre>
+        </div>
+
+        <!-- Mẫu Dockerfile C++ -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <strong style="font-size: 13px; color: #0f172a;">Dockerfile mẫu cho C++ (Multi-stage GCC 12)</strong>
+          </div>
+          <pre class="guide-code-box" style="margin: 0; padding: 12px; font-size: 12px;"><code># Stage 1: Biên dịch mã nguồn C++ với tối ưu -O3
+FROM gcc:12-bullseye AS builder
+WORKDIR /src
+COPY bot.cpp .
+RUN g++ -O3 -std=c++17 bot.cpp -o bot && strip bot
+
+# Stage 2: Runtime image siêu nhẹ và an toàn
+FROM debian:bullseye-slim
+WORKDIR /app
+COPY --from=builder /src/bot /app/bot
+USER nobody
+ENTRYPOINT ["/app/bot"]</code></pre>
+        </div>
+      </div>
+
+      <div style="margin-top: 14px; padding: 10px 14px; background: #eff6ff; border-left: 4px solid #2563eb; border-radius: 4px; font-size: 12.5px; color: #1e40af;">
+        💡 <strong>Mẹo nộp bài thi:</strong> Đội thi có thể đẩy mã nguồn lên GitHub (kèm commit hoặc tag) và dán link repository vào khung <em>Nộp qua GitHub</em> tại trang Vòng loại hoặc Trận đấu. Hệ thống sẽ tự động đồng bộ và kiểm tra cú pháp trước khi chấp thuận bài nộp!
+      </div>
+    </div>
   </div>
 </section>

@@ -325,3 +325,266 @@ function createChampionColumn(championName) {
   col.appendChild(card);
   return col;
 }
+
+// =============================================================================
+// QUẢN LÝ BẢNG ĐẤU - HOÁN ĐỔI CẶP ĐẤU & XỬ LOẠI ĐỘI (ADMIN)
+// =============================================================================
+function openBracketSwapModal() {
+  if (currentAppRole !== 'ADMIN') {
+    notifyWarning('Quyền Admin', 'Chỉ Quản trị viên mới có thể can thiệp sơ đồ bảng đấu.');
+    return;
+  }
+  const modal = document.getElementById('modal-bracket-swap');
+  if (modal) modal.style.display = 'flex';
+
+  switchBracketModalTab('swap');
+  populateBracketSwapSelects();
+}
+
+function closeBracketSwapModal() {
+  const modal = document.getElementById('modal-bracket-swap');
+  if (modal) modal.style.display = 'none';
+}
+
+function switchBracketModalTab(tab) {
+  const btnSwap = document.getElementById('btn-tab-swap-teams');
+  const btnDq = document.getElementById('btn-tab-disqualify-team');
+  const secSwap = document.getElementById('section-swap-action');
+  const secDq = document.getElementById('section-disqualify-action');
+  const alertBox = document.getElementById('bracket-swap-alert');
+
+  if (alertBox) alertBox.style.display = 'none';
+
+  if (tab === 'swap') {
+    if (btnSwap) btnSwap.className = 'btn btn-sm btn-primary';
+    if (btnDq) btnDq.className = 'btn btn-sm btn-outline';
+    if (secSwap) secSwap.style.display = 'block';
+    if (secDq) secDq.style.display = 'none';
+  } else {
+    if (btnSwap) btnSwap.className = 'btn btn-sm btn-outline';
+    if (btnDq) btnDq.className = 'btn btn-sm btn-primary';
+    if (secSwap) secSwap.style.display = 'none';
+    if (secDq) secDq.style.display = 'block';
+  }
+}
+
+function populateBracketSwapSelects() {
+  const sel1 = document.getElementById('swap-sel-team-1');
+  const sel2 = document.getElementById('swap-sel-team-2');
+  const selDq = document.getElementById('dq-sel-team');
+
+  if (!sel1 || !sel2 || !selDq || !currentTournamentData) return;
+
+  const matches = Object.values(currentTournamentData.matches || {});
+  // Chỉ hoán đổi các trận chưa hoàn tất hoặc ở vòng 1
+  const round1Matches = matches.filter(m => m.round_level === 1 || !m.round_level || m.status !== 'COMPLETED');
+
+  const options = [];
+  const dqOptions = [];
+
+  round1Matches.forEach(m => {
+    if (m.team_a && m.team_a.student_id) {
+      options.push({
+        match_id: m.match_id,
+        side: 'team_a',
+        student_id: m.team_a.student_id,
+        team_name: m.team_a.team_name,
+        match_title: m.title || m.round_name || m.match_id
+      });
+      dqOptions.push({
+        student_id: m.team_a.student_id,
+        team_name: m.team_a.team_name,
+        match_title: m.title || m.round_name || m.match_id
+      });
+    }
+    if (m.team_b && m.team_b.student_id) {
+      options.push({
+        match_id: m.match_id,
+        side: 'team_b',
+        student_id: m.team_b.student_id,
+        team_name: m.team_b.team_name,
+        match_title: m.title || m.round_name || m.match_id
+      });
+      dqOptions.push({
+        student_id: m.team_b.student_id,
+        team_name: m.team_b.team_name,
+        match_title: m.title || m.round_name || m.match_id
+      });
+    }
+  });
+
+  const renderOpts = (selectedIdx) => {
+    return options.map((opt, idx) => {
+      const val = JSON.stringify(opt);
+      const isSel = idx === selectedIdx ? 'selected' : '';
+      const sideName = opt.side === 'team_a' ? 'Đỏ' : 'Xanh';
+      return `<option value='${escapeHtml(val)}' ${isSel}>${escapeHtml(opt.team_name)} (MSSV: ${opt.student_id} • ${opt.match_title} - Bên ${sideName})</option>`;
+    }).join('');
+  };
+
+  sel1.innerHTML = renderOpts(0);
+  sel2.innerHTML = renderOpts(options.length > 1 ? 1 : 0);
+
+  selDq.innerHTML = dqOptions.map(opt => {
+    return `<option value="${escapeHtml(opt.student_id)}">${escapeHtml(opt.team_name)} (MSSV: ${opt.student_id} • ${opt.match_title})</option>`;
+  }).join('');
+
+  updateBracketSwapPreview();
+}
+
+function updateBracketSwapPreview() {
+  const sel1 = document.getElementById('swap-sel-team-1');
+  const sel2 = document.getElementById('swap-sel-team-2');
+  const previewBox = document.getElementById('swap-diff-preview');
+  const previewContent = document.getElementById('swap-diff-content');
+
+  if (!sel1 || !sel2 || !previewBox || !previewContent) return;
+
+  try {
+    const item1 = JSON.parse(sel1.value);
+    const item2 = JSON.parse(sel2.value);
+
+    if (item1.student_id === item2.student_id && item1.match_id === item2.match_id && item1.side === item2.side) {
+      previewBox.style.display = 'block';
+      previewContent.innerHTML = `<span style="color:#ef4444; font-weight:600;">⚠️ Hai đội được chọn đang trùng nhau! Vui lòng chọn 2 vị trí khác nhau để hoán đổi.</span>`;
+      return;
+    }
+
+    const side1 = item1.side === 'team_a' ? 'Đội Đỏ' : 'Đội Xanh';
+    const side2 = item2.side === 'team_a' ? 'Đội Đỏ' : 'Đội Xanh';
+
+    previewBox.style.display = 'block';
+    previewContent.innerHTML = `
+      <div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+        <div style="color: #1e293b;">
+          <strong>Vị trí 1:</strong> <code>${escapeHtml(item1.match_title)} (${side1})</code> 
+          sẽ chuyển từ <strong>${escapeHtml(item1.team_name)}</strong> ➔ <span style="color: #2563eb; font-weight: 700;">${escapeHtml(item2.team_name)}</span>
+        </div>
+        <div style="color: #1e293b;">
+          <strong>Vị trí 2:</strong> <code>${escapeHtml(item2.match_title)} (${side2})</code> 
+          sẽ chuyển từ <strong>${escapeHtml(item2.team_name)}</strong> ➔ <span style="color: #2563eb; font-weight: 700;">${escapeHtml(item1.team_name)}</span>
+        </div>
+        <div style="font-size: 11.5px; color: #64748b; margin-top: 4px;">
+          Lưu ý: Mọi thay đổi cặp đấu sẽ được ghi nhật ký hệ thống và tự động cập nhật cây thi đấu.
+        </div>
+      </div>
+    `;
+  } catch {
+    previewBox.style.display = 'none';
+  }
+}
+
+async function confirmAndExecuteSwap() {
+  const sel1 = document.getElementById('swap-sel-team-1');
+  const sel2 = document.getElementById('swap-sel-team-2');
+  const alertBox = document.getElementById('bracket-swap-alert');
+  const btn = document.getElementById('btn-confirm-swap');
+
+  if (!sel1 || !sel2 || !currentTournamentId) return;
+
+  let item1, item2;
+  try {
+    item1 = JSON.parse(sel1.value);
+    item2 = JSON.parse(sel2.value);
+  } catch (err) {
+    if (alertBox) { alertBox.textContent = 'Dữ liệu chọn không hợp lệ.'; alertBox.style.display = 'block'; }
+    return;
+  }
+
+  if (item1.student_id === item2.student_id && item1.match_id === item2.match_id && item1.side === item2.side) {
+    if (alertBox) { alertBox.textContent = 'Vui lòng chọn 2 đội khác nhau để hoán đổi.'; alertBox.style.display = 'block'; }
+    return;
+  }
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Đang hoán đổi...';
+  }
+  if (alertBox) alertBox.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/tournaments/${currentTournamentId}/swap-bracket`, {
+      method: 'POST',
+      headers: getArenaAuthHeaders(),
+      body: JSON.stringify({
+        match_a_id: item1.match_id,
+        side_a: item1.side,
+        match_b_id: item2.match_id,
+        side_b: item2.side
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Không thể hoán đổi cặp đấu.');
+
+    notifySuccess('Hoán đổi thành công', `Đã hoán đổi vị trí của ${item1.team_name} và ${item2.team_name}.`);
+    closeBracketSwapModal();
+    await loadActiveTournament(currentTournamentId);
+    renderBracketTree(currentTournamentData);
+  } catch (err) {
+    if (alertBox) {
+      alertBox.textContent = err.message;
+      alertBox.style.display = 'block';
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Xác nhận hoán đổi';
+    }
+  }
+}
+
+async function confirmAndExecuteDisqualification() {
+  const selDq = document.getElementById('dq-sel-team');
+  const reasonInp = document.getElementById('dq-reason');
+  const alertBox = document.getElementById('bracket-swap-alert');
+  const btn = document.getElementById('btn-confirm-dq');
+
+  const sid = selDq?.value;
+  const reason = (reasonInp?.value || '').trim();
+
+  if (!sid) {
+    if (alertBox) { alertBox.textContent = 'Vui lòng chọn đội cần xử loại.'; alertBox.style.display = 'block'; }
+    return;
+  }
+  if (!reason) {
+    if (alertBox) { alertBox.textContent = 'Vui lòng nêu rõ lý do xử loại đội thi.'; alertBox.style.display = 'block'; }
+    return;
+  }
+
+  const confirmed = await confirmAction(`Bạn có chắc chắn muốn xử loại đội (MSSV: ${sid}) khỏi giải đấu? Đối thủ sẽ được xử thắng trực tiếp.`);
+  if (!confirmed) return;
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Đang xử loại...';
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/tournaments/${currentTournamentId}/disqualify-team`, {
+      method: 'POST',
+      headers: getArenaAuthHeaders(),
+      body: JSON.stringify({
+        student_id: sid,
+        reason: reason
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Không thể xử loại đội thi.');
+
+    notifySuccess('Đã xử loại đội', data.message || `Đã loại đội ${sid} khỏi giải đấu.`);
+    closeBracketSwapModal();
+    await loadActiveTournament(currentTournamentId);
+    renderBracketTree(currentTournamentData);
+  } catch (err) {
+    if (alertBox) {
+      alertBox.textContent = err.message;
+      alertBox.style.display = 'block';
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Xác nhận xử loại';
+    }
+  }
+}
+

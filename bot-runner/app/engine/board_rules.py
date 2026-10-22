@@ -69,9 +69,30 @@ def generate_mystery_tiles(seed='validation'):
     }
 
 
+def generate_obstacles(seed='validation'):
+    """Sinh ngẫu nhiên các ô chướng ngại vật cố định, đối xứng công bằng qua tâm bàn cờ 9x9."""
+    rng = random.Random(str(seed) + ':obstacles')
+    occupied = {(4, 4), (0, 8), (8, 0)}  # Tâm và 2 căn cứ
+    # Tránh hàng khởi đầu của hai đội (hàng 1 và hàng 7), tránh hàng 0 và hàng 8 (cửa căn cứ)
+    candidates = []
+    for r in (2, 3, 4):
+        for c in range(1, 8):
+            o1 = (c, r)
+            o2 = (8 - c, 8 - r)
+            if o1 != o2 and o1 not in occupied and o2 not in occupied:
+                candidates.append((o1, o2))
+    rng.shuffle(candidates)
+    selected = candidates[:2] if candidates else [((3, 2), (5, 6)), ((2, 4), (6, 4))]
+    obstacles = []
+    for o1, o2 in selected:
+        obstacles.extend([[o1[0], o1[1]], [o2[0], o2[1]]])
+    return sorted(obstacles)
+
+
 def board_rules(rule_id, cycle=1, seed='validation'):
     bits = combination_bits(rule_id)
     special_tiles = (rule_id in ("RULE_SPECIAL_TILES", "STAGE_SPECIAL_TILES", "STAGE_MYSTERY_TILES") or bool(bits & 8))
+    obstacles_enabled = (rule_id in ("RULE_OBSTACLES", "STAGE_OBSTACLES") or bool(bits & 16))
     counts = {"ROCK": 3, "PAPER": 3, "SCISSORS": 3}
     if special_tiles:
         counts = {"ROCK": 3, "PAPER": 3, "SCISSORS": 2, "JOKER": 1}
@@ -89,11 +110,14 @@ def board_rules(rule_id, cycle=1, seed='validation'):
     reverse = reverse or bool(bits & 2)
     fog = fog or bool(bits & 4)
     mystery_tiles = generate_mystery_tiles(seed) if special_tiles else {}
+    obstacles = generate_obstacles(seed) if obstacles_enabled else []
     return {"id": rule_id, "initial_pieces": counts, "fog": fog,
             "shuffle": bool(bits & 1),
             "reverse": reverse, "special_tiles": special_tiles,
             "has_joker": special_tiles,
             "mystery_tiles": mystery_tiles,
+            "obstacles": obstacles,
+            "has_obstacles": bool(obstacles),
             "board_size": 9, "max_moves": None,
             "win_conditions": ["capture_base", "eliminate_opponent"]}
 

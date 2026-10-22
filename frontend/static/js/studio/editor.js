@@ -287,3 +287,95 @@ function openPrivateStudioDirect(side) {
   document.getElementById("studio-ide-card").style.display = "flex";
   populateStudioEditor(team);
 }
+
+function onStudioLanguageChange() {
+  const editor = document.getElementById("studio-code-editor");
+  const selLang = document.getElementById("studio-sel-lang");
+  if (!editor || !selLang) return;
+  const lang = selLang.value;
+  if (!editor.value.trim() || [DEFAULT_PYTHON_CODE, DEFAULT_CPP_CODE].includes(editor.value.trim())) {
+    editor.value = lang === "CPP" ? DEFAULT_CPP_CODE : DEFAULT_PYTHON_CODE;
+  }
+  saveStudioDraft();
+}
+
+function switchStudioSubmitMode(mode) {
+  const btnGit = document.getElementById('btn-studio-mode-github');
+  const btnDirect = document.getElementById('btn-studio-mode-direct');
+  const gitPanel = document.getElementById('studio-git-panel');
+
+  if (mode === 'github') {
+    if (btnGit) btnGit.className = 'btn btn-sm btn-primary';
+    if (btnDirect) btnDirect.className = 'btn btn-sm btn-outline';
+    if (gitPanel) gitPanel.style.display = 'block';
+  } else {
+    if (btnGit) btnGit.className = 'btn btn-sm btn-outline';
+    if (btnDirect) btnDirect.className = 'btn btn-sm btn-primary';
+    if (gitPanel) gitPanel.style.display = 'none';
+  }
+}
+
+async function fetchStudioBotFromGitHub() {
+  const repoInput = document.getElementById('studio-git-repo-url');
+  const branchInput = document.getElementById('studio-git-branch');
+  const fileInput = document.getElementById('studio-git-filepath');
+  const statusBox = document.getElementById('studio-git-sync-status');
+  const fetchBtn = document.getElementById('btn-studio-fetch-github');
+
+  const repoUrl = repoInput?.value.trim() || '';
+  const branch = branchInput?.value.trim() || 'main';
+  const filePath = fileInput?.value.trim() || 'bot.py';
+
+  if (!repoUrl) {
+    notifyWarning('Chưa có đường dẫn', 'Vui lòng nhập đường dẫn GitHub repository của đội bạn.');
+    repoInput?.focus();
+    return;
+  }
+
+  if (fetchBtn) { fetchBtn.disabled = true; fetchBtn.textContent = 'Đang kéo mã...'; }
+  if (statusBox) {
+    statusBox.style.display = 'block';
+    statusBox.style.background = '#f1f5f9';
+    statusBox.style.color = '#334155';
+    statusBox.style.border = '1px solid #cbd5e1';
+    statusBox.textContent = 'Đang kết nối tới GitHub và tải mã nguồn mới nhất...';
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/api/github/fetch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ repo_url: repoUrl, branch, file_path: filePath })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Không thể kéo mã nguồn từ GitHub.');
+
+    const editor = document.getElementById('studio-code-editor');
+    const selLang = document.getElementById('studio-sel-lang');
+    if (editor) editor.value = data.code;
+    if (selLang) selLang.value = data.language || 'PYTHON';
+    saveStudioDraft();
+
+    if (statusBox) {
+      statusBox.style.display = 'block';
+      statusBox.style.background = '#ecfdf5';
+      statusBox.style.color = '#065f46';
+      statusBox.style.border = '1px solid #a7f3d0';
+      statusBox.innerHTML = `<strong>Kéo mã nguồn GitHub thành công!</strong> Commit: <code>${data.commit_sha}</code>`;
+    }
+
+    notifySuccess('Đồng bộ GitHub', `Đã nạp mã nguồn từ commit ${data.commit_sha}`);
+  } catch (err) {
+    if (statusBox) {
+      statusBox.style.display = 'block';
+      statusBox.style.background = '#fef2f2';
+      statusBox.style.color = '#991b1b';
+      statusBox.style.border = '1px solid #fecaca';
+      statusBox.textContent = `Lỗi: ${err.message}`;
+    }
+    notifyError('Không kéo được mã', err.message);
+  } finally {
+    if (fetchBtn) { fetchBtn.disabled = false; fetchBtn.textContent = 'Kéo mã nguồn từ GitHub'; }
+  }
+}
+

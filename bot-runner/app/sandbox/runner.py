@@ -175,7 +175,8 @@ class BotRunner:
         dummy_state["remaining_cards"] = dict(dummy_state["rules"]["initial_pieces"])
         pieces = initial_board(rule_id)
         dummy_state.update(ply_number=1, active_side="team_a", target=[8, 0],
-                           my_pieces=pieces["team_a"], opponent_pieces=pieces["team_b"])
+                           my_pieces=pieces["team_a"], opponent_pieces=pieces["team_b"],
+                           obstacles=[list(c) for c in dummy_state["rules"].get("obstacles", [])])
         if dummy_state["rules"]["fog"]:
             for piece in dummy_state["opponent_pieces"]:
                 piece.pop("type", None)

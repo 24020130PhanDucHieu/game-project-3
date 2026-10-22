@@ -7,9 +7,19 @@ function renderDashboardOverview() {
   const progressEl = document.getElementById("dash-progress-status");
 
   if (currentTournamentData) {
+    const isFinished = Boolean(currentTournamentData.champion || currentTournamentData.status === "FINISHED" || currentTournamentData.status === "COMPLETED");
     if (titleEl) titleEl.textContent = currentTournamentData.name || "Giải Đấu Tân Sinh Viên K69";
     if (statusEl) {
-      statusEl.textContent = currentTournamentData.champion ? "Đã kết thúc" : "Đang diễn ra";
+      statusEl.textContent = isFinished ? "Đã kết thúc" : "Đang diễn ra";
+      statusEl.className = isFinished ? "stat-value text-gray" : "stat-value text-green";
+    }
+    const headerPill = document.getElementById("overview-header-status-pill");
+    const headerPillText = document.getElementById("overview-header-status-text");
+    if (headerPill) {
+      headerPill.className = isFinished ? "status-pill-gray" : "status-pill-green";
+    }
+    if (headerPillText) {
+      headerPillText.textContent = isFinished ? "Đã kết thúc" : "Đang diễn ra";
     }
     if (teamsNumEl) {
       const cnt = currentTournamentData.teams ? currentTournamentData.teams.length : 8;

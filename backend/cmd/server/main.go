@@ -240,6 +240,17 @@ func main() {
 		api.POST("/bots/practice", requireSession(sessions, false, false), mHandler.PracticeMatch)
 
 		// Global Match History, Ranking & Rules
+		api.GET("/time", aHandler.GetServerTime)
+		api.POST("/accounts/forgot-password", aHandler.ForgotPassword)
+		api.POST("/accounts/reset-password", aHandler.ResetPassword)
+		api.GET("/notifications", optionalSession(sessions), aHandler.GetNotifications)
+		api.POST("/notifications/read", optionalSession(sessions), aHandler.ReadNotification)
+		api.POST("/admin/notifications", adminOnly, aHandler.AdminBroadcastNotification)
+		api.GET("/admin/audit-logs", adminOnly, aHandler.ListAdminAuditLogs)
+		api.GET("/teams/profile", optionalSession(sessions), aHandler.GetTeamProfile)
+		api.PUT("/teams/profile", optionalSession(sessions), aHandler.UpdateTeamProfile)
+		api.POST("/tournaments/:id/swap-bracket", adminOnly, tHandler.SwapBracket)
+		api.POST("/tournaments/:id/disqualify-team", adminOnly, tHandler.DisqualifyTeam)
 		api.GET("/matches/history", mHandler.GetMatchHistory)
 		api.GET("/ranking", tHandler.GetRanking)
 		api.GET("/tournament/rule", tHandler.GetRule)

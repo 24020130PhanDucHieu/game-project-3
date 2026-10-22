@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
+	"project-tuan3/internal/auth"
 	"project-tuan3/internal/repository"
 	"project-tuan3/internal/service"
 )
@@ -320,6 +321,183 @@ func (h *AccountsHandler) Enroll(c *gin.Context) {
 	}
 	c.Set("eventTournamentID", req.TournamentID)
 	c.JSON(200, gin.H{"status": "SUCCESS", "tournament_id": req.TournamentID})
+}
+
+func (h *AccountsHandler) ForgotPassword(c *gin.Context) {
+	var req struct {
+		StudentID string `json:"student_id"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.StudentID) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Vui lòng nhập Mã sinh viên của bạn."})
+		return
+	}
+	token, err := h.Store.RequestPasswordReset(req.StudentID, c.ClientIP(), c.Request.UserAgent())
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Không tìm thấy tài khoản với Mã sinh viên này."})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"status":      "SUCCESS",
+		"message":     "Mã xác thực đặt lại mật khẩu đã được tạo (có hiệu lực trong 15 phút).",
+		"reset_token": token,
+	})
+}
+
+func (h *AccountsHandler) ResetPassword(c *gin.Context) {
+	var req struct {
+		StudentID   string `json:"student_id"`
+		ResetToken  string `json:"reset_token"`
+		NewPassword string `json:"new_password"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.StudentID) == "" || strings.TrimSpace(req.ResetToken) == "" || len(strings.TrimSpace(req.NewPassword)) < 6 {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Vui lòng nhập đầy đủ Mã sinh viên, mã xác nhận và mật khẩu mới (tối thiểu 6 ký tự)."})
+		return
+	}
+	err := h.Store.ResetPasswordWithToken(req.StudentID, req.ResetToken, req.NewPassword, c.ClientIP(), c.Request.UserAgent())
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "SUCCESS",
+		"message": "Đặt lại mật khẩu thành công! Bạn có thể đăng nhập ngay bằng mật khẩu mới.",
+	})
+}
+
+func (h *AccountsHandler) GetNotifications(c *gin.Context) {
+	recipientID := "ALL"
+	if sVal, exists := c.Get("session"); exists {
+		if s, ok := sVal.(auth.Session); ok {
+			if s.Role == "ADMIN" {
+				recipientID = "ADMIN"
+			} else if s.StudentID != "" {
+				recipientID = s.StudentID
+			}
+		}
+	}
+	list, unread, err := h.Store.ListNotifications(recipientID, 50)
+	if err != nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"detail": "Không thể tải danh sách thông báo."})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"status":        "SUCCESS",
+		"notifications": list,
+		"unread_count":  unread,
+	})
+}
+
+func (h *AccountsHandler) ReadNotification(c *gin.Context) {
+	recipientID := "ALL"
+	if sVal, exists := c.Get("session"); exists {
+		if s, ok := sVal.(auth.Session); ok && s.StudentID != "" {
+			recipientID = s.StudentID
+		}
+	}
+	var req struct {
+		ID  string `json:"id"`
+		All bool   `json:"all"`
+	}
+	_ = c.ShouldBindJSON(&req)
+	if req.All {
+		_ = h.Store.MarkAllNotificationsRead(recipientID)
+	} else if req.ID != "" {
+		_ = h.Store.MarkNotificationRead(req.ID, recipientID)
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "SUCCESS"})
+}
+
+func (h *AccountsHandler) AdminBroadcastNotification(c *gin.Context) {
+	var req struct {
+		Title     string `json:"title"`
+		Message   string `json:"message"`
+		EventType string `json:"event_type"`
+		LinkTab   string `json:"link_tab"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.Title) == "" || strings.TrimSpace(req.Message) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Tiêu đề và nội dung thông báo không được để trống."})
+		return
+	}
+	if req.EventType == "" {
+		req.EventType = "ANNOUNCEMENT"
+	}
+	n := repository.Notification{
+		RecipientID: "ALL",
+		EventType:   req.EventType,
+		Title:       strings.TrimSpace(req.Title),
+		Message:     strings.TrimSpace(req.Message),
+		LinkTab:     strings.TrimSpace(req.LinkTab),
+		CreatedAt:   time.Now().UTC(),
+	}
+	if err := h.Store.CreateNotification(n); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"detail": "Không thể gửi thông báo."})
+		return
+	}
+	_ = h.Store.LogAdminAction("admin", "BROADCAST_NOTIFICATION", "", "", map[string]interface{}{"title": n.Title})
+	c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "notification": n})
+}
+
+func (h *AccountsHandler) GetTeamProfile(c *gin.Context) {
+	sid := c.Query("student_id")
+	if sid == "" {
+		if sVal, exists := c.Get("session"); exists {
+			if s, ok := sVal.(auth.Session); ok {
+				sid = s.StudentID
+			}
+		}
+	}
+	if sid == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Vui lòng chỉ định student_id hoặc đăng nhập tài khoản đội."})
+		return
+	}
+	profile, err := h.Store.GetTeamProfile(sid)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"detail": "Không tìm thấy hồ sơ đội thi."})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "profile": profile})
+}
+
+func (h *AccountsHandler) UpdateTeamProfile(c *gin.Context) {
+	var p repository.TeamProfile
+	if err := c.ShouldBindJSON(&p); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Dữ liệu hồ sơ không hợp lệ."})
+		return
+	}
+	if sVal, exists := c.Get("session"); exists {
+		if s, ok := sVal.(auth.Session); ok {
+			if s.Role != "ADMIN" && (p.StudentID == "" || s.StudentID != p.StudentID) {
+				p.StudentID = s.StudentID
+			}
+		}
+	}
+	if p.StudentID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"detail": "Bạn cần đăng nhập để cập nhật hồ sơ."})
+		return
+	}
+	if err := h.Store.UpdateTeamProfile(p); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "message": "Cập nhật hồ sơ đội thành công!", "profile": p})
+}
+
+func (h *AccountsHandler) GetServerTime(c *gin.Context) {
+	now := time.Now().UTC()
+	c.JSON(http.StatusOK, gin.H{
+		"server_time":    now.Unix(),
+		"server_time_ms": now.UnixMilli(),
+		"iso":            now.Format(time.RFC3339),
+	})
+}
+
+func (h *AccountsHandler) ListAdminAuditLogs(c *gin.Context) {
+	logs, err := h.Store.ListAdminAuditLogs(c.Query("tournament_id"), 50)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"detail": "Không thể tải nhật ký quản trị."})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "logs": logs})
 }
 
 func (h *MatchHandler) accountLogin(c *gin.Context, username, password string) {

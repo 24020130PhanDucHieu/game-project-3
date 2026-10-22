@@ -1,0 +1,70 @@
+<!-- Modal Quản Lý Bảng Đấu & Đổi Cặp Đấu (Admin) -->
+<div class="modal-backdrop" id="modal-bracket-swap" style="display: none;" onclick="if(event.target===this)closeBracketSwapModal()">
+  <div class="modal-dialog modal-md" role="dialog" aria-modal="true" aria-labelledby="swap-modal-title" style="max-width: 580px;">
+    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #e2e8f0;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <svg class="arena-icon text-primary" style="width: 20px; height: 20px;"><use href="#icon-shuffle"></use></svg>
+        <h3 id="swap-modal-title" style="margin: 0; font-size: 17px; font-weight: 700; color: #0f172a;">Quản lý bảng đấu & Hoán đổi cặp</h3>
+      </div>
+      <button class="btn-clean close-btn" onclick="closeBracketSwapModal()" type="button" aria-label="Đóng">&times;</button>
+    </div>
+
+    <div style="padding: 20px;">
+      <!-- Tab chuyển đổi: Hoán đổi cặp đấu / Xử loại đội -->
+      <div style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+        <button class="btn btn-sm btn-primary" id="btn-tab-swap-teams" type="button" onclick="switchBracketModalTab('swap')">Hoán đổi cặp đấu</button>
+        <button class="btn btn-sm btn-outline" id="btn-tab-disqualify-team" type="button" onclick="switchBracketModalTab('disqualify')">Xử loại đội thi</button>
+      </div>
+
+      <div id="bracket-swap-alert" class="login-alert-banner" style="display: none; margin-bottom: 14px;"></div>
+
+      <!-- Section 1: Hoán đổi 2 đội -->
+      <div id="section-swap-action">
+        <p style="font-size: 13px; color: #64748b; margin-top: 0;">
+          Chọn 2 đội thi đấu trong bảng đấu Vòng 1 để hoán đổi nhánh hoặc cặp đối đầu trước khi giải bắt đầu:
+        </p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+          <div>
+            <label class="control-label-sm" for="swap-sel-team-1">Đội thứ nhất (*)</label>
+            <select class="login-input-field" id="swap-sel-team-1" onchange="updateBracketSwapPreview()"></select>
+          </div>
+          <div>
+            <label class="control-label-sm" for="swap-sel-team-2">Đội thứ hai (*)</label>
+            <select class="login-input-field" id="swap-sel-team-2" onchange="updateBracketSwapPreview()"></select>
+          </div>
+        </div>
+
+        <!-- Preview Diff Box -->
+        <div id="swap-diff-preview" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; font-size: 13px; margin-bottom: 16px; display: none;">
+          <strong style="color: #0f172a; font-size: 12.5px; text-transform: uppercase;">Xem trước thay đổi (Preview Diff):</strong>
+          <div id="swap-diff-content" style="margin-top: 8px;"></div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button class="btn btn-outline btn-sm" type="button" onclick="closeBracketSwapModal()">Hủy</button>
+          <button class="btn btn-primary btn-sm" id="btn-confirm-swap" type="button" onclick="confirmAndExecuteSwap()">Xác nhận hoán đổi</button>
+        </div>
+      </div>
+
+      <!-- Section 2: Xử loại đội -->
+      <div id="section-disqualify-action" style="display: none;">
+        <p style="font-size: 13px; color: #64748b; margin-top: 0;">
+          Đội bị xử loại sẽ bị loại khỏi giải đấu và đối thủ được xử thắng mặc định (Bye/Default win):
+        </p>
+        <div style="margin-bottom: 12px;">
+          <label class="control-label-sm" for="dq-sel-team">Chọn đội cần xử loại (*)</label>
+          <select class="login-input-field" id="dq-sel-team"></select>
+        </div>
+        <div style="margin-bottom: 16px;">
+          <label class="control-label-sm" for="dq-reason">Lý do xử loại (*)</label>
+          <input class="login-input-field" id="dq-reason" placeholder="Ví dụ: Vắng mặt không tham gia thi đấu / Gian lận" value="Vắng mặt không nộp bot">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button class="btn btn-outline btn-sm" type="button" onclick="closeBracketSwapModal()">Hủy</button>
+          <button class="btn btn-sm btn-outline text-danger" id="btn-confirm-dq" type="button" onclick="confirmAndExecuteDisqualification()" style="border-color: #ef4444; color: #ef4444;">Xác nhận xử loại</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

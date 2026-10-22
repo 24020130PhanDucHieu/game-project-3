@@ -112,16 +112,46 @@
         </div>
         <p id="studio-rule-summary" class="match-rule-summary" aria-live="polite"></p>
 
+        <!-- Chế độ nộp: GitHub vs Trực tiếp -->
+        <div style="display: flex; gap: 8px; margin: 8px 0 12px;">
+          <button class="btn btn-sm btn-primary" id="btn-match-mode-github" type="button" onclick="switchMatchSubmitMode('github')">Nộp qua GitHub</button>
+          <button class="btn btn-sm btn-outline" id="btn-match-mode-direct" type="button" onclick="switchMatchSubmitMode('direct')">Nộp trực tiếp (Web IDE)</button>
+        </div>
+
+        <!-- Khung nộp qua GitHub trong trận đấu -->
+        <div id="match-github-panel" style="margin-bottom: 12px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div>
+              <label class="control-label-sm" for="match-git-repo-url">GitHub Repository</label>
+              <input type="url" id="match-git-repo-url" class="login-input-field" placeholder="Ví dụ: https://github.com/myteam/arena-bot" style="font-size: 13px;">
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div>
+                <label class="control-label-sm" for="match-git-branch">Commit / Tag</label>
+                <input type="text" id="match-git-branch" class="login-input-field" placeholder="main hoặc v1.0 hoặc commit" value="main" style="font-size: 13px;">
+              </div>
+              <div>
+                <label class="control-label-sm" for="match-git-filepath">Đường dẫn file</label>
+                <input type="text" id="match-git-filepath" class="login-input-field" placeholder="bot.py hoặc bot.cpp" value="bot.py" style="font-size: 13px;">
+              </div>
+            </div>
+            <button class="btn btn-sm btn-primary" type="button" id="btn-fetch-match-github" onclick="fetchMatchBotFromGitHub()">
+              Kéo mã nguồn từ GitHub
+            </button>
+          </div>
+          <div id="match-git-sync-status" style="display: none; margin-top: 8px; padding: 6px 10px; border-radius: 6px; font-size: 12px;"></div>
+        </div>
+
         <div class="ide-toolbar-row">
           <div class="toolbar-lang-group">
             <label class="control-label-sm" for="studio-sel-lang">Ngôn ngữ</label>
-            <select class="input-text-sm" id="studio-sel-lang">
+            <select class="input-text-sm" id="studio-sel-lang" onchange="onStudioLanguageChange()">
               <option value="PYTHON">Python 3.10 (.py)</option>
               <option value="CPP">C++ 17 (.cpp)</option>
             </select>
           </div>
           <div class="toolbar-btn-group">
-            <button class="studio-tool-btn" id="btn-studio-load-template" type="button" title="Nạp bot mẫu cho ngôn ngữ đang chọn">
+            <button class="studio-tool-btn" id="btn-studio-load-template" type="button" title="Nạp bot mẫu cho ngôn ngữ đang chọn" onclick="loadStudioTemplate()">
               <svg class="arena-icon" aria-hidden="true"><use href="#icon-code"></use></svg><span>Nạp mẫu</span>
             </button>
             <button class="studio-tool-btn studio-tool-validate" id="btn-studio-dryrun" type="button" title="Kiểm tra cú pháp và thực thi thử bot trong sandbox">
@@ -130,7 +160,10 @@
           </div>
         </div>
 
-        <textarea class="studio-code-editor" id="studio-code-editor" spellcheck="false" placeholder="# Viết hàm decide_move(game_state) tại đây..."></textarea>
+        <div style="position: relative;">
+          <textarea class="studio-code-editor" id="studio-code-editor" spellcheck="false" placeholder="# Viết hàm decide_move(game_state) tại đây..."></textarea>
+          <div id="studio-git-source-badge" style="position: absolute; top: 8px; right: 8px; display: none; font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(30,41,59,0.85); color: #f8fafc;">Nguồn: GitHub</div>
+        </div>
 
           <label for="studio-rule-note">Điều chỉnh để thích ứng với luật (không bắt buộc)</label>
           <textarea id="studio-rule-note" class="input-modern" maxlength="2000" rows="3" placeholder="Giải thích ngắn thay đổi chiến thuật trong bản code này…"></textarea>

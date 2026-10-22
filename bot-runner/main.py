@@ -99,10 +99,14 @@ def mutate_tournament(req: MutateRequest):
         elif action == "upgrade-rules":
             pass
         elif action == "auto-schedule":
-            stateless_db.auto_schedule_tournament(t_id)
+            stateless_db.auto_schedule_tournament(t_id, fill_demo=bool(p.get("fill_demo", False)))
+        elif action == "swap-bracket":
+            action_res = stateless_db.swap_bracket_teams(t_id, p.get("team_1") or p.get("student_id_1"), p.get("team_2") or p.get("student_id_2"))
+        elif action == "disqualify-team":
+            action_res = stateless_db.disqualify_tournament_team(t_id, p.get("student_id"), p.get("reason", "Vi phạm điều lệ"))
         elif action == "set-rule":
             stage_name = p.get("stage_name")
-            allowed_stages = {"STAGE_1_STANDARD", "STAGE_2_MUTATED", "STAGE_3_REVERSE_FOG", "STAGE_4_FINALS"}
+            allowed_stages = {"STAGE_1_STANDARD", "STAGE_2_MUTATED", "STAGE_3_REVERSE_FOG", "STAGE_4_FINALS", "RULE_OBSTACLES"}
             if stage_name not in allowed_stages:
                 raise ValueError("Invalid tournament rule.")
             stateless_db.tournaments[t_id]["stage_rule"] = stage_name

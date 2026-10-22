@@ -51,8 +51,9 @@ function renderMatchRoomData(match) {
 
   const statusBadge = document.getElementById("match-room-status-badge");
   if (statusBadge) {
-    statusBadge.textContent = match.status === "COMPLETED" ? "Đã kết thúc" : "Đang diễn ra";
-    statusBadge.className = "status-pill-green";
+    const isCompleted = match.status === "COMPLETED";
+    statusBadge.textContent = isCompleted ? "Đã kết thúc" : "Đang diễn ra";
+    statusBadge.className = isCompleted ? "status-pill-gray" : "status-pill-green";
   }
 
   // Tỉ số và các step pills

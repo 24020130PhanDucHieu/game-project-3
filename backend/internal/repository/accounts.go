@@ -35,15 +35,28 @@ type Account struct {
 // Accounts are independent of tournament rosters. Deleted IDs remain reserved
 // so an old signed session cannot regain access through re-registration.
 type Accounts struct {
-	mu     sync.Mutex
-	db     *sql.DB
-	path   string
-	items  map[string]Account
-	cipher cipher.AEAD
+	mu            sync.Mutex
+	db            *sql.DB
+	path          string
+	items         map[string]Account
+	cipher        cipher.AEAD
+	resets        map[string]PasswordReset
+	pwdAudits     []PasswordAuditLog
+	notifications []Notification
+	profiles      map[string]TeamProfile
+	adminLogs     []AdminAuditLog
 }
 
 func NewAccounts(repo TournamentRepository, path string) (*Accounts, error) {
-	s := &Accounts{path: path, items: map[string]Account{}}
+	s := &Accounts{
+		path:          path,
+		items:         map[string]Account{},
+		resets:        map[string]PasswordReset{},
+		pwdAudits:     []PasswordAuditLog{},
+		notifications: []Notification{},
+		profiles:      map[string]TeamProfile{},
+		adminLogs:     []AdminAuditLog{},
+	}
 	secret := os.Getenv("ACCOUNT_ENCRYPTION_KEY")
 	if secret == "" {
 		secret = os.Getenv("SESSION_SECRET")
@@ -56,7 +69,15 @@ func NewAccounts(repo TournamentRepository, path string) (*Accounts, error) {
 		if secret == "" {
 			return nil, errors.New("Configure ACCOUNT_ENCRYPTION_KEY or SESSION_SECRET or ADMIN_PASSWORD")
 		}
-		if _, err := s.db.Exec(`CREATE TABLE IF NOT EXISTS arena_accounts (student_id TEXT PRIMARY KEY, data JSONB NOT NULL); ALTER TABLE arena_accounts ENABLE ROW LEVEL SECURITY`); err != nil {
+		schema := `
+CREATE TABLE IF NOT EXISTS arena_accounts (student_id TEXT PRIMARY KEY, data JSONB NOT NULL);
+CREATE TABLE IF NOT EXISTS arena_password_resets (student_id VARCHAR(64) NOT NULL, reset_token_hash VARCHAR(128) PRIMARY KEY, expires_at TIMESTAMP WITH TIME ZONE NOT NULL, used BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS arena_password_audit_logs (id SERIAL PRIMARY KEY, student_id VARCHAR(64) NOT NULL, action VARCHAR(64) NOT NULL, ip_address VARCHAR(64), user_agent TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS arena_notifications (id VARCHAR(64) PRIMARY KEY, recipient_id VARCHAR(64) NOT NULL, event_type VARCHAR(64) NOT NULL, title VARCHAR(255) NOT NULL, message TEXT NOT NULL, link_tab VARCHAR(64), link_data JSONB DEFAULT '{}', dedup_key VARCHAR(128) UNIQUE, is_read BOOLEAN NOT NULL DEFAULT FALSE, created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS arena_team_profiles (student_id VARCHAR(64) PRIMARY KEY, team_name VARCHAR(128) NOT NULL, captain_name VARCHAR(128), university VARCHAR(128) DEFAULT 'ĐHQG Hà Nội', members JSONB DEFAULT '[]', preferred_language VARCHAR(32) DEFAULT 'PYTHON', bio TEXT DEFAULT '', achievements JSONB DEFAULT '[]', updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);
+CREATE TABLE IF NOT EXISTS arena_admin_audit_logs (id SERIAL PRIMARY KEY, admin_user VARCHAR(64) NOT NULL DEFAULT 'admin', action VARCHAR(64) NOT NULL, tournament_id VARCHAR(64), match_id VARCHAR(64), details JSONB DEFAULT '{}', created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);
+`
+		if _, err := s.db.Exec(schema); err != nil {
 			return nil, err
 		}
 	} else {

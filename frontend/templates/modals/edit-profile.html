@@ -1,0 +1,59 @@
+<!-- Modal Chỉnh Sửa Hồ Sơ Đội Thi -->
+<div class="modal-backdrop" id="modal-edit-profile" style="display: none;" onclick="if(event.target===this)closeEditProfileModal()">
+  <div class="modal-dialog modal-md" role="dialog" aria-modal="true" aria-labelledby="edit-profile-modal-title" style="max-width: 520px;">
+    <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #e2e8f0;">
+      <h3 id="edit-profile-modal-title" style="margin: 0; font-size: 17px; font-weight: 700; color: #0f172a;">Chỉnh sửa thông tin đội thi</h3>
+      <button class="btn-clean close-btn" onclick="closeEditProfileModal()" type="button" aria-label="Đóng">&times;</button>
+    </div>
+
+    <form id="form-edit-profile" onsubmit="submitEditProfile(event)" style="padding: 20px;">
+      <div id="edit-profile-alert" class="login-alert-banner" style="display: none; margin-bottom: 14px;"></div>
+
+      <div class="login-input-group" style="margin-bottom: 12px;">
+        <label for="edit-profile-team-name" class="control-label-sm">Tên đội thi đấu (*)</label>
+        <input class="login-input-field" id="edit-profile-team-name" required minlength="2" maxlength="80" placeholder="Tên đội thi đấu">
+      </div>
+
+      <div class="login-input-group" style="margin-bottom: 12px;">
+        <label for="edit-profile-captain" class="control-label-sm">Họ và tên Đội trưởng</label>
+        <input class="login-input-field" id="edit-profile-captain" maxlength="80" placeholder="Họ và tên đội trưởng">
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+        <div class="login-input-group">
+          <label for="edit-profile-uni" class="control-label-sm">Trường / Đơn vị</label>
+          <input class="login-input-field" id="edit-profile-uni" maxlength="80" placeholder="Ví dụ: ĐH Công Nghệ">
+        </div>
+        <div class="login-input-group">
+          <label for="edit-profile-lang" class="control-label-sm">Ngôn ngữ sở trường</label>
+          <select class="login-input-field" id="edit-profile-lang">
+            <option value="PYTHON">Python 3 (.py)</option>
+            <option value="CPP">C++ 17 (.cpp)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="login-input-group" style="margin-bottom: 12px;">
+        <label for="edit-profile-bio" class="control-label-sm">Khẩu hiệu / Tiểu sử đội</label>
+        <textarea class="login-input-field" id="edit-profile-bio" rows="2" maxlength="250" placeholder="Giới thiệu ngắn về đội thi của bạn..."></textarea>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label class="control-label-sm" style="margin-bottom: 6px; display: block;">Thành viên bổ sung (Thành viên 2 & 3)</label>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+          <input class="login-input-field" id="edit-member-name-2" placeholder="Họ tên thành viên 2" style="font-size: 13px;">
+          <input class="login-input-field" id="edit-member-sid-2" placeholder="MSSV thành viên 2" style="font-size: 13px;">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <input class="login-input-field" id="edit-member-name-3" placeholder="Họ tên thành viên 3" style="font-size: 13px;">
+          <input class="login-input-field" id="edit-member-sid-3" placeholder="MSSV thành viên 3" style="font-size: 13px;">
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #e2e8f0; padding-top: 14px;">
+        <button class="btn btn-outline btn-sm" type="button" onclick="closeEditProfileModal()">Hủy</button>
+        <button class="btn btn-primary btn-sm" id="btn-save-profile" type="submit">Lưu thay đổi</button>
+      </div>
+    </form>
+  </div>
+</div>
