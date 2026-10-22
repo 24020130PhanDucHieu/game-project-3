@@ -1,10 +1,10 @@
 # Freshman Bot Arena — Web hiện đã làm được những gì?
 
-**Cập nhật: 21/10/2026 · Dành cho thành viên dự án và ban tổ chức.**
+**Cập nhật: 22/10/2026 · Dành cho thành viên dự án và ban tổ chức.**
 
 Tài liệu tổng hợp chức năng để mọi người hiểu sản phẩm, thử demo và góp ý nâng cấp. Nội dung mô tả mã nguồn hiện tại, bao gồm nâng cấp nhận bài và phục hồi sự cố. Xem [hướng dẫn vận hành bản mới](RELEASE_READINESS.md) để phân biệt chức năng trong mã với phần đã được triển khai trên hosting.
 
-> **Trạng thái phát hành:** bản mới đã có trên GitHub. Theo lần cập nhật gần nhất, backend AWS chưa được cập nhật bản này; việc frontend Cloudflare phát hành thành công cũng chưa được xác nhận. Cần cập nhật và kiểm tra trên hosting trước khi dùng các tính năng mới trong giải thật.
+> **Trạng thái phát hành:** commit `cd574ed` đã được triển khai và kiểm tra trên AWS; Cloudflare Workers.dev cũng đang phục vụ giao diện mới. Monitoring xác nhận PostgreSQL và 2 worker sẵn sàng. Đây chưa phải chứng nhận tải 4.000 người; xem [rà soát mức sẵn sàng production](PRODUCTION_GAP_REVIEW_2026_10_22.md) để biết các việc còn lại.
 
 ## 1. Sản phẩm giải quyết việc gì?
 
