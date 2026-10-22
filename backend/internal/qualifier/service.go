@@ -34,32 +34,38 @@ type Event struct {
 	Seed           string  `json:"seed"`
 	Error          string  `json:"error,omitempty"`
 	Target         string  `json:"target,omitempty"`
+	GitMode        bool    `json:"git_mode"`
+	GitTemplateURL string  `json:"git_template_url,omitempty"`
 }
 type Participant struct {
-	Pending     int      `json:"pending_submissions,omitempty"`
-	TestBot     bool     `json:"test_bot,omitempty"`
-	SID         string   `json:"student_id"`
-	Name        string   `json:"team_name"`
-	Code        string   `json:"code,omitempty"`
-	Language    string   `json:"language,omitempty"`
-	ValidID     string   `json:"valid_id,omitempty"`
-	LockedID    string   `json:"locked_id,omitempty"`
-	Elo         float64  `json:"elo"`
-	Wins        int      `json:"wins"`
-	Played      int      `json:"played"`
-	Byes        int      `json:"byes"`
-	Starts      int      `json:"starts"`
-	Opponents   []string `json:"opponents,omitempty"`
-	SubmittedAt float64  `json:"submitted_at"`
+	Pending       int      `json:"pending_submissions,omitempty"`
+	TestBot       bool     `json:"test_bot,omitempty"`
+	SID           string   `json:"student_id"`
+	Name          string   `json:"team_name"`
+	Code          string   `json:"code,omitempty"`
+	Language      string   `json:"language,omitempty"`
+	ValidID       string   `json:"valid_id,omitempty"`
+	LockedID      string   `json:"locked_id,omitempty"`
+	Elo           float64  `json:"elo"`
+	Wins          int      `json:"wins"`
+	Played        int      `json:"played"`
+	Byes          int      `json:"byes"`
+	Starts        int      `json:"starts"`
+	Opponents     []string `json:"opponents,omitempty"`
+	SubmittedAt   float64  `json:"submitted_at"`
+	GitRepoURL    string   `json:"git_repo_url,omitempty"`
+	GitCommitHash string   `json:"git_commit_hash,omitempty"`
 }
 type Submission struct {
-	Status   string  `json:"status,omitempty"`
-	ID       string  `json:"id"`
-	Code     string  `json:"code,omitempty"`
-	Language string  `json:"language"`
-	Valid    bool    `json:"valid"`
-	Error    string  `json:"error,omitempty"`
-	At       float64 `json:"at"`
+	Status        string  `json:"status,omitempty"`
+	ID            string  `json:"id"`
+	Code          string  `json:"code,omitempty"`
+	Language      string  `json:"language"`
+	Valid         bool    `json:"valid"`
+	Error         string  `json:"error,omitempty"`
+	At            float64 `json:"at"`
+	GitRepoURL    string  `json:"git_repo_url,omitempty"`
+	GitCommitHash string  `json:"git_commit_hash,omitempty"`
 }
 type Job struct {
 	ID       string  `json:"id"`
@@ -162,7 +168,17 @@ func (s *Service) Configure(id string, req Event) (Event, error) {
 	if strings.TrimSpace(req.Name) == "" || len(req.Name) > 200 || req.Deadline <= now() || req.Rounds < 1 || req.Rounds > 100 || (req.TopK != 8 && req.TopK != 16 && req.TopK != 32) {
 		return Event{}, errors.New("Đặt tên, hạn nộp trong tương lai, 1–100 vòng và top 8/16/32.")
 	}
-	e := Event{ID: uniqueID(), Name: strings.TrimSpace(req.Name), Deadline: req.Deadline, Rounds: req.Rounds, TopK: req.TopK, Status: "OPEN", Seed: uniqueID()}
+	e := Event{
+		ID:             uniqueID(),
+		Name:           strings.TrimSpace(req.Name),
+		Deadline:       req.Deadline,
+		Rounds:         req.Rounds,
+		TopK:           req.TopK,
+		Status:         "OPEN",
+		Seed:           uniqueID(),
+		GitMode:        req.GitMode,
+		GitTemplateURL: strings.TrimSpace(req.GitTemplateURL),
+	}
 	if id != "" {
 		var err error
 		e, err = s.Event(id)
@@ -176,6 +192,8 @@ func (s *Service) Configure(id string, req Event) (Event, error) {
 		e.Deadline = req.Deadline
 		e.Rounds = req.Rounds
 		e.TopK = req.TopK
+		e.GitMode = req.GitMode
+		e.GitTemplateURL = strings.TrimSpace(req.GitTemplateURL)
 	}
 	return e, s.Store.Batch(map[string]interface{}{metaKey(e.ID): e})
 }

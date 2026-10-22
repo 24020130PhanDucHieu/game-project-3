@@ -202,6 +202,7 @@ func main() {
 		api.POST("/qualifiers/:qid/submissions", requireSession(sessions, false, false), qHandler.Submit)
 		api.POST("/qualifiers/:qid/actions/:action", adminOnly, qHandler.Action)
 		api.DELETE("/qualifiers/:qid", adminOnly, qHandler.Delete)
+		api.POST("/github/fetch", requireSession(sessions, false, false), qHandler.FetchGitHub)
 		// Tournaments
 		api.GET("/tournaments", tHandler.GetAll)
 		api.GET("/tournaments/list", tHandler.GetList)

@@ -1,17 +1,155 @@
+let currentQualifierSubmitMode = 'github';
+let lastGitSubmissionInfo = { repo_url: '', commit_sha: '' };
+
 function qualifierDraftKey(){return `qualifier-draft:${API_BASE}:${qualifierId}:${currentTeamStudentId||'guest'}`;}
 function saveQualifierDraft(){if(currentAppRole!=='TEAM'||!qualifierId)return;localStorage.setItem(qualifierDraftKey(),JSON.stringify({code:document.getElementById('qualifier-code').value,language:document.getElementById('qualifier-language').value}));}
+
+function switchQualifierMode(mode){
+  currentQualifierSubmitMode = mode;
+  const btnGit = document.getElementById('btn-mode-github');
+  const btnDirect = document.getElementById('btn-mode-direct');
+  const gitPanel = document.getElementById('qualifier-github-panel');
+  const directToolbar = document.getElementById('qualifier-direct-toolbar');
+
+  if(mode === 'github'){
+    if(btnGit){ btnGit.className = 'btn btn-sm btn-primary'; }
+    if(btnDirect){ btnDirect.className = 'btn btn-sm btn-outline'; }
+    if(gitPanel) gitPanel.style.display = 'block';
+  } else {
+    if(btnGit){ btnGit.className = 'btn btn-sm btn-outline'; }
+    if(btnDirect){ btnDirect.className = 'btn btn-sm btn-primary'; }
+    if(gitPanel) gitPanel.style.display = 'none';
+  }
+}
+
+async function fetchBotFromGitHub(){
+  const repoInput = document.getElementById('qualifier-git-repo-url');
+  const branchInput = document.getElementById('qualifier-git-branch');
+  const fileInput = document.getElementById('qualifier-git-filepath');
+  const statusBox = document.getElementById('qualifier-git-sync-status');
+  const fetchBtn = document.getElementById('btn-fetch-github');
+
+  const repoUrl = repoInput?.value.trim() || '';
+  const branch = branchInput?.value.trim() || 'main';
+  const filePath = fileInput?.value.trim() || 'bot.py';
+
+  if(!repoUrl){
+    notifyWarning('Chưa có đường dẫn', 'Vui lòng nhập đường dẫn GitHub repository của đội bạn.');
+    repoInput?.focus();
+    return;
+  }
+
+  if(fetchBtn) { fetchBtn.disabled = true; fetchBtn.textContent = 'Đang kéo mã...'; }
+  if(statusBox){
+    statusBox.style.display = 'block';
+    statusBox.style.background = '#f1f5f9';
+    statusBox.style.color = '#334155';
+    statusBox.style.border = '1px solid #cbd5e1';
+    statusBox.textContent = 'Đang kết nối tới GitHub và tải mã nguồn mới nhất...';
+  }
+
+  try{
+    const res = await fetch(`${API_BASE}/api/github/fetch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ repo_url: repoUrl, branch, file_path: filePath })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.detail || 'Không thể kéo mã nguồn từ GitHub.');
+
+    document.getElementById('qualifier-code').value = data.code;
+    document.getElementById('qualifier-language').value = data.language || 'PYTHON';
+    saveQualifierDraft();
+
+    lastGitSubmissionInfo = {
+      repo_url: data.repo_url,
+      commit_sha: data.commit_sha
+    };
+
+    const badge = document.getElementById('qualifier-code-source-badge');
+    if(badge){
+      badge.textContent = `GitHub: ${data.owner}/${data.repo} (${data.commit_sha})`;
+      badge.style.display = 'block';
+    }
+
+    const metaInfo = document.getElementById('qualifier-submit-meta-info');
+    if(metaInfo){
+      metaInfo.textContent = `Sẵn sàng nộp từ commit: ${data.commit_sha}`;
+    }
+
+    if(statusBox){
+      statusBox.style.display = 'block';
+      statusBox.style.background = '#ecfdf5';
+      statusBox.style.color = '#065f46';
+      statusBox.style.border = '1px solid #a7f3d0';
+      statusBox.innerHTML = `<strong>Kéo mã nguồn từ GitHub thành công!</strong><br>
+        Repo: <b>${data.owner}/${data.repo}</b> (nhánh <i>${data.branch}</i>) · File: <b>${data.file_path}</b><br>
+        Commit: <code>${data.commit_sha}</code> - "${escapeHtml(data.commit_message)}" (bởi ${data.author}, ${data.commit_time})<br>
+        <span style="font-size: 12px; color: #047857;">Mã đã được nạp vào khung bên dưới. Hãy kiểm tra và bấm <b>Nộp bot vào vòng loại</b>.</span>`;
+    }
+
+    notifySuccess('Đồng bộ GitHub thành công', `Đã nạp mã nguồn từ commit ${data.commit_sha}`);
+    checkQualifierCode();
+  }catch(err){
+    if(statusBox){
+      statusBox.style.display = 'block';
+      statusBox.style.background = '#fef2f2';
+      statusBox.style.color = '#991b1b';
+      statusBox.style.border = '1px solid #fecaca';
+      statusBox.textContent = `Lỗi: ${err.message}`;
+    }
+    notifyError('Không kéo được mã', err.message);
+  }finally{
+    if(fetchBtn){ fetchBtn.disabled = false; fetchBtn.textContent = 'Kéo mã nguồn từ GitHub'; }
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function renderQualifierOwn(data){
   const e=data.event,p=data.participant||{};const canSubmit=currentAppRole==='TEAM'&&Boolean(p.student_id)&&e.status==='OPEN'&&Date.now()/1000<e.deadline;
   document.getElementById('qualifier-team-card').hidden=currentAppRole!=='TEAM'||!p.student_id;
   document.getElementById('qualifier-team-card').style.display=currentAppRole==='ADMIN'?'none':'block';
   document.getElementById('qualifier-submit').disabled=!canSubmit;document.getElementById('qualifier-check').disabled=currentAppRole!=='TEAM';
   document.getElementById('qualifier-code').readOnly=!canSubmit;
+
+  const gitIndicator = document.getElementById('qualifier-git-mode-indicator');
+  const templateLink = document.getElementById('qualifier-git-template-link');
+  if(e.git_mode){
+    if(gitIndicator) gitIndicator.style.display = 'block';
+    if(templateLink) templateLink.href = e.git_template_url || 'https://github.com/uet-arena/bot-template';
+  } else {
+    if(gitIndicator) gitIndicator.style.display = 'none';
+  }
+
+  const repoInput = document.getElementById('qualifier-git-repo-url');
+  if(repoInput && !repoInput.value && p.git_repo_url){
+    repoInput.value = p.git_repo_url;
+    lastGitSubmissionInfo = { repo_url: p.git_repo_url, commit_sha: p.git_commit_hash || '' };
+    const badge = document.getElementById('qualifier-code-source-badge');
+    if(badge && p.git_commit_hash){
+      badge.textContent = `GitHub: ${p.git_repo_url} (${p.git_commit_hash})`;
+      badge.style.display = 'block';
+    }
+  }
+
   const pending=(data.history||[]).filter(s=>s.status==='QUEUED').length;
   const status=currentAppRole==='TEAM'?(p.locked_id?'Bài đã khóa':pending?`${pending} bài đã nhận, đang chờ chấm${p.valid_id?' · Có bản hợp lệ trước đó':''}`:p.valid_id?'Có bản hợp lệ sẵn sàng':'Chưa có bài hợp lệ'):'Đăng nhập tài khoản đội để nộp bot';
   document.getElementById('qualifier-my-status').textContent=`${status} · ELO ${Number(p.elo||1200).toFixed(2)} · Hạn ${new Date(e.deadline*1000).toLocaleString('vi-VN')}`;
   const key=qualifierDraftKey();if(qualifierDraftKeyLoaded!==key){let draft={};try{draft=JSON.parse(localStorage.getItem(key)||'{}');}catch{}document.getElementById('qualifier-code').value=draft.code??p.code??'';document.getElementById('qualifier-language').value=draft.language||p.language||'PYTHON';qualifierDraftKeyLoaded=key;}
   const history=document.getElementById('qualifier-my-history');history.replaceChildren();
-  for(const submission of data.history||[]){const row=document.createElement('p');row.textContent=`${new Date(submission.at*1000).toLocaleString('vi-VN')} · ${submission.status==='QUEUED'?'Đã nhận · Đang chờ chấm':submission.valid?'Hợp lệ':'Lỗi: '+submission.error}${submission.id===p.valid_id?' · Bản hợp lệ cuối cùng':''}`;const button=document.createElement('button');button.className='btn-outline';button.textContent='Nạp lại';button.disabled=!canSubmit;button.onclick=()=>{document.getElementById('qualifier-code').value=submission.code;document.getElementById('qualifier-language').value=submission.language;saveQualifierDraft();};row.appendChild(button);history.appendChild(row);}
+  for(const submission of data.history||[]){
+    const row=document.createElement('p');
+    let gitTag = '';
+    if(submission.git_repo_url){
+      gitTag = ` · [GitHub: ${submission.git_commit_hash || 'latest'}]`;
+    }
+    row.textContent=`${new Date(submission.at*1000).toLocaleString('vi-VN')} · ${submission.status==='QUEUED'?'Đã nhận · Đang chờ chấm':submission.valid?'Hợp lệ':'Lỗi: '+submission.error}${gitTag}${submission.id===p.valid_id?' · Bản hợp lệ cuối cùng':''}`;
+    const button=document.createElement('button');button.className='btn-outline';button.textContent='Nạp lại';button.disabled=!canSubmit;button.onclick=()=>{document.getElementById('qualifier-code').value=submission.code;document.getElementById('qualifier-language').value=submission.language;saveQualifierDraft();};row.appendChild(button);history.appendChild(row);
+  }
   const results=document.getElementById('qualifier-my-results');results.replaceChildren();for(const result of data.results||[]){const row=document.createElement('p');row.textContent=`Lượt ${result.round} · ${result.status==='DONE'?(result.b?result.winner===currentTeamStudentId?'Thắng':'Thua':'Nghỉ lượt'):result.status} · ${result.reason||''}`;results.appendChild(row);}
 }
 async function loadQualifierFile(input){const file=input.files?.[0];if(!file)return;if(file.size>65536){notifyWarning('File quá lớn','Giới hạn 64 KB.');return;}document.getElementById('qualifier-code').value=await file.text();document.getElementById('qualifier-language').value=file.name.toLowerCase().endsWith('.cpp')?'CPP':'PYTHON';saveQualifierDraft();input.value='';}
@@ -50,5 +188,13 @@ async function checkQualifierCode(){
 }
 async function submitQualifierCode(){
   const button=document.getElementById('qualifier-submit');if(button.disabled)return;button.disabled=true;
-  try{await arenaOutbox.submit(`/api/qualifiers/${qualifierId}/submissions`,{code:document.getElementById('qualifier-code').value,language:document.getElementById('qualifier-language').value});}catch(err){notifyError('Không lưu được bài',err.message);}finally{button.disabled=qualifierData?.event.status!=='OPEN'||Date.now()/1000>=qualifierData?.event.deadline;}
+  try{
+    const payload = {
+      code: document.getElementById('qualifier-code').value,
+      language: document.getElementById('qualifier-language').value,
+      git_repo_url: lastGitSubmissionInfo.repo_url || '',
+      git_commit_hash: lastGitSubmissionInfo.commit_sha || ''
+    };
+    await arenaOutbox.submit(`/api/qualifiers/${qualifierId}/submissions`, payload);
+  }catch(err){notifyError('Không lưu được bài',err.message);}finally{button.disabled=qualifierData?.event.status!=='OPEN'||Date.now()/1000>=qualifierData?.event.deadline;}
 }

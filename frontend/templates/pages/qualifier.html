@@ -24,16 +24,73 @@
     </div>
   </div>
   <div class="content-card" id="qualifier-team-card" hidden>
-    <h3 class="panel-title">Nộp bot vòng loại</h3><p id="qualifier-my-status">Đăng nhập tài khoản đội để nộp bot. Không cần chọn trận đấu.</p>
-    <div class="ide-toolbar-row">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 6px;">
+      <h3 class="panel-title" style="margin: 0;">Nộp bot vòng loại</h3>
+      <div id="qualifier-git-mode-indicator" style="display: none;">
+        <span style="display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #2563eb;"></span>
+          Chế độ GitHub đang bật cho giải này
+        </span>
+      </div>
+    </div>
+    <p id="qualifier-my-status">Đăng nhập tài khoản đội để nộp bot. Không cần chọn trận đấu.</p>
+
+    <!-- Submission Mode Switcher -->
+    <div class="qualifier-mode-switch" style="display: flex; gap: 8px; margin: 12px 0 14px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
+      <button type="button" id="btn-mode-github" class="btn btn-sm btn-primary" onclick="switchQualifierMode('github')">Nộp qua GitHub (Khuyên dùng)</button>
+      <button type="button" id="btn-mode-direct" class="btn btn-sm btn-outline" onclick="switchQualifierMode('direct')">Nộp trực tiếp (Web IDE / File)</button>
+    </div>
+
+    <!-- GitHub Submission Panel -->
+    <div id="qualifier-github-panel" style="display: block; margin-bottom: 14px;">
+      <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 12px;">
+        <h4 style="margin: 0 0 10px 0; font-size: 13px; color: #1e293b; font-weight: 600;">3 bước nộp bot qua GitHub cho tân sinh viên:</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-bottom: 12px;">
+          <div style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <div style="font-weight: 600; color: #2563eb; font-size: 13px; margin-bottom: 4px;">Bước 1: Lấy mẫu Bot</div>
+            <p style="font-size: 12px; color: #64748b; margin: 0 0 8px 0;">Mở kho mẫu và bấm <b>Use this template</b> hoặc <b>Fork</b>.</p>
+            <a id="qualifier-git-template-link" href="https://github.com/uet-arena/bot-template" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm" style="font-size: 12px; padding: 3px 8px; text-decoration: none; display: inline-block;">Mở kho mẫu trên GitHub</a>
+          </div>
+          <div style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <div style="font-weight: 600; color: #2563eb; font-size: 13px; margin-bottom: 4px;">Bước 2: Viết chiến thuật</div>
+            <p style="font-size: 12px; color: #64748b; margin: 0;">Chỉnh sửa thuật toán trong <b>bot.py</b> trên GitHub (hoặc clone về máy) rồi commit/push code lên.</p>
+          </div>
+          <div style="background: #ffffff; padding: 10px 12px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <div style="font-weight: 600; color: #2563eb; font-size: 13px; margin-bottom: 4px;">Bước 3: Đồng bộ & Nộp</div>
+            <p style="font-size: 12px; color: #64748b; margin: 0;">Dán link repo Public vào ô dưới rồi bấm <b>Kéo mã nguồn từ GitHub</b>.</p>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <label style="font-size: 13px; font-weight: 600; color: #334155;">Đường dẫn GitHub Repository của đội bạn:
+            <div style="display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
+              <input id="qualifier-git-repo-url" class="login-input-field" placeholder="Ví dụ: https://github.com/sinhvien-k69/my-bot" style="flex: 1; min-width: 240px;">
+              <input id="qualifier-git-branch" class="login-input-field" placeholder="Nhánh (main)" value="main" style="width: 100px;">
+              <input id="qualifier-git-filepath" class="login-input-field" placeholder="Tên file" value="bot.py" style="width: 100px;">
+              <button class="btn btn-primary" type="button" id="btn-fetch-github" onclick="fetchBotFromGitHub()">Kéo mã nguồn từ GitHub</button>
+            </div>
+          </label>
+        </div>
+
+        <div id="qualifier-git-sync-status" style="display: none; margin-top: 10px; padding: 8px 12px; border-radius: 6px; font-size: 13px;"></div>
+      </div>
+    </div>
+
+    <div id="qualifier-direct-toolbar" class="ide-toolbar-row">
       <select id="qualifier-language" class="input-text-sm" aria-label="Ngôn ngữ" onchange="saveQualifierDraft()"><option value="PYTHON">Python (.py)</option><option value="CPP">C++ (.cpp)</option></select>
       <label class="studio-tool-btn">Tải code lên<input id="qualifier-file" type="file" accept=".py,.cpp" onchange="loadQualifierFile(this)" hidden></label>
       <button class="studio-tool-btn" type="button" onclick="loadQualifierTemplate()">Nạp mẫu</button>
       <button class="studio-tool-btn" type="button" id="qualifier-check" onclick="checkQualifierCode()">Kiểm tra</button>
     </div>
-    <textarea id="qualifier-code" class="ide-editor" rows="14" style="width:100%;" aria-label="Mã nguồn vòng loại" oninput="saveQualifierDraft()" placeholder="def decide_move(game_state):&#10;    return 'ROCK'"></textarea>
-    <button class="btn btn-primary" type="button" id="qualifier-submit" onclick="submitQualifierCode()">Nộp bot</button>
-      <details><summary>Chạy thử với Boss (không tính ELO)</summary><div class="qualifier-practice-tools">
+    <div style="position: relative;">
+      <textarea id="qualifier-code" class="ide-editor" rows="14" style="width:100%;" aria-label="Mã nguồn vòng loại" oninput="saveQualifierDraft()" placeholder="def decide_move(game_state):&#10;    return 'ROCK'"></textarea>
+      <div id="qualifier-code-source-badge" style="position: absolute; top: 8px; right: 8px; display: none; font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(30,41,59,0.85); color: #f8fafc;">Nguồn: GitHub</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px; margin-top: 10px; flex-wrap: wrap;">
+      <button class="btn btn-primary" type="button" id="qualifier-submit" onclick="submitQualifierCode()">Nộp bot vào vòng loại</button>
+      <span id="qualifier-submit-meta-info" style="font-size: 12px; color: #64748b;"></span>
+    </div>
+      <details style="margin-top: 12px;"><summary>Chạy thử với Boss (không tính ELO)</summary><div class="qualifier-practice-tools">
         <select id="qualifier-boss" class="input-text-sm" aria-label="Boss chạy thử"><option value="RANDOM">Boss ngẫu nhiên</option><option value="AGGRESSIVE">Boss hiếu chiến</option><option value="ADAPTIVE">Boss phản đòn</option></select>
         <button class="btn btn-outline" type="button" id="qualifier-practice" onclick="handlePracticeMatch('qualifier')">Chạy thử với Boss</button>
         <small>Chạy thử không nộp bài và không tính ELO.</small>
@@ -65,6 +122,25 @@
   <label>Hạn nộp (giờ thiết bị)<input id="qualifier-config-deadline" class="login-input-field" type="datetime-local" required></label>
   <div class="qualifier-form-grid"><label>Số lượt ghép cặp<input id="qualifier-config-rounds" class="login-input-field" type="number" min="1" max="100" value="10" required></label>
   <label>Số đội vào giải chính<select id="qualifier-config-top" class="login-input-field"><option>8</option><option>16</option><option selected>32</option></select></label></div>
+  
+  <div class="qualifier-git-config-panel" style="margin: 12px 0; padding: 12px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+      <div>
+        <label for="qualifier-config-git-mode" style="font-weight: 600; cursor: pointer; color: #1e293b; display: flex; align-items: center; gap: 8px; margin: 0;">
+          <input type="checkbox" id="qualifier-config-git-mode" onchange="toggleQualifierGitConfig(this.checked)" style="width: 16px; height: 16px; accent-color: #2563eb;">
+          Chế độ nộp qua GitHub (Thực hành Git cho sinh viên)
+        </label>
+        <p style="margin: 4px 0 0 24px; font-size: 12px; color: #64748b;">Khi bật, sinh viên sẽ được hướng dẫn tạo repo và đồng bộ mã nguồn trực tiếp từ GitHub.</p>
+      </div>
+      <span id="qualifier-config-git-badge" style="font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #e2e8f0; color: #475569; font-weight: 500;">Tắt</span>
+    </div>
+    <div id="qualifier-config-git-details" style="display: none; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #cbd5e1;">
+      <label style="font-size: 13px; color: #334155;">Đường dẫn Repository mẫu (Template cho sinh viên Fork/Clone):
+        <input id="qualifier-config-git-template" class="login-input-field" placeholder="https://github.com/uet-arena/bot-template" value="https://github.com/uet-arena/bot-template" style="margin-top: 4px;">
+      </label>
+    </div>
+  </div>
+
   <p class="text-muted">Tối đa 4.000 đội. Mỗi lượt mỗi đội gặp một đối thủ, đấu một hiệp bàn cờ. Bản hợp lệ cuối cùng được khóa khi hết hạn; Admin có thể khóa sớm.</p>
   <p id="qualifier-config-error" role="alert"></p><button id="qualifier-config-save" class="btn btn-primary" type="submit">Lưu</button>
 </form></dialog>

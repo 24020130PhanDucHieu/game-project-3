@@ -35,12 +35,19 @@ type validationTask struct {
 	RetryAt       float64 `json:"retry_at"`
 }
 
-func (s *Service) EnqueueSubmission(id, sid, code, language, requestID string) (Submission, error) {
+func (s *Service) EnqueueSubmission(id, sid, code, language, requestID string, gitMeta ...string) (Submission, error) {
 	if len(requestID) > 80 || len(code) > 65536 || strings.TrimSpace(code) == "" {
 		return Submission{}, reject("Mã nguồn cần từ 1 đến 64 KB; mã yêu cầu tối đa 80 ký tự.")
 	}
 	if language != "PYTHON" && language != "CPP" {
 		return Submission{}, reject("Ngôn ngữ không hợp lệ.")
+	}
+	var gitRepoURL, gitCommitHash string
+	if len(gitMeta) > 0 {
+		gitRepoURL = gitMeta[0]
+	}
+	if len(gitMeta) > 1 {
+		gitCommitHash = gitMeta[1]
 	}
 	if requestID == "" {
 		requestID = uniqueID()
@@ -103,7 +110,11 @@ func (s *Service) EnqueueSubmission(id, sid, code, language, requestID string) (
 		received = p.SubmittedAt + 0.000001
 	}
 	p.SubmittedAt = received
-	sub := Submission{ID: subID, Code: code, Language: language, At: received, Status: "QUEUED"}
+	if gitRepoURL != "" {
+		p.GitRepoURL = gitRepoURL
+		p.GitCommitHash = gitCommitHash
+	}
+	sub := Submission{ID: subID, Code: code, Language: language, At: received, Status: "QUEUED", GitRepoURL: gitRepoURL, GitCommitHash: gitCommitHash}
 	task = validationTask{Event: id, SID: sid, SubmissionKey: key, Digest: digest, Status: "QUEUED", At: received}
 	err = s.Store.Batch(map[string]interface{}{key: sub, taskKey: task, participantKey(id, sid): p})
 	return sub, err

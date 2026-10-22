@@ -43,7 +43,7 @@ async function loadQualifierPage() {
     const e=data.event;
     renderQualifierRegistration(data);
     document.getElementById('qualifier-test-bots').disabled=e.status!=='OPEN'||Date.now()/1000>=e.deadline;
-    document.getElementById('qualifier-summary').textContent=`${qualifierPhaseLabels[e.status]} · Hạn: ${new Date(e.deadline*1000).toLocaleString('vi-VN')} · ${e.eligible} bot đã khóa · Lượt ${e.current_round}/${e.rounds} · ${e.completed}/${e.total} trận · Top ${e.top_k}${e.error?' · '+e.error:''}`;
+    document.getElementById('qualifier-summary').textContent=`${qualifierPhaseLabels[e.status]} · Hạn: ${new Date(e.deadline*1000).toLocaleString('vi-VN')} · ${e.eligible} bot đã khóa · Lượt ${e.current_round}/${e.rounds} · ${e.completed}/${e.total} trận · Top ${e.top_k}${e.git_mode?' · Chế độ GitHub: Bật':''}${e.error?' · '+e.error:''}`;
     const progress=document.getElementById('qualifier-progress');progress.max=Math.max(1,e.total);progress.value=e.completed;
     document.getElementById('qualifier-config').disabled=e.status!=='OPEN';
     const repairLock=e.status==='LOCKED'&&e.current_round===0&&e.applied_round===0&&e.completed===0&&e.total===0&&e.eligible<e.top_k;
@@ -98,7 +98,11 @@ async function openQualifierSubmission(eventId,studentId,name){
     const render=()=>{
       const s=history[Number(select.value)];
       if(!s){meta.textContent='Đội chưa có bài nộp.';code.textContent='';return;}
-      meta.textContent=`Mã bài: ${s.id}${s.id===data.participant?.locked_id?' · Bản đã khóa':s.id===data.participant?.valid_id?' · Bản hợp lệ đang sử dụng':''}${s.error?' · '+s.error:''}`;
+      let gitInfo = '';
+      if(s.git_repo_url){
+        gitInfo = ` · GitHub: ${s.git_repo_url} (${s.git_commit_hash || 'latest'})`;
+      }
+      meta.textContent=`Mã bài: ${s.id}${s.id===data.participant?.locked_id?' · Bản đã khóa':s.id===data.participant?.valid_id?' · Bản hợp lệ đang sử dụng':''}${gitInfo}${s.error?' · '+s.error:''}`;
       code.textContent=s.code||'';
     };
     select.onchange=render;render();
@@ -107,6 +111,20 @@ async function openQualifierSubmission(eventId,studentId,name){
 function qualifierPage(kind,delta){if(kind==='teams')qualifierTeamsPage=Math.max(1,Math.min(Math.max(1,Math.ceil(qualifierTeamsTotal/50)),qualifierTeamsPage+delta));else qualifierRankPage=Math.max(1,Math.min(Math.max(1,Math.ceil(qualifierRankTotal/50)),qualifierRankPage+delta));saveQualifierState();loadQualifierPage();}
 let qualifierSearchTimer;
 function qualifierFilterChanged(){qualifierTeamsPage=1;saveQualifierState();clearTimeout(qualifierSearchTimer);qualifierSearchTimer=setTimeout(loadQualifierPage,300);}
+
+function toggleQualifierGitConfig(checked){
+  const badge=document.getElementById('qualifier-config-git-badge');
+  const details=document.getElementById('qualifier-config-git-details');
+  if(badge){
+    badge.textContent=checked?'Đang bật':'Tắt';
+    badge.style.background=checked?'#dbeafe':'#e2e8f0';
+    badge.style.color=checked?'#1e40af':'#475569';
+  }
+  if(details){
+    details.style.display=checked?'block':'none';
+  }
+}
+
 function openQualifierConfig(create){
   if(currentAppRole!=='ADMIN'){notifyWarning('Chỉ dành cho Admin','Ban tổ chức mới được cấu hình vòng loại.');return;}
   if(!create&&!qualifierData)return;
@@ -114,11 +132,36 @@ function openQualifierConfig(create){
   document.getElementById('qualifier-config-name').value=e.name||'Vòng loại BOT K69';
   document.getElementById('qualifier-config-deadline').value=localDatetime(e.deadline||Date.now()/1000+86400);
   document.getElementById('qualifier-config-rounds').value=e.rounds||10;document.getElementById('qualifier-config-top').value=e.top_k||32;
+  const gitModeEl=document.getElementById('qualifier-config-git-mode');
+  const gitTemplateEl=document.getElementById('qualifier-config-git-template');
+  if(gitModeEl){
+    gitModeEl.checked=Boolean(e.git_mode);
+    toggleQualifierGitConfig(Boolean(e.git_mode));
+  }
+  if(gitTemplateEl){
+    gitTemplateEl.value=e.git_template_url||'https://github.com/uet-arena/bot-template';
+  }
   document.getElementById('qualifier-config-error').textContent='';document.getElementById('qualifier-config-dialog').showModal();
 }
 async function saveQualifierConfig(event){
   event.preventDefault();const button=document.getElementById('qualifier-config-save');if(button.disabled)return;button.disabled=true;
-  try{const data=await qualifierAPI(qualifierConfigId?`/${qualifierConfigId}`:'',{method:qualifierConfigId?'PUT':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:document.getElementById('qualifier-config-name').value,deadline:new Date(document.getElementById('qualifier-config-deadline').value).getTime()/1000,rounds:Number(document.getElementById('qualifier-config-rounds').value),top_k:Number(document.getElementById('qualifier-config-top').value)})});document.getElementById('qualifier-config-dialog').close();selectQualifier(data.id);}catch(err){document.getElementById('qualifier-config-error').textContent=err.message;}finally{button.disabled=false;}
+  const gitMode=document.getElementById('qualifier-config-git-mode')?.checked||false;
+  const gitTemplate=document.getElementById('qualifier-config-git-template')?.value.trim()||'';
+  try{
+    const data=await qualifierAPI(qualifierConfigId?`/${qualifierConfigId}`:'',{
+      method:qualifierConfigId?'PUT':'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        name:document.getElementById('qualifier-config-name').value,
+        deadline:new Date(document.getElementById('qualifier-config-deadline').value).getTime()/1000,
+        rounds:Number(document.getElementById('qualifier-config-rounds').value),
+        top_k:Number(document.getElementById('qualifier-config-top').value),
+        git_mode:gitMode,
+        git_template_url:gitTemplate
+      })
+    });
+    document.getElementById('qualifier-config-dialog').close();selectQualifier(data.id);
+  }catch(err){document.getElementById('qualifier-config-error').textContent=err.message;}finally{button.disabled=false;}
 }
 async function qualifierAction(action){
   if(!qualifierId||currentAppRole!=='ADMIN')return;

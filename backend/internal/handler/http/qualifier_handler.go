@@ -4,12 +4,16 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"io"
 	"net/http"
+	"net/url"
 	"project-tuan3/internal/qualifier"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type QualifierHandler struct{ Service *qualifier.Service }
@@ -127,14 +131,16 @@ func (h *QualifierHandler) Submit(c *gin.Context) {
 	}
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 100000)
 	var req struct {
-		Code     string `json:"code"`
-		Language string `json:"language"`
+		Code          string `json:"code"`
+		Language      string `json:"language"`
+		GitRepoURL    string `json:"git_repo_url"`
+		GitCommitHash string `json:"git_commit_hash"`
 	}
 	if c.ShouldBindJSON(&req) != nil {
 		c.JSON(400, gin.H{"detail": "Bài nộp không hợp lệ hoặc quá 64 KB."})
 		return
 	}
-	sub, err := h.Service.EnqueueSubmission(c.Param("qid"), session.StudentID, req.Code, req.Language, c.GetHeader("X-Submission-Id"))
+	sub, err := h.Service.EnqueueSubmission(c.Param("qid"), session.StudentID, req.Code, req.Language, c.GetHeader("X-Submission-Id"), req.GitRepoURL, req.GitCommitHash)
 	if err != nil {
 		if errors.Is(err, qualifier.ErrSubmissionBacklog) {
 			c.Header("Retry-After", "20")
@@ -153,6 +159,205 @@ func (h *QualifierHandler) Submit(c *gin.Context) {
 	sub.Code = ""
 	c.JSON(http.StatusAccepted, sub)
 }
+
+func parseGitHubURL(raw string, defaultBranch, defaultFile string) (owner, repo, branch, filePath string, err error) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", "", "", "", errors.New("Vui lòng nhập đường dẫn GitHub Repository.")
+	}
+	raw = strings.TrimSuffix(raw, "/")
+	raw = strings.TrimSuffix(raw, ".git")
+
+	parts := strings.Split(raw, "/")
+	if len(parts) == 2 && !strings.Contains(raw, ":") && !strings.Contains(raw, ".") {
+		return parts[0], parts[1], defaultBranch, defaultFile, nil
+	}
+
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" {
+		u, err = url.Parse("https://" + raw)
+		if err != nil {
+			return "", "", "", "", errors.New("Đường dẫn GitHub không hợp lệ.")
+		}
+	}
+
+	pathSegments := strings.Split(strings.Trim(u.Path, "/"), "/")
+	if len(pathSegments) < 2 {
+		return "", "", "", "", errors.New("Đường dẫn cần có dạng https://github.com/username/repo-name.")
+	}
+
+	owner = pathSegments[0]
+	repo = pathSegments[1]
+	branch = defaultBranch
+	filePath = defaultFile
+
+	if strings.Contains(u.Host, "raw.githubusercontent.com") {
+		if len(pathSegments) >= 3 {
+			branch = pathSegments[2]
+		}
+		if len(pathSegments) >= 4 {
+			filePath = strings.Join(pathSegments[3:], "/")
+		}
+	} else if strings.Contains(u.Host, "github.com") {
+		if len(pathSegments) >= 4 && (pathSegments[2] == "blob" || pathSegments[2] == "tree") {
+			branch = pathSegments[3]
+			if len(pathSegments) >= 5 {
+				filePath = strings.Join(pathSegments[4:], "/")
+			}
+		}
+	}
+
+	if branch == "" {
+		branch = "main"
+	}
+	if filePath == "" {
+		filePath = "bot.py"
+	}
+	return owner, repo, branch, filePath, nil
+}
+
+func (h *QualifierHandler) FetchGitHub(c *gin.Context) {
+	var req struct {
+		RepoURL  string `json:"repo_url"`
+		Branch   string `json:"branch"`
+		FilePath string `json:"file_path"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"detail": "Dữ liệu yêu cầu không hợp lệ."})
+		return
+	}
+
+	defBranch := strings.TrimSpace(req.Branch)
+	if defBranch == "" {
+		defBranch = "main"
+	}
+	defFile := strings.TrimSpace(req.FilePath)
+	if defFile == "" {
+		defFile = "bot.py"
+	}
+
+	owner, repo, branch, filePath, err := parseGitHubURL(req.RepoURL, defBranch, defFile)
+	if err != nil {
+		c.JSON(400, gin.H{"detail": err.Error()})
+		return
+	}
+
+	client := &http.Client{Timeout: 10 * time.Second}
+
+	fetchRaw := func(b string, f string) ([]byte, int, error) {
+		rawURL := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s", owner, repo, b, f)
+		httpReq, _ := http.NewRequestWithContext(c.Request.Context(), "GET", rawURL, nil)
+		httpReq.Header.Set("User-Agent", "Freshman-Bot-Arena/1.0")
+		resp, err := client.Do(httpReq)
+		if err != nil {
+			return nil, 0, err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return nil, resp.StatusCode, nil
+		}
+		body, err := io.ReadAll(io.LimitReader(resp.Body, 65536+1024))
+		return body, resp.StatusCode, err
+	}
+
+	body, status, err := fetchRaw(branch, filePath)
+	actualBranch := branch
+	actualFile := filePath
+
+	if (status == 404 || len(body) == 0) && branch == "main" {
+		bMaster, sMaster, _ := fetchRaw("master", filePath)
+		if sMaster == http.StatusOK && len(bMaster) > 0 {
+			body = bMaster
+			status = sMaster
+			actualBranch = "master"
+		}
+	}
+
+	if (status == 404 || len(body) == 0) && filePath == "bot.py" {
+		bCpp, sCpp, _ := fetchRaw(actualBranch, "bot.cpp")
+		if sCpp == http.StatusOK && len(bCpp) > 0 {
+			body = bCpp
+			status = sCpp
+			actualFile = "bot.cpp"
+		}
+	}
+
+	if err != nil {
+		c.JSON(502, gin.H{"detail": "Lỗi kết nối tới GitHub: " + err.Error()})
+		return
+	}
+	if status == 404 || len(body) == 0 {
+		c.JSON(404, gin.H{"detail": fmt.Sprintf("Không tìm thấy file %s trong repo %s/%s (nhánh %s). Vui lòng đảm bảo repo ở chế độ Public và đã push code lên.", actualFile, owner, repo, actualBranch)})
+		return
+	}
+	if len(body) > 65536 {
+		c.JSON(400, gin.H{"detail": "Mã nguồn vượt quá giới hạn 64 KB."})
+		return
+	}
+
+	commitSHA := "latest"
+	commitMsg := "Bản commit mới nhất"
+	authorName := owner
+	commitTime := time.Now().Format("15:04:02 02/01/2006")
+
+	commitURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/commits/%s", owner, repo, actualBranch)
+	cReq, _ := http.NewRequestWithContext(c.Request.Context(), "GET", commitURL, nil)
+	cReq.Header.Set("User-Agent", "Freshman-Bot-Arena/1.0")
+	cResp, cErr := client.Do(cReq)
+	if cErr == nil && cResp.StatusCode == http.StatusOK {
+		defer cResp.Body.Close()
+		var cData struct {
+			SHA    string `json:"sha"`
+			Commit struct {
+				Message string `json:"message"`
+				Author  struct {
+					Name string `json:"name"`
+					Date string `json:"date"`
+				} `json:"author"`
+			} `json:"commit"`
+		}
+		if json.NewDecoder(cResp.Body).Decode(&cData) == nil && cData.SHA != "" {
+			if len(cData.SHA) >= 7 {
+				commitSHA = cData.SHA[:7]
+			} else {
+				commitSHA = cData.SHA
+			}
+			if cData.Commit.Message != "" {
+				lines := strings.Split(cData.Commit.Message, "\n")
+				commitMsg = strings.TrimSpace(lines[0])
+			}
+			if cData.Commit.Author.Name != "" {
+				authorName = cData.Commit.Author.Name
+			}
+			if t, err := time.Parse(time.RFC3339, cData.Commit.Author.Date); err == nil {
+				commitTime = t.Local().Format("15:04:02 02/01/2006")
+			}
+		}
+	} else if cResp != nil {
+		cResp.Body.Close()
+	}
+
+	lang := "PYTHON"
+	if strings.HasSuffix(strings.ToLower(actualFile), ".cpp") {
+		lang = "CPP"
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":         "SUCCESS",
+		"code":           string(body),
+		"language":       lang,
+		"owner":          owner,
+		"repo":           repo,
+		"branch":         actualBranch,
+		"file_path":      actualFile,
+		"repo_url":       fmt.Sprintf("https://github.com/%s/%s", owner, repo),
+		"commit_sha":     commitSHA,
+		"commit_message": commitMsg,
+		"author":         authorName,
+		"commit_time":    commitTime,
+	})
+}
+
 func (h *QualifierHandler) Action(c *gin.Context) {
 	id := c.Param("qid")
 	var err error
