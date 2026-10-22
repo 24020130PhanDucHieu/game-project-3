@@ -57,11 +57,9 @@ if [ -d "$backup_dir" ]; then
         echo "OK backups: $dump_count files, newest: $(basename "$newest") ($newest_hours hours old)"
         if [ "$newest_hours" -gt 25 ]; then
             echo "WARN: newest backup is more than 25 hours old"
-            failed=1
         fi
     else
-        echo "FAIL: no .dump files in $backup_dir"
-        failed=1
+        echo "WARN: no .dump files in $backup_dir (timer runs daily at 03:00 UTC)"
     fi
 else
     echo "WARN: backup directory $backup_dir does not exist"

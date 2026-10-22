@@ -154,6 +154,9 @@ if [ -f /opt/arena/app/server ]; then
     echo "Backup saved to /opt/arena/backups/server-{timestamp}"
 fi
 
+echo "==> Stopping API service before extracting new binary..."
+sudo systemctl stop arena-api || true
+
 echo "==> Extracting new release into /opt/arena/app..."
 sudo tar -xzf {remote_archive} -C /opt/arena/app
 
@@ -266,8 +269,8 @@ if [ -z "$LATEST_BACKUP" ]; then
     exit 1
 fi
 echo "Restoring from $LATEST_BACKUP..."
-sudo cp "$LATEST_BACKUP" /opt/arena/app/server
-sudo chmod 755 /opt/arena/app/server
+sudo systemctl stop arena-api || true
+sudo install -m 755 "$LATEST_BACKUP" /opt/arena/app/server
 sudo systemctl restart arena-api
 echo "ROLLBACK_SUCCESS"
 """

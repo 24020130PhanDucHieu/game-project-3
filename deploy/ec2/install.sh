@@ -36,6 +36,9 @@ chmod 755 /opt/arena/app/server
 if [ -f /opt/arena/app/deploy/ec2/check.sh ]; then
     chmod 755 /opt/arena/app/deploy/ec2/check.sh
 fi
+if [ -d /opt/arena/app/scripts ]; then
+    chmod -R 755 /opt/arena/app/scripts
+fi
 
 # Python venv for bot-runner
 python3 -m venv /opt/arena/venv
