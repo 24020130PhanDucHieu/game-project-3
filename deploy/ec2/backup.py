@@ -29,7 +29,7 @@ def main():
                                  "--file", str(partial)], env=env,
                                 stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=1800)
         if result.returncode:
-            raise RuntimeError("pg_dump failed; check database access, disk and PostgreSQL client version")
+            raise RuntimeError(f"pg_dump failed (code {result.returncode}): {result.stderr.decode(errors='replace')}")
         result = subprocess.run(["pg_restore", "--list", str(partial)],
                                 stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=60)
         if result.returncode:
@@ -77,5 +77,5 @@ if __name__ == "__main__":
         main()
     except Exception as exc:
         # Suppress subprocess command/environment details and connection strings.
-        print("Backup failed:", type(exc).__name__)
+        print("Backup failed:", type(exc).__name__, exc)
         raise SystemExit(1)

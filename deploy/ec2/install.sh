@@ -11,10 +11,13 @@ if ! python3 -c 'import ctypes; ctypes.CDLL("libseccomp.so.2")' >/dev/null 2>&1;
     apt-get install -y --no-install-recommends libseccomp2
 fi
 
-# Ensure pg_dump/pg_restore are available for backups
-if ! command -v pg_dump >/dev/null 2>&1; then
+# Ensure pg_dump/pg_restore (PostgreSQL 17 client for Supabase PG 17)
+if ! command -v pg_dump >/dev/null 2>&1 || [ "$(pg_dump --version | grep -oE '[0-9]+' | head -1)" -lt 17 ]; then
+    install -d /etc/apt/keyrings
+    curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | gpg --dearmor --yes -o /etc/apt/keyrings/postgresql.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/postgresql.gpg] http://apt.postgresql.org/pub/repos/apt noble-pgdg main" > /etc/apt/sources.list.d/pgdg.list
     apt-get update
-    apt-get install -y --no-install-recommends postgresql-client
+    apt-get install -y --no-install-recommends postgresql-client-17
 fi
 
 # Service users
