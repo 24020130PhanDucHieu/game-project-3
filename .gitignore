@@ -40,7 +40,8 @@ backend/server.exe
 **/accounts_store.json
 **/accounts_store.json.key
 **/qualifier_store/
-database/backups/*.gz
+database/backups/*
+!database/backups/.gitkeep
 data/
 *.log
 

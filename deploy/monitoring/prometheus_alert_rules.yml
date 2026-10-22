@@ -1,0 +1,99 @@
+# =============================================================================
+# PROMETHEUS ALERTING RULES - OTTV2 ARENA PRODUCTION
+# Giám sát chủ động cho giải đấu đông người (Up to 4.000 sinh viên)
+# =============================================================================
+
+groups:
+  - name: arena_infrastructure_alerts
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[2m])) * 100) > 85
+        for: 2m
+        labels:
+          severity: warning
+          component: host
+        annotations:
+          summary: "Cảnh báo tải CPU vượt ngưỡng (>85%) trên {{ $labels.instance }}"
+          description: "CPU instance {{ $labels.instance }} đang duy trì mức {{ $value | printf \"%.1f\" }}% trên 2 phút."
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 2m
+        labels:
+          severity: warning
+          component: host
+        annotations:
+          summary: "Cảnh báo cạn kiệt RAM (>85%) trên {{ $labels.instance }}"
+          description: "Bộ nhớ khả dụng của {{ $labels.instance }} chỉ còn dưới 15%."
+
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 15
+        for: 5m
+        labels:
+          severity: critical
+          component: storage
+        annotations:
+          summary: "Dung lượng ổ đĩa phân vùng gốc sắp hết (<15%)"
+          description: "Phân vùng / trên {{ $labels.instance }} chỉ còn {{ $value | printf \"%.1f\" }}% dung lượng trống."
+
+  - name: arena_service_alerts
+    rules:
+      - alert: High5xxRate
+        expr: (sum(rate(http_requests_total{status=~"5.."}[2m])) / sum(rate(http_requests_total[2m]))) * 100 > 1.0
+        for: 1m
+        labels:
+          severity: critical
+          component: gateway
+        annotations:
+          summary: "Tỷ lệ lỗi 5xx vượt quá 1% trên Gateway API"
+          description: "Tỷ lệ lỗi máy chủ 5xx hiện tại là {{ $value | printf \"%.2f\" }}% trong 2 phút vừa qua."
+
+      - alert: PostgresConnectionPoolExhausted
+        expr: arena_db_pool_active_connections >= (arena_db_pool_max_connections * 0.85)
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "PostgreSQL Connection Pool sắp cạn kiệt (>85%)"
+          description: "Số kết nối database đang sử dụng vượt quá 85% sức chứa pooler (PgBouncer/Supabase)."
+
+      - alert: QualifierQueueBacklogStalled
+        expr: arena_qualifier_queued_submissions > 50 or arena_qualifier_oldest_queued_age_seconds > 60
+        for: 2m
+        labels:
+          severity: warning
+          component: qualifier_queue
+        annotations:
+          summary: "Hàng đợi nộp bài vòng loại bị ứ đọng (>50 bài hoặc chờ >60s)"
+          description: "Số bài đang chờ trong queue là {{ $value }}. Worker có thể đang quá tải hoặc bị nghẽn sandbox."
+
+      - alert: WorkerHeartbeatMissing
+        expr: arena_worker_up == 0
+        for: 30s
+        labels:
+          severity: critical
+          component: judge_worker
+        annotations:
+          summary: "Worker chấm bài mất kết nối (Heartbeat Down)"
+          description: "Worker {{ $labels.worker_id }} không phản hồi kiểm tra sức khỏe trong hơn 30 giây."
+
+      - alert: WorkerReleaseMismatch
+        expr: arena_worker_release_mismatch == 1
+        for: 1m
+        labels:
+          severity: critical
+          component: version_control
+        annotations:
+          summary: "Lệch phiên bản mã nguồn giữa Gateway và Worker"
+          description: "Worker {{ $labels.worker_id }} đang chạy bản phát hành khác với bản Gateway."
+
+      - alert: DatabaseBackupTooOld
+        expr: (time() - arena_last_successful_backup_timestamp) > 86400
+        for: 10m
+        labels:
+          severity: warning
+          component: backup
+        annotations:
+          summary: "Bản sao lưu cơ sở dữ liệu đã quá 24 giờ"
+          description: "Không có bản backup nào thành công trong 24 giờ qua. Cần kiểm tra cron job backup khẩn cấp."

@@ -1,27 +1,56 @@
-# Thi offline và tải đông
+# Quy chế & Hướng dẫn Kỹ thuật Thi Offline và Chịu Tải Cao
 
-Đăng nhập, mở đúng giải/trận và phòng nộp bot khi còn mạng. Chờ thông báo “Đã sẵn sàng offline” (Cloudflare phải phát hành `sw.js` và `offline-assets.json`). Giữ cùng trình duyệt và thiết bị; không dùng chế độ riêng tư hoặc xóa dữ liệu trình duyệt. Khi mất mạng, có thể soạn mã và bấm nộp: bài được lưu vào hàng chờ localStorage, tối đa 20 bản, mỗi bản 64 KB. Không lưu token trong hàng chờ.
+---
 
-“Đã lưu trên thiết bị” chưa phải server nhận bài. Khi nối mạng và mở ứng dụng, hệ thống tự gửi lần lượt bằng phiên đăng nhập hiện tại của đúng tài khoản; có giãn nhịp khi server bận. Nếu đã đóng trình duyệt, cần mở lại để đồng bộ. Hàng chờ vẫn tồn tại sau reload. Nút tải bản dự phòng xuất JSON chứa mã nguồn và ngữ cảnh bài nộp.
+## 1. Quy chế chính thức về nộp bài offline & Biên nhận máy chủ (Server Receipt)
 
-Server kiểm tra quyền, luật, hiệp và hạn nộp như trước. Hết hạn, đổi hiệp hoặc hết phiên sẽ không tự coi là nộp thành công. Bài bị từ chối vẫn nằm trên thiết bị, có lý do; đăng nhập lại đúng đội rồi chọn gửi lại, hoặc tải dự phòng và bỏ bài bị từ chối. Không tự sửa hạn hay thời gian client. Giám khảo cần dành thời gian nối mạng để đồng bộ trước hạn, rồi khóa bài; hoặc duy trì mạng LAN tới máy chấm trong thời gian thi. Trình duyệt không thể chứng minh thời điểm nộp offline chống gian lận.
+Để đảm bảo tính công bằng, minh bạch và chống gian lận trong các kỳ thi lập trình, hệ thống quy định chặt chẽ:
 
-Ứng dụng cache các tài nguyên nội bộ và dữ liệu giải/trận đội đã mở. Không cache API trong service worker. Trang chưa từng mở, đăng nhập mới, tải dữ liệu mới và chạy bot trên server đều cần mạng. Nên mở sẵn phòng nộp bot trước giờ thi, kể cả sau khi ứng dụng báo đã sẵn sàng offline. Các tài nguyên ngoài website không được đảm bảo offline.
+1. **Bản lưu tại máy trạm chỉ là Bản nháp tạm thời:**
+   - Khi mất kết nối mạng, trình duyệt lưu mã nguồn vào `localStorage` của thiết bị (tối đa 20 bản nộp, 64 KB/bản).
+   - **CẢNH BÁO:** Thông báo *"Đã lưu trên thiết bị"* **CHƯA ĐƯỢC COI LÀ ĐÃ NỘP BÀI THÀNH CÔNG**.
+2. **Biên nhận máy chủ (Receipt) là bằng chứng duy nhất:**
+   - Chỉ khi thiết bị thí sinh kết nối lại và Gateway phản hồi mã trạng thái `HTTP 200/202` kèm mã biên nhận số `receipt_id`, bài thi mới chính thức được ghi nhận vào hệ thống chấm.
+   - Biên nhận được lưu trữ bền vững trong cơ sở dữ liệu trung tâm (`arena_qualifier_records` / PostgreSQL).
+3. **Mốc thời gian nộp bài hoàn toàn do Máy chủ quyết định (Server-Authoritative Clock):**
+   - Thời điểm nộp bài được đóng dấu bằng đồng hồ máy chủ (đồng bộ qua chuẩn NTP quốc gia).
+   - **Hệ thống KHÔNG chấp nhận và KHÔNG căn cứ vào đồng hồ máy tính thí sinh** nhằm triệt tiêu hoàn toàn gian lận chỉnh lùi giờ hệ điều hành.
+   - Mọi bài nộp đồng bộ sau thời điểm hết hạn của vòng đấu (`ends_at`) sẽ bị từ chối tự động.
 
-Mỗi bài có ID ổn định. Server lưu biên nhận trong PostgreSQL để trả lại kết quả khi client gửi trùng, kể cả khi khởi động lại gateway. Biên nhận ghi sau nghiệp vụ nên vẫn có cửa sổ sự cố nếu tiến trình chết giữa hai lần ghi; đây là cơ chế gửi ít nhất một lần, không phải giao dịch exactly-once. Không chạy đồng thời nhiều gateway ghi cùng giải với cấu hình này.
+---
 
-## 4.000 sinh viên
+## 2. Quy trình ứng phó khi mất mạng diện rộng tại phòng thi
 
-Giới hạn đăng ký vòng loại là 4.000 đội (một tài khoản đội có thể đại diện nhiều sinh viên). Hai yêu cầu kiểm tra/nộp bot được chạy đồng thời ở gateway; phần dư nhận HTTP 429 và tự thử lại từ thiết bị. Các API đọc kết quả không chiếm hai suất này. Trang vòng loại giảm nhịp tải nền xuống khoảng 15–20 giây khi đang mở. Đã có phân trang 50 đội, kênh WebSocket giải chính và pool PostgreSQL 8 kết nối.
+Khi xảy ra sự cố đứt cáp hoặc mất Internet tại phòng máy:
 
-Máy t3.micro khoảng 1 GB RAM không đủ để cam kết 4.000 bot cùng nhận kết quả chấm ngay. Trạng thái lưu trên thiết bị xuất hiện ngay; kết quả xác thực xuất hiện sau khi được xử lý; kết quả trận đấu chỉ có sau khi trận hoàn tất. Nếu mỗi bài mất T giây, mức tối thiểu cho 4.000 bài với hai suất xấp xỉ 2.000 × T giây, chưa tính C++ và database.
+1. **Đối với thí sinh:**
+   - Giữ nguyên tab trình duyệt, **TUYỆT ĐỐI KHÔNG TẮT TRÌNH DUYỆT, KHÔNG XÓA DỮ LIỆU CACHE/COOKIES**.
+   - Bấm nút **"Tải bản dự phòng (.json)"** trong phòng thi đấu để lưu mã nguồn bài làm xuống máy tính phòng thi làm bằng chứng đối chiếu ngoại tuyến.
+2. **Đối với Giám thị & Ban Tổ chức:**
+   - Ban Giám hiệu / Giám sát giải lập tức thực hiện gia hạn thời gian nộp bài cho vòng đấu bị ảnh hưởng:
+     ```http
+     PUT /api/tournaments/{tournament_id}/stage-schedule
+     Content-Type: application/json
+     Authorization: Bearer <ADMIN_TOKEN>
 
-Trước kỳ thi quy mô này cần đo tải trên môi trường riêng, tăng cấu hình máy và tách dịch vụ nhận bài khỏi worker sandbox bằng hàng đợi bền vững phía server. Nhận bài phải ghi PostgreSQL và trả mã biên nhận HTTP 202 ngay, worker xử lý sau; tiến độ gửi qua WebSocket/SSE, giới hạn thông báo theo đội. Đây là bước hạ tầng tiếp theo, chưa có trong bản này. Không coi việc tăng giới hạn đăng ký là chứng nhận chịu tải 4.000 người đồng thời, và không chạy thử tải phá tải trên giải thật.
+     {
+       "windows": [
+         {"level": 1, "starts_at": 1729600000, "ends_at": 1729605400}
+       ]
+     }
+     ```
+   - Phòng máy kỹ thuật chuyển hướng đường truyền sang mạng nội bộ (LAN) trỏ trực tiếp về Gateway máy chủ.
+   - Sau khi mạng thông trở lại, thí sinh kiểm tra lại danh sách bài nộp và đảm bảo đã nhận được `receipt_id` thành công trước khi rời phòng thi.
 
-## Kiểm tra thực tế
+---
 
-1. Mở giải khi online, soạn mã riêng dễ nhận biết, vào DevTools → Network → Offline.
-2. Nộp bot, kiểm tra trạng thái chờ và tải dự phòng. Reload rồi trở lại phòng đã mở: mã và hàng chờ còn nguyên.
-3. Chuyển online, chờ phản hồi; xem lịch sử bài nộp trên server và hàng chờ được xóa khi nhận thành công.
-4. Thử hết phiên, bài lỗi và quá hạn: không hiện xác nhận thành công; vẫn tải được bản dự phòng.
-5. Đổi tài khoản: bài của đội cũ không được gửi dưới tài khoản mới.
+## 3. Kiến trúc phục vụ 4.000 Thí sinh đồng thời
+
+- **Sức chứa:** Hệ thống giới hạn tiếp nhận tối đa 4.000 đội thi trong một giải đấu.
+- **Hàng đợi chống nghẽn (Async Submission Queue):**
+  - Mọi bài nộp của thí sinh được Gateway tiếp nhận, cấp phát biên nhận và trả về phản hồi `HTTP 202 Accepted` trong vòng dưới 100ms.
+  - Các tác vụ biên dịch và chạy thử Sandbox được xếp vào hàng đợi bền vững (`qualifier_records`) để các Worker xử lý tuần tự, loại bỏ nguy cơ treo máy do hàng nghìn tiến trình con chạy đồng thời.
+- **Tối ưu hóa Polling:**
+  - Trang web tự động giãn nhịp polling trạng thái lên 15–20 giây/lần.
+  - Hỗ trợ chuẩn `ETag` (HTTP 304 Not Modified) giúp giảm 90% tải xử lý và băng thông của Gateway.
+

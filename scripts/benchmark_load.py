@@ -103,7 +103,7 @@ async def run_stage_benchmark(concurrency: int, total_requests: int, endpoint_mi
                         async with session.post(url, json=payload, headers=headers, timeout=aiohttp.ClientTimeout(total=20)) as resp:
                             await resp.read()
                             lat = (time.perf_counter() - t0) * 1000.0
-                            ok = resp.status in (200, 201)
+                            ok = resp.status in (200, 201, 202)
                             return ok, lat, resp.status
                 except Exception:
                     lat = (time.perf_counter() - t0) * 1000.0
@@ -158,12 +158,30 @@ async def main():
                 target_t = tourns[0]
             t_id = target_t.get("tournament_id")
 
+    # Mã Python & C++ mẫu đại diện cho burst nộp bài của sinh viên
+    py_code = """
+def decide_move(game_state):
+    import random
+    cards = game_state.get('remaining_cards', {})
+    avail = [c for c, count in cards.items() if count > 0]
+    return avail[0] if avail else 'ROCK'
+"""
+    cpp_code = """
+#include <iostream>
+#include <string>
+int main() {
+    std::cout << "ROCK" << std::endl;
+    return 0;
+}
+"""
+
     # 2. Xây dựng Endpoint Mix mô phỏng hành vi thực tế của sinh viên:
-    # 50% Polling chi tiết giải đấu (Hot Read + ETag 304/200)
+    # 40% Polling chi tiết giải đấu (Hot Read + ETag 304/200)
     # 20% Danh sách các giải đấu (/api/tournaments)
     # 10% Kiểm tra sức khỏe hệ thống (/health & /metrics)
     # 10% Tra cứu dữ liệu bài nộp & bảng điểm (/matches/m_lvl1_1/submissions)
-    # 10% Xác thực đăng nhập (/matches/m_lvl1_1/login)
+    # 10% Xác thực đăng nhập đội thi / admin
+    # 10% Burst nộp bài (5% Python + 5% C++)
     test_headers = {"X-Benchmark-Test": "true"}
     endpoint_mix = [
         {"path": f"/api/tournaments/{t_id}", "method": "GET", "headers": test_headers},
@@ -175,12 +193,14 @@ async def main():
         {"path": "/health", "method": "GET", "headers": test_headers},
         {"path": f"/api/tournaments/{t_id}/matches/m_lvl1_1/submissions", "method": "GET", "headers": test_headers},
         {"path": f"/api/tournaments/{t_id}/matches/m_lvl1_1/login", "method": "POST", "payload": {"username": "admin", "password": "admin123"}, "headers": test_headers},
+        {"path": f"/api/tournaments/{t_id}/matches/m_lvl1_1/code", "method": "POST", "payload": {"side": "team_a", "code_content": py_code, "language": "PYTHON"}, "headers": test_headers},
+        {"path": f"/api/tournaments/{t_id}/matches/m_lvl1_1/code", "method": "POST", "payload": {"side": "team_b", "code_content": cpp_code, "language": "CPP"}, "headers": test_headers},
     ]
 
     stages = [
         {"concurrency": 1000, "requests": 2000, "name": "GIAI ĐOẠN 1: 1.000 VUs ĐỒNG THỜI"},
-        {"concurrency": 3000, "requests": 6000, "name": "GIAI ĐOẠN 2: 3.000 VUs ĐỒNG THỜI"},
-        {"concurrency": 5000, "requests": 10000, "name": "GIAI ĐOẠN 3: 5.000 VUs ĐỒNG THỜI (PEAK LOAD)"}
+        {"concurrency": 2000, "requests": 4000, "name": "GIAI ĐOẠN 2: 2.000 VUs ĐỒNG THỜI"},
+        {"concurrency": 4000, "requests": 8000, "name": "GIAI ĐOẠN 3: 4.000 VUs ĐỒNG THỜI (BURST THI ĐẤU QUY MÔ LỚN)"}
     ]
 
     all_results: List[BenchmarkResult] = []

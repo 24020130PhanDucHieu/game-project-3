@@ -1,0 +1,52 @@
+{
+  "Alarms": [
+    {
+      "AlarmName": "Arena-Gateway-High-CPU",
+      "AlarmDescription": "Trigger when Gateway EC2 CPU exceeds 85% for 2 consecutive 1-minute periods",
+      "MetricName": "CPUUtilization",
+      "Namespace": "AWS/EC2",
+      "Statistic": "Average",
+      "Period": 60,
+      "EvaluationPeriods": 2,
+      "Threshold": 85.0,
+      "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+      "Dimensions": [
+        {
+          "Name": "AutoScalingGroupName",
+          "Value": "arena-gateway-asg"
+        }
+      ],
+      "AlarmActions": [
+        "arn:aws:sns:ap-southeast-1:ACCOUNT_ID:arena-oncall-alerts"
+      ]
+    },
+    {
+      "AlarmName": "Arena-Gateway-StatusCheckFailed",
+      "AlarmDescription": "Trigger when EC2 System or Instance status check fails",
+      "MetricName": "StatusCheckFailed",
+      "Namespace": "AWS/EC2",
+      "Statistic": "Maximum",
+      "Period": 60,
+      "EvaluationPeriods": 1,
+      "Threshold": 1.0,
+      "ComparisonOperator": "GreaterThanOrEqualToThreshold",
+      "AlarmActions": [
+        "arn:aws:sns:ap-southeast-1:ACCOUNT_ID:arena-oncall-alerts"
+      ]
+    },
+    {
+      "AlarmName": "Arena-NetworkEgressBurst",
+      "AlarmDescription": "Warn if NetworkOut exceeds 500 MB in 5 minutes (bandwidth choke prevention)",
+      "MetricName": "NetworkOut",
+      "Namespace": "AWS/EC2",
+      "Statistic": "Sum",
+      "Period": 300,
+      "EvaluationPeriods": 1,
+      "Threshold": 524288000,
+      "ComparisonOperator": "GreaterThanThreshold",
+      "AlarmActions": [
+        "arn:aws:sns:ap-southeast-1:ACCOUNT_ID:arena-oncall-alerts"
+      ]
+    }
+  ]
+}
