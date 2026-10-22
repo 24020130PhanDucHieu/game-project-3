@@ -11,10 +11,32 @@ except:
     pass
 
 BASE_URL = os.environ.get("BASE_URL", "http://127.0.0.1:8080")
+ADMIN_TOKEN = None
+
+def get_admin_token():
+    token = os.environ.get("ADMIN_TOKEN", "")
+    if not token:
+        login_url = f"{BASE_URL}/api/admin/login"
+        password = os.environ.get("ADMIN_PASSWORD", "admin123")
+        try:
+            req = urllib.request.Request(
+                login_url,
+                data=json.dumps({"password": password}).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                token = data.get("token", "")
+        except Exception:
+            pass
+    return token
 
 def request(method, path, data=None):
     url = f"{BASE_URL}{path}"
     headers = {"Content-Type": "application/json"}
+    if ADMIN_TOKEN:
+        headers["Authorization"] = f"Bearer {ADMIN_TOKEN}"
     body = json.dumps(data).encode("utf-8") if data else None
     req = urllib.request.Request(url, data=body, headers=headers, method=method)
     try:
@@ -28,12 +50,20 @@ def request(method, path, data=None):
             return e.code, {"detail": err_body}
 
 def main():
+    global ADMIN_TOKEN
+    ADMIN_TOKEN = get_admin_token()
     print("=== STARTING FULL END-TO-END ARENA LIFECYCLE TEST ===")
     
     # 1. Fetch tournaments
     status, tournaments = request("GET", "/api/tournaments")
     assert status == 200, f"Failed GET /api/tournaments: {status}"
     tourn_list = list(tournaments.values()) if isinstance(tournaments, dict) else tournaments
+    if len(tourn_list) == 0:
+        print("[INFO] No tournament in store, creating a new test tournament...")
+        status, new_t = request("POST", "/api/tournaments/create", {"name": "Lifecycle Test Tournament", "num_teams": 8})
+        assert status == 200, f"Failed to create tournament: {new_t}"
+        created = new_t.get("tournament", {})
+        tourn_list = [created]
     assert len(tourn_list) > 0, "No tournaments found"
     
     t = None

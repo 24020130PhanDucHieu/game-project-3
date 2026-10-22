@@ -5,7 +5,8 @@ from playwright.sync_api import sync_playwright, expect
 import test_reliability as arena
 
 
-with tempfile.TemporaryDirectory(prefix='arena-ui-dialogs-') as directory:
+(arena.ROOT / 'data').mkdir(exist_ok=True)
+with tempfile.TemporaryDirectory(prefix='arena-ui-dialogs-', dir=arena.ROOT / 'data') as directory:
     with arena.LocalArena(directory):
         with sync_playwright() as p:
             browser = p.chromium.launch(channel='chrome', headless=True)

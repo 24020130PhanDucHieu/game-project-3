@@ -79,7 +79,8 @@ def run(server):
 
 
 if __name__ == "__main__":
-    with tempfile.TemporaryDirectory(prefix="arena-multi-worker-") as directory:
+    (arena.ROOT / "data").mkdir(exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="arena-multi-worker-", dir=arena.ROOT / "data") as directory:
         server = arena.LocalArena(directory)
         server.env.update(WORKER_TOKEN="local-fixture-token", WORKER_CAPACITY="1")
         with server:

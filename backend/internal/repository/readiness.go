@@ -56,7 +56,11 @@ func (s *QualifierRecords) Ready(ctx context.Context) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.failed != nil {
-		return s.failed
+		if _, statErr := os.Stat(s.dir); statErr == nil {
+			s.failed = nil
+		} else {
+			return s.failed
+		}
 	}
 	_, err := os.Stat(s.dir)
 	return err

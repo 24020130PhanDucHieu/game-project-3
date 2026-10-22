@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/lib/pq"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -240,7 +241,13 @@ func (s *QualifierRecords) batch(values map[string]interface{}, preserveCode boo
 		}
 	}
 	if s.failed != nil {
-		return s.failed
+		if _, statErr := os.Stat(s.dir); statErr == nil {
+			log.Printf("[QualifierRecords] Storage directory accessible, attempting self-recovery from previous error: %v", s.failed)
+			s.failed = nil
+		} else {
+			log.Printf("[QualifierRecords] Storage write blocked due to persistent failure: %v", s.failed)
+			return s.failed
+		}
 	}
 	rows := map[string]json.RawMessage{}
 	for key, value := range values {
@@ -294,12 +301,16 @@ func (s *QualifierRecords) batch(values map[string]interface{}, preserveCode boo
 		return err
 	}
 	if err = atomicQualifierFile(filepath.Join(s.dir, "journal.json"), raw); err != nil {
+		log.Printf("[QualifierRecords] Failed to write journal.json in %s: %v", s.dir, err)
 		return err
 	}
 	if err = s.localBatch(rows); err != nil {
+		log.Printf("[QualifierRecords] Local batch write failed for dir %s: %v", s.dir, err)
 		s.failed = err
+		return err
 	}
-	return err
+	s.failed = nil
+	return nil
 }
 func (s *QualifierRecords) localBatch(rows map[string]json.RawMessage) error {
 	for key, raw := range rows {
@@ -310,6 +321,7 @@ func (s *QualifierRecords) localBatch(rows map[string]json.RawMessage) error {
 			return err
 		}
 		if err = atomicQualifierFile(file, data); err != nil {
+			log.Printf("[QualifierRecords] atomicQualifierFile error for key %s: %v", key, err)
 			return err
 		}
 	}
@@ -319,11 +331,13 @@ func (s *QualifierRecords) localBatch(rows map[string]json.RawMessage) error {
 	return os.Remove(filepath.Join(s.dir, "journal.json"))
 }
 func atomicQualifierFile(path string, data []byte) error {
-	f, err := os.CreateTemp(filepath.Dir(path), ".qualifier-*")
+	dir := filepath.Dir(path)
+	f, err := os.CreateTemp(dir, ".qualifier-*")
 	if err != nil {
 		return err
 	}
-	defer os.Remove(f.Name())
+	tmpName := f.Name()
+	defer os.Remove(tmpName)
 	if _, err = f.Write(data); err != nil {
 		f.Close()
 		return err
@@ -335,7 +349,14 @@ func atomicQualifierFile(path string, data []byte) error {
 	if err = f.Close(); err != nil {
 		return err
 	}
-	return os.Rename(f.Name(), path)
+	for attempt := 0; attempt < 5; attempt++ {
+		err = os.Rename(tmpName, path)
+		if err == nil {
+			return nil
+		}
+		time.Sleep(time.Duration((attempt+1)*10) * time.Millisecond)
+	}
+	return err
 }
 func (s *QualifierRecords) Lease(id string) (func(), error) {
 	if s.db == nil {

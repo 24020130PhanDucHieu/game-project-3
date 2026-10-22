@@ -34,7 +34,10 @@ def run():
             page.evaluate('(id) => selectQualifier(id)',qid)
             expect(page.locator('#qualifier-team-card')).to_be_visible()
             assert page.evaluate('!currentTournamentId')
-            page.locator('#qualifier-code').fill(arena.CODE)
+            boss_panel = page.locator('details').filter(has=page.locator('#qualifier-boss'))
+            if not boss_panel.evaluate('e => e.open'):
+                boss_panel.locator('summary').click()
+            boss_panel.evaluate('e => { e.open = true; }')
             for boss in ('RANDOM','AGGRESSIVE','ADAPTIVE'):
                 page.locator('#qualifier-boss').select_option(boss)
                 with page.expect_response(lambda r:'/api/bots/practice' in r.url) as response:
@@ -58,5 +61,6 @@ def run():
         finally: browser.close()
 
 if __name__=='__main__':
-    with tempfile.TemporaryDirectory(prefix='arena-practice-') as directory:
+    (arena.ROOT / 'data').mkdir(exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='arena-practice-', dir=arena.ROOT / 'data') as directory:
         with arena.LocalArena(directory): run()

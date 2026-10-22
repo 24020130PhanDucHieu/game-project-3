@@ -134,5 +134,6 @@ def run():
 
 
 if __name__=='__main__':
-    with tempfile.TemporaryDirectory(prefix='arena-profile-') as directory:
+    (arena.ROOT / 'data').mkdir(exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='arena-profile-', dir=arena.ROOT / 'data') as directory:
         with arena.LocalArena(directory): run()

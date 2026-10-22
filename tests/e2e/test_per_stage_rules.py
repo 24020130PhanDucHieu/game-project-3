@@ -25,7 +25,7 @@ def run(server):
             expect(page.locator('#dialog-stage-rules')).to_be_visible()
             rows = page.locator('#stage-rules-fields fieldset')
             assert rows.count()==5
-            assert rows.first.locator('input[type=checkbox]').count()==3
+            assert rows.first.locator('input[type=checkbox]').count()==4
             for retired in ('RULE_MUTATED_FOG','STAGE_3_REVERSE_FOG','STAGE_4_FINALS'):
                 api('PUT',f'/api/tournaments/{tid}/stage-rules',{'rules':[{'level':1,'rule_id':retired,'publish_at':0}]},admin,expected=400)
             rect = page.locator('#dialog-stage-rules').bounding_box()
@@ -148,6 +148,7 @@ def run(server):
 
 
 if __name__=='__main__':
-    with tempfile.TemporaryDirectory(prefix='arena-stage-rules-') as directory:
+    (arena.ROOT / 'data').mkdir(exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='arena-stage-rules-', dir=arena.ROOT / 'data') as directory:
         with arena.LocalArena(directory) as server:
             run(server)

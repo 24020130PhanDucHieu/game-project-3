@@ -66,6 +66,7 @@ def run(server):
 
 
 if __name__ == '__main__':
-    with tempfile.TemporaryDirectory(prefix='arena-stage-rules-') as directory:
+    (arena.ROOT / 'data').mkdir(exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='arena-stage-rules-', dir=arena.ROOT / 'data') as directory:
         with arena.LocalArena(directory) as server:
             run(server)

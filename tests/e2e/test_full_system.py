@@ -10,48 +10,55 @@ BASE_URL = os.environ.get("BASE_URL", "http://127.0.0.1:8080")
 def test_full_system():
     print("=== STARTING FULL END-TO-END TEST ===")
 
+    admin_pass = os.environ.get("ADMIN_PASSWORD", "verification-organizer")
+    login_res = requests.post(f"{BASE_URL}/api/admin/login", json={"username": "admin", "password": admin_pass})
+    if login_res.status_code != 200:
+        login_res = requests.post(f"{BASE_URL}/api/admin/login", json={"username": "admin", "password": "admin123"})
+    admin_token = login_res.json().get("session_token", "") if login_res.status_code == 200 else ""
+    admin_headers = {"Authorization": f"Bearer {admin_token}"} if admin_token else {}
+
     # 1. Test Create Tournament with custom team count
     print("\n--- 1. Testing Tournament Creation ---")
     create_payload = {
         "name": "Giải Đấu Kiểm Thử Tự Động 2026",
         "num_teams": 8
     }
-    res = requests.post(f"{BASE_URL}/api/tournaments/create", json=create_payload)
+    res = requests.post(f"{BASE_URL}/api/tournaments/create", json=create_payload, headers=admin_headers)
     assert res.status_code == 200, f"Create tourn failed: {res.text}"
     data = res.json()
     t_id = data["tournament"]["tournament_id"]
     print(f"Created tournament successfully! ID: {t_id}, Teams: {data['tournament']['num_teams']}")
 
     # Verify invalid count is rejected
-    res_invalid = requests.post(f"{BASE_URL}/api/tournaments/create", json={"name": "Test Fail", "num_teams": 6})
+    res_invalid = requests.post(f"{BASE_URL}/api/tournaments/create", json={"name": "Test Fail", "num_teams": 6}, headers=admin_headers)
     assert res_invalid.status_code == 400, f"Expected 400 for 6 teams, got {res_invalid.status_code}"
     print("Invalid team count (6 teams) properly rejected by backend: OK")
 
     # 2. Test Adding Teams & Duplicate MSSV
     print("\n--- 2. Testing Team Management ---")
     team1 = {"team_name": "BK_Phoenix", "student_id": "24029901", "university": "ĐHBK Hà Nội"}
-    res_t1 = requests.post(f"{BASE_URL}/api/tournaments/{t_id}/teams", json=team1)
+    res_t1 = requests.post(f"{BASE_URL}/api/tournaments/{t_id}/teams", json=team1, headers=admin_headers)
     assert res_t1.status_code == 200, f"Add team1 failed: {res_t1.text}"
     print("Added team BK_Phoenix: OK")
 
     # Try duplicate MSSV
-    res_dup = requests.post(f"{BASE_URL}/api/tournaments/{t_id}/teams", json=team1)
+    res_dup = requests.post(f"{BASE_URL}/api/tournaments/{t_id}/teams", json=team1, headers=admin_headers)
     assert res_dup.status_code == 400, f"Duplicate MSSV should fail, got {res_dup.status_code}"
     print(f"Duplicate MSSV properly rejected: {res_dup.json().get('detail')}")
 
     # Quick fill rest of teams to capacity
-    res_qf = requests.post(f"{BASE_URL}/api/tournaments/{t_id}/teams/quick-fill")
+    res_qf = requests.post(f"{BASE_URL}/api/tournaments/{t_id}/teams/quick-fill", headers=admin_headers)
     assert res_qf.status_code == 200, f"Quick fill failed: {res_qf.text}"
     print("Quick filled remaining teams to 8/8 capacity: OK")
 
     # Verify cannot exceed capacity
-    res_overflow = requests.post(f"{BASE_URL}/api/tournaments/{t_id}/teams", json={"team_name": "Overflow", "student_id": "24099999"})
+    res_overflow = requests.post(f"{BASE_URL}/api/tournaments/{t_id}/teams", json={"team_name": "Overflow", "student_id": "24099999"}, headers=admin_headers)
     assert res_overflow.status_code == 400, f"Capacity overflow should fail, got {res_overflow.status_code}"
     print(f"Capacity limit enforced: {res_overflow.json().get('detail')}")
 
     # 3. Test Auto Schedule Bracket
     print("\n--- 3. Testing Auto Schedule ---")
-    res_sched = requests.post(f"{BASE_URL}/api/tournaments/{t_id}/auto-schedule")
+    res_sched = requests.post(f"{BASE_URL}/api/tournaments/{t_id}/auto-schedule", headers=admin_headers)
     assert res_sched.status_code == 200, f"Schedule failed: {res_sched.text}"
     tourn_data = res_sched.json()["tournament"]
     first_match_id = next(m_id for m_id, m in tourn_data["matches"].items() if m.get("team_a") and m.get("team_b"))

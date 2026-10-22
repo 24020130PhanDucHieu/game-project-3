@@ -41,7 +41,7 @@ def run_ui(server, admin):
         tokens.append(token)
         if n:
             api('POST', f'/api/qualifiers/{qid}/register', token=token)
-            api('POST', f'/api/qualifiers/{qid}/submissions', {'code': CODE, 'language': 'PYTHON'}, token)
+            api('POST', f'/api/qualifiers/{qid}/submissions', {'code': CODE, 'language': 'PYTHON'}, token, expected=202)
     api('POST', f'/api/qualifiers/{qid}/submissions', {'code':CODE,'language':'PYTHON'}, tokens[0], expected=400)
     api('POST', f'/api/qualifiers/{qid}/actions/test-bots', {'count':8}, tokens[0], expected=403)
     assert api('GET', f'/api/qualifiers/{qid}/teams', token=admin)['total'] == 7
@@ -260,7 +260,8 @@ def run_2000(server,admin):
 
 
 if __name__=='__main__':
-    with tempfile.TemporaryDirectory(prefix='arena-qualifier-') as directory:
+    (arena.ROOT / 'data').mkdir(exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix='arena-qualifier-', dir=arena.ROOT / 'data') as directory:
         with arena.LocalArena(directory) as server:
             admin=arena.api('POST','/api/admin/login',{'username':'admin','password':arena.PASSWORD})['session_token']
             run_ui(server,admin)
