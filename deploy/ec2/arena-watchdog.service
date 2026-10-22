@@ -1,0 +1,13 @@
+[Unit]
+Description=Arena health check watchdog
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+EnvironmentFile=-/etc/arena/backend.env
+Environment=BASE_URL=http://127.0.0.1:8080
+Environment=BACKUP_DIR=/var/backups/arena
+ExecStart=/usr/bin/python3 /opt/arena/app/scripts/alert_dispatcher.py --check-once
+TimeoutStartSec=60

@@ -1,0 +1,10 @@
+[Unit]
+Description=Arena health check every 2 minutes
+
+[Timer]
+OnCalendar=*:0/2
+Persistent=true
+Unit=arena-watchdog.service
+
+[Install]
+WantedBy=timers.target

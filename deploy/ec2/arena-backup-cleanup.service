@@ -1,0 +1,10 @@
+[Unit]
+Description=Arena backup retention cleanup
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+EnvironmentFile=-/etc/arena/backend.env
+ExecStart=/usr/bin/python3 /opt/arena/app/scripts/postgres_backup_restore_drill.py --cleanup --directory /var/backups/arena --keep-count 7
+TimeoutStartSec=60

@@ -48,7 +48,26 @@ def main():
         finally:
             os.close(directory_fd)
         print("Backup created and archive catalog verified:", archive.name)
-        print("Restore drill and encrypted off-host copy remain required.")
+        s3_bucket = os.environ.get("S3_BACKUP_BUCKET", "").strip()
+        if s3_bucket:
+            if not s3_bucket.startswith("s3://"):
+                s3_bucket = f"s3://{s3_bucket}"
+            s3_dest = f"{s3_bucket.rstrip('/')}/arena-db/{archive.name}"
+            s3_sum_dest = f"{s3_bucket.rstrip('/')}/arena-db/{archive.name}.sha256"
+            try:
+                cp_res = subprocess.run(["aws", "s3", "cp", str(archive), s3_dest,
+                                         "--storage-class", "STANDARD_IA"],
+                                        capture_output=True, text=True, timeout=1800)
+                if cp_res.returncode == 0:
+                    subprocess.run(["aws", "s3", "cp", str(archive.with_suffix(".sha256")), s3_sum_dest],
+                                   capture_output=True, text=True, timeout=60)
+                    print(f"Offsite backup synced to S3: {s3_dest}")
+                else:
+                    print("Offsite S3 sync failed:", cp_res.stderr.strip()[:200])
+            except Exception as e:
+                print("Offsite S3 sync exception:", str(e)[:200])
+        else:
+            print("Restore drill and encrypted off-host copy remain required. (Set S3_BACKUP_BUCKET to automate offsite sync)")
     finally:
         partial.unlink(missing_ok=True)
 
