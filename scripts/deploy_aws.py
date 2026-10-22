@@ -59,7 +59,7 @@ def run_command(cmd, cwd=None, env=None, check=True):
     merged_env = os.environ.copy()
     if env:
         merged_env.update(env)
-    res = subprocess.run(cmd, cwd=cwd or ROOT, env=merged_env, capture_output=True, text=True)
+    res = subprocess.run(cmd, cwd=cwd or ROOT, env=merged_env, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if check and res.returncode != 0:
         error(f"Command failed with code {res.returncode}:\n{res.stderr.strip() or res.stdout.strip()}")
         sys.exit(res.returncode)
@@ -152,11 +152,20 @@ sudo mkdir -p /opt/arena/backups
 if [ -f /opt/arena/app/server ]; then
     sudo cp /opt/arena/app/server /opt/arena/backups/server-{timestamp}
     echo "Backup saved to /opt/arena/backups/server-{timestamp}"
+    cd /opt/arena/backups && ls -t server-* 2>/dev/null | tail -n +4 | sudo xargs -r rm -f || true
 fi
 
 echo "==> Stopping API service before extracting new binary..."
 sudo systemctl stop arena-api || true
 sleep 2
+
+# Terminate any orphaned postgres backend sessions holding the gateway advisory lock
+if [ -s /etc/arena/backend.env ]; then
+    DB_URL=$(sudo grep DATABASE_URL /etc/arena/backend.env | cut -d'=' -f2- | tr -d '"' | tr -d "'")
+    if command -v psql >/dev/null 2>&1 && [ -n "$DB_URL" ]; then
+        psql "$DB_URL" -c "SELECT pg_terminate_backend(pid) FROM pg_locks WHERE locktype = 'advisory' AND ((classid::bigint << 32) | (objid::bigint & 4294967295)) = 724615902361 AND pid != pg_backend_pid();" >/dev/null 2>&1 || true
+    fi
+fi
 
 echo "==> Extracting new release into /opt/arena/app..."
 sudo tar -xzf {remote_archive} -C /opt/arena/app
@@ -271,6 +280,16 @@ if [ -z "$LATEST_BACKUP" ]; then
 fi
 echo "Restoring from $LATEST_BACKUP..."
 sudo systemctl stop arena-api || true
+sleep 2
+
+# Terminate any orphaned postgres backend sessions holding the gateway advisory lock
+if [ -s /etc/arena/backend.env ]; then
+    DB_URL=$(sudo grep DATABASE_URL /etc/arena/backend.env | cut -d'=' -f2- | tr -d '"' | tr -d "'")
+    if command -v psql >/dev/null 2>&1 && [ -n "$DB_URL" ]; then
+        psql "$DB_URL" -c "SELECT pg_terminate_backend(pid) FROM pg_locks WHERE locktype = 'advisory' AND ((classid::bigint << 32) | (objid::bigint & 4294967295)) = 724615902361 AND pid != pg_backend_pid();" >/dev/null 2>&1 || true
+    fi
+fi
+
 sudo install -m 755 "$LATEST_BACKUP" /opt/arena/app/server
 sudo systemctl restart arena-api
 echo "ROLLBACK_SUCCESS"

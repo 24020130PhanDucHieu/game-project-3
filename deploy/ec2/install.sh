@@ -146,6 +146,10 @@ systemctl reload caddy
 
 # Start API if backend.env exists
 if [ -s /etc/arena/backend.env ]; then
+    DB_URL=$(grep DATABASE_URL /etc/arena/backend.env | cut -d'=' -f2- | tr -d '"' | tr -d "'")
+    if command -v psql >/dev/null 2>&1 && [ -n "$DB_URL" ]; then
+        psql "$DB_URL" -c "SELECT pg_terminate_backend(pid) FROM pg_locks WHERE locktype = 'advisory' AND ((classid::bigint << 32) | (objid::bigint & 4294967295)) = 724615902361 AND pid != pg_backend_pid();" >/dev/null 2>&1 || true
+    fi
     systemctl enable arena-api
     systemctl restart arena-api
     echo ''
