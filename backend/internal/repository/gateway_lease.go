@@ -13,17 +13,26 @@ func (s *QualifierRecords) GatewayLease() (<-chan error, error) {
 	if s.db == nil {
 		return lost, nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	conn, err := s.db.Conn(ctx)
 	if err != nil {
 		return nil, err
 	}
 	var acquired bool
-	err = conn.QueryRowContext(ctx, `SELECT pg_try_advisory_lock(724615902361)`).Scan(&acquired)
-	if err != nil || !acquired {
-		conn.Close()
-		return nil, errors.New("another Arena gateway holds the database writer lease, or the database is unavailable")
+	deadline := time.Now().Add(15 * time.Second)
+	for {
+		queryCtx, queryCancel := context.WithTimeout(ctx, 3*time.Second)
+		err = conn.QueryRowContext(queryCtx, `SELECT pg_try_advisory_lock(724615902361)`).Scan(&acquired)
+		queryCancel()
+		if err == nil && acquired {
+			break
+		}
+		if time.Now().After(deadline) {
+			conn.Close()
+			return nil, errors.New("another Arena gateway holds the database writer lease, or the database is unavailable")
+		}
+		time.Sleep(500 * time.Millisecond)
 	}
 	go func() {
 		ticker := time.NewTicker(2 * time.Second)

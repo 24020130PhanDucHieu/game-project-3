@@ -156,6 +156,7 @@ fi
 
 echo "==> Stopping API service before extracting new binary..."
 sudo systemctl stop arena-api || true
+sleep 2
 
 echo "==> Extracting new release into /opt/arena/app..."
 sudo tar -xzf {remote_archive} -C /opt/arena/app
@@ -209,7 +210,7 @@ echo "WORKER_DEPLOY_OK"
         return False
 
 
-def verify_remote_health(https_url, user, host, key_path, retries=8, delay=2):
+def verify_remote_health(https_url, user, host, key_path, retries=15, delay=2):
     log("Verifying remote deployment health...", "VERIFY")
 
     ctx = ssl.create_default_context()
