@@ -311,15 +311,24 @@ def run(arena):
         check("team live board ignores old replay position; log tab survives tab changes and F5")
 
         history_panel = team_a.locator("details").filter(has=team_a.locator("#tbody-round-history"))
-        history_panel.locator("summary").click()
-        team_a.locator("#tbody-round-history .btn-view-round-code").first.click()
+        if not history_panel.evaluate("e => e.open"):
+            history_panel.locator("summary").click()
+        history_panel.evaluate("e => { e.open = true; }")
+        btn_view_code = team_a.locator("#tbody-round-history .btn-view-round-code").first
+        expect(btn_view_code).to_be_visible(timeout=10000)
+        btn_view_code.click()
         expect(team_a.locator("#code-viewer-box")).to_contain_text(CODE)
         team_a.locator("#btn-close-view-code-x").click()
-        team_a.locator("#tbody-round-history .btn-replay-round").first.click()
+        history_panel.evaluate("e => { e.open = true; }")
+        btn_replay = team_a.locator("#tbody-round-history .btn-replay-round").first
+        expect(btn_replay).to_be_visible(timeout=10000)
+        btn_replay.click()
         team_a.locator("#replay-step-slider").press("ArrowRight")
         saved_step = team_a.locator("#replay-step-indicator").inner_text()
         team_a.locator("#btn-close-replay-x").click()
-        team_a.locator("#tbody-round-history .btn-replay-round").first.click()
+        history_panel.evaluate("e => { e.open = true; }")
+        expect(btn_replay).to_be_visible(timeout=10000)
+        btn_replay.click()
         expect(team_a.locator("#replay-step-indicator")).to_have_text(saved_step)
         team_a.locator("#btn-close-replay-x").click()
         check("round source viewer and replay modal work and preserve the selected step")
