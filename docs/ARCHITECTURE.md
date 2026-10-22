@@ -56,8 +56,8 @@ project-tuan3/
 └── docs/                        # Tài liệu kỹ thuật, báo cáo & kiến trúc triển khai
     ├── ARCHITECTURE.md          # Tài liệu kiến trúc và phân tích công nghệ
     ├── CLOUD_DEPLOYMENT.md      # Hướng dẫn Cloudflare & Hạ tầng Cloud
-    ├── BENCHMARK_REPORT.md      # Báo cáo kết quả đo đạc kiểm thử tải thực tế
-    └── benchmark_metrics.json   # Dữ liệu JSON đo đạc từ kịch bản kiểm thử tải
+    ├── BENCHMARK_REPORT.md      # Trạng thái kiểm thử tải và giới hạn bằng chứng
+    └── benchmark_metrics.json   # Dữ liệu lịch sử, không chứng minh sức chứa hiện tại
 ```
 
 ---

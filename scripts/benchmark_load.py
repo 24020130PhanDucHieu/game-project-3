@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-KỊCH BẢN KIỂM THỬ TẢI CHUYÊN NGHIỆP (HIGH CONCURRENCY LOAD TEST BENCHMARK)
-Mô phỏng 1.000, 3.000 và 5.000 người dùng đồng thời (Concurrent Virtual Users).
-Đo đạc Throughput (RPS), Độ trễ (p50, p95, p99), Tỷ lệ lỗi, CPU & RAM.
-"""
+"""Read-only staging load generator; does not measure submission or judge throughput."""
 
 import asyncio
 import time
@@ -30,7 +26,7 @@ try:
 except ImportError:
     HAS_PSUTIL = False
 
-BASE_URL = os.getenv("BENCHMARK_BASE_URL", "http://127.0.0.1:8000")
+BASE_URL = os.getenv("BENCHMARK_BASE_URL", "").rstrip("/")
 
 class BenchmarkResult:
     def __init__(self, concurrency: int, total_requests: int):
@@ -132,12 +128,17 @@ async def run_stage_benchmark(concurrency: int, total_requests: int, endpoint_mi
     return res
 
 async def main():
+    # A load generator must never discover and mutate a live tournament by default.
+    if os.getenv("BENCHMARK_CONFIRM_STAGING") != "YES" or not BASE_URL:
+        raise SystemExit("Set BENCHMARK_BASE_URL to an isolated staging server and BENCHMARK_CONFIRM_STAGING=YES.")
+    if any(host in BASE_URL.lower() for host in ("arena.13.250.49.111.sslip.io", "game-project-3.phanhieu06hungyen.workers.dev")):
+        raise SystemExit("Refusing to load-test the production arena.")
     print("=" * 75)
-    print("🎯 BẮT ĐẦU KIỂM THỬ CHỊU TẢI HỆ THỐNG: 1.000 → 3.000 → 5.000 VUs")
+    print("READ-ONLY STAGING LOAD: 1,000 → 2,000 → 4,000 concurrent requests")
     print(f"   Target URL: {BASE_URL}")
     print("=" * 75)
 
-    # 1. Xác định tournament và match đang hoạt động
+    # Find a staging tournament with readable data.
     async with aiohttp.ClientSession() as s:
         async with s.get(f"{BASE_URL}/api/tournaments") as r:
             assert r.status == 200, "Không thể kết nối đến máy chủ"
@@ -158,30 +159,8 @@ async def main():
                 target_t = tourns[0]
             t_id = target_t.get("tournament_id")
 
-    # Mã Python & C++ mẫu đại diện cho burst nộp bài của sinh viên
-    py_code = """
-def decide_move(game_state):
-    import random
-    cards = game_state.get('remaining_cards', {})
-    avail = [c for c, count in cards.items() if count > 0]
-    return avail[0] if avail else 'ROCK'
-"""
-    cpp_code = """
-#include <iostream>
-#include <string>
-int main() {
-    std::cout << "ROCK" << std::endl;
-    return 0;
-}
-"""
-
-    # 2. Xây dựng Endpoint Mix mô phỏng hành vi thực tế của sinh viên:
-    # 40% Polling chi tiết giải đấu (Hot Read + ETag 304/200)
-    # 20% Danh sách các giải đấu (/api/tournaments)
-    # 10% Kiểm tra sức khỏe hệ thống (/health & /metrics)
-    # 10% Tra cứu dữ liệu bài nộp & bảng điểm (/matches/m_lvl1_1/submissions)
-    # 10% Xác thực đăng nhập đội thi / admin
-    # 10% Burst nộp bài (5% Python + 5% C++)
+    # Read-only traffic only. Submission load requires separate test identities and fixtures.
+    # Read-only requests only. This does not test login, submission, or queue drain.
     test_headers = {"X-Benchmark-Test": "true"}
     endpoint_mix = [
         {"path": f"/api/tournaments/{t_id}", "method": "GET", "headers": test_headers},
@@ -191,10 +170,7 @@ int main() {
         {"path": "/api/tournaments", "method": "GET", "headers": test_headers},
         {"path": "/api/tournaments", "method": "GET", "headers": test_headers},
         {"path": "/health", "method": "GET", "headers": test_headers},
-        {"path": f"/api/tournaments/{t_id}/matches/m_lvl1_1/submissions", "method": "GET", "headers": test_headers},
-        {"path": f"/api/tournaments/{t_id}/matches/m_lvl1_1/login", "method": "POST", "payload": {"username": "admin", "password": "admin123"}, "headers": test_headers},
-        {"path": f"/api/tournaments/{t_id}/matches/m_lvl1_1/code", "method": "POST", "payload": {"side": "team_a", "code_content": py_code, "language": "PYTHON"}, "headers": test_headers},
-        {"path": f"/api/tournaments/{t_id}/matches/m_lvl1_1/code", "method": "POST", "payload": {"side": "team_b", "code_content": cpp_code, "language": "CPP"}, "headers": test_headers},
+        {"path": "/health", "method": "GET", "headers": test_headers},
     ]
 
     stages = [
@@ -220,7 +196,7 @@ int main() {
         print(f"    ❌ Tỷ lệ lỗi: {err_pct:.2f}% | RAM test process: {res.mem_after_mb:.1f} MB")
 
     print("\n" + "=" * 75)
-    print("📊 BẢNG TỔNG HỢP KẾT QUẢ BENCHMARK CHỊU TẢI CHÍNH THỨC")
+    print("READ-ONLY STAGING RESULT — NOT A SUBMISSION OR JUDGING CAPACITY TEST")
     print("=" * 75)
     print(f"{'Mức Tải (VUs)':<16} | {'Tổng Req':<10} | {'Throughput (RPS)':<18} | {'p50 (ms)':<10} | {'p95 (ms)':<10} | {'p99 (ms)':<10} | {'Tỷ Lệ Lỗi':<10}")
     print("-" * 95)
