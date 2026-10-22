@@ -62,7 +62,7 @@ try:
     for line in sys.stdin:
         try:
             state=json.loads(line)
-            scope={"__builtins__":dict(safe),"random":module_view("random"),"math":module_view("math")}
+            scope={"__name__":"__bot__","__doc__":None,"__builtins__":dict(safe),"random":module_view("random"),"math":module_view("math")}
             exec(compiled,scope,scope)
             fn=scope.get("decide_move")
             if not callable(fn): raise ValueError("Thieu decide_move")

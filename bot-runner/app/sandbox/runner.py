@@ -129,7 +129,8 @@ def _validate_python_ast(code_str: str) -> Optional[str]:
         if isinstance(node, ast.Attribute) and node.attr.startswith("_"):
             return "Không cho phép truy cập thuộc tính nội bộ của Python."
         if isinstance(node, ast.Name) and node.id.startswith("_"):
-            return "Không cho phép sử dụng tên nội bộ của Python."
+            if node.id not in ("__name__", "__main__", "__doc__"):
+                return "Không cho phép sử dụng tên nội bộ của Python."
         if isinstance(node, (ast.Global, ast.Nonlocal)):
             return "Không cho phép thay đổi biến toàn cục trong sandbox."
     return None
@@ -224,7 +225,7 @@ class BotRunner:
         temp_dir = tempfile.gettempdir()
         if len(cpp_code_str.encode("utf-8")) > MAX_CODE_BYTES:
             return None, "C++ source exceeds the 64 KB limit."
-        if os.getenv("ENVIRONMENT", "").lower() == "production" or os.getenv('CPP_RUNTIME') == 'wasi':
+        if os.path.exists('/opt/wasi-sdk/bin/clang++') or os.getenv("ENVIRONMENT", "").lower() == "production" or os.getenv('CPP_RUNTIME') == 'wasi':
             from app.sandbox.cpp_wasi import compile_wasi
             return compile_wasi(cpp_code_str)
         file_id = f"bot_{int(time.time()*1000)}_{random.randint(100, 999)}"

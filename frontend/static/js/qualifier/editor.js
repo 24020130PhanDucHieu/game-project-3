@@ -110,11 +110,47 @@ function escapeHtml(str) {
 }
 
 function renderQualifierOwn(data){
-  const e=data.event,p=data.participant||{};const canSubmit=currentAppRole==='TEAM'&&Boolean(p.student_id)&&e.status==='OPEN'&&Date.now()/1000<e.deadline;
-  document.getElementById('qualifier-team-card').hidden=currentAppRole!=='TEAM'||!p.student_id;
-  document.getElementById('qualifier-team-card').style.display=currentAppRole==='ADMIN'?'none':'block';
-  document.getElementById('qualifier-submit').disabled=!canSubmit;document.getElementById('qualifier-check').disabled=currentAppRole!=='TEAM';
-  document.getElementById('qualifier-code').readOnly=!canSubmit;
+  const e=data.event,p=data.participant||{};
+  const canSubmit=currentAppRole==='TEAM'&&Boolean(p.student_id)&&e.status==='OPEN'&&Date.now()/1000<e.deadline;
+  
+  const teamCard = document.getElementById('qualifier-team-card');
+  if(teamCard){
+    teamCard.hidden=currentAppRole!=='TEAM'||!p.student_id;
+    teamCard.style.display=currentAppRole==='ADMIN'?'none':'block';
+  }
+
+  const submitBtn = document.getElementById('qualifier-submit');
+  const checkBtn = document.getElementById('qualifier-check');
+  const codeArea = document.getElementById('qualifier-code');
+  const metaInfo = document.getElementById('qualifier-submit-meta-info');
+
+  if(checkBtn) checkBtn.disabled = false;
+  if(codeArea) codeArea.readOnly = false;
+
+  if(submitBtn){
+    submitBtn.disabled = false;
+    if(!canSubmit){
+      submitBtn.classList.remove('btn-primary');
+      submitBtn.classList.add('btn-outline');
+    } else {
+      submitBtn.classList.remove('btn-outline');
+      submitBtn.classList.add('btn-primary');
+    }
+  }
+
+  if(metaInfo && !lastGitSubmissionInfo.commit_sha){
+    if(currentAppRole !== 'TEAM'){
+      metaInfo.innerHTML = '<span style="color:#64748b; font-weight:500;">ℹ️ Quyền Quản trị viên (kiểm tra & chạy thử bot, chỉ Đội thi mới nộp giải)</span>';
+    } else if(!p.student_id){
+      metaInfo.innerHTML = '<span style="color:#d97706; font-weight:500;">⚠️ Hãy bấm "Đăng ký thi" ở phía trên trước khi nộp bot</span>';
+    } else if(e.status !== 'OPEN'){
+      metaInfo.innerHTML = `<span style="color:#ef4444; font-weight:500;">🔒 Vòng loại trạng thái: ${e.status}</span>`;
+    } else if(Date.now()/1000 >= e.deadline){
+      metaInfo.innerHTML = `<span style="color:#ef4444; font-weight:500;">🔒 Đã hết hạn nộp bài (${new Date(e.deadline*1000).toLocaleString('vi-VN')})</span>`;
+    } else {
+      metaInfo.innerHTML = '<span style="color:#10b981; font-weight:500;">✅ Sẵn sàng nhận bài nộp</span>';
+    }
+  }
 
   const gitIndicator = document.getElementById('qualifier-git-mode-indicator');
   const templateLink = document.getElementById('qualifier-git-template-link');
@@ -173,8 +209,23 @@ async function checkQualifierCode(){
     const response=await fetch(`${API_BASE}/api/bots/validate`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code_content:codeVal,language:langVal})});
     const data=await response.json();
     if(!response.ok)throw new Error(data.detail||'Không kiểm tra được bot.');
-    if(data.is_valid)notifySuccess('Bot hợp lệ','Có thể nộp bài.');
-    else notifyWarning('Bot chưa hợp lệ',data.error_message||'Kiểm tra lại mã nguồn.');
+    if(data.is_valid){
+      const execTime = data.execution_time_ms ? ` (${data.execution_time_ms}ms)` : '';
+      const move = data.test_move ? ` · Nước đi: [${data.test_move}]` : '';
+      const p = qualifierData?.participant || {};
+      const e = qualifierData?.event;
+      if (currentAppRole !== 'TEAM') {
+        notifySuccess('Bot hợp lệ' + move, `Mã ${langVal} cú pháp chuẩn${execTime}. Bạn đang dùng quyền Admin (chỉ kiểm tra/chạy thử, đăng nhập Đội thi để nộp giải).`);
+      } else if (!p.student_id) {
+        notifySuccess('Bot hợp lệ' + move, `Mã ${langVal} cú pháp chuẩn${execTime}. Hãy bấm "Đăng ký thi" ở phía trên để có thể nộp bot.`);
+      } else if (e?.status !== 'OPEN' || (e?.deadline && Date.now()/1000 >= e.deadline)) {
+        notifySuccess('Bot hợp lệ' + move, `Mã ${langVal} cú pháp chuẩn${execTime}. (Vòng loại đã đóng hoặc hết hạn nộp).`);
+      } else {
+        notifySuccess('Bot hợp lệ' + move, `Mã ${langVal} chuẩn xác${execTime}. Có thể bấm "Nộp bot vào vòng loại"!`);
+      }
+    } else {
+      notifyWarning('Bot chưa hợp lệ', data.error_message || 'Kiểm tra lại mã nguồn.');
+    }
   }catch(err){
     if (!navigator.onLine || err.message.includes('fetch') || err.message.includes('Network')) {
       if (typeof validateBotCodeOffline === 'function') {
@@ -187,14 +238,52 @@ async function checkQualifierCode(){
   }finally{button.disabled=false;}
 }
 async function submitQualifierCode(){
-  const button=document.getElementById('qualifier-submit');if(button.disabled)return;button.disabled=true;
+  const e = qualifierData?.event;
+  const p = qualifierData?.participant || {};
+  const codeVal = document.getElementById('qualifier-code').value.trim();
+  const langVal = document.getElementById('qualifier-language').value;
+
+  if (!codeVal) {
+    notifyWarning('Chưa có mã', 'Hãy viết hoặc nạp mã bot trước khi nộp.');
+    return;
+  }
+
+  if (currentAppRole !== 'TEAM') {
+    notifyWarning('Tài khoản Quản trị viên', 'Tài khoản Admin chỉ dùng để kiểm tra mã và quản lý vòng loại. Để nộp bot thi đấu, vui lòng đăng nhập bằng tài khoản Đội thi (MSSV).');
+    return;
+  }
+
+  if (!p.student_id) {
+    notifyWarning('Chưa đăng ký thi', 'Đội của bạn chưa bấm "Đăng ký thi" cho vòng loại này. Vui lòng bấm nút "Đăng ký thi" ở phía trên trước khi nộp bot.');
+    return;
+  }
+
+  if (!e || e.status !== 'OPEN') {
+    notifyWarning('Vòng loại không mở', `Vòng loại hiện đang ở trạng thái "${e?.status || 'ĐÃ ĐÓNG'}", không nhận bài nộp mới.`);
+    return;
+  }
+
+  if (Date.now() / 1000 >= e.deadline) {
+    notifyWarning('Đã hết hạn nộp', `Hạn nộp bài của vòng loại này đã kết thúc (${new Date(e.deadline * 1000).toLocaleString('vi-VN')}).`);
+    return;
+  }
+
+  const button=document.getElementById('qualifier-submit');
+  button.disabled=true;
+  button.textContent='Đang nộp...';
   try{
     const payload = {
       code: document.getElementById('qualifier-code').value,
-      language: document.getElementById('qualifier-language').value,
+      language: langVal,
       git_repo_url: lastGitSubmissionInfo.repo_url || '',
       git_commit_hash: lastGitSubmissionInfo.commit_sha || ''
     };
     await arenaOutbox.submit(`/api/qualifiers/${qualifierId}/submissions`, payload);
-  }catch(err){notifyError('Không lưu được bài',err.message);}finally{button.disabled=qualifierData?.event.status!=='OPEN'||Date.now()/1000>=qualifierData?.event.deadline;}
+    notifySuccess('Nộp bài thành công', 'Bài nộp đã được gửi vào hàng đợi chấm điểm!');
+  }catch(err){
+    notifyError('Không lưu được bài',err.message);
+  }finally{
+    button.disabled=false;
+    button.textContent='Nộp bot vào vòng loại';
+  }
 }
