@@ -63,16 +63,17 @@ function syncLiveRoundBoard(match) {
     else renderLiveAction(match,null,null);
     return;
   }
-  const playbackStarted=Date.now();
+  const isPastRound = Boolean((match.current_round_idx && record?.round_number && match.current_round_idx > record.round_number) || match.status === 'COMPLETED');
+  const playbackStarted = Date.now();
   let drawnIndex = -1;
   const draw = () => {
     const countdown = document.getElementById("countdown-num");
     if (countdown && match.intermission_ends_at) countdown.textContent = Math.max(0, Math.ceil(match.intermission_ends_at - Date.now() / 1000));
     if (!record?.board_steps?.length) { renderLiveAction(match, null, null); return; }
     const steps = record.board_steps;
-    const progress = Math.min(1,(Date.now()-playbackStarted)/(Math.max(1,steps.length-1)*250));
+    const progress = isPastRound ? 1 : Math.min(1,(Date.now()-playbackStarted)/(Math.max(1,steps.length-1)*250));
     const index = Math.min(steps.length - 1, Math.floor(progress * (steps.length-1)));
-    if (index === drawnIndex) { if (progress === 1) clearInterval(liveRoundTimer); return; }
+    if (index === drawnIndex) { if (progress === 1) { clearInterval(liveRoundTimer); liveRoundTimer = null; } return; }
     drawnIndex = index;
     const step = steps[index];
     const stepTiles = step.mystery_tiles || record?.mystery_tiles;
@@ -96,10 +97,10 @@ function syncLiveRoundBoard(match) {
       renderLiveAction(match, record, step, index);
       renderCategorizedLogs(record, index);
     }
-    if (progress === 1) clearInterval(liveRoundTimer);
+    if (progress === 1) { clearInterval(liveRoundTimer); liveRoundTimer = null; }
   };
   draw();
-  if(record?.board_steps?.length>1)liveRoundTimer = setInterval(draw, 50);
+  if (!isPastRound && record?.board_steps?.length > 1) liveRoundTimer = setInterval(draw, 50);
 }
 function studioDraftKey() { return `${arenaViewKey()}:draft:${currentStudioSide || "none"}`; }
 function saveStudioDraft() {
