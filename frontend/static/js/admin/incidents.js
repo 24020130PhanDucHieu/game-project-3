@@ -13,8 +13,15 @@ async function openMatchCorrection() {
   const tournamentId = currentTournamentId, matchId = currentActiveMatchId;
   await loadActiveTournament(tournamentId);
   if (currentTournamentId !== tournamentId || currentActiveMatchId !== matchId) return;
-  const match = currentTournamentData?.matches?.[matchId];
-  const token = currentTournamentData?.correction_token;
+  // Correction tokens must come from the latest server snapshot. The normal
+  // refresh path coalesces in-flight realtime requests and can return an older snapshot.
+  const response = await fetch(`${API_BASE}/api/tournaments/${encodeURIComponent(tournamentId)}`, {cache: 'no-store'});
+  if (!response.ok) { notifyWarning('Chưa thể sửa', 'Không tải được dữ liệu mới nhất của trận đấu.'); return; }
+  const latest = await response.json();
+  if (currentTournamentId !== tournamentId || currentActiveMatchId !== matchId) return;
+  currentTournamentData = latest;
+  const match = latest?.matches?.[matchId];
+  const token = latest?.correction_token;
   if (!match?.team_a || !match?.team_b || !token) { notifyWarning('Chưa thể sửa', 'Trận phải có đủ hai đội và dữ liệu mới nhất.'); return; }
   const priorFocus = document.activeElement;
   const dialog = document.createElement('dialog');
