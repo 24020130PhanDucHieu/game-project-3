@@ -11,17 +11,29 @@ if (arenaSavedAPI && arenaSavedAPI.replace(/\/+$/, "") === "https://game-project
 }
 const API_BASE = arenaSavedAPI || (window.location.hostname.endsWith(".workers.dev") || window.location.hostname.endsWith(".pages.dev") || window.location.origin === "null" || window.location.protocol === "file:" ? ARENA_HOSTED_API : window.location.origin);
 const arenaFetch = window.fetch.bind(window);
+let arenaServerClock = null;
+const arenaPendingWrites = new Map();
+function arenaNowSeconds() {
+  return arenaServerClock ? (arenaServerClock.epoch + performance.now() - arenaServerClock.tick) / 1000 : Date.now() / 1000;
+}
 window.fetch = (input, init = {}) => {
   const requestURL = typeof input === "string" ? input : (input.url || input.href || String(input));
   const token = sessionStorage.getItem("arenaSessionToken") || localStorage.getItem("arenaSessionToken");
   if (token && !sessionStorage.getItem("arenaSessionToken")) {
     sessionStorage.setItem("arenaSessionToken", token);
   }
-  if (!token || !requestURL.startsWith(API_BASE)) return arenaFetch(input, init);
+  let url;
+  try { url = new URL(requestURL, window.location.href); } catch { return arenaFetch(input, init); }
+  if (url.origin !== new URL(API_BASE, window.location.href).origin || !url.pathname.startsWith('/api/')) return arenaFetch(input, init);
   const headers = new Headers(init.headers || (typeof Request !== "undefined" && input instanceof Request ? input.headers : undefined));
-  headers.set("Authorization", `Bearer ${token}`);
-  return arenaFetch(input, { ...init, headers }).then((response) => {
-    if (response.status === 401 && !requestURL.endsWith("/login") && sessionStorage.getItem("arenaSessionToken") === token) {
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const method = (init.method || input?.method || 'GET').toUpperCase();
+  const key = method !== 'GET' && typeof init.body !== 'object' ? JSON.stringify([token, method, url.href, init.body, headers.get('X-Submission-Id')]) : '';
+  if (key && arenaPendingWrites.has(key)) return arenaPendingWrites.get(key).then(response => response.clone());
+  const pending = arenaFetch(input, { ...init, headers }).then((response) => {
+    const epoch = Date.parse(response.headers.get('Date') || '');
+    if (Number.isFinite(epoch)) arenaServerClock = {epoch, tick: performance.now()};
+    if (token && response.status === 401 && !url.pathname.endsWith("/login") && sessionStorage.getItem("arenaSessionToken") === token) {
       sessionStorage.removeItem("arenaSessionToken");
       localStorage.removeItem("arenaSessionToken");
       sessionStorage.removeItem("ARENA_STUDENT_ID");
@@ -35,4 +47,7 @@ window.fetch = (input, init = {}) => {
     }
     return response;
   });
+  if (!key) return pending;
+  arenaPendingWrites.set(key, pending);
+  return pending.then(response => response.clone()).finally(() => arenaPendingWrites.delete(key));
 };

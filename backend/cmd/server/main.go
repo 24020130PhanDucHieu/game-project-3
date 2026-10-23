@@ -72,15 +72,18 @@ func main() {
 		log.Fatalf("Could not initialize accounts: %v", err)
 	}
 	aHandler := &httpHandler.AccountsHandler{Store: accounts, Service: tournamentService, WorkerReady: botRunnerAdapter.Ready, WorkerMonitor: botRunnerAdapter.Monitor}
-	mHandler.Accounts = accounts
-	mHandler.AccountSync = aHandler.ImportLegacy
-	sessions.CheckStudent = func(id string) (bool, error) {
-		a, err := accounts.Get(id)
+	sessions.CheckSession = func(session auth.Session) (bool, error) {
+		account, err := accounts.Get(session.StudentID)
 		if errors.Is(err, repository.ErrAccountMissing) {
 			return false, nil
 		}
-		return err == nil && !a.Deleted, err
+		if err != nil {
+			return false, err
+		}
+		return !account.Deleted && (account.PasswordChangedAt.IsZero() || session.IssuedAt.After(account.PasswordChangedAt)), nil
 	}
+	mHandler.Accounts = accounts
+	mHandler.AccountSync = aHandler.ImportLegacy
 	qualifierStore, err := repository.NewQualifierRecords(tournamentRepo, filepath.Join(filepath.Dir(cfg.DBPath), "qualifier_store"))
 	if err != nil {
 		log.Fatalf("Could not initialize qualifier storage: %v", err)
@@ -120,6 +123,7 @@ func main() {
 	r := gin.New()
 	r.Use(middleware.RecoveryMiddleware())
 	r.Use(middleware.LoggerMiddleware())
+	r.Use(middleware.RequestBounds())
 	r.Use(optionalSession(sessions))
 	r.Use(middleware.CORSMiddleware(cfg.CORSOrigin))
 	r.Use(middleware.RateLimitMiddleware())
@@ -234,6 +238,7 @@ func main() {
 		api.POST("/tournaments/:id/matches/:matchId/next-round", matchAdmin, mHandler.NextRound)
 		api.POST("/tournaments/:id/matches/:matchId/demo-fill", matchAdmin, mHandler.DemoFill)
 		api.POST("/tournaments/:id/matches/:matchId/reset", matchAdmin, mHandler.Reset)
+		api.POST("/tournaments/:id/matches/:matchId/correction", matchAdmin, tHandler.CorrectMatch)
 		api.GET("/tournaments/:id/matches/:matchId/submissions", matchSession, mHandler.GetSubmissions)
 		api.GET("/tournaments/:id/matches/:matchId/replay/:roundNumber", mHandler.GetRoundReplay)
 		api.POST("/tournaments/:id/practice-match", requireSession(sessions, false, false), mHandler.PracticeMatch)
@@ -248,7 +253,7 @@ func main() {
 		api.POST("/admin/notifications", adminOnly, aHandler.AdminBroadcastNotification)
 		api.GET("/admin/audit-logs", adminOnly, aHandler.ListAdminAuditLogs)
 		api.GET("/teams/profile", optionalSession(sessions), aHandler.GetTeamProfile)
-		api.PUT("/teams/profile", optionalSession(sessions), aHandler.UpdateTeamProfile)
+		api.PUT("/teams/profile", requireSession(sessions, false, false), aHandler.UpdateTeamProfile)
 		api.POST("/tournaments/:id/swap-bracket", adminOnly, tHandler.SwapBracket)
 		api.POST("/tournaments/:id/disqualify-team", adminOnly, tHandler.DisqualifyTeam)
 		api.GET("/matches/history", mHandler.GetMatchHistory)
@@ -285,7 +290,10 @@ func main() {
 	}
 
 	srv := &http.Server{
-		Handler: r,
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    1 << 20,
 	}
 
 	quit := make(chan os.Signal, 1)

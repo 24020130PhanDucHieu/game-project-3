@@ -109,13 +109,7 @@ async function handleForgotStep1(event) {
     if (step1) step1.style.display = "none";
     if (step2) step2.style.display = "block";
 
-    // Điền trước mã xác nhận nếu server gửi về (dev/demo convenience)
-    if (data.reset_token) {
-      const tokenInp = document.getElementById("forgot-token");
-      if (tokenInp) tokenInp.value = data.reset_token;
-    }
-
-    notifySuccess("Mã xác thực", data.message || "Mã xác thực có hiệu lực trong 15 phút.");
+    notifyInfo("Khôi phục tài khoản", data.message || "Liên hệ ban tổ chức để nhận mã xác minh danh tính.");
   } catch (err) {
     if (banner) {
       banner.textContent = err.message;
@@ -124,7 +118,7 @@ async function handleForgotStep1(event) {
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.textContent = "Nhận mã xác thực";
+      btn.textContent = "Tiếp tục";
     }
   }
 }

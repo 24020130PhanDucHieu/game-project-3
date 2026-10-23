@@ -1,0 +1,42 @@
+/* Shared controls and spacing for the existing Admin and Team portals. */
+[hidden] { display: none !important; }
+:where(button, a, input, select, textarea):focus-visible { outline: 3px solid #93b8f7; outline-offset: 3px; }
+:where(button, .btn, .btn-outline):disabled { cursor: not-allowed; opacity: .6; box-shadow: none; }
+:where(input, select, textarea) { max-width: 100%; }
+:where(.content-card, .tab-pane, .match-arena-2col-layout > *, .content-header-row > *) { min-width: 0; }
+.content-header-row { gap: 16px; flex-wrap: wrap; }
+.content-card { border-color: #e2e8f0; }
+.page-title { letter-spacing: -.025em; line-height: 1.25; }
+.page-subtitle { line-height: 1.6; max-width: 75ch; }
+.table-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.table-actions button { margin: 0 !important; padding: 8px 12px; font-size: 12px; white-space: nowrap; }
+table th { font-size: 12px; letter-spacing: .02em; }
+table td { vertical-align: middle; }
+.login-card-floating { border: 1px solid #dbe4ef; box-shadow: 0 16px 48px #203a5d12; }
+.login-card-subtitle { line-height: 1.6; }
+.login-input-field { min-height: 44px; font-size: 15px; }
+.login-alert-banner { line-height: 1.5; overflow-wrap: anywhere; }
+.portal-status { margin: 0 0 18px; padding: 12px 16px; border: 1px solid #cbdcf5; border-radius: 10px; background: #eff6ff; color: #1e40af; line-height: 1.6; }
+.incident-dialog { width: min(600px, calc(100vw - 32px)); max-height: calc(100dvh - 40px); overflow-y: auto; }
+.incident-form { display: grid; gap: 16px; }
+.incident-form label { display: grid; gap: 8px; font-weight: 600; }
+.incident-form input, .incident-form textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 12px; font: inherit; background: white; color: #0f172a; }
+.incident-form textarea { resize: vertical; }
+.incident-scores { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.incident-scores span { overflow-wrap: anywhere; }
+.incident-error { color: #b91c1c; line-height: 1.5; }
+.incident-error:empty { display: none; }
+.incident-history { padding: 12px 0 0 20px; font-size: 13px; line-height: 1.65; }
+.incident-form summary { cursor: pointer; color: #475569; }
+.app-action-buttons { flex-wrap: wrap; gap: 8px; }
+.toast-item { max-width: calc(100vw - 24px); }
+@media (max-width: 640px) {
+  .content-card { padding: 16px; border-radius: 12px; }
+  .page-title { font-size: 24px; }
+  .match-room-header-right { flex-wrap: wrap; gap: 8px; }
+  .incident-form .app-action-buttons button { flex: 1 1 140px; }
+  .login-input-field, .incident-form input, .incident-form textarea { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}

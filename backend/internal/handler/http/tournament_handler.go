@@ -6,8 +6,10 @@ import (
 	"math"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 	"project-tuan3/internal/auth"
@@ -79,6 +81,12 @@ func requestSession(c *gin.Context) auth.Session {
 func redactTournament(value map[string]interface{}, session auth.Session) map[string]interface{} {
 	copyTournament := cloneJSONMap(value)
 	delete(copyTournament, "_submission_receipts")
+	delete(copyTournament, "_incident_checkpoint")
+	if session.Role == "ADMIN" {
+		copyTournament["correction_token"] = service.CorrectionToken(value)
+	} else {
+		delete(copyTournament, "incident_log")
+	}
 	if session.Role != "ADMIN" {
 		rules, _ := copyTournament["stage_rules"].(map[string]interface{})
 		for key, raw := range rules {
@@ -105,6 +113,9 @@ func redactTournament(value map[string]interface{}, session auth.Session) map[st
 		match, ok := raw.(map[string]interface{})
 		if !ok {
 			continue
+		}
+		if session.Role != "ADMIN" {
+			delete(match, "tie_break_seed")
 		}
 		ownsMatch := false
 		for _, side := range []string{"team_a", "team_b"} {
@@ -159,7 +170,8 @@ func redactTournament(value map[string]interface{}, session auth.Session) map[st
 func redactFogRound(round map[string]interface{}, ownSide string) {
 	rules, _ := round["rules"].(map[string]interface{})
 	id, _ := round["stage_rule"].(string)
-	fog := rules["fog"] == true || id == "RULE_FOG" || id == "RULE_MUTATED_FOG" || id == "STAGE_3_REVERSE_FOG" || id == "STAGE_4_FINALS" || (len(id) == 7 && strings.HasPrefix(id, "COMBO_") && id[6] >= '4' && id[6] <= '7')
+	mask, _ := strconv.Atoi(strings.TrimPrefix(id, "COMBO_"))
+	fog := rules["fog"] == true || id == "RULE_FOG" || id == "RULE_MUTATED_FOG" || id == "STAGE_3_REVERSE_FOG" || id == "STAGE_4_FINALS" || (strings.HasPrefix(id, "COMBO_") && mask&4 != 0)
 	if !fog {
 		return
 	}
@@ -235,8 +247,18 @@ func (h *TournamentHandler) Create(c *gin.Context) {
 		name = "Giải Đấu Oẳn Tù Tì V2"
 	}
 
+	name = strings.TrimSpace(name)
+	if utf8.RuneCountInString(name) > 120 {
+		c.JSON(400, gin.H{"detail": "Tên giải tối đa 120 ký tự."})
+		return
+	}
 	numTeams := 8
-	if nt, ok := req["num_teams"].(float64); ok && nt > 0 {
+	if value, supplied := req["num_teams"]; supplied {
+		nt, ok := value.(float64)
+		if !ok || nt != math.Trunc(nt) || nt < 4 || nt > 128 || int(nt)&(int(nt)-1) != 0 {
+			c.JSON(400, gin.H{"detail": "Số đội phải là 4, 8, 16, 32, 64 hoặc 128."})
+			return
+		}
 		numTeams = int(nt)
 	}
 
@@ -299,6 +321,7 @@ func (h *TournamentHandler) GetRanking(c *gin.Context) {
 		ELO           int
 		MatchesPlayed int
 		Wins          int
+		SourceAt      float64
 	}
 	statsMap := make(map[string]*teamStats)
 
@@ -315,10 +338,12 @@ func (h *TournamentHandler) GetRanking(c *gin.Context) {
 				continue
 			}
 			studentID, _ := tm["student_id"].(string)
+			studentID = strings.ToUpper(strings.TrimSpace(studentID))
 			if studentID == "" {
 				continue
 			}
-			if _, exists := statsMap[studentID]; !exists {
+			at, _ := t["created_at"].(float64)
+			if existing, exists := statsMap[studentID]; !exists || at > existing.SourceAt {
 				teamName, _ := tm["team_name"].(string)
 				lang, _ := tm["language"].(string)
 				if lang == "" {
@@ -328,11 +353,16 @@ func (h *TournamentHandler) GetRanking(c *gin.Context) {
 				if e, ok := tm["elo"].(float64); ok {
 					elo = int(e)
 				}
+				played, wins := 0, 0
+				if existing != nil {
+					played, wins = existing.MatchesPlayed, existing.Wins
+				}
 				statsMap[studentID] = &teamStats{
 					BotName:   teamName,
 					StudentID: studentID,
 					Language:  lang,
 					ELO:       elo,
+					SourceAt:  at, MatchesPlayed: played, Wins: wins,
 				}
 			}
 		}
@@ -347,15 +377,15 @@ func (h *TournamentHandler) GetRanking(c *gin.Context) {
 			if !ok {
 				continue
 			}
-			roundsHist, ok := m["rounds_history"].([]interface{})
-			if !ok || len(roundsHist) == 0 || m["status"] != "COMPLETED" {
+			if m["status"] != "COMPLETED" || (m["winner"] != "team_a" && m["winner"] != "team_b") {
 				continue
 			}
 			// This match has been played - count participation and wins
-			winnerName, _ := m["winner_name"].(string)
+			winnerSide, _ := m["winner"].(string)
 			for _, side := range []string{"team_a", "team_b"} {
 				if team, ok := m[side].(map[string]interface{}); ok {
 					sid, _ := team["student_id"].(string)
+					sid = strings.ToUpper(strings.TrimSpace(sid))
 					tname, _ := team["team_name"].(string)
 					if sid == "" {
 						continue
@@ -371,7 +401,7 @@ func (h *TournamentHandler) GetRanking(c *gin.Context) {
 						statsMap[sid] = st
 					}
 					st.MatchesPlayed++
-					if winnerName != "" && winnerName == tname {
+					if winnerSide == side {
 						st.Wins++
 					}
 				}
@@ -423,7 +453,10 @@ func (h *TournamentHandler) GetRanking(c *gin.Context) {
 		}
 		botI, _ := rankList[i]["bot_name"].(string)
 		botJ, _ := rankList[j]["bot_name"].(string)
-		return botI < botJ
+		if botI != botJ {
+			return botI < botJ
+		}
+		return rankList[i]["student_id"].(string) < rankList[j]["student_id"].(string)
 	})
 
 	if rankList == nil {
@@ -522,7 +555,7 @@ func (h *TournamentHandler) DisqualifyTeam(c *gin.Context) {
 	}
 	res, err := h.service.MutateTournament(id, "disqualify-team", map[string]interface{}{
 		"student_id": req.StudentID,
-		"reason":    req.Reason,
+		"reason":     req.Reason,
 	})
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})

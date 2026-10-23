@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/big"
 	"sort"
 	"strings"
 	"time"
@@ -100,10 +99,11 @@ func (s *Accounts) SetPassword(id, newPassword string) error {
 	}
 	a.Hash = string(hash)
 	a.Secret = sealed
+	a.PasswordChangedAt = time.Now().UTC()
 	return s.save(a, false)
 }
 
-// RequestPasswordReset generates a 6-digit one-time reset code valid for 15 minutes.
+// RequestPasswordReset generates an unpredictable one-time code valid for 15 minutes.
 func (s *Accounts) RequestPasswordReset(studentID, ip, userAgent string) (string, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -116,12 +116,13 @@ func (s *Accounts) RequestPasswordReset(studentID, ip, userAgent string) (string
 		return "", ErrAccountMissing
 	}
 
-	// Sinh mã ngẫu nhiên 6 chữ số an toàn
-	n, err := rand.Int(rand.Reader, big.NewInt(900000))
+	// 128 bits of entropy; only the hash is stored.
+	var randomToken [16]byte
+	_, err = rand.Read(randomToken[:])
 	if err != nil {
 		return "", err
 	}
-	token := fmt.Sprintf("%06d", n.Int64()+100000)
+	token := hex.EncodeToString(randomToken[:])
 	tokenHash := hashToken(token)
 	expiresAt := time.Now().UTC().Add(15 * time.Minute)
 
@@ -154,7 +155,7 @@ func (s *Accounts) RequestPasswordReset(studentID, ip, userAgent string) (string
 
 // ResetPasswordWithToken verifies token, updates password, marks token as used, and logs the action.
 func (s *Accounts) ResetPasswordWithToken(studentID, token, newPassword, ip, userAgent string) error {
-	if len(strings.TrimSpace(newPassword)) < 6 {
+	if len(strings.TrimSpace(newPassword)) < 6 || len(newPassword) > 72 {
 		return ErrPasswordTooShort
 	}
 	sid := accountID(studentID)
@@ -199,6 +200,9 @@ func (s *Accounts) ResetPasswordWithToken(studentID, token, newPassword, ip, use
 	if err != nil {
 		return err
 	}
+	if a.Deleted {
+		return ErrAccountMissing
+	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return err
@@ -209,18 +213,57 @@ func (s *Accounts) ResetPasswordWithToken(studentID, token, newPassword, ip, use
 	}
 	a.Hash = string(hash)
 	a.Secret = sealed
-	if err = s.save(a, false); err != nil {
-		return err
-	}
-
-	// Đánh dấu mã đã sử dụng & ghi nhật ký thành công
+	a.PasswordChangedAt = time.Now().UTC()
 	if s.db != nil {
-		_, _ = s.db.Exec(`UPDATE arena_password_resets SET used = true WHERE reset_token_hash = $1`, tokenHash)
-		_, _ = s.db.Exec(`INSERT INTO arena_password_audit_logs (student_id, action, ip_address, user_agent) VALUES ($1, 'RESET_SUCCESS', $2, $3)`, sid, ip, userAgent)
+		// Token consumption and password change commit together, including on retry.
+		tx, err := s.db.Begin()
+		if err != nil {
+			return err
+		}
+		defer tx.Rollback()
+		result, err := tx.Exec(`UPDATE arena_password_resets SET used=true WHERE student_id=$1 AND reset_token_hash=$2 AND used=false AND expires_at>NOW()`, sid, tokenHash)
+		if err != nil {
+			return err
+		}
+		count, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if count != 1 {
+			return ErrResetTokenInvalid
+		}
+		data, err := json.Marshal(a)
+		if err != nil {
+			return err
+		}
+		result, err = tx.Exec(`UPDATE arena_accounts SET data=$2 WHERE student_id=$1 AND COALESCE((data->>'deleted')::boolean,false)=false`, sid, string(data))
+		if err != nil {
+			return err
+		}
+		count, err = result.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if count != 1 {
+			return ErrAccountMissing
+		}
+		if _, err = tx.Exec(`UPDATE arena_password_resets SET used=true WHERE student_id=$1`, sid); err != nil {
+			return err
+		}
+		if _, err = tx.Exec(`INSERT INTO arena_password_audit_logs (student_id, action, ip_address, user_agent) VALUES ($1, 'RESET_SUCCESS', $2, $3)`, sid, ip, userAgent); err != nil {
+			return err
+		}
+		return tx.Commit()
 	} else {
-		rec := s.resets[tokenHash]
-		rec.Used = true
-		s.resets[tokenHash] = rec
+		if err = s.save(a, false); err != nil {
+			return err
+		}
+		for key, rec := range s.resets {
+			if rec.StudentID == sid {
+				rec.Used = true
+				s.resets[key] = rec
+			}
+		}
 		s.pwdAudits = append(s.pwdAudits, PasswordAuditLog{
 			ID:        len(s.pwdAudits) + 1,
 			StudentID: sid,
@@ -288,8 +331,9 @@ func (s *Accounts) ListNotifications(recipientID string, limit int) ([]Notificat
 
 	if s.db != nil {
 		rows, err := s.db.Query(`
-SELECT id, recipient_id, event_type, title, message, link_tab, COALESCE(link_data, '{}'::jsonb), COALESCE(dedup_key, ''), is_read, created_at
-FROM arena_notifications
+SELECT id, recipient_id, event_type, title, message, link_tab, COALESCE(link_data, '{}'::jsonb), COALESCE(dedup_key, ''),
+((is_read AND recipient_id = $1) OR EXISTS (SELECT 1 FROM arena_notification_reads r WHERE r.notification_id = n.id AND r.recipient_id = $1)), created_at
+FROM arena_notifications n
 WHERE recipient_id = $1 OR recipient_id = 'ALL'
 ORDER BY created_at DESC
 LIMIT $2`, sid, limit)
@@ -315,6 +359,7 @@ LIMIT $2`, sid, limit)
 
 	for _, n := range s.notifications {
 		if n.RecipientID == sid || n.RecipientID == "ALL" || (sid == "ADMIN" && n.RecipientID == "ADMIN") {
+			n.IsRead = (n.IsRead && n.RecipientID == sid) || s.notificationReads[sid][n.ID]
 			list = append(list, n)
 			if !n.IsRead {
 				unreadCount++
@@ -335,14 +380,20 @@ func (s *Accounts) MarkNotificationRead(id, recipientID string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	sid := accountID(recipientID)
 	if s.db != nil {
-		_, err := s.db.Exec(`UPDATE arena_notifications SET is_read = true WHERE id = $1`, id)
+		_, err := s.db.Exec(`INSERT INTO arena_notification_reads(notification_id, recipient_id)
+SELECT id, $2 FROM arena_notifications WHERE id = $1 AND (recipient_id = $2 OR recipient_id = 'ALL')
+ON CONFLICT DO NOTHING`, id, sid)
 		return err
 	}
 
 	for i := range s.notifications {
-		if s.notifications[i].ID == id {
-			s.notifications[i].IsRead = true
+		if s.notifications[i].ID == id && (s.notifications[i].RecipientID == sid || s.notifications[i].RecipientID == "ALL") {
+			if s.notificationReads[sid] == nil {
+				s.notificationReads[sid] = map[string]bool{}
+			}
+			s.notificationReads[sid][id] = true
 			break
 		}
 	}
@@ -356,13 +407,18 @@ func (s *Accounts) MarkAllNotificationsRead(recipientID string) error {
 	sid := accountID(recipientID)
 
 	if s.db != nil {
-		_, err := s.db.Exec(`UPDATE arena_notifications SET is_read = true WHERE recipient_id = $1 OR recipient_id = 'ALL'`, sid)
+		_, err := s.db.Exec(`INSERT INTO arena_notification_reads(notification_id, recipient_id)
+SELECT id, $1 FROM arena_notifications WHERE recipient_id = $1 OR recipient_id = 'ALL'
+ON CONFLICT DO NOTHING`, sid)
 		return err
 	}
 
 	for i := range s.notifications {
 		if s.notifications[i].RecipientID == sid || s.notifications[i].RecipientID == "ALL" {
-			s.notifications[i].IsRead = true
+			if s.notificationReads[sid] == nil {
+				s.notificationReads[sid] = map[string]bool{}
+			}
+			s.notificationReads[sid][s.notifications[i].ID] = true
 		}
 	}
 	return nil
@@ -421,6 +477,16 @@ func (s *Accounts) UpdateTeamProfile(p TeamProfile) error {
 	defer s.mu.Unlock()
 
 	p.StudentID = accountID(p.StudentID)
+	account, err := s.get(p.StudentID)
+	if err != nil || account.Deleted {
+		return ErrAccountMissing
+	}
+	if len(p.CaptainName) > 256 || len(p.University) > 256 || len(p.Bio) > 2000 || len(p.Members) > 10 {
+		return errors.New("Hồ sơ quá dài: tối đa 10 thành viên và 2.000 byte giới thiệu.")
+	}
+	if p.PreferredLanguage != "" && p.PreferredLanguage != "PYTHON" && p.PreferredLanguage != "CPP" {
+		return errors.New("Ngôn ngữ không hợp lệ.")
+	}
 	p.TeamName = strings.TrimSpace(p.TeamName)
 	if p.TeamName == "" {
 		return errors.New("Tên đội không được để trống.")
@@ -439,7 +505,9 @@ func (s *Accounts) UpdateTeamProfile(p TeamProfile) error {
 	// Cập nhật tên đội trong Account
 	if a, err := s.get(p.StudentID); err == nil && !a.Deleted {
 		a.TeamName = p.TeamName
-		_ = s.save(a, false)
+		if err := s.save(a, false); err != nil {
+			return err
+		}
 	}
 
 	membersJSON, _ := json.Marshal(p.Members)

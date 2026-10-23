@@ -331,6 +331,10 @@ func (h *AccountsHandler) ForgotPassword(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": "Vui lòng nhập Mã sinh viên của bạn."})
 		return
 	}
+	if requestSession(c).Role != "ADMIN" {
+		c.JSON(200, gin.H{"status": "SUCCESS", "message": "Liên hệ ban tổ chức để xác minh danh tính và nhận mã đặt lại mật khẩu có hiệu lực 15 phút."})
+		return
+	}
 	token, err := h.Store.RequestPasswordReset(req.StudentID, c.ClientIP(), c.Request.UserAgent())
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": "Không tìm thấy tài khoản với Mã sinh viên này."})
@@ -388,21 +392,32 @@ func (h *AccountsHandler) GetNotifications(c *gin.Context) {
 }
 
 func (h *AccountsHandler) ReadNotification(c *gin.Context) {
-	recipientID := "ALL"
-	if sVal, exists := c.Get("session"); exists {
-		if s, ok := sVal.(auth.Session); ok && s.StudentID != "" {
-			recipientID = s.StudentID
-		}
+	session := requestSession(c)
+	if session.Role != "ADMIN" && (session.Role != "TEAM" || session.StudentID == "") {
+		c.JSON(401, gin.H{"detail": "Bạn cần đăng nhập để đánh dấu thông báo."})
+		return
+	}
+	recipientID := session.StudentID
+	if session.Role == "ADMIN" {
+		recipientID = "ADMIN"
 	}
 	var req struct {
 		ID  string `json:"id"`
 		All bool   `json:"all"`
 	}
-	_ = c.ShouldBindJSON(&req)
+	if c.ShouldBindJSON(&req) != nil || (!req.All && req.ID == "") {
+		c.JSON(400, gin.H{"detail": "Chọn thông báo cần đánh dấu đã đọc."})
+		return
+	}
+	var err error
 	if req.All {
-		_ = h.Store.MarkAllNotificationsRead(recipientID)
+		err = h.Store.MarkAllNotificationsRead(recipientID)
 	} else if req.ID != "" {
-		_ = h.Store.MarkNotificationRead(req.ID, recipientID)
+		err = h.Store.MarkNotificationRead(req.ID, recipientID)
+	}
+	if err != nil {
+		c.JSON(503, gin.H{"detail": "Chưa lưu được trạng thái thông báo. Hãy thử lại."})
+		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "SUCCESS"})
 }
@@ -459,6 +474,11 @@ func (h *AccountsHandler) GetTeamProfile(c *gin.Context) {
 }
 
 func (h *AccountsHandler) UpdateTeamProfile(c *gin.Context) {
+	session := requestSession(c)
+	if session.Role != "ADMIN" && (session.Role != "TEAM" || session.StudentID == "") {
+		c.JSON(401, gin.H{"detail": "Bạn cần đăng nhập để cập nhật hồ sơ."})
+		return
+	}
 	var p repository.TeamProfile
 	if err := c.ShouldBindJSON(&p); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": "Dữ liệu hồ sơ không hợp lệ."})
@@ -474,6 +494,14 @@ func (h *AccountsHandler) UpdateTeamProfile(c *gin.Context) {
 	if p.StudentID == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{"detail": "Bạn cần đăng nhập để cập nhật hồ sơ."})
 		return
+	}
+	if session.Role != "ADMIN" {
+		old, err := h.Store.GetTeamProfile(p.StudentID)
+		if err != nil {
+			c.JSON(400, gin.H{"detail": "Không tìm thấy hồ sơ đội."})
+			return
+		}
+		p.Achievements = old.Achievements
 	}
 	if err := h.Store.UpdateTeamProfile(p); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})

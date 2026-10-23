@@ -581,7 +581,7 @@ class Database:
     @staticmethod
     def build_bracket_matches(num_teams: int) -> dict:
         import math
-        if num_teams < 4 or (num_teams & (num_teams - 1)) != 0:
+        if type(num_teams) is not int or num_teams < 4 or num_teams > 128 or (num_teams & (num_teams - 1)) != 0:
             raise ValueError("Số lượng đội phải là lũy thừa của 2 (ví dụ: 4, 8, 16, 32...)!")
         
         k = int(math.log2(num_teams))
@@ -727,7 +727,7 @@ class Database:
 
     @staticmethod
     def ensure_tournament_editable(tournament: dict):
-        if any(match.get("rounds_history") or match.get("battle_running")
+        if any(match.get("rounds_history") or match.get("battle_running") or match.get("status") == "COMPLETED"
                for match in tournament.get("matches", {}).values()):
             raise ValueError("Giải đã bắt đầu thi đấu. Không thể thay đổi đội hoặc xếp lại nhánh đấu vì sẽ làm mất kết quả.")
 
@@ -798,6 +798,8 @@ class Database:
         tourn["teams"] = []
         for i in range(num_teams):
             name, sid, uni = demo_pool[i % len(demo_pool)]
+            if i >= len(demo_pool):
+                name, sid = f"{name}_{i + 1}", f"DEMO-{i + 1:04d}"
             tourn["teams"].append({
                 "seed": i + 1,
                 "bot_id": f"bot_{sid}",
@@ -969,6 +971,13 @@ class Database:
         if not team:
             raise ValueError(f"Không tìm thấy đội có MSSV '{student_id}'.")
 
+        affected = [m for m in tourn.get("matches", {}).values()
+                    if m.get("status") != "COMPLETED" and any(
+                        str((m.get(side) or {}).get("student_id", "")).strip().upper() == sid_clean
+                        for side in ("team_a", "team_b"))]
+        if any(m.get("battle_running") for m in affected):
+            raise ValueError("Chờ hiệp đang chạy kết thúc trước khi loại đội.")
+
         team["disqualified"] = True
         team["disqualify_reason"] = reason
 
@@ -980,16 +989,16 @@ class Database:
                     slot["disqualified"] = True
                     slot["disqualify_reason"] = reason
             # Nếu trận chưa thi đấu mà một đội bị loại, xử thắng cho đội còn lại
-            if not m.get("rounds_history") and m.get("status") != "COMPLETED":
+            if m.get("status") != "COMPLETED":
                 t_a = m.get("team_a")
                 t_b = m.get("team_b")
                 if t_a and t_a.get("disqualified") and t_b and not t_b.get("disqualified"):
-                    m["status"] = "COMPLETED"
-                    m["winner"] = "team_b"
+                    t_a["rounds_won"], t_b["rounds_won"] = 0, 3
+                    self.complete_bracket_match(tourn, m)
                     m["win_reason"] = f"Đội {t_a.get('team_name')} bị loại ({reason})."
                 elif t_b and t_b.get("disqualified") and t_a and not t_a.get("disqualified"):
-                    m["status"] = "COMPLETED"
-                    m["winner"] = "team_a"
+                    t_a["rounds_won"], t_b["rounds_won"] = 3, 0
+                    self.complete_bracket_match(tourn, m)
                     m["win_reason"] = f"Đội {t_b.get('team_name')} bị loại ({reason})."
 
         self.save_tournaments_to_file()
@@ -1327,6 +1336,17 @@ def decide_move(game_state):
         match = tourn["matches"].get(match_id)
         if not match:
             raise ValueError("Không tìm thấy trận đấu.")
+        if match.get("battle_running"):
+            raise ValueError("Chờ hiệp đang chạy kết thúc trước khi đặt lại trận.")
+        next_match = tourn["matches"].get(match.get("next_match_id"))
+        if next_match:
+            if next_match.get("battle_running") or next_match.get("rounds_history") or next_match.get("submissions_history") or next_match.get("status") == "COMPLETED":
+                raise ValueError("Nhánh tiếp theo đã có bài nộp hoặc kết quả. Không thể đặt lại trận trước đó.")
+            next_match[match.get("next_slot", "team_a")] = None
+            next_match["status"] = "WAITING"
+            next_match["all_teams_ready"] = False
+        tourn["champion"] = None
+        tourn["status"] = "RUNNING"
         
         match["current_round_idx"] = 1
         match["max_rounds"] = 5
@@ -1338,6 +1358,7 @@ def decide_move(game_state):
         match["intermission_ends_at"] = None
         match["winner"] = None
         match["winner_name"] = None
+        match.pop("admin_decision", None)
         if match.get("team_a"):
             match["team_a"]["rounds_won"] = 0
             match["team_a"]["hp"] = 100
@@ -1412,7 +1433,7 @@ def decide_move(game_state):
         if role.upper() in ["ADMIN", "REFEREE"]:
             return subs
         
-        # Lọc cho tuyển thủ (Xem bài nộp của đội mình hoặc tất cả bài nộp trong trận)
+        # Only return the participant's own submissions.
         filtered = []
         for s in subs:
             if role.upper() == "TEAM_A" and s.get("side") == "team_a":
@@ -1421,9 +1442,7 @@ def decide_move(game_state):
                 filtered.append(s)
             elif student_id and str(s.get("student_id", "")).strip().lower() == str(student_id).strip().lower():
                 filtered.append(s)
-            elif not student_id or role.upper() in ["TEAM", "GUEST"]:
-                filtered.append(s)
-        return filtered if filtered else subs
+        return filtered
 
     def get_round_replay(self, tournament_id: str, match_id: str, round_idx: int) -> dict:
         tourn = self.tournaments.get(tournament_id)

@@ -94,6 +94,9 @@ func (h *MatchHandler) ValidateCode(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": "Mã lệnh không hợp lệ"})
 		return
 	}
+	if !validBotPayload(c, req, false) {
+		return
+	}
 	result, err := h.service.ValidateCode(req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
@@ -377,9 +380,12 @@ func (h *MatchHandler) SubmitDraftCode(c *gin.Context) {
 		return
 	}
 	var req map[string]interface{}
-	_ = c.ShouldBindJSON(&req)
-	if req == nil {
-		req = make(map[string]interface{})
+	if c.ShouldBindJSON(&req) != nil || req == nil {
+		c.JSON(400, gin.H{"detail": "Dữ liệu nộp bài không hợp lệ."})
+		return
+	}
+	if !validBotPayload(c, req, true) {
+		return
 	}
 	if session, ok := sessionFromContext(c); ok && session.Role != "ADMIN" {
 		req["side"] = session.Side
@@ -393,6 +399,9 @@ func (h *MatchHandler) SubmitDraftCode(c *gin.Context) {
 		return
 	}
 	if session, ok := sessionFromContext(c); ok && session.Role != "ADMIN" {
+		if tournament, ok := res["tournament"].(map[string]interface{}); ok {
+			res["tournament"] = redactTournament(tournament, session)
+		}
 		if match, ok := res["match"].(map[string]interface{}); ok {
 			res["match"] = redactMatch(match, matchID, session)
 		}
@@ -410,9 +419,12 @@ func (h *MatchHandler) SubmitCode(c *gin.Context) {
 		return
 	}
 	var req map[string]interface{}
-	_ = c.ShouldBindJSON(&req)
-	if req == nil {
-		req = make(map[string]interface{})
+	if c.ShouldBindJSON(&req) != nil || req == nil {
+		c.JSON(400, gin.H{"detail": "Dữ liệu nộp bài không hợp lệ."})
+		return
+	}
+	if !validBotPayload(c, req, false) {
+		return
 	}
 	if session, ok := sessionFromContext(c); ok && session.Role != "ADMIN" {
 		req["side"] = session.Side
@@ -436,6 +448,9 @@ func (h *MatchHandler) SubmitCode(c *gin.Context) {
 		return
 	}
 	if session, ok := sessionFromContext(c); ok && session.Role != "ADMIN" {
+		if tournament, ok := res["tournament"].(map[string]interface{}); ok {
+			res["tournament"] = redactTournament(tournament, session)
+		}
 		if match, ok := res["match"].(map[string]interface{}); ok {
 			res["match"] = redactMatch(match, matchID, session)
 		}
@@ -633,9 +648,7 @@ func (h *MatchHandler) PracticeMatch(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": "Dữ liệu chạy thử không hợp lệ."})
 		return
 	}
-	code, _ := req["code_content"].(string)
-	if len(code) == 0 || len(code) > 65536 {
-		c.JSON(http.StatusBadRequest, gin.H{"detail": "Mã bot phải có nội dung và không quá 64 KB."})
+	if !validBotPayload(c, req, false) {
 		return
 	}
 	res, err := h.service.PracticeMatch(req)

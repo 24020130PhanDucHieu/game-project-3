@@ -42,7 +42,7 @@ func RateLimitMiddleware() gin.HandlerFunc {
 			limit = 120
 			bucket = "write"
 		}
-		if strings.HasSuffix(c.Request.URL.Path, "/login") || strings.HasSuffix(c.Request.URL.Path, "/auth") {
+		if strings.HasSuffix(c.Request.URL.Path, "/login") || strings.HasSuffix(c.Request.URL.Path, "/auth") || strings.HasSuffix(c.Request.URL.Path, "/reset-password") || strings.HasSuffix(c.Request.URL.Path, "/forgot-password") {
 			limit = 10
 			bucket = "auth"
 			if c.Request.Body != nil {
@@ -78,7 +78,7 @@ func RateLimitMiddleware() gin.HandlerFunc {
 			if len(rateState.clients) >= 50000 {
 				rateState.Unlock()
 				c.Header("Retry-After", "60")
-				c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"detail": "Rate limit capacity reached. Retry in 60 seconds."})
+				c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"detail": "Hệ thống đang bận. Vui lòng thử lại sau 60 giây."})
 				return
 			}
 		}
@@ -92,7 +92,7 @@ func RateLimitMiddleware() gin.HandlerFunc {
 		rateState.Unlock()
 		if !allowed {
 			c.Header("Retry-After", "60")
-			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"detail": "Rate limit exceeded. Retry in 60 seconds."})
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"detail": "Bạn thao tác quá nhanh. Vui lòng thử lại sau 60 giây."})
 			return
 		}
 		c.Next()

@@ -50,7 +50,21 @@ function renderAccountRows() {
     remove.className = 'btn-outline'; remove.textContent = 'Xóa'; remove.type = 'button';
     remove.style.marginLeft = '8px'; remove.style.color = '#dc2626';
     remove.onclick = () => deleteRegisteredAccount(account, remove);
-    actions.append(add, remove); row.appendChild(actions); body.appendChild(row);
+    const recover = document.createElement('button');
+    recover.className = 'btn btn-outline'; recover.type = 'button'; recover.textContent = 'Cấp mã khôi phục';
+    recover.onclick = async () => {
+      if (!await confirmAction(`Đã xác minh danh tính đội ${account.team_name} (${account.student_id})? Mã khôi phục cho phép đổi mật khẩu đội.`, {title:'Cấp mã khôi phục', confirmText:'Đã xác minh'})) return;
+      recover.disabled = true;
+      try {
+        const response = await fetch(`${API_BASE}/api/auth/forgot-password`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({student_id:account.student_id})});
+        const data = await response.json();
+        if (!response.ok || !data.reset_token) throw new Error(data.detail || 'Không cấp được mã.');
+        await showAppActionDialog({title:'Mã khôi phục dùng một lần', message:`Gửi riêng cho đội sau khi xác minh. Hiệu lực 15 phút. Mã: ${data.reset_token}`, confirmText:'Đã ghi nhận'});
+      } catch (error) { notifyError('Không cấp được mã', error.message); }
+      finally { recover.disabled = false; }
+    };
+    actions.classList.add('table-actions');
+    actions.append(add, recover, remove); row.appendChild(actions); body.appendChild(row);
   }
 }
 

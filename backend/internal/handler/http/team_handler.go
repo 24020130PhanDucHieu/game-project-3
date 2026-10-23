@@ -2,6 +2,9 @@ package http
 
 import (
 	"net/http"
+	"regexp"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 	"project-tuan3/internal/service"
@@ -22,6 +25,17 @@ func (h *TeamHandler) AddTeam(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
 		return
 	}
+	name, nameOK := req["team_name"].(string)
+	sid, idOK := req["student_id"].(string)
+	university, _ := req["university"].(string)
+	if !nameOK || !idOK || strings.TrimSpace(name) == "" || utf8.RuneCountInString(name) > 128 || !regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`).MatchString(strings.TrimSpace(sid)) || utf8.RuneCountInString(university) > 128 {
+		c.JSON(400, gin.H{"detail": "Tên đội/trường tối đa 128 ký tự. Mã sinh viên gồm tối đa 64 chữ, số, dấu gạch ngang hoặc gạch dưới."})
+		return
+	}
+	if university == "" {
+		university = "Khối Kỹ Thuật"
+	}
+	req = map[string]interface{}{"team_name": strings.TrimSpace(name), "student_id": strings.TrimSpace(sid), "university": university}
 
 	res, err := h.service.MutateTournament(id, "add-team", req)
 	if err != nil {

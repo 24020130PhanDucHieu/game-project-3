@@ -207,10 +207,13 @@ function setupStudioControls() {
     }
   });
   submit.addEventListener("click", async () => {
+    if (submit.disabled) return;
     if (!["TEAM","ADMIN"].includes(currentAppRole)) { showLoginPage(); return; }
     if (!currentActiveMatchId || sessionStorage.getItem("matchExplicitlySelected") !== "true") { notifyWarning("Chưa chọn trận","Hãy chọn trận trên bảng đấu trước khi nộp bot."); return; }
     const tournamentId=currentTournamentId, matchId=currentActiveMatchId, match=currentTournamentData?.matches?.[currentActiveMatchId], side=currentStudioSide;
     if (!match?.[side]) { notifyWarning("Chưa có đội", "Hãy chọn trận của đội bạn."); return; }
+    const blocked = stageBlockReason(match) || (match.status === 'COMPLETED' || match.battle_running || match.round_status === 'ROUND_FINISHED' ? 'Hiệp đã khóa nhận bài. Chờ hiệp tiếp theo.' : '') || (match[side].disqualified ? 'Đội đã bị loại khỏi giải.' : '');
+    if (blocked) { notifyWarning('Chưa thể nộp bài', blocked); return; }
     const code=editor.value.trim(), round=match.current_round_idx || 1;
     if (!code) { notifyWarning("Thiếu mã lệnh", "Hãy viết mã bot trước khi nộp."); return; }
     saveStudioDraft(); submit.disabled=true;
@@ -221,8 +224,8 @@ function setupStudioControls() {
         await arenaOutbox.submit(`/api/tournaments/${tournamentId}/matches/${matchId}/code`,payload);
       }else{
         const response=await fetch(`${API_BASE}/api/tournaments/${tournamentId}/matches/${matchId}/code`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-        const result=await response.json();if(!response.ok)throw new Error(result.detail||'Submission failed');
-        notifyInfo('Server received submission',result.is_valid?'Bot valid':result.validation?.error_message||'Bot invalid');
+        const result=await response.json();if(!response.ok)throw new Error(result.detail||'Không nộp được bài');
+        notifyInfo('Máy chủ đã nhận bài',result.is_valid?'Mã bot hợp lệ':result.validation?.error_message||'Mã bot chưa hợp lệ');
         await loadActiveTournament(tournamentId);
       }
     } catch (error) { notifyError("Lỗi nộp mã lệnh",error.message); }

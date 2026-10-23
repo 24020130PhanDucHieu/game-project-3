@@ -226,8 +226,22 @@ func (s *TournamentService) MutateTournament(tournamentID, action string, params
 		matches, _ := current["matches"].(map[string]interface{})
 		matchID, _ := params["match_id"].(string)
 		match, _ := matches[matchID].(map[string]interface{})
-		if err := CheckStageRulePublished(current, match, time.Now()); err != nil {
+		if match == nil {
+			return nil, errors.New("Không tìm thấy trận đấu.")
+		}
+		if err := CanStartStage(current, match, time.Now()); err != nil {
 			return nil, err
+		}
+		if match["status"] == "COMPLETED" || match["battle_running"] == true || match["round_status"] == "BATTLE_RUNNING" || match["round_status"] == "ROUND_FINISHED" {
+			return nil, errors.New("Hiệp đã khóa nhận bài. Hãy chờ hiệp tiếp theo.")
+		}
+		side, _ := params["side"].(string)
+		if side == "" {
+			side = "team_a"
+		}
+		team, _ := match[side].(map[string]interface{})
+		if (side != "team_a" && side != "team_b") || team == nil || team["disqualified"] == true {
+			return nil, errors.New("Đội không đủ điều kiện nộp bài trong trận này.")
 		}
 	}
 	if action == "set-rule" {
@@ -264,6 +278,9 @@ func (s *TournamentService) MutateTournament(tournamentID, action string, params
 		teamB, _ := runningMatch["team_b"].(map[string]interface{})
 		if teamA["code_valid"] != true || teamB["code_valid"] != true {
 			return nil, errors.New("cả hai đội phải nộp mã hợp lệ trước khi bắt đầu")
+		}
+		if teamA["disqualified"] == true || teamB["disqualified"] == true {
+			return nil, errors.New("Đội đã bị loại; cần xử lý kết quả trước khi thi đấu.")
 		}
 		previousRoundStatus = runningMatch["round_status"]
 		runningMatch["round_status"] = "BATTLE_RUNNING"

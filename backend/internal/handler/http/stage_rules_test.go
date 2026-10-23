@@ -9,7 +9,7 @@ import (
 )
 
 func TestFogRedactsOpponentAcrossBoardsAndLogsWithoutMutatingStorage(t *testing.T) {
-	for _, id := range []string{"COMBO_4", "COMBO_5", "COMBO_6", "COMBO_7", "RULE_FOG"} {
+	for _, id := range []string{"COMBO_4", "COMBO_5", "COMBO_6", "COMBO_7", "COMBO_20", "COMBO_31", "RULE_FOG"} {
 		for _, own := range []string{"team_a", "team_b", ""} {
 			original := map[string]interface{}{"stage_rule": id, "tie_break_seed": "secret", "team_a_move": "ROCK", "team_b_move": "PAPER",
 				"board_steps": []interface{}{map[string]interface{}{

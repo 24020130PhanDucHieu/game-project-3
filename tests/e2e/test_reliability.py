@@ -388,6 +388,9 @@ def run(arena):
         api("GET", "/api/session", token=admin, expected=401)
         assert not errors, errors
         check("active tournament deletion, empty-state recovery, logout and zero browser exceptions")
+        # Release each context's sockets and service workers before browser shutdown.
+        for context in browser.contexts:
+            context.close()
         browser.close()
 
 

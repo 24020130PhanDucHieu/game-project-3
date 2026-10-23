@@ -12,6 +12,7 @@ function showToast(type, title, message = "", duration = 4000) {
 
   const toast = document.createElement("div");
   toast.className = `toast-item toast-${type}`;
+  toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
 
   const badgeText = type === "success" ? "THÀNH CÔNG" : (type === "error" ? "LỖI" : (type === "warning" ? "CẢNH BÁO" : "THÔNG BÁO"));
 
@@ -30,6 +31,7 @@ function showToast(type, title, message = "", duration = 4000) {
   }
 
   container.appendChild(toast);
+  while (container.children.length > 4) container.firstElementChild.remove();
 
   if (duration > 0) {
     setTimeout(() => {

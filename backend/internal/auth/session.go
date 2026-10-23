@@ -20,12 +20,14 @@ type Session struct {
 	StudentID    string    `json:"student_id,omitempty"`
 	TeamName     string    `json:"team_name,omitempty"`
 	ExpiresAt    time.Time `json:"expires_at"`
+	IssuedAt     time.Time `json:"issued_at,omitempty"`
 	Nonce        string    `json:"nonce"`
 }
 
 type Manager struct {
 	ValidateStudent func(string) bool
 	CheckStudent    func(string) (bool, error)
+	CheckSession    func(Session) (bool, error)
 	mu              sync.RWMutex
 	key             []byte
 	revoked         map[string]time.Time
@@ -61,6 +63,7 @@ func (m *Manager) Create(session Session) (string, error) {
 	}
 	session.Nonce = base64.RawURLEncoding.EncodeToString(raw[:])
 	session.ExpiresAt = time.Now().Add(7 * 24 * time.Hour)
+	session.IssuedAt = time.Now().UTC()
 	if strings.HasPrefix(session.Role, "TEAM") {
 		session.Role = "TEAM"
 	}
@@ -110,6 +113,12 @@ func (m *Manager) GetChecked(token string) (Session, bool, error) {
 		}
 		if !valid {
 			return Session{}, false, nil
+		}
+	}
+	if !revoked && session.Role == "TEAM" && m.CheckSession != nil {
+		valid, err := m.CheckSession(session)
+		if err != nil || !valid {
+			return Session{}, false, err
 		}
 	}
 	return session, !revoked, nil

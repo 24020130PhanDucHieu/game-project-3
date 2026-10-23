@@ -44,6 +44,9 @@ jobs:
       - run: python -m unittest discover -s tests/unit -p 'test_*.py'
       - run: python -m unittest discover -s tests/security -p 'test_*.py'
       - run: node tests/unit/test_offline_submissions.cjs
+      - run: node tests/unit/test_api_guards.cjs
+      - run: go vet ./...
+        working-directory: backend
       - run: python scripts/build_frontend.py
       - name: Check browser test dependencies
         run: python -c "import requests; from playwright.sync_api import sync_playwright"
@@ -61,6 +64,9 @@ jobs:
         env:
           ARENA_TEST_SERVER: ${{ github.workspace }}/backend/bin/arena-verification
       - run: python tests/e2e/test_reliability.py
+        env:
+          ARENA_TEST_SERVER: ${{ github.workspace }}/backend/bin/arena-verification
+      - run: python tests/e2e/test_portal_integrity.py
         env:
           ARENA_TEST_SERVER: ${{ github.workspace }}/backend/bin/arena-verification
       - name: Verify read-only production judge image

@@ -17,10 +17,12 @@
       <button class="btn btn-green admin-only" id="btn-arena-start-match" style="display: none;">
         ▶ Bắt Đầu Hiệp
       </button>
+      <button class="btn btn-outline admin-only" id="btn-incident-correction" style="display:none" type="button" onclick="openMatchCorrection()">Xử lý sự cố</button>
     </div>
   </div>
 
   <p id="match-rule-summary" class="match-rule-summary" aria-live="polite"></p>
+  <p id="submission-window-notice" class="portal-status" role="status" hidden></p>
   <div class="match-teams-score-board">
 
     <div class="match-team-col red" id="arena-card-red">
@@ -29,8 +31,8 @@
 
         </span>
         <div>
-          <strong class="team-col-name" id="arena-name-red">RedBot</strong>
-          <div class="team-col-sid" id="arena-sid-red">MSSV: K69A001</div>
+          <strong class="team-col-name" id="arena-name-red">Chờ đội đỏ</strong>
+          <div class="team-col-sid" id="arena-sid-red">MSSV: —</div>
         </div>
       </div>
       <div class="team-status-pills">
@@ -40,8 +42,8 @@
     </div>
 
     <div class="match-center-score-cluster">
-      <div class="center-score-number" id="match-score-summary">2 - 1</div>
-      <div class="center-round-step" id="arena-round-indicator">ROUND 1 / 5</div>
+      <div class="center-score-number" id="match-score-summary">0 - 0</div>
+      <div class="center-round-step" id="arena-round-indicator">HIỆP 1 / 5</div>
 
       <div class="round-step-pills-row" id="round-step-pills">
         <div class="step-pill current" data-round="1">Round 1</div>
@@ -56,8 +58,8 @@
     <div class="match-team-col blue" id="arena-card-blue">
       <div class="team-col-header">
         <div>
-          <strong class="team-col-name" id="arena-name-blue">BlueBot</strong>
-          <div class="team-col-sid" id="arena-sid-blue">MSSV: K69A002</div>
+          <strong class="team-col-name" id="arena-name-blue">Chờ đội xanh</strong>
+          <div class="team-col-sid" id="arena-sid-blue">MSSV: —</div>
         </div>
         <span class="team-circle-avatar blue">
 

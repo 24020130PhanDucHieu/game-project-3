@@ -134,21 +134,21 @@
           <label for="forgot-sid">Mã sinh viên của bạn</label>
           <input class="login-input-field" id="forgot-sid" placeholder="Nhập MSSV đã đăng ký (VD: 24020001)" required type="text">
         </div>
-        <p style="font-size: 12px; color: #64748b; margin: 4px 0 12px;">Mã xác thực một lần sẽ được cấp và có hiệu lực an toàn trong vòng 15 phút.</p>
+        <p class="text-muted">Ban tổ chức sẽ xác minh danh tính và cấp mã dùng một lần, có hiệu lực 15 phút. Chuẩn bị thẻ sinh viên khi liên hệ hỗ trợ.</p>
         <button class="btn-login-submit" id="btn-forgot-step1-submit" type="submit">
-          <span>Nhận mã xác thực</span>
+          <span>Tiếp tục</span>
         </button>
       </form>
 
       <!-- Bước 2: Nhập mã xác thực & Đặt lại mật khẩu mới -->
       <form id="form-forgot-step2" onsubmit="handleForgotStep2(event)" style="display: none; margin-top: 12px;">
         <div style="padding: 10px 14px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; font-size: 12.5px; color: #065f46; margin-bottom: 12px;">
-          Đã tạo mã xác thực thành công. Vui lòng nhập mã và mật khẩu mới bên dưới.
+          Nhập mã do ban tổ chức cấp sau khi xác minh danh tính và mật khẩu mới bên dưới.
         </div>
 
         <div class="login-input-group">
-          <label for="forgot-token">Mã xác thực (6 chữ số)</label>
-          <input class="login-input-field" id="forgot-token" placeholder="Ví dụ: 839201" required maxlength="16" type="text" style="font-family: var(--font-mono); letter-spacing: 2px;">
+          <label for="forgot-token">Mã khôi phục từ ban tổ chức</label>
+          <input class="login-input-field" id="forgot-token" placeholder="Dán mã khôi phục" required maxlength="64" autocomplete="one-time-code" type="text">
         </div>
 
         <div class="login-input-group">

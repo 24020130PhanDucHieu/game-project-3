@@ -70,7 +70,7 @@ function renderVisualBattleArena(match) {
   // Round indicator
   const roundEl = document.getElementById("arena-round-indicator");
   if (roundEl) {
-    roundEl.textContent = match.status === "COMPLETED" ? "CHUNG CUỘC" : `ROUND ${match.current_round_idx || 1} / ${match.max_rounds || 5}`;
+    roundEl.textContent = match.status === "COMPLETED" ? "CHUNG CUỘC" : `HIỆP ${match.current_round_idx || 1} / ${match.max_rounds || 5}`;
   }
 
   // Tên Đội Đỏ và Đội Xanh

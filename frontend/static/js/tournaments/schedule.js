@@ -17,11 +17,11 @@ function tournamentStages(tournament) {
 
 function stageBlockReason(match, tournament = currentTournamentData) {
   const rule = tournament?.stage_rules?.[match.round_level];
-  if (rule?.hidden || rule?.publish_at > Date.now()/1000) return 'Chờ công bố luật vòng đấu';
+  const now = typeof arenaNowSeconds === 'function' ? arenaNowSeconds() : Date.now()/1000;
+  if (rule?.hidden || rule?.publish_at > now) return 'Chờ công bố luật vòng đấu';
   if (Object.values(tournament?.matches || {}).some(previous => previous.round_level < match.round_level && previous.status !== 'COMPLETED')) return 'Chờ vòng trước hoàn tất';
   const window = tournament?.stage_schedule?.[match.round_level];
   if (!window) return '';
-  const now = Date.now() / 1000;
   if (now < window.starts_at) return 'Chưa đến giờ mở vòng';
   if (now >= window.ends_at) return 'Đã hết giờ vòng đấu';
   return '';

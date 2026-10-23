@@ -26,8 +26,8 @@ func TestPasswordResetFlowAndAuditLogs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RequestPasswordReset error: %v", err)
 	}
-	if len(token) != 6 {
-		t.Fatalf("Expected 6-digit token, got: %s", token)
+	if len(token) != 32 {
+		t.Fatalf("Expected 128-bit reset token, got length: %d", len(token))
 	}
 
 	// 2. Không cho đặt mật khẩu quá ngắn
