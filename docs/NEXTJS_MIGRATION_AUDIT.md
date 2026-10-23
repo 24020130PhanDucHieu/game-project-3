@@ -2,13 +2,13 @@
 
 ## Kết luận hiện tại
 
-Frontend chính hiện dùng Next.js theo cách chuyển đổi kết hợp: `app/page.tsx` chỉ mở `LivePortal`, chứa HTML và runtime nghiệp vụ thật sinh từ `frontend/templates` và `frontend/static`. CSS `reference-redesign.css` cung cấp giao diện theo mẫu đã chọn. Không dùng iframe, không dùng dữ liệu giả trong luồng phát hành.
+Frontend chính hiện dùng Next.js theo cách chuyển đổi kết hợp: `frontend/app/page.tsx` chỉ mở `LivePortal`, chứa HTML và runtime nghiệp vụ thật sinh từ `frontend-cu/templates` và `frontend-cu/static`. CSS `reference-redesign.css` cung cấp giao diện theo mẫu đã chọn. Không dùng iframe, không dùng dữ liệu giả trong luồng phát hành.
 
 Các component React mẫu còn giữ trong thư mục để tham khảo thiết kế, nhưng `ArenaApp` không được import vào trang chính. Bảng thiếu sót bên dưới ghi lại tình trạng **bản prototype React**, không phải các luồng đang dùng trong `LivePortal`. Chưa thể coi việc chuyển đổi là viết lại toàn bộ nghiệp vụ bằng React.
 
 Lệnh phát hành: `python scripts/build_frontend.py`. Cần Python, Node.js 22 và npm. Script cài dependency theo `package-lock.json` nếu chưa có, kiểm tra TypeScript, build Next static export rồi xuất `frontend/dist`. Giữ đường dẫn output này cho Cloudflare. Go ưu tiên phục vụ `frontend/dist` nếu có; nếu chưa build sẽ dùng template nguồn.
 
-Lệnh phát triển Next: chạy `npm run dev` trong `arena-ottv-2-redesign`, backend tại cổng 8080. API và WebSocket được chuyển tiếp tới Go. Sửa chức năng thực tế trong `frontend/`, chạy lại prepare/build để đồng bộ; không chỉnh các bản sao trong `public/static`, `public/assets` hoặc `generated`.
+Lệnh phát triển Next: chạy `npm run dev` trong `frontend`, backend tại cổng 8080. API và WebSocket được chuyển tiếp tới Go. Sửa chức năng thực tế trong `frontend/` và legacy source trong `frontend-cu/`, chạy lại prepare/build để đồng bộ; không chỉnh các bản sao trong `frontend/public/static`, `frontend/public/assets` hoặc `frontend/generated`.
 
 Service worker của bản static export lưu cả Next chunks và runtime vào cache có mã phiên bản theo build; API, token và bài nộp không được cache bởi service worker. Hàng đợi nộp bài vẫn dùng runtime bền vững hiện có. Máy chưa từng tải đủ tài nguyên khi online không thể tự mở lần đầu khi offline.
 

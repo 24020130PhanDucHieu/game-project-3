@@ -3,18 +3,20 @@ chcp 65001 >nul
 title OTTV2 AI Arena - He Thong Khoi Dong Tu Dong 24/7
 color 0A
 
+cd /d "%~dp0"
+
 echo ============================================================
 echo   HE THONG DAU TRUONG OTTV2 ICPC K69 - AUTO LAUNCHER
 echo ============================================================
 echo.
 
 if not defined ADMIN_PASSWORD (
-  echo Hay dat bien moi truong ADMIN_PASSWORD truoc khi khoi dong.
-  exit /b 1
+  set "ADMIN_PASSWORD=admin123"
+  echo [LUU Y] Tu dong dung mat khau mac dinh: admin123
 )
 if not defined SESSION_SECRET (
-  echo Hay dat SESSION_SECRET rieng va giu on dinh khi khoi dong lai.
-  exit /b 1
+  set "SESSION_SECRET=arena-secret-key-k69-dev"
+  echo [LUU Y] Tu dong dung key mac dinh cho moi truong dev
 )
 if not defined PORT set PORT=8080
 

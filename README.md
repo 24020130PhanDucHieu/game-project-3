@@ -89,11 +89,11 @@ project-tuan3/
 │   └── migrations/        # Migration cơ sở dữ liệu PostgreSQL
 ├── bot-runner/            # Python worker và engine chạy các trận đấu bot
 │   └── app/               # API, engine, matchmaker, repository và sandbox
-├── frontend/              # Giao diện web HTML, JavaScript, CSS và SDK
-│   ├── templates/         # Các template trang, partials và modal
-│   ├── static/            # JavaScript, CSS và hình ảnh nguồn
-│   ├── assets/            # SDK và tài nguyên frontend
-│   └── dist/              # Bản build frontend để triển khai tĩnh (git bỏ qua)
+├── frontend/              # Source giao diện Next.js chính và bản build deploy
+│   ├── app/                # App Router và layout
+│   ├── components/         # Thành phần giao diện Arena
+│   └── dist/               # Bản export tĩnh để triển khai (git bỏ qua)
+├── frontend-cu/           # Source frontend Vanilla JS legacy và template fallback
 ├── config/                # Cấu hình môi trường, reverse proxy và tunnel
 ├── database/              # Schema và dữ liệu JSON dùng khi phát triển local
 ├── deploy/                # Docker Compose, Dockerfile và cấu hình Render

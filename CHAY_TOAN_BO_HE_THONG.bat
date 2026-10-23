@@ -3,18 +3,20 @@ chcp 65001 >nul
 title BOT ARENA K69 - KHOI CHAY TOAN BO HE THONG (GO + NEXT.JS + PYTHON)
 color 0B
 
+cd /d "%~dp0"
+
 echo =====================================================================
 echo   BOT ARENA K69 - HE THONG KHOI DONG DONG BO TOAN DIEN (1-CLICK)
 echo =====================================================================
 echo.
 
 if not defined ADMIN_PASSWORD (
-  echo Hay dat bien moi truong ADMIN_PASSWORD truoc khi khoi dong.
-  exit /b 1
+  set "ADMIN_PASSWORD=admin123"
+  echo [LUU Y] Chua dat ADMIN_PASSWORD, tu dong dung mat khau mac dinh: admin123
 )
 if not defined SESSION_SECRET (
-  echo Hay dat SESSION_SECRET rieng va giu on dinh khi khoi dong lai.
-  exit /b 1
+  set "SESSION_SECRET=arena-secret-key-k69-dev"
+  echo [LUU Y] Chua dat SESSION_SECRET, tu dong dung key mac dinh cho moi truong dev
 )
 if not defined PORT set PORT=8080
 
@@ -32,7 +34,7 @@ timeout /t 2 /nobreak >nul
 
 :: 3. Khoi dong Next.js Redesign Frontend (Cong 3000)
 echo [3/3] Dang khoi dong Next.js Arena Redesign Frontend (Cong 3000)...
-start "Next.js Arena UI (3000)" cmd /k "cd arena-ottv-2-redesign && npm run dev"
+start "Next.js Arena UI (3000)" cmd /k "cd frontend && npm run dev"
 
 timeout /t 3 /nobreak >nul
 

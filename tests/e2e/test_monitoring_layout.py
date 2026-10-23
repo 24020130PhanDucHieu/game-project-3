@@ -9,9 +9,9 @@ with sync_playwright() as p:
     page = browser.new_page()
     errors = []
     page.on("pageerror", lambda err: errors.append(str(err)))
-    page.set_content((ROOT / "frontend/templates/pages/admin.html").read_text(encoding="utf-8"))
+    page.set_content((ROOT / "frontend-cu/templates/pages/admin.html").read_text(encoding="utf-8"))
     page.add_script_tag(content="var currentAppRole='ADMIN'; var API_BASE='https://example.test';")
-    page.add_script_tag(content=(ROOT / "frontend/static/js/admin/accounts.js").read_text(encoding="utf-8"))
+    page.add_script_tag(content=(ROOT / "frontend-cu/static/js/admin/accounts.js").read_text(encoding="utf-8"))
     page.evaluate("""() => { window.fetch = async () => ({ok:true,json:async()=>({
       worker_pool:{status:'DEGRADED',ready:1,total:2,nodes:[{name:'Judge 1',status:'READY',host:'private',active:1,capacity:1,latency_ms:3}]},
       server:{cpu_cores:2,goroutines:10,memory_alloc_mb:8.5,uptime_seconds:60,gc_cycles:2},
@@ -30,7 +30,7 @@ with sync_playwright() as p:
     assert not errors, errors
     page.set_content('<div class="realtime-board-card"><div class="chessboard-9x9" id="realtime-chessboard-9x9">' + ''.join('<div class="board-cell"></div>' for _ in range(81)) + '</div></div>')
     for css in ["arena.css", "battle-presentation.css"]:
-        page.add_style_tag(content=(ROOT / "frontend/static/css" / css).read_text(encoding="utf-8"))
+        page.add_style_tag(content=(ROOT / "frontend-cu/static/css" / css).read_text(encoding="utf-8"))
     for width in [390, 768, 1440]:
         page.set_viewport_size({"width":width,"height":900})
         board = page.locator("#realtime-chessboard-9x9").bounding_box()

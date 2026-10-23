@@ -22,7 +22,7 @@ func RegisterFrontendRoutes(router *gin.Engine) bool {
 		}
 	}
 	var root string
-	for _, candidate := range []string{"frontend", "../frontend", "../../frontend"} {
+	for _, candidate := range []string{"frontend-cu", "../frontend-cu", "../../frontend-cu"} {
 		if info, err := os.Stat(filepath.Join(candidate, "templates", "index.html")); err == nil && !info.IsDir() {
 			root = candidate
 			break

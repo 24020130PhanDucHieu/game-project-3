@@ -8,7 +8,7 @@ Tài liệu này cung cấp kiến trúc triển khai thực tế trên môi tr�
 
 ### 1.1. Vai trò của Cloudflare trong hệ thống
 - **DNS Quản lý tập trung:** Phân giải tên miền Anycast toàn cầu với độ trễ <10ms.
-- **CDN Edge Caching:** Bộ nhớ đệm biên tự động lưu trữ tài nguyên tĩnh (`frontend/static/`, HTML, CSS, JS, Audio, SVG) và cache các request API GET có header `Cache-Control: public, max-age=1`. Giảm tải 80% lưu lượng truy cập tới máy chủ gốc (Origin Server).
+- **CDN Edge Caching:** Bộ nhớ đệm biên tự động lưu trữ tài nguyên tĩnh (`frontend/dist/`, HTML, CSS, JS, Audio, SVG) và cache các request API GET có header `Cache-Control: public, max-age=1`. Giảm tải 80% lưu lượng truy cập tới máy chủ gốc (Origin Server).
 - **WAF & DDoS Protection:** Chặn các cuộc tấn công Layer 7 HTTP Flood, Slowloris, và bảo vệ chống quét lỗ hổng bot độc hại.
 - **Cloudflare Rate Limiting:** Thiết lập giới hạn tại Edge biên (ví dụ: tối đa 300 reqs/phút trên mỗi IP người dùng) trước khi request chạm tới máy chủ.
 - **Cloudflare Zero Trust / Cloudflare Tunnel (`cloudflared`):**

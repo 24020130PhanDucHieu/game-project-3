@@ -10,13 +10,14 @@ import hashlib
 
 ROOT = Path(__file__).resolve().parents[1]
 FRONTEND = ROOT / "frontend"
+LEGACY_FRONTEND = ROOT / "frontend-cu"
 INCLUDE = re.compile(r'\{\{template\s+"([\w./-]+\.html)"\s+\.\}\}')
 
 
 def render_templates():
     templates = {}
-    for path in (FRONTEND / "templates").rglob("*.html"):
-        name = path.relative_to(FRONTEND / "templates").as_posix()
+    for path in (LEGACY_FRONTEND / "templates").rglob("*.html"):
+        name = path.relative_to(LEGACY_FRONTEND / "templates").as_posix()
         templates[name] = path.read_text(encoding="utf-8")
 
     def render(name, stack=()):
@@ -38,7 +39,7 @@ def build(destination):
     destination.mkdir(parents=True, exist_ok=True)
     # Remove only directories this builder owns, inside the explicit output folder.
     for directory in ("static", "assets"):
-        source = FRONTEND / directory
+        source = LEGACY_FRONTEND / directory
         target = destination / directory
         if target.is_symlink() or target.resolve() != destination / directory:
             raise ValueError(f"Output directory must not redirect outside its build folder: {target}")
@@ -49,7 +50,7 @@ def build(destination):
     temporary = destination / "index.html.tmp"
     temporary.write_text(html, encoding="utf-8")
     temporary.replace(destination / "index.html")
-    shutil.copyfile(FRONTEND / 'sw.js', destination / 'sw.js')
+    shutil.copyfile(LEGACY_FRONTEND / 'sw.js', destination / 'sw.js')
     # Exact query strings match the versioned script/style requests in the HTML.
     urls = {'/', '/index.html'}
     urls.update(re.findall(r'(?:src|href)="(/(?:static|assets)/[^"?#]+(?:\?[^"#]*)?)"', html))
@@ -61,7 +62,7 @@ def build(destination):
 
 
 def build_next(destination):
-    app = ROOT / 'arena-ottv-2-redesign'
+    app = FRONTEND
     destination = destination.resolve()
     if destination != FRONTEND / 'dist':
         raise ValueError('Next release output must be frontend/dist')

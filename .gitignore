@@ -67,14 +67,15 @@ tests/profile-*.png
 Thumbs.db
 
 # Next frontend build products; preserve its source utilities.
-!arena-ottv-2-redesign/lib/
-!arena-ottv-2-redesign/lib/**
+!frontend/lib/
+!frontend/lib/**
 node_modules/
 .next/
-arena-ottv-2-redesign/out/
-arena-ottv-2-redesign/generated/
-arena-ottv-2-redesign/public/static/
-arena-ottv-2-redesign/public/assets/
-arena-ottv-2-redesign/public/sw.js
-arena-ottv-2-redesign/public/offline-assets.json
+frontend/out/
+frontend/generated/
+frontend/public/static/
+frontend/public/assets/
+frontend/public/sw.js
+frontend/public/offline-assets.json
+frontend/.next/
 *.tsbuildinfo

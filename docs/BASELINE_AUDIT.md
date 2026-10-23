@@ -7,7 +7,7 @@
 - `frontend/index.html`, `frontend/app.js`, `frontend/styles.css`: giao diện đang được phục vụ bởi Go.
 - `deploy/`: Docker Compose và Render blueprint.
 
-Các bản frontend module hóa trong `frontend/js`, `frontend/css`, `frontend/templates`, `frontend/pages` và `frontend/loader.js` đã được loại bỏ vì entrypoint hiện tại không tham chiếu chúng.
+Các bản frontend module hóa legacy trong `frontend-cu/js`, `frontend-cu/css`, `frontend-cu/templates`, `frontend-cu/pages` và `frontend-cu/loader.js` đã được loại bỏ vì entrypoint hiện tại không tham chiếu chúng.
 
 ## Đã gia cố
 
