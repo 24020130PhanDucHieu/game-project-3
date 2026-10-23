@@ -1,0 +1,7 @@
+{
+  "name": "game-project-3-deploy",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build_cloudflare.mjs"
+  }
+}

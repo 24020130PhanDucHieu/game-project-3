@@ -157,7 +157,7 @@ Go phục vụ bản build `frontend/dist/`. Mã nguồn bot mẫu ở `examples
 | :--- | :--- |
 | **Backend** | Go 1.26 · [Gin](https://github.com/gin-gonic/gin) · [Gorilla WebSocket](https://github.com/gorilla/websocket) |
 | **Bot Runner** | Python 3 · [FastAPI](https://fastapi.tiangolo.com/) · [Uvicorn](https://www.uvicorn.org/) · [Pydantic](https://docs.pydantic.dev/) |
-| **Frontend** | HTML5 · Vanilla JavaScript (không framework) · CSS3 · SVG inline |
+| **Frontend** | Next.js 16 · React 19 · TypeScript · Tailwind CSS |
 | **Database** | PostgreSQL (production) · JSON store (local) |
 | **Triển khai** | Docker · Docker Compose · Nginx · Cloudflare Tunnel · Render |
 
@@ -350,10 +350,10 @@ make docker-up
 ### Hosting tĩnh (Cloudflare Workers/Pages)
 
 ```powershell
-python scripts/build_frontend.py
+npm run build
 ```
 
-Đặt thư mục assets/publish là **`frontend/dist`**. Lệnh build ghép cùng các template mà Go sử dụng và chép JS, CSS, SDK sang thư mục này.
+Với Cloudflare Workers Builds, đặt thư mục gốc là repository root, **Build command** là `npm run build`, và **Deploy command** là `npx wrangler deploy`. `wrangler.jsonc` trỏ static assets tới `frontend/dist`; lệnh build xuất Next.js vào thư mục này. Workers Builds không tự chạy lệnh build khai báo trong Wrangler, vì vậy phải đặt Build command trong phần cài đặt của Cloudflare. Với Cloudflare Pages, dùng cùng Build command và đặt thư mục publish là `frontend/dist`.
 
 ### Triển khai tự động lên AWS EC2 (CI/CD & CLI)
 
