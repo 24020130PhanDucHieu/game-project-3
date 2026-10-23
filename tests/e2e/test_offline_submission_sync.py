@@ -31,6 +31,7 @@ def run():
             page.context.set_offline(True)
             page.locator('#qualifier-submit').click()
             page.wait_for_function('arenaOutbox.rows().length===1')
+            assert page.locator('.toast-title').filter(has_text='Nộp bài thành công').count() == 0
             before=arena.api('GET',f'/api/qualifiers/{qid}',token=token)
             assert not before.get('history'),before
             page.context.set_offline(False)

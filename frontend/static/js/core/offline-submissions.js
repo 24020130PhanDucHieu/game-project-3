@@ -245,7 +245,8 @@ const arenaOutbox = (() => {
   window.addEventListener('offline',status);
   window.addEventListener('storage',()=>{status();schedule();});
   window.addEventListener('focus',()=>{status();schedule();});
-  window.addEventListener('DOMContentLoaded',()=>{status();schedule();});
+  if (document.readyState === 'loading') window.addEventListener('DOMContentLoaded',()=>{status();schedule();});
+  else {status();schedule();}
   return {submit,flush,rows,status};
 })();
 

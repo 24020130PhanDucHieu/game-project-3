@@ -171,6 +171,9 @@ func (h *MatchHandler) TeamLogin(c *gin.Context) {
 		return
 	}
 	username, _ := req["username"].(string)
+	if username == "" {
+		username, _ = req["student_id"].(string)
+	}
 	password, _ := req["password"].(string)
 	if strings.TrimSpace(username) == "" || password == "" || isAdminUsername(username) {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": "Enter a team student ID and access code"})
@@ -364,12 +367,33 @@ func (h *MatchHandler) authorizeCurrentTeam(c *gin.Context, tournamentID, matchI
 	}
 	matches, _ := tournament["matches"].(map[string]interface{})
 	match, _ := matches[matchID].(map[string]interface{})
-	team, _ := match[session.Side].(map[string]interface{})
-	studentID, _ := team["student_id"].(string)
-	if session.TournamentID != tournamentID || session.MatchID != matchID || session.StudentID == "" || !strings.EqualFold(strings.TrimSpace(studentID), strings.TrimSpace(session.StudentID)) {
-		c.JSON(http.StatusForbidden, gin.H{"detail": "Đội hoặc nhánh đấu đã thay đổi. Hãy chọn lại trận của đội trên bảng đấu để cập nhật phiên."})
+	if match == nil {
+		c.JSON(http.StatusNotFound, gin.H{"detail": "Trận đấu không tồn tại."})
 		return false
 	}
+
+	matchedSide := ""
+	for _, side := range []string{"team_a", "team_b"} {
+		team, _ := match[side].(map[string]interface{})
+		if team != nil {
+			studentID, _ := team["student_id"].(string)
+			if session.StudentID != "" && strings.EqualFold(strings.TrimSpace(studentID), strings.TrimSpace(session.StudentID)) {
+				matchedSide = side
+				break
+			}
+		}
+	}
+
+	if matchedSide == "" {
+		c.JSON(http.StatusForbidden, gin.H{"detail": "Đội của bạn không tham gia trận đấu này."})
+		return false
+	}
+
+	// Cập nhật session vào context với đúng nhánh và trận để các bước sau không bị lỗi
+	session.TournamentID = tournamentID
+	session.MatchID = matchID
+	session.Side = matchedSide
+	c.Set("session", session)
 	return true
 }
 
@@ -548,6 +572,9 @@ func (h *MatchHandler) Reset(c *gin.Context) {
 func (h *MatchHandler) GetSubmissions(c *gin.Context) {
 	id := c.Param("id")
 	matchID := c.Param("matchId")
+	if !h.authorizeCurrentTeam(c, id, matchID) {
+		return
+	}
 	t, err := h.service.GetTournamentByID(id)
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"detail": err.Error()})
@@ -560,10 +587,23 @@ func (h *MatchHandler) GetSubmissions(c *gin.Context) {
 				subs = []interface{}{}
 			}
 			if session, ok := sessionFromContext(c); ok && session.Role != "ADMIN" {
+				side := session.Side
+				if side == "" || session.MatchID != matchID {
+					for _, s := range []string{"team_a", "team_b"} {
+						team, _ := m[s].(map[string]interface{})
+						if team != nil {
+							sid, _ := team["student_id"].(string)
+							if session.StudentID != "" && strings.EqualFold(strings.TrimSpace(sid), strings.TrimSpace(session.StudentID)) {
+								side = s
+								break
+							}
+						}
+					}
+				}
 				filtered := make([]interface{}, 0)
 				if items, ok := subs.([]interface{}); ok {
 					for _, item := range items {
-						if sub, ok := item.(map[string]interface{}); ok && sub["side"] == session.Side {
+						if sub, ok := item.(map[string]interface{}); ok && sub["side"] == side {
 							filtered = append(filtered, sub)
 						}
 					}

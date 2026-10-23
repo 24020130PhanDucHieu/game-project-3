@@ -331,7 +331,7 @@ async function submitQualifierCode(){
       git_commit_hash: lastGitSubmissionInfo.commit_sha || ''
     };
     await arenaOutbox.submit(`/api/qualifiers/${qualifierId}/submissions`, payload);
-    notifySuccess('Nộp bài thành công', 'Bài nộp đã được gửi vào hàng đợi chấm điểm!');
+    // The outbox announces server acknowledgement; saving locally is not receipt.
   }catch(err){
     notifyError('Không lưu được bài',err.message);
   }finally{

@@ -4,6 +4,9 @@ import json
 from pathlib import Path
 import re
 import shutil
+import os
+import subprocess
+import hashlib
 
 ROOT = Path(__file__).resolve().parents[1]
 FRONTEND = ROOT / "frontend"
@@ -57,7 +60,41 @@ def build(destination):
     print(f"Frontend built: {destination}")
 
 
+def build_next(destination):
+    app = ROOT / 'arena-ottv-2-redesign'
+    destination = destination.resolve()
+    if destination != FRONTEND / 'dist':
+        raise ValueError('Next release output must be frontend/dist')
+    npm = shutil.which('npm')
+    if not npm:
+        raise RuntimeError('Node.js and npm are required to build the main frontend')
+    if not (app / 'node_modules' / 'next').is_dir():
+        subprocess.run([npm, 'ci'], cwd=app, check=True)
+    environment = dict(os.environ, ARENA_STATIC_EXPORT='1', NEXT_TELEMETRY_DISABLED='1')
+    subprocess.run([npm, 'run', 'build'], cwd=app, env=environment, check=True)
+    output = app / 'out'
+    html = (output / 'index.html').read_text(encoding='utf-8')
+    if 'arena-live-portal' not in html or '/_next/' not in html:
+        raise RuntimeError('Next export did not contain the functional portal')
+    urls = set(json.loads((output / 'offline-assets.json').read_text(encoding='utf-8')))
+    urls.update('/' + p.relative_to(output).as_posix() for p in (output / '_next' / 'static').rglob('*') if p.is_file())
+    (output / 'offline-assets.json').write_text(json.dumps(sorted(urls)), encoding='utf-8')
+    digest = hashlib.sha256(html.encode()).hexdigest()[:16]
+    sw = (output / 'sw.js').read_text(encoding='utf-8')
+    sw = re.sub(r"const CACHE='[^']+';", f"const CACHE='arena-static-next-{digest}';", sw)
+    (output / 'sw.js').write_text(sw, encoding='utf-8')
+    # Replace only this builder's explicit output directory after a successful build.
+    if destination.is_symlink() or destination.resolve() != FRONTEND / 'dist':
+        raise ValueError('Frontend output must not redirect outside frontend/dist')
+    if destination.exists():
+        shutil.rmtree(destination)
+    shutil.copytree(output, destination)
+    print(f'Next main frontend built: {destination}')
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=FRONTEND / "dist")
-    build(parser.parse_args().output)
+    parser.add_argument('--legacy', action='store_true', help='Build source-template fallback instead of the Next release')
+    args = parser.parse_args()
+    (build if args.legacy else build_next)(args.output)

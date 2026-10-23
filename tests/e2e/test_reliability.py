@@ -235,6 +235,7 @@ def run(arena):
         tab(team_a, "tab-match-arena")
         expect(team_a.locator("#studio-code-editor")).to_have_value(CODE)
         team_a.reload()
+        team_a.wait_for_function("window.arenaReady !== undefined")
         team_a.evaluate("() => window.arenaReady")
         assert team_a.evaluate("currentAppRole") == "TEAM"
         assert team_a.evaluate("currentActiveMatchId") == mid
@@ -263,6 +264,7 @@ def run(arena):
         arena.restart_gateway()
         for page, role in [(admin_page, "ADMIN"), (team_a, "TEAM"), (team_b, "TEAM")]:
             page.reload()
+            page.wait_for_function("window.arenaReady !== undefined")
             page.evaluate("() => window.arenaReady")
             assert page.evaluate("currentAppRole") == role
             assert page.evaluate("currentActiveMatchId") == mid
@@ -305,6 +307,7 @@ def run(arena):
         expect(team_a.locator("#playback-step-indicator")).to_have_text(playback)
         assert team_a.locator(".log-tab-btn.active").get_attribute("data-log-tab") == log_id
         team_a.reload()
+        team_a.wait_for_function("window.arenaReady !== undefined")
         team_a.evaluate("() => window.arenaReady")
         expect(team_a.locator("#playback-step-indicator")).to_have_text(playback)
         assert team_a.locator(".log-tab-btn.active").get_attribute("data-log-tab") == log_id

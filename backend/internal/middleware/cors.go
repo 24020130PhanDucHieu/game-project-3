@@ -17,11 +17,6 @@ func CORSMiddleware(allowedOrigin string) gin.HandlerFunc {
 			if strings.EqualFold(origin, "https://"+host) || strings.EqualFold(origin, "http://"+host) {
 				allowed = true
 			}
-			// Allow sslip.io domains
-			if strings.HasSuffix(origin, ".sslip.io") {
-				allowed = true
-			}
-
 			if !allowed {
 				for _, candidate := range strings.Split(allowedOrigin, ",") {
 					candidate = strings.TrimSpace(candidate)

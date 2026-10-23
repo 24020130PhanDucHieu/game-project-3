@@ -253,7 +253,14 @@ func (h *TournamentHandler) Create(c *gin.Context) {
 		return
 	}
 	numTeams := 8
-	if value, supplied := req["num_teams"]; supplied {
+	value, supplied := req["num_teams"]
+	if !supplied {
+		value, supplied = req["team_count"]
+	}
+	if !supplied {
+		value, supplied = req["teams"]
+	}
+	if supplied {
 		nt, ok := value.(float64)
 		if !ok || nt != math.Trunc(nt) || nt < 4 || nt > 128 || int(nt)&(int(nt)-1) != 0 {
 			c.JSON(400, gin.H{"detail": "Số đội phải là 4, 8, 16, 32, 64 hoặc 128."})

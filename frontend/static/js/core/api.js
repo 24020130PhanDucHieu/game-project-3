@@ -5,7 +5,8 @@
 
 const ARENA_HOSTED_API = "https://arena.13.250.49.111.sslip.io";
 let arenaSavedAPI = localStorage.getItem("ARENA_API_URL");
-if (arenaSavedAPI && arenaSavedAPI.replace(/\/+$/, "") === "https://game-project-3.onrender.com") {
+// Never send a stored session token to an arbitrary localStorage-controlled host.
+if (arenaSavedAPI && ![ARENA_HOSTED_API, window.location.origin].includes(arenaSavedAPI.replace(/\/+$/, ""))) {
   localStorage.removeItem("ARENA_API_URL");
   arenaSavedAPI = null;
 }

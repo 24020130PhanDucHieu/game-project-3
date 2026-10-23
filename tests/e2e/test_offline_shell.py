@@ -8,6 +8,7 @@ from playwright.sync_api import sync_playwright
 
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
+    extensions_map = {**http.server.SimpleHTTPRequestHandler.extensions_map, '.js': 'application/javascript', '.css': 'text/css'}
     def log_message(self, *args):
         pass
 
@@ -29,6 +30,7 @@ try:
         page.wait_for_function('navigator.serviceWorker.controller !== null')
         context.set_offline(True)
         page.reload(wait_until='domcontentloaded')
+        page.wait_for_function("typeof arenaOutbox !== 'undefined' && typeof arenaOutbox.submit === 'function'")
         assert page.locator('body').inner_text().strip()
         assert page.evaluate("typeof arenaOutbox.submit === 'function'")
         print('PASS Chromium: app reloads offline with submission module available')

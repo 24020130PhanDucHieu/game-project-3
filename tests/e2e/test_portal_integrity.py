@@ -1,11 +1,15 @@
 """Disposable local gateway/worker: RBAC, recovery, corrections and real UI."""
 import tempfile
+import os
 from playwright.sync_api import sync_playwright, expect
 import test_reliability as arena
 
 
 def run():
     api = arena.api
+    api('POST', '/api/admin/login', {'username': 'admin', 'password': 'wrong-password'}, expected=401)
+    api('POST', '/api/bots/validate', {'code_content': arena.CODE}, expected=401)
+    api('POST', '/api/bots/practice', {'code_content': arena.CODE}, expected=401)
     admin = api('POST', '/api/admin/login', {'username': 'admin', 'password': arena.PASSWORD})['session_token']
     cup = api('POST', '/api/tournaments/create', {'name': 'Portal integrity', 'num_teams': 4}, admin)['tournament']
     tid = cup['tournament_id']
@@ -32,6 +36,9 @@ def run():
         browser = p.chromium.launch(channel='chrome', headless=True)
         try:
             page = arena.open_page(browser, errors, [])
+            if os.environ.get('ARENA_REQUIRE_NEXT') == '1':
+                assert page.locator('#arena-live-portal').count() == 1
+                assert page.locator('script[src*="/_next/"]').count() > 0
             assert page.locator('#portal-header-account #sidebar-user-card').count() == 1
             assert page.locator('#btn-notif-guest').count() == 0
             arena.login_page(page, 'admin', arena.PASSWORD)
@@ -56,7 +63,10 @@ def run():
             assert participant.locator('#match-direct-panel').is_visible()
             assert not participant.locator('#match-github-panel').is_visible()
             assert 'decide_move' in participant.locator('#studio-code-editor').input_value()
-            participant.locator('#studio-code-editor').fill(arena.CODE)
+            # Finish the debounced draft write before taking the correction checkpoint.
+            with participant.expect_response(lambda response: '/draft-code' in response.url and response.request.method == 'POST') as draft:
+                participant.locator('#studio-code-editor').fill(arena.CODE)
+            assert draft.value.ok
             participant.evaluate("switchQualifierMode('github')")
             assert not participant.locator('#qualifier-github-panel').evaluate('(el) => el.hidden')
             assert participant.locator('#qualifier-direct-panel').evaluate('(el) => el.hidden')
@@ -74,7 +84,10 @@ def run():
             dialog.locator('[name=scoreB]').fill('1')
             dialog.locator('[name=reason]').fill('Verified by official after incident')
             dialog.locator('button[type=submit]').click()
-            expect(dialog).to_have_count(0, timeout=10000)
+            try:
+                expect(dialog).to_have_count(0, timeout=10000)
+            except AssertionError as exc:
+                raise AssertionError(dialog.locator('.incident-error').inner_text()) from exc
             state = api('GET', f'/api/tournaments/{tid}', token=admin)
             assert state['matches'][mid]['winner'] == 'team_a'
             participant.wait_for_function("currentMatchData?.status === 'COMPLETED' && currentMatchData.team_a.rounds_won === 3", timeout=5000)

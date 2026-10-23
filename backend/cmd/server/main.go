@@ -353,8 +353,12 @@ func requireSession(manager *auth.Manager, adminOnly, matchScoped bool) gin.Hand
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"detail": "A valid tournament session is required"})
 			return
 		}
-		if (adminOnly && session.Role != "ADMIN") || (session.Role != "ADMIN" && c.Param("id") != "" && session.TournamentID != c.Param("id")) {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"detail": "Bạn không có quyền thực hiện thao tác trong giải này."})
+		if adminOnly && session.Role != "ADMIN" {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"detail": "Bạn không có quyền quản trị viên."})
+			return
+		}
+		if session.Role != "ADMIN" && c.Param("id") != "" && session.TournamentID != c.Param("id") {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"detail": "This session cannot access the requested tournament"})
 			return
 		}
 		if matchScoped && session.Role != "ADMIN" && session.MatchID != c.Param("matchId") {

@@ -54,6 +54,13 @@ jobs:
       - run: python tests/e2e/test_monitoring_layout.py
       - run: go build -o bin/arena-verification ./cmd/server
         working-directory: backend
+      - name: Verify Next portal, RBAC and live synchronization
+        run: python tests/e2e/test_portal_integrity.py
+        env:
+          ARENA_REQUIRE_NEXT: '1'
+          ARENA_TEST_SERVER: ${{ github.workspace }}/backend/bin/arena-verification
+      - name: Verify offline Next reload
+        run: python tests/e2e/test_offline_shell.py
       - run: python tests/e2e/test_offline_submission_sync.py
         env:
           ARENA_TEST_SERVER: ${{ github.workspace }}/backend/bin/arena-verification

@@ -58,7 +58,7 @@ func LoadConfig() *Config {
 
 	corsOrigin := os.Getenv("CORS_ORIGIN")
 	if corsOrigin == "" {
-		corsOrigin = "https://game-project-3.onrender.com,https://game-project-3.pages.dev,https://game-project-3.phanhieu06hungyen.workers.dev,http://localhost:8080,http://127.0.0.1:8080"
+		corsOrigin = "https://game-project-3.onrender.com,https://game-project-3.pages.dev,https://game-project-3.phanhieu06hungyen.workers.dev,http://localhost:8080,http://127.0.0.1:8080,http://localhost:3000,http://127.0.0.1:3000"
 	}
 
 	return &Config{

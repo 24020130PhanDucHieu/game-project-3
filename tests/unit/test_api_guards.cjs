@@ -14,8 +14,10 @@ const storage = () => {
     dispatchEvent(){},fetch:(url,init)=>{calls.push({url,init});return new Promise(r=>{resolve=r;});}};
   context.window=context;
   context.sessionStorage.setItem('arenaSessionToken','secret');
+  context.localStorage.setItem('ARENA_API_URL','https://attacker.invalid');
   vm.createContext(context);
   vm.runInContext(fs.readFileSync('frontend/static/js/core/api.js','utf8'),context);
+  assert.equal(context.localStorage.getItem('ARENA_API_URL'),null,'untrusted stored API host must be discarded');
   const opts={method:'POST',headers:{'Content-Type':'application/json'},body:'{"score":3}'};
   const first=context.fetch('/api/test',opts), second=context.fetch('/api/test',opts);
   assert.equal(calls.length,1,'double click must send one request');

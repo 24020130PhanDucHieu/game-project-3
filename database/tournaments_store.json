@@ -21,6 +21,7 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "0b1b38343b0d451aa520fcd1ce33ef5e",
           "title": "Chung Kết Tổng",
           "winner": null,
           "winner_name": null
@@ -28,10 +29,11 @@
         "m_lvl1_1": {
           "all_teams_ready": false,
           "battle_running": false,
-          "current_round_idx": 2,
+          "current_round_idx": 3,
           "intermission_ends_at": null,
           "match_id": "m_lvl1_1",
           "max_rounds": 5,
+          "mystery_tiles": {},
           "next_match_id": "m_lvl2_1",
           "next_slot": "team_a",
           "round_level": 1,
@@ -1426,6 +1428,2597 @@
               "win_reason": "ĐỘI XANH CHIẾN THẮNG! Đột kích thành công vào Căn Cứ Đích [0, 8] của đối phương!",
               "winner": "team_b",
               "winner_name": "BK_Gladiator"
+            },
+            {
+              "board_steps": [
+                {
+                  "active_side": null,
+                  "blue_alive": 9,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "b_1",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "cycle": 0,
+                  "log": "Đi lần lượt. Đội Xanh đi trước; không giới hạn số nước. Chiếm căn cứ hoặc quét sạch quân đối thủ để thắng.",
+                  "mystery_tiles": {
+                    "evolve": [],
+                    "obstacles": [],
+                    "portals": [],
+                    "traps": []
+                  },
+                  "obstacles": [],
+                  "red_alive": 9,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "r_6",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 0,
+                  "turn_label": "Bắt đầu hiệp đấu"
+                },
+                {
+                  "active_side": "team_b",
+                  "blue_alive": 9,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_1",
+                      "row": 2,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "cycle": 1,
+                  "log": "Đội Xanh điều quân (PAPER) tới [0,2].",
+                  "mystery_tiles": {
+                    "evolve": [],
+                    "obstacles": [],
+                    "portals": [],
+                    "traps": []
+                  },
+                  "obstacles": [],
+                  "red_alive": 9,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "r_6",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 1,
+                  "turn_label": "Nước 1 · Đội Xanh"
+                },
+                {
+                  "active_side": "team_a",
+                  "blue_alive": 9,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_1",
+                      "row": 2,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "cycle": 1,
+                  "log": "Đội Đỏ điều quân (ROCK) tới [7,6].",
+                  "mystery_tiles": {
+                    "evolve": [],
+                    "obstacles": [],
+                    "portals": [],
+                    "traps": []
+                  },
+                  "obstacles": [],
+                  "red_alive": 9,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_6",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 2,
+                  "turn_label": "Nước 2 · Đội Đỏ"
+                },
+                {
+                  "active_side": "team_b",
+                  "blue_alive": 9,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_1",
+                      "row": 3,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "cycle": 2,
+                  "log": "Đội Xanh điều quân (PAPER) tới [0,3].",
+                  "mystery_tiles": {
+                    "evolve": [],
+                    "obstacles": [],
+                    "portals": [],
+                    "traps": []
+                  },
+                  "obstacles": [],
+                  "red_alive": 9,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_6",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 3,
+                  "turn_label": "Nước 3 · Đội Xanh"
+                },
+                {
+                  "active_side": "team_a",
+                  "blue_alive": 9,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_1",
+                      "row": 3,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "cycle": 2,
+                  "log": "Đội Đỏ điều quân (ROCK) tới [8,5].",
+                  "mystery_tiles": {
+                    "evolve": [],
+                    "obstacles": [],
+                    "portals": [],
+                    "traps": []
+                  },
+                  "obstacles": [],
+                  "red_alive": 9,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 5,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 4,
+                  "turn_label": "Nước 4 · Đội Đỏ"
+                },
+                {
+                  "active_side": "team_b",
+                  "blue_alive": 9,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_1",
+                      "row": 4,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "cycle": 3,
+                  "log": "Đội Xanh điều quân (PAPER) tới [0,4].",
+                  "mystery_tiles": {
+                    "evolve": [],
+                    "obstacles": [],
+                    "portals": [],
+                    "traps": []
+                  },
+                  "obstacles": [],
+                  "red_alive": 9,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 5,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 5,
+                  "turn_label": "Nước 5 · Đội Xanh"
+                },
+                {
+                  "active_side": "team_a",
+                  "blue_alive": 9,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_1",
+                      "row": 4,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "cycle": 3,
+                  "log": "Đội Đỏ điều quân (ROCK) tới [8,4].",
+                  "mystery_tiles": {
+                    "evolve": [],
+                    "obstacles": [],
+                    "portals": [],
+                    "traps": []
+                  },
+                  "obstacles": [],
+                  "red_alive": 9,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 4,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 6,
+                  "turn_label": "Nước 6 · Đội Đỏ"
+                },
+                {
+                  "active_side": "team_b",
+                  "blue_alive": 9,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_1",
+                      "row": 5,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "cycle": 4,
+                  "log": "Đội Xanh điều quân (PAPER) tới [0,5].",
+                  "mystery_tiles": {
+                    "evolve": [],
+                    "obstacles": [],
+                    "portals": [],
+                    "traps": []
+                  },
+                  "obstacles": [],
+                  "red_alive": 9,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 4,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 7,
+                  "turn_label": "Nước 7 · Đội Xanh"
+                },
+                {
+                  "active_side": "team_a",
+                  "blue_alive": 9,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_1",
+                      "row": 5,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "cycle": 4,
+                  "log": "Đội Đỏ điều quân (ROCK) tới [8,3].",
+                  "mystery_tiles": {
+                    "evolve": [],
+                    "obstacles": [],
+                    "portals": [],
+                    "traps": []
+                  },
+                  "obstacles": [],
+                  "red_alive": 9,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 3,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 8,
+                  "turn_label": "Nước 8 · Đội Đỏ"
+                },
+                {
+                  "active_side": "team_b",
+                  "blue_alive": 9,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_1",
+                      "row": 6,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "cycle": 5,
+                  "log": "Đội Xanh điều quân (PAPER) tới [0,6].",
+                  "mystery_tiles": {
+                    "evolve": [],
+                    "obstacles": [],
+                    "portals": [],
+                    "traps": []
+                  },
+                  "obstacles": [],
+                  "red_alive": 9,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 3,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 9,
+                  "turn_label": "Nước 9 · Đội Xanh"
+                },
+                {
+                  "active_side": "team_a",
+                  "blue_alive": 9,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_1",
+                      "row": 6,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "cycle": 5,
+                  "log": "Đội Đỏ điều quân (ROCK) tới [8,2].",
+                  "mystery_tiles": {
+                    "evolve": [],
+                    "obstacles": [],
+                    "portals": [],
+                    "traps": []
+                  },
+                  "obstacles": [],
+                  "red_alive": 9,
+                  "red_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 2,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 10,
+                  "turn_label": "Nước 10 · Đội Đỏ"
+                },
+                {
+                  "active_side": "team_b",
+                  "blue_alive": 9,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": {
+                    "col": 0,
+                    "log": "Đội Xanh (PAPER) thắng va chạm với (ROCK) tại [0,7].",
+                    "loser_type": "ROCK",
+                    "row": 7,
+                    "type": "CLASH",
+                    "winner": "blue",
+                    "winner_type": "PAPER"
+                  },
+                  "cycle": 6,
+                  "log": "Đội Xanh (PAPER) thắng va chạm với (ROCK) tại [0,7].",
+                  "mystery_tiles": {
+                    "evolve": [],
+                    "obstacles": [],
+                    "portals": [],
+                    "traps": []
+                  },
+                  "obstacles": [],
+                  "red_alive": 8,
+                  "red_pieces": [
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 2,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 11,
+                  "turn_label": "Nước 11 · Đội Xanh"
+                },
+                {
+                  "active_side": "team_a",
+                  "blue_alive": 8,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": false,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": {
+                    "col": 8,
+                    "log": "Đội Đỏ (ROCK) thắng va chạm với (SCISSORS) tại [8,1].",
+                    "loser_type": "SCISSORS",
+                    "row": 1,
+                    "type": "CLASH",
+                    "winner": "red",
+                    "winner_type": "ROCK"
+                  },
+                  "cycle": 6,
+                  "log": "Đội Đỏ (ROCK) thắng va chạm với (SCISSORS) tại [8,1].",
+                  "mystery_tiles": {
+                    "evolve": [],
+                    "obstacles": [],
+                    "portals": [],
+                    "traps": []
+                  },
+                  "obstacles": [],
+                  "red_alive": 8,
+                  "red_pieces": [
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 12,
+                  "turn_label": "Nước 12 · Đội Đỏ"
+                },
+                {
+                  "active_side": "team_b",
+                  "blue_alive": 8,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": false,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": {
+                    "col": 8,
+                    "log": "Đội Xanh (PAPER) thắng va chạm với (ROCK) tại [8,1].",
+                    "loser_type": "ROCK",
+                    "row": 1,
+                    "type": "CLASH",
+                    "winner": "blue",
+                    "winner_type": "PAPER"
+                  },
+                  "cycle": 7,
+                  "log": "Đội Xanh (PAPER) thắng va chạm với (ROCK) tại [8,1].",
+                  "mystery_tiles": {
+                    "evolve": [],
+                    "obstacles": [],
+                    "portals": [],
+                    "traps": []
+                  },
+                  "obstacles": [],
+                  "red_alive": 7,
+                  "red_pieces": [
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "r_3",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 13,
+                  "turn_label": "Nước 13 · Đội Xanh"
+                },
+                {
+                  "active_side": "team_a",
+                  "blue_alive": 8,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": false,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": null,
+                  "cycle": 7,
+                  "log": "Đội Đỏ điều quân (ROCK) tới [4,6].",
+                  "mystery_tiles": {
+                    "evolve": [],
+                    "obstacles": [],
+                    "portals": [],
+                    "traps": []
+                  },
+                  "obstacles": [],
+                  "red_alive": 7,
+                  "red_pieces": [
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_3",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 14,
+                  "turn_label": "Nước 14 · Đội Đỏ"
+                },
+                {
+                  "active_side": "team_b",
+                  "blue_alive": 8,
+                  "blue_pieces": [
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_0",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 0,
+                      "id": "b_1",
+                      "row": 8,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "b_2",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 3,
+                      "id": "b_3",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "b_4",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "b_5",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 6,
+                      "id": "b_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "b_7",
+                      "row": 1,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": false,
+                      "col": 8,
+                      "id": "b_8",
+                      "row": 1,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "clash_event": {
+                    "col": 0,
+                    "log": "Đội Xanh thắng: chiếm căn cứ đối thủ.",
+                    "row": 8,
+                    "side": "blue",
+                    "type": "GOAL"
+                  },
+                  "cycle": 8,
+                  "log": "Đội Xanh điều quân (PAPER) tới [0,8]. Đội Xanh thắng: chiếm căn cứ đối thủ.",
+                  "mystery_tiles": {
+                    "evolve": [],
+                    "obstacles": [],
+                    "portals": [],
+                    "traps": []
+                  },
+                  "obstacles": [],
+                  "red_alive": 7,
+                  "red_pieces": [
+                    {
+                      "alive": false,
+                      "col": 0,
+                      "id": "r_0",
+                      "row": 7,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 1,
+                      "id": "r_1",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 2,
+                      "id": "r_2",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_3",
+                      "row": 6,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 4,
+                      "id": "r_4",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 5,
+                      "id": "r_5",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    },
+                    {
+                      "alive": false,
+                      "col": 8,
+                      "id": "r_6",
+                      "row": 1,
+                      "type": "ROCK"
+                    },
+                    {
+                      "alive": true,
+                      "col": 7,
+                      "id": "r_7",
+                      "row": 7,
+                      "type": "PAPER"
+                    },
+                    {
+                      "alive": true,
+                      "col": 8,
+                      "id": "r_8",
+                      "row": 7,
+                      "type": "SCISSORS"
+                    }
+                  ],
+                  "step_idx": 15,
+                  "turn_label": "Nước 15 · Đội Xanh"
+                }
+              ],
+              "bot_logs": [
+                {
+                  "error": null,
+                  "lang": "PYTHON",
+                  "log": "Bot K69_AlphaBot (Đỏ) thực thi thành công: [ROCK].",
+                  "preferred_move": "ROCK",
+                  "side": "team_a",
+                  "status": "EXECUTED",
+                  "submission_id": "sub_366b9af2",
+                  "team_name": "K69_AlphaBot"
+                },
+                {
+                  "error": null,
+                  "lang": "PYTHON",
+                  "log": "Bot BK_Gladiator (Xanh) thực thi thành công: [PAPER].",
+                  "preferred_move": "PAPER",
+                  "side": "team_b",
+                  "status": "EXECUTED",
+                  "submission_id": "sub_3de42151",
+                  "team_name": "BK_Gladiator"
+                }
+              ],
+              "damage": 15,
+              "final_blue_alive": 8,
+              "final_red_alive": 7,
+              "first_side": "team_b",
+              "log": "Round 2: Đội Xanh thắng: chiếm căn cứ đối thủ.",
+              "move_logs": [
+                {
+                  "blue_alive": 9,
+                  "is_clash": false,
+                  "log": "Đi lần lượt. Đội Xanh đi trước; không giới hạn số nước. Chiếm căn cứ hoặc quét sạch quân đối thủ để thắng.",
+                  "red_alive": 9,
+                  "step": 0,
+                  "turn_label": "Bắt đầu hiệp đấu"
+                },
+                {
+                  "blue_alive": 9,
+                  "is_clash": false,
+                  "log": "Đội Xanh điều quân (PAPER) tới [0,2].",
+                  "red_alive": 9,
+                  "step": 1,
+                  "turn_label": "Nước 1 · Đội Xanh"
+                },
+                {
+                  "blue_alive": 9,
+                  "is_clash": false,
+                  "log": "Đội Đỏ điều quân (ROCK) tới [7,6].",
+                  "red_alive": 9,
+                  "step": 2,
+                  "turn_label": "Nước 2 · Đội Đỏ"
+                },
+                {
+                  "blue_alive": 9,
+                  "is_clash": false,
+                  "log": "Đội Xanh điều quân (PAPER) tới [0,3].",
+                  "red_alive": 9,
+                  "step": 3,
+                  "turn_label": "Nước 3 · Đội Xanh"
+                },
+                {
+                  "blue_alive": 9,
+                  "is_clash": false,
+                  "log": "Đội Đỏ điều quân (ROCK) tới [8,5].",
+                  "red_alive": 9,
+                  "step": 4,
+                  "turn_label": "Nước 4 · Đội Đỏ"
+                },
+                {
+                  "blue_alive": 9,
+                  "is_clash": false,
+                  "log": "Đội Xanh điều quân (PAPER) tới [0,4].",
+                  "red_alive": 9,
+                  "step": 5,
+                  "turn_label": "Nước 5 · Đội Xanh"
+                },
+                {
+                  "blue_alive": 9,
+                  "is_clash": false,
+                  "log": "Đội Đỏ điều quân (ROCK) tới [8,4].",
+                  "red_alive": 9,
+                  "step": 6,
+                  "turn_label": "Nước 6 · Đội Đỏ"
+                },
+                {
+                  "blue_alive": 9,
+                  "is_clash": false,
+                  "log": "Đội Xanh điều quân (PAPER) tới [0,5].",
+                  "red_alive": 9,
+                  "step": 7,
+                  "turn_label": "Nước 7 · Đội Xanh"
+                },
+                {
+                  "blue_alive": 9,
+                  "is_clash": false,
+                  "log": "Đội Đỏ điều quân (ROCK) tới [8,3].",
+                  "red_alive": 9,
+                  "step": 8,
+                  "turn_label": "Nước 8 · Đội Đỏ"
+                },
+                {
+                  "blue_alive": 9,
+                  "is_clash": false,
+                  "log": "Đội Xanh điều quân (PAPER) tới [0,6].",
+                  "red_alive": 9,
+                  "step": 9,
+                  "turn_label": "Nước 9 · Đội Xanh"
+                },
+                {
+                  "blue_alive": 9,
+                  "is_clash": false,
+                  "log": "Đội Đỏ điều quân (ROCK) tới [8,2].",
+                  "red_alive": 9,
+                  "step": 10,
+                  "turn_label": "Nước 10 · Đội Đỏ"
+                },
+                {
+                  "blue_alive": 9,
+                  "is_clash": true,
+                  "log": "Đội Xanh (PAPER) thắng va chạm với (ROCK) tại [0,7].",
+                  "red_alive": 8,
+                  "step": 11,
+                  "turn_label": "Nước 11 · Đội Xanh"
+                },
+                {
+                  "blue_alive": 8,
+                  "is_clash": true,
+                  "log": "Đội Đỏ (ROCK) thắng va chạm với (SCISSORS) tại [8,1].",
+                  "red_alive": 8,
+                  "step": 12,
+                  "turn_label": "Nước 12 · Đội Đỏ"
+                },
+                {
+                  "blue_alive": 8,
+                  "is_clash": true,
+                  "log": "Đội Xanh (PAPER) thắng va chạm với (ROCK) tại [8,1].",
+                  "red_alive": 7,
+                  "step": 13,
+                  "turn_label": "Nước 13 · Đội Xanh"
+                },
+                {
+                  "blue_alive": 8,
+                  "is_clash": false,
+                  "log": "Đội Đỏ điều quân (ROCK) tới [4,6].",
+                  "red_alive": 7,
+                  "step": 14,
+                  "turn_label": "Nước 14 · Đội Đỏ"
+                },
+                {
+                  "blue_alive": 8,
+                  "is_clash": true,
+                  "log": "Đội Xanh điều quân (PAPER) tới [0,8]. Đội Xanh thắng: chiếm căn cứ đối thủ.",
+                  "red_alive": 7,
+                  "step": 15,
+                  "turn_label": "Nước 15 · Đội Xanh"
+                }
+              ],
+              "mystery_tiles": {},
+              "round_number": 2,
+              "rules": {
+                "board_size": 9,
+                "fog": false,
+                "has_joker": false,
+                "has_obstacles": false,
+                "id": "STAGE_1_STANDARD",
+                "initial_pieces": {
+                  "PAPER": 3,
+                  "ROCK": 3,
+                  "SCISSORS": 3
+                },
+                "max_moves": null,
+                "mystery_tiles": {},
+                "obstacles": [],
+                "reverse": false,
+                "shuffle": false,
+                "special_tiles": false,
+                "win_conditions": [
+                  "capture_base",
+                  "eliminate_opponent"
+                ]
+              },
+              "stage_rule": "STAGE_1_STANDARD",
+              "sub_a_id": "sub_366b9af2",
+              "sub_b_id": "sub_3de42151",
+              "system_logs": [
+                "[16:47:17] [Ban Tổ Chức] Phát lệnh KHAI HỎA Round 2. Đã khóa mã nguồn 2 đội (sub_366b9af2, sub_3de42151).",
+                "[16:47:17] [Game Engine] Khởi tạo bàn cờ 9x9 (81 ô). Quân cờ 2 bên bước vào giao tranh.",
+                "[16:47:17] [Kết Quả Round 2] Đội Xanh thắng: chiếm căn cứ đối thủ..",
+                "[16:47:17] [Hệ Thống] Tự động hiển thị bàn cờ kết quả 5 giây trước khi chuyển sang round tiếp theo."
+              ],
+              "team_a_code": "\nimport random\ndef decide_move(game_state):\n    cards = game_state.get('remaining_cards', {})\n    avail = [c for c, count in cards.items() if count \u003e 0]\n    return 'ROCK' if 'ROCK' in avail else (avail[0] if avail else 'ROCK')\n",
+              "team_a_hp": 70,
+              "team_a_lang": "PYTHON",
+              "team_a_move": "ROCK",
+              "team_a_name": "K69_AlphaBot",
+              "team_b_code": "\nimport random\ndef decide_move(game_state):\n    cards = game_state.get('remaining_cards', {})\n    avail = [c for c, count in cards.items() if count \u003e 0]\n    return 'PAPER' if 'PAPER' in avail else (avail[0] if avail else 'ROCK')\n",
+              "team_b_hp": 100,
+              "team_b_lang": "PYTHON",
+              "team_b_move": "PAPER",
+              "team_b_name": "BK_Gladiator",
+              "tie_break_seed": "3d8037375afa44fd9f55fd579b414269",
+              "timestamp": 1792748837.3181458,
+              "win_reason": "Đội Xanh thắng: chiếm căn cứ đối thủ.",
+              "winner": "team_b",
+              "winner_name": "BK_Gladiator"
             }
           ],
           "status": "IN_PROGRESS",
@@ -1763,11 +4356,87 @@
               "team_name": "BK_Gladiator",
               "test_move": "PAPER",
               "validation_status": "VALIDATED"
+            },
+            {
+              "code": "\nimport random\ndef decide_move(game_state):\n    cards = game_state.get('remaining_cards', {})\n    avail = [c for c, count in cards.items() if count \u003e 0]\n    return 'ROCK' if 'ROCK' in avail else (avail[0] if avail else 'ROCK')\n",
+              "error_message": null,
+              "execution_time_ms": 1031,
+              "explanation": "",
+              "is_locked": false,
+              "is_valid": true,
+              "language": "PYTHON",
+              "match_id": "m_lvl1_1",
+              "round_number": 2,
+              "side": "team_a",
+              "stage_rule": "STAGE_1_STANDARD",
+              "student_id": "24020001",
+              "submission_id": "sub_de83c7d8",
+              "submitted_at": 1792748818.482881,
+              "team_name": "K69_AlphaBot",
+              "test_move": "ROCK",
+              "validation_status": "VALIDATED"
+            },
+            {
+              "code": "\nimport random\ndef decide_move(game_state):\n    cards = game_state.get('remaining_cards', {})\n    avail = [c for c, count in cards.items() if count \u003e 0]\n    return 'PAPER' if 'PAPER' in avail else (avail[0] if avail else 'ROCK')\n",
+              "error_message": null,
+              "execution_time_ms": 969,
+              "explanation": "",
+              "is_locked": false,
+              "is_valid": true,
+              "language": "PYTHON",
+              "match_id": "m_lvl1_1",
+              "round_number": 2,
+              "side": "team_b",
+              "stage_rule": "STAGE_1_STANDARD",
+              "student_id": "24020160",
+              "submission_id": "sub_f6a4f505",
+              "submitted_at": 1792748819.44959,
+              "team_name": "BK_Gladiator",
+              "test_move": "PAPER",
+              "validation_status": "VALIDATED"
+            },
+            {
+              "code": "\nimport random\ndef decide_move(game_state):\n    cards = game_state.get('remaining_cards', {})\n    avail = [c for c, count in cards.items() if count \u003e 0]\n    return 'ROCK' if 'ROCK' in avail else (avail[0] if avail else 'ROCK')\n",
+              "error_message": null,
+              "execution_time_ms": 1000,
+              "explanation": "",
+              "is_locked": true,
+              "is_valid": true,
+              "language": "PYTHON",
+              "match_id": "m_lvl1_1",
+              "round_number": 2,
+              "side": "team_a",
+              "stage_rule": "STAGE_1_STANDARD",
+              "student_id": "24020001",
+              "submission_id": "sub_366b9af2",
+              "submitted_at": 1792748820.6102605,
+              "team_name": "K69_AlphaBot",
+              "test_move": "ROCK",
+              "validation_status": "VALIDATED"
+            },
+            {
+              "code": "\nimport random\ndef decide_move(game_state):\n    cards = game_state.get('remaining_cards', {})\n    avail = [c for c, count in cards.items() if count \u003e 0]\n    return 'PAPER' if 'PAPER' in avail else (avail[0] if avail else 'ROCK')\n",
+              "error_message": null,
+              "execution_time_ms": 1016,
+              "explanation": "",
+              "is_locked": true,
+              "is_valid": true,
+              "language": "PYTHON",
+              "match_id": "m_lvl1_1",
+              "round_number": 2,
+              "side": "team_b",
+              "stage_rule": "STAGE_1_STANDARD",
+              "student_id": "24020160",
+              "submission_id": "sub_3de42151",
+              "submitted_at": 1792748821.6239586,
+              "team_name": "BK_Gladiator",
+              "test_move": "PAPER",
+              "validation_status": "VALIDATED"
             }
           ],
           "team_a": {
             "active_submission_id": null,
-            "authenticated": false,
+            "authenticated": true,
             "bot_id": "bot_24020001",
             "code_submitted": false,
             "code_valid": false,
@@ -1776,7 +4445,7 @@
             "draft_code": "\nimport random\ndef decide_move(game_state):\n    cards = game_state.get('remaining_cards', {})\n    avail = [c for c, count in cards.items() if count \u003e 0]\n    return 'ROCK' if 'ROCK' in avail else (avail[0] if avail else 'ROCK')\n",
             "draft_lang": "PYTHON",
             "draft_updated_at": 1791651189.1211305,
-            "hp": 85,
+            "hp": 70,
             "rounds_won": 0,
             "student_id": "24020001",
             "team_name": "K69_AlphaBot",
@@ -1785,7 +4454,7 @@
           },
           "team_b": {
             "active_submission_id": null,
-            "authenticated": false,
+            "authenticated": true,
             "bot_id": "bot_24020160",
             "code_submitted": false,
             "code_valid": false,
@@ -1794,12 +4463,13 @@
             "draft_code": "\nimport random\ndef decide_move(game_state):\n    cards = game_state.get('remaining_cards', {})\n    avail = [c for c, count in cards.items() if count \u003e 0]\n    return 'PAPER' if 'PAPER' in avail else (avail[0] if avail else 'ROCK')\n",
             "draft_lang": "PYTHON",
             "hp": 100,
-            "rounds_won": 1,
+            "rounds_won": 2,
             "student_id": "24020160",
             "team_name": "BK_Gladiator",
             "university": "ĐHBK Hà Nội",
             "validation_error": null
           },
+          "tie_break_seed": "547218de5c424ee093d0f1a92f3aa152",
           "title": "Tứ Kết 1",
           "winner": null,
           "winner_name": null
@@ -1853,6 +4523,7 @@
             "university": "ĐH Bách Khoa ĐN",
             "validation_error": null
           },
+          "tie_break_seed": "da6b96d580b146e4bb709fe680f6efe5",
           "title": "Tứ Kết 2",
           "winner": null,
           "winner_name": null
@@ -1906,6 +4577,7 @@
             "university": "ĐH KHTN ĐHQG-HCM",
             "validation_error": null
           },
+          "tie_break_seed": "431d56bcf3ad438287e9574481a60a4e",
           "title": "Tứ Kết 3",
           "winner": null,
           "winner_name": null
@@ -1959,6 +4631,7 @@
             "university": "Đại Học FPT",
             "validation_error": null
           },
+          "tie_break_seed": "175d1e41ce9f4e41b45b3b3ac1c78237",
           "title": "Tứ Kết 4",
           "winner": null,
           "winner_name": null
@@ -1980,6 +4653,7 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "bdedefa696724d5885c458d0dd96f507",
           "title": "Bán Kết 1",
           "winner": null,
           "winner_name": null
@@ -2001,6 +4675,7 @@
           "submissions_history": [],
           "team_a": null,
           "team_b": null,
+          "tie_break_seed": "3f0acb9cf1e14265a9170c39023abe07",
           "title": "Bán Kết 2",
           "winner": null,
           "winner_name": null

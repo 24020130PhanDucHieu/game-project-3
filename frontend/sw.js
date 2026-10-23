@@ -18,7 +18,7 @@ self.addEventListener('fetch',event=>{
   if(request.mode==='navigate'){
     event.respondWith(fetch(request).catch(()=>caches.match('/')));return;
   }
-  if(url.pathname.startsWith('/static/')||url.pathname.startsWith('/assets/')||url.pathname.startsWith('/templates/')){
+  if(url.pathname.startsWith('/_next/static/')||url.pathname.startsWith('/static/')||url.pathname.startsWith('/assets/')||url.pathname.startsWith('/templates/')){
     event.respondWith(caches.match(request).then(cached=>cached||fetch(request)));
   }
 });

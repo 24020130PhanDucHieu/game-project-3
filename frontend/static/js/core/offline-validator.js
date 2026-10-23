@@ -48,7 +48,8 @@ function updateOfflineExamBanner() {
 
 window.addEventListener("online", updateOfflineExamBanner);
 window.addEventListener("offline", updateOfflineExamBanner);
-document.addEventListener("DOMContentLoaded", updateOfflineExamBanner);
+if (document.readyState === 'loading') document.addEventListener("DOMContentLoaded", updateOfflineExamBanner);
+else updateOfflineExamBanner();
 
 /**
  * Phân tích và kiểm tra cú pháp Bot trực tiếp trên trình duyệt (Client-side AST & Syntax Validator).

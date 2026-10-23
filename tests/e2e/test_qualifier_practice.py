@@ -34,6 +34,8 @@ def run():
             page.evaluate('(id) => selectQualifier(id)',qid)
             expect(page.locator('#qualifier-team-card')).to_be_visible()
             assert page.evaluate('!currentTournamentId')
+            # A fresh participant has an empty editor until they enter or load code.
+            page.locator('#qualifier-code').fill(arena.CODE)
             boss_panel = page.locator('details').filter(has=page.locator('#qualifier-boss'))
             if not boss_panel.evaluate('e => e.open'):
                 boss_panel.locator('summary').click()

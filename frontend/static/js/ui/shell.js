@@ -9,7 +9,8 @@ function renderPortalShell() {
   const bell = document.getElementById('btn-notif-auth');
   if (bell) bell.setAttribute('aria-label', 'Mở trung tâm thông báo');
 }
-document.addEventListener('DOMContentLoaded', renderPortalShell);
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', renderPortalShell);
+else renderPortalShell();
 
 function switchMatchSubmitMode(mode) {
   const github = mode === 'github';

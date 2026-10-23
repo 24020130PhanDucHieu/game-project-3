@@ -8,6 +8,16 @@ echo   HE THONG DAU TRUONG OTTV2 ICPC K69 - AUTO LAUNCHER
 echo ============================================================
 echo.
 
+if not defined ADMIN_PASSWORD (
+  echo Hay dat bien moi truong ADMIN_PASSWORD truoc khi khoi dong.
+  exit /b 1
+)
+if not defined SESSION_SECRET (
+  echo Hay dat SESSION_SECRET rieng va giu on dinh khi khoi dong lai.
+  exit /b 1
+)
+if not defined PORT set PORT=8080
+
 :: 1. Khoi chay Python Bot Runner (cong 8001)
 echo [1/3] Dang khoi dong Python Bot-Runner Engine...
 start /b "" python bot-runner\main.py
