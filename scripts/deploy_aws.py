@@ -159,11 +159,22 @@ echo "==> Stopping API service before extracting new binary..."
 sudo systemctl stop arena-api || true
 sleep 2
 
-# Terminate any orphaned postgres backend sessions holding the gateway advisory lock
+# Terminate any orphaned postgres backend sessions holding the gateway advisory lock.
+# Supavisor can keep an idle session alive after the API process is stopped, so
+# verify that the lock is actually gone before starting the replacement binary.
 if [ -s /etc/arena/backend.env ]; then
     DB_URL=$(sudo grep DATABASE_URL /etc/arena/backend.env | cut -d'=' -f2- | tr -d '"' | tr -d "'")
     if command -v psql >/dev/null 2>&1 && [ -n "$DB_URL" ]; then
-        psql "$DB_URL" -c "SELECT pg_terminate_backend(pid) FROM pg_locks WHERE locktype = 'advisory' AND ((classid::bigint << 32) | (objid::bigint & 4294967295)) = 724615902361 AND pid != pg_backend_pid();" >/dev/null 2>&1 || true
+        for attempt in 1 2 3 4 5; do
+            psql "$DB_URL" -X -q -t -A -c "SELECT pg_terminate_backend(l.pid) FROM pg_locks l JOIN pg_stat_activity a ON a.pid = l.pid WHERE l.locktype = 'advisory' AND ((l.classid::bigint << 32) | (l.objid::bigint & 4294967295)) = 724615902361 AND l.pid != pg_backend_pid();" || true
+            remaining=$(psql "$DB_URL" -X -q -t -A -c "SELECT count(*) FROM pg_locks WHERE locktype = 'advisory' AND ((classid::bigint << 32) | (objid::bigint & 4294967295)) = 724615902361 AND pid != pg_backend_pid();" 2>/dev/null | tr -d '[:space:]' || echo 1)
+            if [ "$remaining" = "0" ]; then
+                echo "Gateway advisory lock cleared."
+                break
+            fi
+            echo "Waiting for gateway advisory lock to clear (attempt $attempt/5; remaining=$remaining)..."
+            sleep 1
+        done
     fi
 fi
 
@@ -286,7 +297,7 @@ sleep 2
 if [ -s /etc/arena/backend.env ]; then
     DB_URL=$(sudo grep DATABASE_URL /etc/arena/backend.env | cut -d'=' -f2- | tr -d '"' | tr -d "'")
     if command -v psql >/dev/null 2>&1 && [ -n "$DB_URL" ]; then
-        psql "$DB_URL" -c "SELECT pg_terminate_backend(pid) FROM pg_locks WHERE locktype = 'advisory' AND ((classid::bigint << 32) | (objid::bigint & 4294967295)) = 724615902361 AND pid != pg_backend_pid();" >/dev/null 2>&1 || true
+        psql "$DB_URL" -X -q -t -A -c "SELECT pg_terminate_backend(l.pid) FROM pg_locks l WHERE l.locktype = 'advisory' AND ((l.classid::bigint << 32) | (l.objid::bigint & 4294967295)) = 724615902361 AND l.pid != pg_backend_pid();" || true
     fi
 fi
 
