@@ -5,7 +5,7 @@ const c={currentTournamentId:'t',currentActiveMatchId:'m',currentAppRole:'TEAM',
   document:{getElementById:()=>null},clearInterval(){},setInterval(fn){tick=fn;return 1},
   renderChessboard:red=>{index=red[0]},renderLiveAction(){},renderCategorizedLogs(){},setBattleCommentary(){},
   inlinePlaybackCurrentIdx:0,realtimePlaybackTimer:null,startRealtimeAutoPlay(){starts++}};
-vm.createContext(c);vm.runInContext(fs.readFileSync('frontend/static/js/core/persistence.js','utf8'),c);
+vm.createContext(c);vm.runInContext(fs.readFileSync('frontend-cu/static/js/core/persistence.js','utf8'),c);
 const m={rounds_history:[{round_number:1,board_steps:steps}],round_status:'WAITING_BOTS'};
 c.syncLiveRoundBoard(m);assert.equal(index,0);
 time=500;tick();assert.equal(index,2,'250 ms per move even after server finished');

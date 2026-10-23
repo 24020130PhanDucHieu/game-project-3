@@ -11,7 +11,7 @@ async function scenario(status, body, cleared) {
     document:{getElementById:()=>({}),querySelector:()=>null}, setTimeout(){},
   };
   vm.createContext(context);
-  vm.runInContext(fs.readFileSync('frontend/static/js/tournaments/controller.js','utf8'),context);
+  vm.runInContext(fs.readFileSync('frontend-cu/static/js/tournaments/controller.js','utf8'),context);
   await context.refreshTournamentSnapshot('cup');
   assert.equal(context.currentTournamentId,cleared?null:'cup');
   if(!cleared) assert.equal(context.currentTournamentData.name,'Saved');

@@ -24,7 +24,7 @@ function createValidatorContext() {
   context.window.addEventListener = () => {};
 
   vm.createContext(context);
-  const code = fs.readFileSync('frontend/static/js/core/offline-validator.js', 'utf8');
+    const code = fs.readFileSync('frontend-cu/static/js/core/offline-validator.js', 'utf8');
   vm.runInContext(code, context);
   return context;
 }

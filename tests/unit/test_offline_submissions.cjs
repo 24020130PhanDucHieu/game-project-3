@@ -10,7 +10,7 @@ function app(){
  notifySuccess(){},notifyWarning(){},notifyInfo(){},CustomEvent:class{},Blob,URL,console,loadQualifierPage(){},currentTournamentId:null};
  context.window=context;context.addEventListener=()=>{};context.dispatchEvent=()=>{};
  context.fetch=async()=>new Response(JSON.stringify({valid:true}),{status:200});
- vm.createContext(context);vm.runInContext(fs.readFileSync('frontend/static/js/core/offline-submissions.js','utf8')+'\nglobalThis.outbox=arenaOutbox;',context);return context;
+ vm.createContext(context);vm.runInContext(fs.readFileSync('frontend-cu/static/js/core/offline-submissions.js','utf8')+'\nglobalThis.outbox=arenaOutbox;',context);return context;
 }
 (async()=>{
  let a=app();let notices=0;a.notifyInfo=()=>notices++;
