@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+// Session.Judge là tên đăng nhập của giám khảo; phiên ADMIN không có Judge là tài khoản chủ (ADMIN_PASSWORD).
 type Session struct {
 	Role         string    `json:"role"`
 	Side         string    `json:"side,omitempty"`
@@ -19,6 +20,8 @@ type Session struct {
 	MatchID      string    `json:"match_id,omitempty"`
 	StudentID    string    `json:"student_id,omitempty"`
 	TeamName     string    `json:"team_name,omitempty"`
+	Judge        string    `json:"judge,omitempty"`
+	DisplayName  string    `json:"display_name,omitempty"`
 	ExpiresAt    time.Time `json:"expires_at"`
 	IssuedAt     time.Time `json:"issued_at,omitempty"`
 	Nonce        string    `json:"nonce"`
@@ -115,7 +118,7 @@ func (m *Manager) GetChecked(token string) (Session, bool, error) {
 			return Session{}, false, nil
 		}
 	}
-	if !revoked && session.Role == "TEAM" && m.CheckSession != nil {
+	if !revoked && (session.Role == "TEAM" || session.Judge != "") && m.CheckSession != nil {
 		valid, err := m.CheckSession(session)
 		if err != nil || !valid {
 			return Session{}, false, err
@@ -135,4 +138,18 @@ func (m *Manager) Revoke(token string) {
 		m.revoked[token] = session.ExpiresAt
 		m.mu.Unlock()
 	}
+}
+
+// IsOwner: phiên quản trị bằng mật khẩu chủ, có quyền quản lý tài khoản giám khảo.
+func (s Session) IsOwner() bool { return s.Role == "ADMIN" && s.Judge == "" }
+
+// Actor là tên ghi vào nhật ký quản trị.
+func (s Session) Actor() string {
+	if s.Judge != "" {
+		return s.Judge
+	}
+	if s.Role == "ADMIN" {
+		return "owner"
+	}
+	return s.StudentID
 }

@@ -111,10 +111,10 @@ export const arenaApi = {
     return { team_name: res.team?.team_name, student_id: res.team?.student_id }
   },
 
-  async loginAdmin(password: string) {
-    const res = await apiRequest<{ session_token: string }>('/admin/login', {
+  async loginAdmin(password: string, username = '') {
+    const res = await apiRequest<{ session_token: string; judge?: string; display_name?: string }>('/admin/login', {
       method: 'POST',
-      body: JSON.stringify({ password }),
+      body: JSON.stringify(username ? { username, password } : { password }),
     })
     if (!res.session_token) throw new Error('Máy chủ không trả phiên quản trị hợp lệ.')
     setSessionToken(res.session_token)
@@ -149,6 +149,9 @@ export const arenaApi = {
       team_name?: string
       tournament_id?: string
       match_id?: string
+      judge?: string
+      display_name?: string
+      owner?: boolean
     }>('/session', { cache: 'no-store' })
   },
 
@@ -276,11 +279,12 @@ export const arenaApi = {
     return res
   },
 
-  async submitCode(tournamentId: string, matchId: string, payload: any) {
+  async submitCode(tournamentId: string, matchId: string, payload: any, submissionId?: string) {
     return apiRequest(
       `/tournaments/${encodeURIComponent(tournamentId)}/matches/${encodeURIComponent(matchId)}/code`,
       {
         method: 'POST',
+        headers: submissionId ? { 'X-Submission-Id': submissionId } : undefined,
         body: JSON.stringify(payload),
       },
     )
@@ -347,7 +351,11 @@ export const arenaApi = {
   },
 
   async getMatchHistory() {
-    return apiRequest('/matches/history')
+    return apiRequest<any[]>('/matches/history', { cache: 'no-store' })
+  },
+
+  async getServerTime() {
+    return apiRequest<{ server_time_ms: number }>('/time', { cache: 'no-store' })
   },
 
   // --- BOTS (VALIDATION & PRACTICE) ---
@@ -361,7 +369,9 @@ export const arenaApi = {
   async practiceBot(payload: {
     code_content: string
     language: string
-    boss_difficulty: 'RANDOM' | 'AGGRESSIVE' | 'ADAPTIVE'
+    boss: 'RANDOM' | 'AGGRESSIVE' | 'ADAPTIVE'
+    side?: 'team_a' | 'team_b'
+    rule_id?: string
   }) {
     return apiRequest('/bots/practice', {
       method: 'POST',
@@ -378,8 +388,9 @@ export const arenaApi = {
     return apiRequest('/qualifiers', { method: 'POST', body: JSON.stringify(payload) })
   },
 
-  async getQualifier(qid: string) {
-    return apiRequest(`/qualifiers/${encodeURIComponent(qid)}`)
+  async getQualifier(qid: string, studentId = '') {
+    const query = studentId ? `?student_id=${encodeURIComponent(studentId)}` : ''
+    return apiRequest(`/qualifiers/${encodeURIComponent(qid)}${query}`, { cache: 'no-store' })
   },
 
   async registerQualifier(qid: string) {
@@ -389,15 +400,19 @@ export const arenaApi = {
     })
   },
 
-  async submitQualifier(qid: string, payload: any) {
+  async submitQualifier(qid: string, payload: any, submissionId?: string) {
     return apiRequest(`/qualifiers/${encodeURIComponent(qid)}/submissions`, {
       method: 'POST',
+      headers: submissionId ? { 'X-Submission-Id': submissionId } : undefined,
       body: JSON.stringify(payload),
     })
   },
 
-  async getQualifierRanking(qid: string) {
-    return apiRequest(`/qualifiers/${encodeURIComponent(qid)}/ranking`)
+  async getQualifierRanking(qid: string, page = 1) {
+    return apiRequest<{ items: any[]; total: number; page: number; page_size: number }>(
+      `/qualifiers/${encodeURIComponent(qid)}/ranking?page=${page}`,
+      { cache: 'no-store' },
+    )
   },
 
   async qualifierAction(qid: string, action: string, payload: Record<string, unknown> = {}) {
@@ -414,8 +429,14 @@ export const arenaApi = {
     })
   },
 
-  async getQualifierTeams(qid: string) {
-    return apiRequest<{ items: any[]; total: number }>(`/qualifiers/${encodeURIComponent(qid)}/teams`)
+  async getQualifierTeams(qid: string, opts: { page?: number; q?: string; filter?: string } = {}) {
+    const params = new URLSearchParams({ page: String(opts.page || 1) })
+    if (opts.q) params.set('q', opts.q)
+    if (opts.filter) params.set('filter', opts.filter)
+    return apiRequest<{ items: any[]; total: number; page: number; page_size: number }>(
+      `/qualifiers/${encodeURIComponent(qid)}/teams?${params}`,
+      { cache: 'no-store' },
+    )
   },
 
   async deleteQualifier(qid: string) {
@@ -427,6 +448,13 @@ export const arenaApi = {
   // --- ADMIN & MONITORING ---
   async getAdminAccounts() {
     return apiRequest<any[]>('/admin/accounts')
+  },
+
+  async importAccounts(rows: { student_id: string; team_name: string; password?: string }[], tournamentId?: string) {
+    return apiRequest<{ created: number; enrolled: number; results: any[] }>('/admin/accounts/import', {
+      method: 'POST',
+      body: JSON.stringify({ rows, tournament_id: tournamentId }),
+    })
   },
 
   async deleteAdminAccount(studentId: string) {
@@ -442,8 +470,9 @@ export const arenaApi = {
     })
   },
 
-  async getMonitoring() {
-    return apiRequest('/admin/monitoring')
+  async getMonitoring(tournamentId = '') {
+    const query = tournamentId ? `?tournament_id=${encodeURIComponent(tournamentId)}` : ''
+    return apiRequest<any>(`/admin/monitoring${query}`, { cache: 'no-store' })
   },
 
   async optimizeDatabase() {
@@ -459,13 +488,84 @@ export const arenaApi = {
     })
   },
 
-  async getAuditLogs() {
-    return apiRequest<{ logs: any[] }>('/admin/audit-logs')
+  async getJudges() {
+    return apiRequest<{ items: any[] }>('/admin/judges', { cache: 'no-store' })
+  },
+
+  async createJudge(payload: { username: string; display_name: string; password: string }) {
+    return apiRequest('/admin/judges', { method: 'POST', body: JSON.stringify(payload) })
+  },
+
+  async judgeAction(username: string, action: 'disable' | 'enable' | 'reset-password', password?: string) {
+    return apiRequest(`/admin/judges/${encodeURIComponent(username)}/${action}`, { method: 'POST', body: JSON.stringify(password ? { password } : {}) })
+  },
+
+  // --- HỎI ĐÁP BTC ---
+  async getClarifications(opts: { page?: number; status?: string } = {}) {
+    const params = new URLSearchParams({ page: String(opts.page || 1) })
+    if (opts.status) params.set('status', opts.status)
+    return apiRequest<{ items: any[]; total: number; page: number; page_size: number; open?: number }>(`/clarifications?${params}`, { cache: 'no-store' })
+  },
+
+  async askClarification(payload: { topic: string; question: string; tournament_id?: string }) {
+    return apiRequest('/clarifications', { method: 'POST', body: JSON.stringify(payload) })
+  },
+
+  async answerClarification(id: string, payload: { answer: string; public: boolean; status?: 'ANSWERED' | 'REJECTED' }) {
+    return apiRequest(`/admin/clarifications/${encodeURIComponent(id)}/answer`, { method: 'POST', body: JSON.stringify(payload) })
+  },
+
+  // --- GIAO HỮU ---
+  async getScrimmages() {
+    return apiRequest<{ items: any[]; accept: boolean }>('/scrimmages', { cache: 'no-store' })
+  },
+
+  async createScrimmage(payload: { qualifier_id: string; opponent_student_id: string; rule_id?: string; code?: string; language?: string }) {
+    return apiRequest<{ scrimmage: any; board_steps: any[]; my_bot_error?: string }>('/scrimmages', { method: 'POST', body: JSON.stringify(payload) })
+  },
+
+  async getScrimmage(id: string) {
+    return apiRequest<{ scrimmage: any; board_steps: any[] }>(`/scrimmages/${encodeURIComponent(id)}`, { cache: 'no-store' })
+  },
+
+  async setScrimmageAccept(accept: boolean) {
+    return apiRequest('/scrimmages/settings', { method: 'PUT', body: JSON.stringify({ accept }) })
+  },
+
+  // --- THỬ THÁCH & HUY HIỆU ---
+  async getChallenges() {
+    return apiRequest<{ items: any[]; passed: number; total: number }>('/challenges', { cache: 'no-store' })
+  },
+
+  async attemptChallenge(id: string, payload: { code: string; language: string }) {
+    return apiRequest<any>(`/challenges/${encodeURIComponent(id)}/attempt`, { method: 'POST', body: JSON.stringify(payload) })
+  },
+
+  async getBadges(studentId: string) {
+    return apiRequest<{ items: any[] }>(`/badges/${encodeURIComponent(studentId)}`)
+  },
+
+  // --- CHỐNG GIAN LẬN ---
+  async getSimilarity(source: 'qualifier' | 'tournament', id: string, min = 0.7) {
+    return apiRequest<{ pairs: any[]; documents: number }>(`/admin/similarity?source=${source}&id=${encodeURIComponent(id)}&min=${min}`, { cache: 'no-store' })
+  },
+
+  async getSimilarityPair(source: string, id: string, a: string, b: string) {
+    return apiRequest<{ a: any; b: any }>(`/admin/similarity/pair?source=${source}&id=${encodeURIComponent(id)}&a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`, { cache: 'no-store' })
+  },
+
+  async reviewSimilarity(payload: { source: string; id: string; a: string; b: string; status: 'CLEARED' | 'SUSPECT'; note?: string }) {
+    return apiRequest('/admin/similarity/review', { method: 'POST', body: JSON.stringify(payload) })
+  },
+
+  async getAuditLogs(tournamentId = '') {
+    const query = tournamentId ? `?tournament_id=${encodeURIComponent(tournamentId)}` : ''
+    return apiRequest<{ logs: any[] }>(`/admin/audit-logs${query}`, { cache: 'no-store' })
   },
 
   // --- NOTIFICATIONS ---
   async getNotifications() {
-    return apiRequest<{ notifications: any[]; unread_count: number }>('/notifications')
+    return apiRequest<{ notifications: any[]; unread_count: number }>('/notifications', { cache: 'no-store' })
   },
 
   async markNotificationRead(id?: string) {

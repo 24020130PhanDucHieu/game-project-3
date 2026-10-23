@@ -5,8 +5,11 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-inter);
-  --font-mono: var(--font-jetbrains);
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --color-cyan: var(--cyan);
+  --color-gold: var(--gold);
   --color-team-blue: var(--team-blue);
   --color-team-red: var(--team-red);
   --color-success: var(--success);
@@ -59,8 +62,10 @@
   --card-foreground: oklch(0.21 0.03 265);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.21 0.03 265);
-  --primary: oklch(0.51 0.22 274);
+  --primary: oklch(0.53 0.24 280);
   --primary-foreground: oklch(0.985 0 0);
+  --cyan: oklch(0.62 0.13 215);
+  --gold: oklch(0.72 0.15 80);
   --secondary: oklch(0.968 0.007 247);
   --secondary-foreground: oklch(0.28 0.03 265);
   --muted: oklch(0.968 0.007 247);
@@ -93,37 +98,43 @@
 
 .dark {
   color-scheme: dark;
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --background: oklch(0.135 0.035 280);
+  --foreground: oklch(0.97 0.006 280);
+  --card: oklch(0.185 0.04 280);
+  --card-foreground: oklch(0.97 0.006 280);
+  --popover: oklch(0.21 0.045 280);
+  --popover-foreground: oklch(0.97 0.006 280);
+  --primary: oklch(0.7 0.2 292);
+  --primary-foreground: oklch(0.14 0.04 285);
+  --cyan: oklch(0.83 0.13 200);
+  --gold: oklch(0.84 0.15 85);
+  --secondary: oklch(0.26 0.045 280);
+  --secondary-foreground: oklch(0.97 0.006 280);
+  --muted: oklch(0.24 0.04 280);
+  --muted-foreground: oklch(0.74 0.03 280);
+  --accent: oklch(0.3 0.08 285);
+  --accent-foreground: oklch(0.92 0.06 290);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.7 0.2 292);
+  --team-blue: oklch(0.72 0.15 245);
+  --team-red: oklch(0.7 0.2 22);
+  --success: oklch(0.76 0.16 160);
+  --warning: oklch(0.84 0.15 80);
+  --chart-1: oklch(0.7 0.2 292);
+  --chart-2: oklch(0.83 0.13 200);
+  --chart-3: oklch(0.7 0.2 22);
+  --chart-4: oklch(0.76 0.16 160);
+  --chart-5: oklch(0.84 0.15 85);
+  --sidebar: oklch(0.16 0.04 280);
+  --sidebar-foreground: oklch(0.97 0.006 280);
+  --sidebar-primary: oklch(0.7 0.2 292);
+  --sidebar-primary-foreground: oklch(0.14 0.04 285);
+  --sidebar-accent: oklch(0.26 0.045 280);
+  --sidebar-accent-foreground: oklch(0.97 0.006 280);
+  --sidebar-border: oklch(1 0 0 / 9%);
+  --sidebar-ring: oklch(0.7 0.2 292);
 }
 
 @layer base {
@@ -134,3 +145,59 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { transition: background-color .2s ease, color .2s ease; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  }
+}
+
+/* ---------- Giao diện đấu trường ---------- */
+body {
+  font-family: var(--font-sans);
+  background-image:
+    radial-gradient(70rem 36rem at 85% -12%, color-mix(in oklab, var(--primary) 20%, transparent), transparent 70%),
+    radial-gradient(48rem 30rem at -8% 12%, color-mix(in oklab, var(--cyan) 11%, transparent), transparent 70%);
+  background-attachment: fixed;
+}
+h1, h2, h3, .font-display { font-family: var(--font-display); word-spacing: 0.14em; }
+
+.gradient-text {
+  background-image: linear-gradient(95deg, var(--primary), var(--cyan));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.bg-brand { background-image: linear-gradient(120deg, var(--primary), color-mix(in oklab, var(--primary) 55%, var(--cyan))); }
+.glow { box-shadow: 0 0 0 1px color-mix(in oklab, var(--primary) 40%, transparent), 0 8px 28px -6px color-mix(in oklab, var(--primary) 55%, transparent); }
+.glow-gold { box-shadow: 0 0 0 1px color-mix(in oklab, var(--gold) 45%, transparent), 0 8px 30px -8px color-mix(in oklab, var(--gold) 60%, transparent); }
+.hero-grid {
+  background-image:
+    linear-gradient(color-mix(in oklab, var(--foreground) 6%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--foreground) 6%, transparent) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: radial-gradient(ellipse at 70% 40%, #000 0%, transparent 70%);
+}
+.card-lift { transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease; }
+.card-lift:hover { transform: translateY(-2px); border-color: color-mix(in oklab, var(--primary) 55%, transparent); box-shadow: 0 10px 30px -12px color-mix(in oklab, var(--primary) 45%, transparent); }
+
+@keyframes float-y { 0%,100% { transform: translateY(0) rotate(var(--r,0deg)); } 50% { transform: translateY(-10px) rotate(var(--r,0deg)); } }
+@keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--success) 60%, transparent); } 100% { box-shadow: 0 0 0 10px transparent; } }
+@keyframes fade-up { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.animate-float { animation: float-y 5s ease-in-out infinite; }
+.animate-live { animation: pulse-ring 1.6s ease-out infinite; }
+.animate-fade-up { animation: fade-up .35s ease both; }
+
+/* ---------- Hoạt ảnh bàn cờ ---------- */
+@keyframes piece-pop { 0% { transform: scale(.55); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes trail-fade { 0% { opacity: .6; transform: scale(1.2); } 100% { opacity: 0; transform: scale(.5); } }
+@keyframes ghost-out { 0% { opacity: .9; transform: scale(1); } 100% { opacity: 0; transform: scale(1.6) rotate(25deg); } }
+@keyframes clash-ring { 0% { transform: scale(.3); opacity: .95; } 100% { transform: scale(1.35); opacity: 0; } }
+@keyframes clash-icon { 0% { transform: scale(.2) rotate(-30deg); opacity: 0; } 40% { transform: scale(1.4) rotate(8deg); opacity: 1; } 100% { transform: scale(1) rotate(0); opacity: .95; } }
+.piece-pop { animation: piece-pop .45s cubic-bezier(.2,.9,.3,1.3) both; }
+.clash-ring { animation: clash-ring .8s ease-out both; }
+.clash-icon { animation: clash-icon .55s ease-out both; }
+
+@keyframes confetti-fall { 0% { transform: translateY(-20px) rotate(0); opacity: 0; } 10% { opacity: 1; } 100% { transform: translateY(160px) rotate(540deg); opacity: 0; } }
+.confetti { animation: confetti-fall 3s linear infinite; }

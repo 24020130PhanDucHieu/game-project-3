@@ -1104,7 +1104,7 @@ class Database:
         team_slot["draft_updated_at"] = time.time()
         return {"status": "SUCCESS", "message": "Đã cập nhật mã soạn thảo nháp", "side": side}
 
-    def run_practice_match(self, code_content: str, language: str = "PYTHON", side: str = "team_a", boss: str = "RANDOM") -> dict:
+    def run_practice_match(self, code_content: str, language: str = "PYTHON", side: str = "team_a", boss: str = "RANDOM", rule_id: str = "STAGE_1_STANDARD", seed: str = None) -> dict:
         boss = (boss or "RANDOM").upper()
         if boss == "AGGRESSIVE":
             benchmark_code = """# -*- coding: utf-8 -*-
@@ -1152,7 +1152,7 @@ def decide_move(game_state):
         lang_a = language if side == "team_a" else "PYTHON"
         lang_b = "PYTHON" if side == "team_a" else language
         
-        sim_res = Database.simulate_9x9_board_match(code_a, code_b, lang_a, lang_b, 1)
+        sim_res = Database.simulate_9x9_board_match(code_a, code_b, lang_a, lang_b, 1, rule_id or "STAGE_1_STANDARD", seed)
         winner = sim_res["winner_side"]
         
         if side == "team_a":
@@ -1172,6 +1172,8 @@ def decide_move(game_state):
             "mystery_tiles": sim_res.get("mystery_tiles", {}),
             "user_result": user_result,
             "user_side": side,
+            "rule_id": rule_id or "STAGE_1_STANDARD",
+            "bot_errors": sim_res.get("bot_errors", {}),
             "benchmark_name": boss_name
         }
 

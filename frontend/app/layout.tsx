@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import { themeBootScript } from '@/lib/theme'
 
 export const metadata: Metadata = {
   title: 'BOT K69 | ARENA OTTV2 – Đấu Trường Lập Trình',
@@ -7,12 +8,19 @@ export const metadata: Metadata = {
   icons: { icon: '/icon.svg' },
 }
 
-export const viewport: Viewport = { colorScheme: 'light', themeColor: '#f8fafc' }
+export const viewport: Viewport = {
+  colorScheme: 'light dark',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f8fafc' },
+    { media: '(prefers-color-scheme: dark)', color: '#0b1020' },
+  ],
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="vi">
+    <html lang="vi" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link

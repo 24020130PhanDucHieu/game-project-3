@@ -3,6 +3,7 @@ package http
 import (
 	"crypto/sha256"
 	"crypto/subtle"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -18,6 +19,7 @@ import (
 
 type MatchHandler struct {
 	Accounts    *repository.Accounts
+	Judges      *repository.Judges
 	AccountSync func() error
 	service     *service.TournamentService
 	sessions    *auth.Manager
@@ -36,7 +38,25 @@ func (h *MatchHandler) AdminLogin(c *gin.Context) {
 	username, _ := req["username"].(string)
 	password, _ := req["password"].(string)
 	if username != "" && !isAdminUsername(username) {
-		c.JSON(http.StatusUnauthorized, gin.H{"detail": "Invalid organizer credentials"})
+		if h.Judges == nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"detail": "Invalid organizer credentials"})
+			return
+		}
+		judge, err := h.Judges.Authenticate(username, password)
+		if errors.Is(err, repository.ErrJudgeCredentials) {
+			c.JSON(http.StatusUnauthorized, gin.H{"detail": err.Error()})
+			return
+		}
+		if err != nil {
+			c.JSON(http.StatusServiceUnavailable, gin.H{"detail": "Chưa kiểm tra được tài khoản giám khảo. Hãy thử lại."})
+			return
+		}
+		token, err := h.sessions.Create(auth.Session{Role: "ADMIN", Judge: judge.Username, DisplayName: judge.DisplayName})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"detail": "Could not create session"})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "role": "ADMIN", "judge": judge.Username, "display_name": judge.DisplayName, "session_token": token})
 		return
 	}
 	configured := os.Getenv("ADMIN_PASSWORD")
@@ -79,7 +99,11 @@ func (h *MatchHandler) CurrentSession(c *gin.Context) {
 		return
 	}
 	session.Nonce = ""
-	c.JSON(http.StatusOK, session)
+	c.JSON(http.StatusOK, gin.H{
+		"role": session.Role, "side": session.Side, "tournament_id": session.TournamentID, "match_id": session.MatchID,
+		"student_id": session.StudentID, "team_name": session.TeamName, "judge": session.Judge, "display_name": session.DisplayName,
+		"owner": session.IsOwner(), "expires_at": session.ExpiresAt, "issued_at": session.IssuedAt,
+	})
 }
 
 func (h *MatchHandler) Logout(c *gin.Context) {
@@ -700,6 +724,11 @@ func (h *MatchHandler) PracticeMatch(c *gin.Context) {
 }
 
 func (h *MatchHandler) GetMatchHistory(c *gin.Context) {
+	if cached, ok := derivedGet("history"); ok {
+		c.JSON(http.StatusOK, cached)
+		return
+	}
+	version := derivedVersion()
 	allTournaments := h.service.GetAllTournaments()
 	var historyList []map[string]interface{}
 
@@ -763,5 +792,6 @@ func (h *MatchHandler) GetMatchHistory(c *gin.Context) {
 	if historyList == nil {
 		historyList = []map[string]interface{}{}
 	}
+	derivedSet("history", version, historyList)
 	c.JSON(http.StatusOK, historyList)
 }

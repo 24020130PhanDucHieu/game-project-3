@@ -1,0 +1,129 @@
+'use client'
+
+/**
+ * Bộ nhớ đệm đọc dữ liệu kiểu stale-while-revalidate cho giao diện.
+ * - Dữ liệu cũ hiện ngay, đồng thời tải lại ngầm khi quá hạn (ttl).
+ * - Gộp các yêu cầu trùng khóa đang bay để không gọi API lặp lại.
+ * - Tạm dừng tải định kỳ khi tab bị ẩn.
+ */
+
+import { useCallback, useEffect, useRef, useState } from 'react'
+
+type Entry = { data?: unknown; error?: Error; at: number; promise?: Promise<unknown> }
+
+const store = new Map<string, Entry>()
+const listeners = new Set<(key: string) => void>()
+
+function notify(key: string) {
+  listeners.forEach((listener) => listener(key))
+}
+
+export function readCache<T>(key: string): T | undefined {
+  return store.get(key)?.data as T | undefined
+}
+
+/** Xóa các khóa bắt đầu bằng prefix; để trống để xóa tất cả (khi đổi phiên). */
+export function invalidate(prefix = '') {
+  for (const [key, entry] of store) {
+    if (key.startsWith(prefix)) {
+      entry.at = 0
+      if (!prefix) store.delete(key)
+    }
+  }
+  listeners.forEach((listener) => listener(prefix))
+}
+
+function load<T>(key: string, fetcher: () => Promise<T>, force: boolean, ttl: number): Promise<T> {
+  const entry = store.get(key) ?? { at: 0 }
+  store.set(key, entry)
+  if (entry.promise) return entry.promise as Promise<T>
+  if (!force && entry.data !== undefined && Date.now() - entry.at < ttl) return Promise.resolve(entry.data as T)
+  const promise = fetcher()
+    .then((data) => {
+      entry.data = data
+      entry.error = undefined
+      entry.at = Date.now()
+      return data
+    })
+    .catch((error) => {
+      entry.error = error instanceof Error ? error : new Error(String(error))
+      entry.at = Date.now() // tránh vòng lặp tải lại liên tục khi lỗi; thử lại theo chu kỳ hoặc reload()
+      throw entry.error
+    })
+    .finally(() => {
+      entry.promise = undefined
+      notify(key)
+    })
+  entry.promise = promise
+  return promise
+}
+
+export type Resource<T> = {
+  data: T | undefined
+  error: Error | undefined
+  /** Chưa có dữ liệu nào để hiển thị (dùng cho skeleton). */
+  loading: boolean
+  /** Đang tải lại ngầm khi đã có dữ liệu cũ. */
+  refreshing: boolean
+  reload: () => Promise<void>
+}
+
+export function useResource<T>(
+  key: string | null,
+  fetcher: () => Promise<T>,
+  options: { ttl?: number; refreshMs?: number } = {},
+): Resource<T> {
+  const { ttl = 20_000, refreshMs } = options
+  const fetcherRef = useRef(fetcher)
+  fetcherRef.current = fetcher
+  const [, bump] = useState(0)
+
+  const run = useCallback(
+    (force: boolean) => {
+      if (!key) return Promise.resolve()
+      return load(key, () => fetcherRef.current(), force, ttl).then(
+        () => undefined,
+        () => undefined,
+      )
+    },
+    [key, ttl],
+  )
+
+  useEffect(() => {
+    const onChange = (changed: string) => {
+      if (key && key.startsWith(changed)) bump((n) => n + 1)
+    }
+    listeners.add(onChange)
+    return () => {
+      listeners.delete(onChange)
+    }
+  }, [key])
+
+  useEffect(() => {
+    void run(false)
+  }, [run, key])
+
+  useEffect(() => {
+    if (!key) return
+    const entry = store.get(key)
+    // Sau invalidate(): dữ liệu bị đánh dấu hết hạn (at = 0) hoặc bị xóa nên tải lại.
+    if (!entry || (entry.at === 0 && !entry.promise)) void run(true)
+  })
+
+  useEffect(() => {
+    if (!key || !refreshMs) return
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') void run(true)
+    }, refreshMs)
+    return () => window.clearInterval(timer)
+  }, [key, refreshMs, run])
+
+  const entry = key ? store.get(key) : undefined
+  return {
+    data: entry?.data as T | undefined,
+    error: entry?.error,
+    loading: !!key && entry?.data === undefined && !entry?.error,
+    refreshing: !!entry?.promise && entry.data !== undefined,
+    reload: () => run(true),
+  }
+}

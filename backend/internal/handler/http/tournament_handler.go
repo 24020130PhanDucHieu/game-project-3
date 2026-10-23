@@ -319,6 +319,11 @@ func (h *TournamentHandler) SetStageSchedule(c *gin.Context) {
 }
 
 func (h *TournamentHandler) GetRanking(c *gin.Context) {
+	if cached, ok := derivedGet("ranking"); ok {
+		c.JSON(http.StatusOK, cached)
+		return
+	}
+	version := derivedVersion()
 	allTournaments := h.service.GetAllTournaments()
 	// Track stats per student across all tournaments
 	type teamStats struct {
@@ -470,6 +475,7 @@ func (h *TournamentHandler) GetRanking(c *gin.Context) {
 		rankList = []map[string]interface{}{}
 	}
 
+	derivedSet("ranking", version, rankList)
 	c.JSON(http.StatusOK, rankList)
 }
 

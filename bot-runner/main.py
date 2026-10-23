@@ -159,8 +159,14 @@ def mutate_tournament(req: MutateRequest):
             lang = p.get("language") or "PYTHON"
             side = p.get("side") or "team_a"
             boss = p.get("boss") or "RANDOM"
-            res = stateless_db.run_practice_match(code, lang, side, boss)
+            res = stateless_db.run_practice_match(code, lang, side, boss, p.get("rule_id") or "STAGE_1_STANDARD", p.get("seed"))
             return res
+        elif action == "friendly-match":
+            # Giao hữu giữa hai bot đã nộp: chỉ trả diễn biến và kết quả, không bao giờ trả mã nguồn.
+            from app.engine.board import simulate_board
+            result = simulate_board(p.get("code_a") or "", p.get("code_b") or "", p.get("language_a") or "PYTHON", p.get("language_b") or "PYTHON",
+                                    1, p.get("rule_id") or "STAGE_1_STANDARD", p.get("seed"), reuse_sandbox=True, record_replay=True)
+            return {key: result.get(key) for key in ("winner_side", "win_reason", "board_steps", "final_red_alive", "final_blue_alive", "first_side", "bot_errors", "mystery_tiles")}
         else:
             raise HTTPException(status_code=400, detail="Unknown action")
             

@@ -2,7 +2,10 @@ package http
 
 import (
 	"context"
+	cryptorand "crypto/rand"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 	"runtime"
@@ -29,7 +32,9 @@ type AccountsHandler struct {
 	DatabaseStats    func(context.Context) (map[string]interface{}, error)
 	DatabaseOptimize func(context.Context) (string, error)
 	QueueCounts      func(context.Context) (map[string]int, error)
-	mu               sync.Mutex
+	// Records chứa nhật ký mọi thao tác ghi của quản trị (middleware AdminAudit) để hiển thị cùng nhật ký sự kiện.
+	Records *repository.QualifierRecords
+	mu      sync.Mutex
 }
 
 // Monitoring returns live real-time metrics of servers, judges, and contest submissions.
@@ -234,16 +239,8 @@ func (h *AccountsHandler) Register(c *gin.Context) {
 	}
 	req.StudentID = strings.ToUpper(strings.TrimSpace(req.StudentID))
 	req.TeamName = strings.TrimSpace(req.TeamName)
-	if !regexp.MustCompile(`^[A-Z0-9][A-Z0-9_-]{3,31}$`).MatchString(req.StudentID) || isAdminUsername(req.StudentID) {
-		c.JSON(400, gin.H{"detail": "Mã sinh viên cần 4–32 ký tự chữ, số, gạch ngang hoặc gạch dưới."})
-		return
-	}
-	if utf8.RuneCountInString(req.TeamName) < 2 || utf8.RuneCountInString(req.TeamName) > 80 {
-		c.JSON(400, gin.H{"detail": "Tên đội cần từ 2 đến 80 ký tự."})
-		return
-	}
-	if len(req.Password) < 6 || len(req.Password) > 72 || strings.TrimSpace(req.Password) == "" {
-		c.JSON(400, gin.H{"detail": "Mật khẩu cần từ 6 đến 72 byte."})
+	if err := validateRegistration(req.StudentID, req.TeamName, req.Password); err != nil {
+		c.JSON(400, gin.H{"detail": err.Error()})
 		return
 	}
 	h.mu.Lock()
@@ -263,6 +260,107 @@ func (h *AccountsHandler) Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"student_id": req.StudentID, "team_name": req.TeamName})
 }
 
+var studentIDPattern = regexp.MustCompile(`^[A-Z0-9][A-Z0-9_-]{3,31}$`)
+
+func validateRegistration(studentID, teamName, password string) error {
+	if !studentIDPattern.MatchString(studentID) || isAdminUsername(studentID) {
+		return errors.New("Mã sinh viên cần 4–32 ký tự chữ, số, gạch ngang hoặc gạch dưới.")
+	}
+	if utf8.RuneCountInString(teamName) < 2 || utf8.RuneCountInString(teamName) > 80 {
+		return errors.New("Tên đội cần từ 2 đến 80 ký tự.")
+	}
+	if len(password) < 6 || len(password) > 72 || strings.TrimSpace(password) == "" {
+		return errors.New("Mật khẩu cần từ 6 đến 72 byte.")
+	}
+	return nil
+}
+
+const importBatchLimit = 500
+
+// generatePassword sinh mật khẩu 10 ký tự dễ đọc (bỏ các ký tự dễ nhầm 0/O, 1/l/I).
+func generatePassword() string {
+	const alphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789"
+	b := make([]byte, 10)
+	_, _ = cryptorand.Read(b)
+	for i := range b {
+		b[i] = alphabet[int(b[i])%len(alphabet)]
+	}
+	return string(b)
+}
+
+// ImportAccounts tạo tài khoản đội hàng loạt. Mật khẩu trống sẽ được sinh tự động và chỉ trả về đúng một lần.
+func (h *AccountsHandler) ImportAccounts(c *gin.Context) {
+	var req struct {
+		Rows []struct {
+			StudentID string `json:"student_id"`
+			TeamName  string `json:"team_name"`
+			Password  string `json:"password"`
+		} `json:"rows"`
+		TournamentID string `json:"tournament_id"`
+	}
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 512*1024)
+	if c.ShouldBindJSON(&req) != nil || len(req.Rows) == 0 {
+		c.JSON(400, gin.H{"detail": "Danh sách nhập không hợp lệ."})
+		return
+	}
+	if len(req.Rows) > importBatchLimit {
+		c.JSON(400, gin.H{"detail": fmt.Sprintf("Mỗi lần nhập tối đa %d dòng.", importBatchLimit)})
+		return
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if err := h.ImportLegacy(); err != nil {
+		c.JSON(503, gin.H{"detail": "Chưa thể đọc danh sách tài khoản."})
+		return
+	}
+	results := make([]gin.H, 0, len(req.Rows))
+	created, enrolled := 0, 0
+	seen := map[string]bool{}
+	for i, row := range req.Rows {
+		sid := strings.ToUpper(strings.TrimSpace(row.StudentID))
+		name := strings.TrimSpace(row.TeamName)
+		password, generated := row.Password, false
+		if strings.TrimSpace(password) == "" {
+			password, generated = generatePassword(), true
+		}
+		result := gin.H{"row": i + 1, "student_id": sid, "team_name": name}
+		switch err := validateRegistration(sid, name, password); {
+		case err != nil:
+			result["status"], result["detail"] = "INVALID", err.Error()
+		case seen[sid]:
+			result["status"], result["detail"] = "DUPLICATE", "Mã sinh viên bị lặp trong file."
+		default:
+			seen[sid] = true
+			if err := h.Store.Create(sid, name, password); errors.Is(err, repository.ErrAccountExists) {
+				result["status"], result["detail"] = "EXISTS", "Tài khoản đã tồn tại (không đổi mật khẩu)."
+			} else if err != nil {
+				result["status"], result["detail"] = "ERROR", "Không lưu được tài khoản."
+			} else {
+				created++
+				result["status"] = "CREATED"
+				if generated {
+					result["password"] = password
+				}
+			}
+		}
+		if req.TournamentID != "" && (result["status"] == "CREATED" || result["status"] == "EXISTS") {
+			if _, err := h.Service.MutateTournament(req.TournamentID, "add-team", map[string]interface{}{"student_id": sid, "team_name": name, "university": "Khối Kỹ Thuật"}); err != nil {
+				result["enroll_error"] = err.Error()
+			} else {
+				enrolled++
+				result["enrolled"] = true
+			}
+		}
+		results = append(results, result)
+	}
+	if req.TournamentID != "" && enrolled > 0 {
+		c.Set("eventTournamentID", req.TournamentID)
+	}
+	_ = h.Store.LogAdminAction(requestSession(c).Actor(), "IMPORT_ACCOUNTS", req.TournamentID, "", map[string]interface{}{"rows": len(req.Rows), "created": created, "enrolled": enrolled})
+	c.Header("Cache-Control", "no-store")
+	c.JSON(200, gin.H{"status": "SUCCESS", "created": created, "enrolled": enrolled, "results": results})
+}
+
 func (h *AccountsHandler) List(c *gin.Context) {
 	c.Header("Cache-Control", "no-store")
 	if err := h.ImportLegacy(); err != nil {
@@ -276,10 +374,11 @@ func (h *AccountsHandler) List(c *gin.Context) {
 	}
 	items := []gin.H{}
 	for _, a := range accounts {
-		password, err := h.Store.Password(a)
+		_, err := h.Store.Password(a)
 		// A missing historical encryption key must not hide the entire registry.
 		// Authentication still uses the independent bcrypt hash.
-		items = append(items, gin.H{"student_id": a.StudentID, "team_name": a.TeamName, "password": password, "password_available": err == nil})
+		// Never return the plaintext password: teams who forget it use the reset flow.
+		items = append(items, gin.H{"student_id": a.StudentID, "team_name": a.TeamName, "password_available": err == nil})
 	}
 	c.JSON(200, items)
 }
@@ -448,7 +547,7 @@ func (h *AccountsHandler) AdminBroadcastNotification(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"detail": "Không thể gửi thông báo."})
 		return
 	}
-	_ = h.Store.LogAdminAction("admin", "BROADCAST_NOTIFICATION", "", "", map[string]interface{}{"title": n.Title})
+	_ = h.Store.LogAdminAction(requestSession(c).Actor(), "BROADCAST_NOTIFICATION", "", "", map[string]interface{}{"title": n.Title})
 	c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "notification": n})
 }
 
@@ -520,12 +619,53 @@ func (h *AccountsHandler) GetServerTime(c *gin.Context) {
 }
 
 func (h *AccountsHandler) ListAdminAuditLogs(c *gin.Context) {
-	logs, err := h.Store.ListAdminAuditLogs(c.Query("tournament_id"), 50)
+	tournamentID := c.Query("tournament_id")
+	logs, err := h.Store.ListAdminAuditLogs(tournamentID, 50)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"detail": "Không thể tải nhật ký quản trị."})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "logs": logs})
+	items := make([]gin.H, 0, len(logs)+100)
+	for _, l := range logs {
+		items = append(items, gin.H{"id": fmt.Sprint("event-", l.ID), "admin_user": l.AdminUser, "action": l.Action, "tournament_id": l.TournamentID, "match_id": l.MatchID, "details": l.Details, "created_at": l.CreatedAt})
+	}
+	// Gộp nhật ký từng yêu cầu ghi (ai, lúc nào, đường dẫn, kết quả) do middleware AdminAudit ghi lại.
+	if h.Records != nil {
+		rows, err := h.Records.List("audit:")
+		if err == nil {
+			keys := make([]string, 0, len(rows))
+			for key := range rows {
+				keys = append(keys, key)
+			}
+			sort.Sort(sort.Reverse(sort.StringSlice(keys)))
+			for _, key := range keys {
+				if len(items) >= 150 {
+					break
+				}
+				var rec struct {
+					At         time.Time `json:"at"`
+					Method     string    `json:"method"`
+					Path       string    `json:"path"`
+					Actor      string    `json:"actor"`
+					Status     string    `json:"status"`
+					HTTPStatus int       `json:"http_status"`
+				}
+				if json.Unmarshal(rows[key], &rec) != nil {
+					continue
+				}
+				if tournamentID != "" && !strings.Contains(rec.Path, "/"+tournamentID) {
+					continue
+				}
+				items = append(items, gin.H{"id": key, "admin_user": rec.Actor, "action": rec.Method + " " + rec.Path, "created_at": rec.At, "details": gin.H{"status": rec.Status, "http_status": rec.HTTPStatus}})
+			}
+		}
+	}
+	sort.SliceStable(items, func(i, j int) bool {
+		a, _ := items[i]["created_at"].(time.Time)
+		b, _ := items[j]["created_at"].(time.Time)
+		return a.After(b)
+	})
+	c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "logs": items})
 }
 
 func (h *MatchHandler) accountLogin(c *gin.Context, username, password string) {

@@ -64,6 +64,11 @@ func (s *TournamentService) PracticeMatch(params map[string]interface{}) (map[st
 	return s.adapter.Mutate(nil, "practice-match", params)
 }
 
+// RunStateless chạy một tác vụ không gắn giải (giao hữu, thử thách) trên worker, chịu cùng giới hạn đồng thời.
+func (s *TournamentService) RunStateless(action string, params map[string]interface{}) (map[string]interface{}, error) {
+	return s.adapter.Mutate(nil, action, params)
+}
+
 func (s *TournamentService) RecoverInterruptedRounds() error {
 	for tournamentID, raw := range s.repo.GetAll() {
 		tournament, _ := raw.(map[string]interface{})

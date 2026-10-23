@@ -26,7 +26,7 @@ func AdminAudit(store *repository.QualifierRecords) gin.HandlerFunc {
 			return
 		}
 		key := "audit:" + time.Now().UTC().Format("20060102T150405.000000000") + ":" + hex.EncodeToString(id[:])
-		record := map[string]interface{}{"at": time.Now().UTC(), "method": c.Request.Method, "path": c.Request.URL.Path, "actor": "ADMIN", "status": "STARTED"}
+		record := map[string]interface{}{"at": time.Now().UTC(), "method": c.Request.Method, "path": c.Request.URL.Path, "actor": actor.Actor(), "status": "STARTED"}
 		// Fail closed before a mutation if the audit trail cannot be written.
 		if err := store.Batch(map[string]interface{}{key: record}); err != nil {
 			c.AbortWithStatusJSON(503, gin.H{"detail": "Chưa ghi được nhật ký quản trị. Hãy thử lại."})

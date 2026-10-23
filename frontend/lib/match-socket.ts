@@ -4,6 +4,18 @@
 
 import { getApiBaseUrl } from './api-client'
 
+/** Ghép địa chỉ WebSocket từ đường dẫn, dùng chung logic chọn máy chủ với API REST. */
+export function buildWsUrl(path: string): string {
+  let base = getApiBaseUrl()
+  if (typeof window !== 'undefined' && base === window.location.origin && window.location.port === '3000') {
+    base = 'http://127.0.0.1:8080'
+  }
+  const wsProto = base.startsWith('https') ? 'wss:' : 'ws:'
+  const host = base.replace(/^https?:\/\//, '').replace(/\/+$/, '')
+  const cleanPath = path.startsWith('/') ? path : `/${path}`
+  return `${wsProto}//${host}${cleanPath}`
+}
+
 export type WebSocketMessageHandler = (data: any) => void
 
 export class ArenaSocket {
@@ -13,17 +25,11 @@ export class ArenaSocket {
   private maxReconnectAttempts = 10
   private reconnectTimer: any = null
   private listeners: Set<WebSocketMessageHandler> = new Set()
+  private statusListeners: Set<(open: boolean) => void> = new Set()
   private isDestroyed = false
 
   constructor(path: string) {
-    let base = getApiBaseUrl()
-    if (typeof window !== 'undefined' && base === window.location.origin && window.location.port === '3000') {
-      base = 'http://127.0.0.1:8080'
-    }
-    const wsProto = base.startsWith('https') ? 'wss:' : 'ws:'
-    const host = base.replace(/^https?:\/\//, '').replace(/\/+$/, '')
-    const cleanPath = path.startsWith('/') ? path : `/${path}`
-    this.url = `${wsProto}//${host}${cleanPath}`
+    this.url = buildWsUrl(path)
   }
 
   connect() {
@@ -34,6 +40,7 @@ export class ArenaSocket {
 
       this.ws.onopen = () => {
         this.reconnectAttempts = 0
+        this.statusListeners.forEach((listener) => listener(true))
       }
 
       this.ws.onmessage = (event) => {
@@ -46,6 +53,7 @@ export class ArenaSocket {
       }
 
       this.ws.onclose = () => {
+        this.statusListeners.forEach((listener) => listener(false))
         this.scheduleReconnect()
       }
 
@@ -73,6 +81,14 @@ export class ArenaSocket {
     }
   }
 
+  /** Báo trạng thái kết nối (true = đang mở) để giao diện tải lại dữ liệu sau khi nối lại. */
+  onStatus(handler: (open: boolean) => void): () => void {
+    this.statusListeners.add(handler)
+    return () => {
+      this.statusListeners.delete(handler)
+    }
+  }
+
   send(data: any) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(typeof data === 'string' ? data : JSON.stringify(data))
@@ -88,6 +104,7 @@ export class ArenaSocket {
       this.ws = null
     }
     this.listeners.clear()
+    this.statusListeners.clear()
   }
 }
 

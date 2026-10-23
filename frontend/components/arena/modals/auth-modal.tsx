@@ -27,6 +27,7 @@ export function AuthModal({
   const [showLoginPass, setShowLoginPass] = useState(false)
   const [loginLoading, setLoginLoading] = useState(false)
   const [loginError, setLoginError] = useState<string | null>(null)
+  const [asOrganizer, setAsOrganizer] = useState(false)
 
   // Register State
   const [regSid, setRegSid] = useState('')
@@ -53,9 +54,9 @@ export function AuthModal({
 
     const userClean = loginUser.trim().toUpperCase()
     try {
-      if (userClean === 'ADMIN' || userClean === 'BTC') {
-        await arenaApi.loginAdmin(loginPass)
-        onLoginSuccess?.('admin', 'Ban Tổ Chức (Admin)', 'ADMIN')
+      if (asOrganizer || userClean === 'ADMIN' || userClean === 'BTC') {
+        const res = await arenaApi.loginAdmin(loginPass, loginUser.trim())
+        onLoginSuccess?.('admin', res.display_name || 'Ban Tổ Chức (Admin)', res.judge || 'ADMIN')
         onClose()
       } else {
         const res = await arenaApi.loginTeam(loginUser.trim(), loginPass)
@@ -104,19 +105,19 @@ export function AuthModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in-0">
-      <div className="w-full max-w-[460px] overflow-hidden rounded-[24px] border border-[#e2e8f0] bg-white p-8 sm:p-9 shadow-[0_20px_45px_-12px_rgba(15,23,42,0.15)] animate-in zoom-in-95">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in-0">
+      <div className="w-full max-w-[460px] overflow-hidden rounded-[24px] border border-border bg-card p-8 sm:p-9 shadow-[0_20px_45px_-12px_rgba(15,23,42,0.15)] animate-in zoom-in-95">
         {mode === 'login' && (
           <div>
-            <h2 className="text-2xl font-extrabold text-[#0f172a] tracking-tight">
+            <h2 className="text-2xl font-extrabold text-foreground tracking-tight">
               Đăng nhập
             </h2>
-            <p className="mt-1 text-sm text-[#64748b]">
+            <p className="mt-1 text-sm text-muted-foreground">
               Đăng nhập tài khoản đội thi hoặc Ban tổ chức.
             </p>
 
             {loginError && (
-              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-600 font-medium">
+              <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-600 dark:text-red-300 font-medium">
                 {loginError}
               </div>
             )}
@@ -126,19 +127,19 @@ export function AuthModal({
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="inp-login-user"
-                  className="text-[13.5px] font-semibold text-[#1e293b]"
+                  className="text-[13.5px] font-semibold text-foreground"
                 >
-                  Tên đăng nhập hoặc MSSV
+                  {asOrganizer ? 'Tên đăng nhập giám khảo' : 'Tên đăng nhập hoặc MSSV'}
                 </label>
-                <div className="flex h-12 items-center rounded-xl border border-[#dce4ee] bg-white px-3.5 transition focus-within:border-[#434be6] focus-within:ring-2 focus-within:ring-[#434be6]/15">
+                <div className="flex h-12 items-center rounded-xl border border-input bg-card px-3.5 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
                   <input
                     id="inp-login-user"
                     type="text"
                     required
                     value={loginUser}
                     onChange={(e) => setLoginUser(e.target.value)}
-                    placeholder="Mã sinh viên"
-                    className="w-full border-none bg-transparent text-sm text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
+                    placeholder={asOrganizer ? 'VD: gk.lan (hoặc admin)' : 'Mã sinh viên'}
+                    className="w-full border-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
                   />
                 </div>
               </div>
@@ -148,19 +149,19 @@ export function AuthModal({
                 <div className="flex items-center justify-between">
                   <label
                     htmlFor="inp-login-pass"
-                    className="text-[13.5px] font-semibold text-[#1e293b]"
+                    className="text-[13.5px] font-semibold text-foreground"
                   >
                     Mật khẩu
                   </label>
                   <button
                     type="button"
                     onClick={() => setMode('forgot')}
-                    className="text-xs font-semibold text-[#434be6] hover:underline"
+                    className="text-xs font-semibold text-primary hover:underline"
                   >
                     Quên mật khẩu?
                   </button>
                 </div>
-                <div className="flex h-12 items-center rounded-xl border border-[#dce4ee] bg-white px-3.5 transition focus-within:border-[#434be6] focus-within:ring-2 focus-within:ring-[#434be6]/15">
+                <div className="flex h-12 items-center rounded-xl border border-input bg-card px-3.5 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
                   <input
                     id="inp-login-pass"
                     type={showLoginPass ? 'text' : 'password'}
@@ -168,12 +169,12 @@ export function AuthModal({
                     value={loginPass}
                     onChange={(e) => setLoginPass(e.target.value)}
                     placeholder="Nhập mật khẩu"
-                    className="w-full border-none bg-transparent text-sm text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
+                    className="w-full border-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
                   />
                   <button
                     type="button"
                     onClick={() => setShowLoginPass((v) => !v)}
-                    className="p-1 text-[#64748b] transition hover:text-[#0f172a]"
+                    className="p-1 text-muted-foreground transition hover:text-foreground"
                     aria-label={showLoginPass ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
                   >
                     {showLoginPass ? (
@@ -185,11 +186,16 @@ export function AuthModal({
                 </div>
               </div>
 
+              <label className="flex cursor-pointer items-center gap-2 text-[13px] font-medium text-muted-foreground">
+                <input type="checkbox" className="accent-primary" checked={asOrganizer} onChange={(e) => setAsOrganizer(e.target.checked)} />
+                Đăng nhập Ban tổ chức / Giám khảo
+              </label>
+
               {/* Submit Button matching Image 3 */}
               <button
                 type="submit"
                 disabled={loginLoading}
-                className="mt-2 flex h-12 w-full items-center justify-center rounded-xl bg-[#434be6] text-sm font-bold text-white shadow-[0_4px_14px_rgba(67,75,230,0.25)] transition hover:bg-[#343bc8] active:translate-y-0.5 disabled:opacity-60"
+                className="mt-2 flex h-12 w-full items-center justify-center rounded-xl bg-brand text-sm font-bold text-white shadow-lg shadow-primary/30 transition hover:brightness-110 active:translate-y-0.5 disabled:opacity-60"
               >
                 {loginLoading ? 'Đang xác thực...' : 'Đăng nhập'}
               </button>
@@ -200,24 +206,24 @@ export function AuthModal({
               <button
                 type="button"
                 onClick={() => setMode('register')}
-                className="flex h-11 w-full items-center justify-center rounded-xl border border-[#e2e8f0] bg-white text-xs font-medium text-[#1e293b] transition hover:bg-[#f8fafc] hover:border-[#cbd5e1]"
+                className="flex h-11 w-full items-center justify-center rounded-xl border border-border bg-card text-xs font-medium text-foreground transition hover:bg-muted hover:border-ring"
               >
                 Chưa có tài khoản?{' '}
-                <strong className="ml-1 font-bold text-[#0f172a]">
+                <strong className="ml-1 font-bold text-foreground">
                   Đăng ký đội thi
                 </strong>
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="flex h-11 w-full items-center justify-center rounded-xl border border-[#e2e8f0] bg-white text-xs font-medium text-[#1e293b] transition hover:bg-[#f8fafc] hover:border-[#cbd5e1]"
+                className="flex h-11 w-full items-center justify-center rounded-xl border border-border bg-card text-xs font-medium text-foreground transition hover:bg-muted hover:border-ring"
               >
                 Quay về trang chủ
               </button>
             </div>
 
             {/* Disclaimer Footer Note matching Image 3 */}
-            <p className="mt-6 text-center text-xs leading-relaxed text-[#64748b]">
+            <p className="mt-6 text-center text-xs leading-relaxed text-muted-foreground">
               Đội thi đăng nhập bằng Mã sinh viên (MSSV) và mật khẩu đã tạo. Ban Tổ
               Chức sử dụng tài khoản Quản trị viên.
             </p>
@@ -226,74 +232,74 @@ export function AuthModal({
 
         {mode === 'register' && (
           <div>
-            <h2 className="text-2xl font-extrabold text-[#0f172a] tracking-tight">
+            <h2 className="text-2xl font-extrabold text-foreground tracking-tight">
               Đăng ký đội thi
             </h2>
-            <p className="mt-1 text-sm text-[#64748b]">
+            <p className="mt-1 text-sm text-muted-foreground">
               Khởi tạo tài khoản thi đấu mới cho đội của bạn.
             </p>
 
             {regError && (
-              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-600 font-medium">
+              <div className="mt-4 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-600 dark:text-red-300 font-medium">
                 {regError}
               </div>
             )}
             {regSuccess && (
-              <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700 font-medium">
+              <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-700 dark:text-emerald-300 font-medium">
                 {regSuccess}
               </div>
             )}
 
             <form onSubmit={handleRegister} className="mt-6 flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[13.5px] font-semibold text-[#1e293b]">
+                <label className="text-[13.5px] font-semibold text-foreground">
                   Mã sinh viên (Đội trưởng)
                 </label>
-                <div className="flex h-12 items-center rounded-xl border border-[#dce4ee] bg-white px-3.5 transition focus-within:border-[#434be6] focus-within:ring-2 focus-within:ring-[#434be6]/15">
+                <div className="flex h-12 items-center rounded-xl border border-input bg-card px-3.5 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
                   <input
                     type="text"
                     required
                     value={regSid}
                     onChange={(e) => setRegSid(e.target.value)}
                     placeholder="Ví dụ: 24020001"
-                    className="w-full border-none bg-transparent text-sm text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
+                    className="w-full border-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
                   />
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[13.5px] font-semibold text-[#1e293b]">
+                <label className="text-[13.5px] font-semibold text-foreground">
                   Tên đội thi đấu
                 </label>
-                <div className="flex h-12 items-center rounded-xl border border-[#dce4ee] bg-white px-3.5 transition focus-within:border-[#434be6] focus-within:ring-2 focus-within:ring-[#434be6]/15">
+                <div className="flex h-12 items-center rounded-xl border border-input bg-card px-3.5 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
                   <input
                     type="text"
                     required
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
                     placeholder="Ví dụ: K69 CyberBots"
-                    className="w-full border-none bg-transparent text-sm text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
+                    className="w-full border-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
                   />
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-[13.5px] font-semibold text-[#1e293b]">
+                <label className="text-[13.5px] font-semibold text-foreground">
                   Mật khẩu
                 </label>
-                <div className="flex h-12 items-center rounded-xl border border-[#dce4ee] bg-white px-3.5 transition focus-within:border-[#434be6] focus-within:ring-2 focus-within:ring-[#434be6]/15">
+                <div className="flex h-12 items-center rounded-xl border border-input bg-card px-3.5 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
                   <input
                     type={showRegPass ? 'text' : 'password'}
                     required
                     value={regPass}
                     onChange={(e) => setRegPass(e.target.value)}
                     placeholder="Ít nhất 6 ký tự"
-                    className="w-full border-none bg-transparent text-sm text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
+                    className="w-full border-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
                   />
                   <button
                     type="button"
                     onClick={() => setShowRegPass((v) => !v)}
-                    className="p-1 text-[#64748b] transition hover:text-[#0f172a]"
+                    className="p-1 text-muted-foreground transition hover:text-foreground"
                   >
                     {showRegPass ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
@@ -303,7 +309,7 @@ export function AuthModal({
               <button
                 type="submit"
                 disabled={regLoading}
-                className="mt-2 flex h-12 w-full items-center justify-center rounded-xl bg-[#434be6] text-sm font-bold text-white shadow-sm transition hover:bg-[#343bc8] disabled:opacity-60"
+                className="mt-2 flex h-12 w-full items-center justify-center rounded-xl bg-brand text-sm font-bold text-white shadow-sm transition hover:brightness-110 disabled:opacity-60"
               >
                 {regLoading ? 'Đang tạo tài khoản...' : 'Hoàn tất đăng ký'}
               </button>
@@ -313,17 +319,17 @@ export function AuthModal({
               <button
                 type="button"
                 onClick={() => setMode('login')}
-                className="flex h-11 w-full items-center justify-center rounded-xl border border-[#e2e8f0] bg-white text-xs font-medium text-[#1e293b] transition hover:bg-[#f8fafc]"
+                className="flex h-11 w-full items-center justify-center rounded-xl border border-border bg-card text-xs font-medium text-foreground transition hover:bg-muted"
               >
                 Đã có tài khoản?{' '}
-                <strong className="ml-1 font-bold text-[#0f172a]">
+                <strong className="ml-1 font-bold text-foreground">
                   Đăng nhập ngay
                 </strong>
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="flex h-11 w-full items-center justify-center rounded-xl border border-[#e2e8f0] bg-white text-xs font-medium text-[#1e293b] transition hover:bg-[#f8fafc]"
+                className="flex h-11 w-full items-center justify-center rounded-xl border border-border bg-card text-xs font-medium text-foreground transition hover:bg-muted"
               >
                 Quay về trang chủ
               </button>
@@ -333,10 +339,10 @@ export function AuthModal({
 
         {mode === 'forgot' && (
           <div>
-            <h2 className="text-2xl font-extrabold text-[#0f172a] tracking-tight">
+            <h2 className="text-2xl font-extrabold text-foreground tracking-tight">
               Quên mật khẩu
             </h2>
-            <p className="mt-1 text-sm text-[#64748b]">
+            <p className="mt-1 text-sm text-muted-foreground">
               Xác minh MSSV đội trưởng để lấy lại quyền truy cập.
             </p>
 
@@ -363,24 +369,24 @@ export function AuthModal({
               className="mt-6 flex flex-col gap-4"
             >
               <div className="flex flex-col gap-1.5">
-                <label className="text-[13.5px] font-semibold text-[#1e293b]">
+                <label className="text-[13.5px] font-semibold text-foreground">
                   Mã sinh viên (MSSV)
                 </label>
-                <div className="flex h-12 items-center rounded-xl border border-[#dce4ee] bg-white px-3.5 transition focus-within:border-[#434be6]">
+                <div className="flex h-12 items-center rounded-xl border border-input bg-card px-3.5 transition focus-within:border-primary">
                   <input
                     type="text"
                     required
                     value={forgotSid}
                     onChange={(e) => setForgotSid(e.target.value)}
                     placeholder="Mã sinh viên"
-                    className="w-full border-none bg-transparent text-sm text-[#0f172a] outline-none"
+                    className="w-full border-none bg-transparent text-sm text-foreground outline-none"
                   />
                 </div>
               </div>
 
               <button
                 type="submit"
-                className="mt-2 flex h-12 w-full items-center justify-center rounded-xl bg-[#434be6] text-sm font-bold text-white shadow-sm transition hover:bg-[#343bc8]"
+                className="mt-2 flex h-12 w-full items-center justify-center rounded-xl bg-brand text-sm font-bold text-white shadow-sm transition hover:brightness-110"
               >
                 {forgotLoading ? 'Đang kiểm tra...' : 'Xem hướng dẫn khôi phục'}
               </button>
@@ -398,18 +404,18 @@ export function AuthModal({
               } finally {
                 setForgotLoading(false)
               }
-            }} className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-5">
+            }} className="mt-5 flex flex-col gap-3 border-t border-border pt-5">
               <p className="text-sm font-semibold">Đã nhận mã từ ban tổ chức?</p>
-              <input required value={forgotToken} onChange={(e) => setForgotToken(e.target.value)} placeholder="Mã đặt lại mật khẩu" className="h-11 rounded-xl border border-slate-300 px-3" />
-              <input required minLength={6} type="password" value={forgotNewPass} onChange={(e) => setForgotNewPass(e.target.value)} placeholder="Mật khẩu mới" className="h-11 rounded-xl border border-slate-300 px-3" />
-              <button type="submit" disabled={forgotLoading} className="h-11 rounded-xl bg-indigo-600 font-semibold text-white disabled:opacity-50">Đặt lại mật khẩu</button>
+              <input required value={forgotToken} onChange={(e) => setForgotToken(e.target.value)} placeholder="Mã đặt lại mật khẩu" className="h-11 rounded-xl border border-input bg-background px-3" />
+              <input required minLength={6} type="password" value={forgotNewPass} onChange={(e) => setForgotNewPass(e.target.value)} placeholder="Mật khẩu mới" className="h-11 rounded-xl border border-input bg-background px-3" />
+              <button type="submit" disabled={forgotLoading} className="h-11 rounded-xl bg-brand font-semibold text-white disabled:opacity-50">Đặt lại mật khẩu</button>
             </form>
 
             <div className="mt-4 flex flex-col gap-2.5">
               <button
                 type="button"
                 onClick={() => setMode('login')}
-                className="flex h-11 w-full items-center justify-center rounded-xl border border-[#e2e8f0] bg-white text-xs font-medium text-[#1e293b] transition hover:bg-[#f8fafc]"
+                className="flex h-11 w-full items-center justify-center rounded-xl border border-border bg-card text-xs font-medium text-foreground transition hover:bg-muted"
               >
                 Quay lại đăng nhập
               </button>

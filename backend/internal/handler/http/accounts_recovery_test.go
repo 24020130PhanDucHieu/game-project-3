@@ -49,7 +49,12 @@ func TestAccountKeyMismatchDoesNotHideRegistryAndLoginRepairs(t *testing.T) {
 		return rows
 	}
 	rows := read()
-	if len(rows) != 2 || rows[0]["password_available"] != false || rows[0]["password"] != "" || rows[1]["password"] != "second-password" {
+	for _, row := range rows {
+		if _, leaked := row["password"]; leaked {
+			t.Fatal("registry must not expose plaintext passwords", row)
+		}
+	}
+	if len(rows) != 2 || rows[0]["password_available"] != false || rows[1]["password_available"] != true {
 		t.Fatal(rows)
 	}
 	before, _ := current.Get("SV1001")
@@ -68,7 +73,7 @@ func TestAccountKeyMismatchDoesNotHideRegistryAndLoginRepairs(t *testing.T) {
 		t.Fatal("repair changed hash or failed")
 	}
 	rows = read()
-	if rows[0]["password_available"] != true || rows[0]["password"] != "original-password" {
+	if rows[0]["password_available"] != true {
 		t.Fatal(rows)
 	}
 	restarted, err := repository.NewAccounts(repo, path)

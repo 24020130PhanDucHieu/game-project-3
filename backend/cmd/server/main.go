@@ -72,7 +72,15 @@ func main() {
 		log.Fatalf("Could not initialize accounts: %v", err)
 	}
 	aHandler := &httpHandler.AccountsHandler{Store: accounts, Service: tournamentService, WorkerReady: botRunnerAdapter.Ready, WorkerMonitor: botRunnerAdapter.Monitor}
+	var judges *repository.Judges
 	sessions.CheckSession = func(session auth.Session) (bool, error) {
+		if session.Role == "ADMIN" {
+			// Phiên giám khảo: tài khoản còn hoạt động và phiên được cấp sau lần đổi mật khẩu/khóa gần nhất.
+			if judges == nil || session.Judge == "" {
+				return session.Judge == "", nil
+			}
+			return judges.Valid(session.Judge, session.IssuedAt)
+		}
 		account, err := accounts.Get(session.StudentID)
 		if errors.Is(err, repository.ErrAccountMissing) {
 			return false, nil
@@ -89,6 +97,13 @@ func main() {
 		log.Fatalf("Could not initialize qualifier storage: %v", err)
 	}
 	aHandler.DatabaseReady = qualifierStore.Ready
+	aHandler.Records = qualifierStore
+	judges = repository.NewJudges(qualifierStore)
+	mHandler.Judges = judges
+	jHandler := &httpHandler.JudgesHandler{Judges: judges}
+	clarHandler := &httpHandler.ClarificationHandler{Store: qualifierStore, Accounts: accounts}
+	scrimHandler := &httpHandler.ScrimmageHandler{Store: qualifierStore, Engine: tournamentService}
+	chalHandler := &httpHandler.ChallengeHandler{Store: qualifierStore, Accounts: accounts, Engine: tournamentService}
 	aHandler.QueueCounts = qualifierStore.QueueCounts
 	aHandler.DatabaseStats = qualifierStore.DatabaseStats
 	aHandler.DatabaseOptimize = qualifierStore.OptimizeDatabase
@@ -105,6 +120,7 @@ func main() {
 	}
 	qualifierService := qualifier.New(qualifierStore, accounts, tournamentService, botRunnerAdapter)
 	qHandler := &httpHandler.QualifierHandler{Service: qualifierService}
+	simHandler := &httpHandler.SimilarityHandler{Store: qualifierStore, Qualifiers: qualifierService, Tournaments: tournamentService}
 	if err := qualifierService.Recover(); err != nil {
 		log.Fatalf("Could not recover qualifiers: %v", err)
 	}
@@ -113,9 +129,11 @@ func main() {
 	wsHub := wsHandler.NewHub()
 	go wsHub.Run()
 	tournamentService.OnRoundEvent = func(tournamentID, matchID, eventType string) {
+		httpHandler.InvalidateDerived()
 		wsHub.BroadcastTournamentJSON(tournamentID, matchID, gin.H{"type": eventType, "tournament_id": tournamentID, "match_id": matchID, "action": "play-round"})
 	}
 	tournamentService.StartRoundTransitions(func(tournamentID, matchID string) {
+		httpHandler.InvalidateDerived()
 		wsHub.BroadcastTournamentJSON(tournamentID, matchID, gin.H{"type": "TOURNAMENT_UPDATED", "tournament_id": tournamentID, "match_id": matchID, "action": "next-round"})
 	})
 
@@ -134,6 +152,7 @@ func main() {
 		if c.Request.Method == http.MethodGet || c.Writer.Status() >= http.StatusBadRequest {
 			return
 		}
+		httpHandler.InvalidateDerived()
 		parts := strings.Split(strings.Trim(c.Request.URL.Path, "/"), "/")
 		if c.Request.URL.Path == "/api/teams/register" || strings.HasPrefix(c.Request.URL.Path, "/api/admin/accounts") {
 			id := c.GetString("eventTournamentID")
@@ -175,6 +194,11 @@ func main() {
 	r.GET("/ws/tournaments/:id", func(c *gin.Context) {
 		wsHandler.ServeWS(wsHub, c, cfg.CORSOrigin)
 	})
+	// Tín hiệu WebRTC cho webcam trong phòng trận: cần phiên (token trong ?token=); đội chỉ vào đúng trận của mình.
+	rtcHub := wsHandler.NewRTCHub()
+	r.GET("/ws/rtc/:id/:matchId", requireSession(sessions, false, true), func(c *gin.Context) {
+		rtcHub.Serve(c, cfg.CORSOrigin)
+	})
 
 	// API Routes Group
 	api := r.Group("/api")
@@ -190,10 +214,27 @@ func main() {
 		adminOnly := requireSession(sessions, true, false)
 		api.POST("/teams/register", aHandler.Register)
 		api.GET("/admin/accounts", adminOnly, aHandler.List)
+		api.POST("/admin/accounts/import", adminOnly, aHandler.ImportAccounts)
 		api.DELETE("/admin/accounts/:studentId", adminOnly, aHandler.Delete)
 		api.POST("/admin/accounts/:studentId/enroll", adminOnly, aHandler.Enroll)
 		api.GET("/admin/monitoring", adminOnly, aHandler.Monitoring)
 		api.POST("/admin/database/optimize", adminOnly, aHandler.OptimizeDatabase)
+		api.GET("/admin/judges", adminOnly, jHandler.List)
+		api.POST("/admin/judges", adminOnly, jHandler.Create)
+		api.POST("/admin/judges/:username/:action", adminOnly, jHandler.Action)
+		api.GET("/clarifications", optionalSession(sessions), clarHandler.List)
+		api.POST("/clarifications", requireSession(sessions, false, false), clarHandler.Ask)
+		api.POST("/admin/clarifications/:clarId/answer", adminOnly, clarHandler.Answer)
+		api.GET("/scrimmages", requireSession(sessions, false, false), scrimHandler.List)
+		api.POST("/scrimmages", requireSession(sessions, false, false), scrimHandler.Create)
+		api.PUT("/scrimmages/settings", requireSession(sessions, false, false), scrimHandler.Settings)
+		api.GET("/scrimmages/:scrimId", requireSession(sessions, false, false), scrimHandler.Replay)
+		api.GET("/challenges", optionalSession(sessions), chalHandler.List)
+		api.POST("/challenges/:challengeId/attempt", requireSession(sessions, false, false), chalHandler.Attempt)
+		api.GET("/badges/:studentId", chalHandler.Badges)
+		api.GET("/admin/similarity", adminOnly, simHandler.Report)
+		api.GET("/admin/similarity/pair", adminOnly, simHandler.Pair)
+		api.POST("/admin/similarity/review", adminOnly, simHandler.Review)
 		matchSession := requireSession(sessions, false, true)
 		matchAdmin := requireSession(sessions, true, true)
 		api.GET("/qualifiers", qHandler.List)
