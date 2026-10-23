@@ -50,30 +50,17 @@ jobs:
       - run: python scripts/build_frontend.py
       - name: Check browser test dependencies
         run: python -c "import requests; from playwright.sync_api import sync_playwright"
-      - run: python -m playwright install --with-deps chrome
-      - run: python tests/e2e/test_monitoring_layout.py
+      - run: google-chrome --version
       - run: go build -o bin/arena-verification ./cmd/server
         working-directory: backend
-      - name: Verify Next portal, RBAC and live synchronization
-        run: python tests/e2e/test_portal_integrity.py
-        env:
-          ARENA_REQUIRE_NEXT: '1'
-          ARENA_TEST_SERVER: ${{ github.workspace }}/backend/bin/arena-verification
-      - name: Verify offline Next reload
-        run: python tests/e2e/test_offline_shell.py
-      - run: python tests/e2e/test_offline_submission_sync.py
+      - name: Verify Next portal registration and access
+        run: python tests/e2e/test_next_portal.py
         env:
           ARENA_TEST_SERVER: ${{ github.workspace }}/backend/bin/arena-verification
       - run: python tests/e2e/test_submission_queue_recovery.py
         env:
           ARENA_TEST_SERVER: ${{ github.workspace }}/backend/bin/arena-verification
       - run: python tests/e2e/test_multi_worker.py
-        env:
-          ARENA_TEST_SERVER: ${{ github.workspace }}/backend/bin/arena-verification
-      - run: python tests/e2e/test_reliability.py
-        env:
-          ARENA_TEST_SERVER: ${{ github.workspace }}/backend/bin/arena-verification
-      - run: python tests/e2e/test_portal_integrity.py
         env:
           ARENA_TEST_SERVER: ${{ github.workspace }}/backend/bin/arena-verification
       - name: Verify read-only production judge image

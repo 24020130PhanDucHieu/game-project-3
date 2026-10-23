@@ -4,7 +4,7 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'BOT K69 | ARENA OTTV2 – Đấu Trường Lập Trình',
   description: 'Nộp bot, theo dõi thi đấu, vòng loại và bảng xếp hạng.',
-  icons: { icon: '/static/img/favicon.svg' },
+  icons: { icon: '/icon.svg' },
 }
 
 export const viewport: Viewport = { colorScheme: 'light', themeColor: '#f8fafc' }

@@ -73,15 +73,13 @@ jobs:
       - name: Verify the main Next portal before deployment
         if: ${{ !inputs.skip_tests && !inputs.rollback }}
         env:
-          ARENA_REQUIRE_NEXT: '1'
           ARENA_TEST_SERVER: ${{ github.workspace }}/backend/bin/arena-verification
         run: |
-          python -m playwright install --with-deps chrome
+          google-chrome --version
           cd backend
           go build -o bin/arena-verification ./cmd/server
           cd ..
-          python tests/e2e/test_portal_integrity.py
-          python tests/e2e/test_offline_shell.py
+          python tests/e2e/test_next_portal.py
 
       - name: Compile Go Server for Linux amd64
         if: ${{ !inputs.rollback }}

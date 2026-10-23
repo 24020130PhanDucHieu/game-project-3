@@ -22,7 +22,7 @@ func RegisterFrontendRoutes(router *gin.Engine) bool {
 		}
 	}
 	var root string
-	for _, candidate := range []string{"frontend-cu", "../frontend-cu", "../../frontend-cu"} {
+	for _, candidate := range []string{"frontend-cu", "../frontend-cu", "../../frontend-cu", "frontend/legacy", "../frontend/legacy", "../../frontend/legacy", "frontend", "../frontend", "../../frontend"} {
 		if info, err := os.Stat(filepath.Join(candidate, "templates", "index.html")); err == nil && !info.IsDir() {
 			root = candidate
 			break
@@ -87,8 +87,16 @@ func RegisterFrontendRoutes(router *gin.Engine) bool {
 }
 
 func registerStaticPortal(router *gin.Engine, root string) {
-	for _, name := range []string{"index.html", "sw.js", "offline-assets.json"} {
-		file := name
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		log.Printf("Could not read Next export: %v", err)
+		return
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		file := entry.Name()
 		router.GET("/"+file, func(c *gin.Context) {
 			c.Header("Cache-Control", "no-cache")
 			c.File(filepath.Join(root, file))
@@ -99,6 +107,8 @@ func registerStaticPortal(router *gin.Engine, root string) {
 		c.File(filepath.Join(root, "index.html"))
 	})
 	for _, name := range []string{"_next", "static", "assets"} {
-		router.StaticFS("/"+name, http.FS(os.DirFS(filepath.Join(root, name))))
+		if info, err := os.Stat(filepath.Join(root, name)); err == nil && info.IsDir() {
+			router.StaticFS("/"+name, http.FS(os.DirFS(filepath.Join(root, name))))
+		}
 	}
 }
