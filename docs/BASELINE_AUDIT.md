@@ -1,13 +1,13 @@
-﻿# Hiện trạng kỹ thuật
+# Hiện trạng kỹ thuật
 
 ## Thành phần đang được triển khai
 
 - `backend/`: Go API gateway, HTTP handlers, WebSocket hub, middleware và repository JSON/PostgreSQL.
 - `bot-runner/`: FastAPI worker nội bộ xử lý đột biến dữ liệu giải và chạy game engine.
-- `frontend/index.html`, `frontend/app.js`, `frontend/styles.css`: giao diện đang được phục vụ bởi Go.
+- `frontend/app/`, `frontend/components/arena/`, `frontend/lib/api-client.ts`: giao diện Next.js gọi Go API.
 - `deploy/`: Docker Compose và Render blueprint.
 
-Các bản frontend module hóa legacy trong `frontend-cu/js`, `frontend-cu/css`, `frontend-cu/templates`, `frontend-cu/pages` và `frontend-cu/loader.js` đã được loại bỏ vì entrypoint hiện tại không tham chiếu chúng.
+Go phục vụ bản Next.js static export tại `frontend/dist/` sau khi chạy `python scripts/build_frontend.py`.
 
 ## Đã gia cố
 

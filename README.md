@@ -2,7 +2,7 @@
 
 Nền tảng tổ chức giải đấu bot Oẳn Tù Tì V2 dành cho sinh viên năm nhất
 
-Go API Gateway · Python Bot Runner · Vanilla JS Frontend
+Go API Gateway · Python Bot Runner · Next.js Frontend
 
 ## Giới thiệu
 
@@ -39,7 +39,7 @@ Hệ thống theo mô hình **client-server phân tán** với ba tầng chính:
 ```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    FRONTEND (HTML/JS/CSS)                   │
-│          Vanilla JS · Shared State · WebSocket Client       │
+│            Next.js · React · WebSocket Client              │
 └──────────────────────────┬──────────────────────────────────┘
                            │  REST API + WebSocket
 ┌──────────────────────────▼──────────────────────────────────┐
@@ -93,7 +93,6 @@ project-tuan3/
 │   ├── app/                # App Router và layout
 │   ├── components/         # Thành phần giao diện Arena
 │   └── dist/               # Bản export tĩnh để triển khai (git bỏ qua)
-├── frontend-cu/           # Source frontend Vanilla JS legacy và template fallback
 ├── config/                # Cấu hình môi trường, reverse proxy và tunnel
 ├── database/              # Schema và dữ liệu JSON dùng khi phát triển local
 ├── deploy/                # Docker Compose, Dockerfile và cấu hình Render
@@ -141,30 +140,14 @@ project-tuan3/
 <details>
 <summary><b>🎨 Frontend</b></summary>
 
-- **`templates/`** — HTML structure, được Go ghép khi khởi động
-- **`static/`** — JS, CSS phục vụ động, hot-reload khi phát triển
-- **`assets/bots_sdk/`** — Bot SDK và mẫu code
-- **`dist/`** — Bản build tối ưu cho production
-
-Các module JS chính:
-
-| Module | Chức năng |
-| :--- | :--- |
-| `core/state.js` | Quản lý trạng thái dùng chung |
-| `auth/` | Đăng nhập, phân quyền |
-| `tournaments/` | Giao diện quản lý giải đấu |
-| `arena/` | Giao diện thi đấu |
-| `realtime/` | Đồng bộ WebSocket |
-| `studio/` | Trình soạn thảo code bot |
-| `history/` | Replay, lịch sử trận đấu |
+- **`app/`** — Next.js App Router, trang chính và layout
+- **`components/arena/`** — Giao diện giải đấu, trận đấu và quản trị
+- **`lib/api-client.ts`** — Kết nối Go API và quản lý phiên
+- **`dist/`** — Bản static export phục vụ production, không commit
 
 </details>
 
-Go ghép templates khi khởi động, phục vụ JavaScript/CSS tại `/static/` và SDK tại `/assets/`. Chỉ sửa source trong `templates/` và `static/`; **không sửa `dist/`**. Icon SVG nằm trong project, không cần tải thư viện icon.
-
-`frontend/index.html` chỉ là trang tải nhỏ để các hosting cũ đang phục vụ trực tiếp thư mục `frontend/` vẫn hoạt động; nó ghép templates qua `static/js/template-loader.js`. Khi cấu hình hosting mới, dùng bản build `frontend/dist/` để trình duyệt nhận HTML hoàn chỉnh ngay từ đầu.
-
-JavaScript dùng các script `defer` theo thứ tự trong `templates/partials/scripts.html`; các file tính năng dùng trạng thái chung từ `static/js/core/state.js`. File `static/js/app.js` khởi động sau khi toàn bộ tính năng đã tải. Xem thêm [frontend/README.md](frontend/README.md).
+Go phục vụ bản build `frontend/dist/`. Mã nguồn bot mẫu ở `examples/bots_sdk/`. Xem thêm [frontend/README.md](frontend/README.md).
 
 ---
 

@@ -65,7 +65,6 @@ jobs:
           python -m py_compile bot-runner/main.py bot-runner/app/repository/database.py bot-runner/app/sandbox/runner.py
           python -m unittest discover -s tests/unit -p 'test_*.py'
           python -m unittest discover -s tests/security -p 'test_*.py'
-          node tests/unit/test_offline_submissions.cjs
 
       - name: Build Frontend Static Distribution
         run: python scripts/build_frontend.py

@@ -94,7 +94,7 @@ Diễn tập bắt buộc trước giải:
 Lưu token trong file `staging.load-sessions.json` (mảng các chuỗi token, đã được gitignore). Không đưa token vào lệnh hay commit. Ví dụ:
 
 ```sh
-python tests/load/qualifier_submissions.py --base http://127.0.0.1:8080 --qualifier ID_VONG_LOAI --sessions-file staging.load-sessions.json --code-file frontend-cu/assets/bots_sdk/bot_template.py --concurrency 20
+python tests/load/qualifier_submissions.py --base http://127.0.0.1:8080 --qualifier ID_VONG_LOAI --sessions-file staging.load-sessions.json --code-file examples/bots_sdk/bot_template.py --concurrency 20
 ```
 
 Chạy nhiều mức tải tăng dần. Báo cáo phân biệt số đội tổng cộng với số client đồng thời, bài chưa được nhận (bao gồm HTTP 429), bản hợp lệ, bản lỗi và hết thời gian chờ. Thời gian kết quả được đo bằng polling mỗi 3 giây. Chỉ được công bố năng lực sau khi đo trên tài nguyên tương đương hosting thật; bài smoke test vài đội chỉ kiểm tra công cụ hoạt động.

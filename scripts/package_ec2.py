@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--binary', type=Path, required=True)
 parser.add_argument('--output', type=Path, required=True)
 args = parser.parse_args()
-tracked = subprocess.check_output(['git', 'ls-files', '-z', 'bot-runner', 'database', 'frontend', 'frontend-cu', 'scripts'], cwd=ROOT).decode().split('\0')
+tracked = subprocess.check_output(['git', 'ls-files', '-z', 'bot-runner', 'database', 'frontend', 'scripts'], cwd=ROOT).decode().split('\0')
 with tarfile.open(args.output, 'w:gz') as archive:
     archive.add(args.binary, arcname='server')
     files = [ROOT / name for name in tracked if name]

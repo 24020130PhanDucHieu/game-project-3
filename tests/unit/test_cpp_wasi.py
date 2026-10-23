@@ -25,7 +25,7 @@ class CppWasiTests(unittest.TestCase):
         return executable
 
     def test_template_and_real_match(self):
-        source=(Path(__file__).resolve().parents[2]/'frontend-cu/assets/bots_sdk/bot_template.cpp').read_text(encoding='utf-8')
+        source=(Path(__file__).resolve().parents[2]/'examples/bots_sdk/bot_template.cpp').read_text(encoding='utf-8')
         valid=BotRunner.validate_bot_code(source,'CPP','COMBO_7')
         self.assertTrue(valid['is_valid'],valid)
         result=simulate_board(source,source,lang_a='CPP',lang_b='CPP',stage_rule='COMBO_7')
