@@ -324,7 +324,7 @@ export function ArenaApp() {
       <div className="border-t border-slate-100 p-4">
         <p className="truncate text-sm font-semibold">{role === 'GUEST' ? 'Khách tham quan' : session.team_name || session.student_id || 'Quản trị viên'}</p>
         <p className="text-xs text-slate-500">{role === 'ADMIN' ? 'Ban tổ chức' : role === 'TEAM' ? 'Đội thi' : 'Chưa đăng nhập'}</p>
-        {role === 'GUEST' ? <Button onClick={() => openAuth('login')}>Đăng nhập</Button> : <button onClick={() => void logout()} className="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-red-600"><LogOut className="size-4" />Đăng xuất</button>}
+        {role !== 'GUEST' && <button onClick={() => void logout()} className="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-red-600"><LogOut className="size-4" />Đăng xuất</button>}
       </div>
     </aside>
     <header className="border-b border-slate-200 bg-white md:hidden"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4">
@@ -339,7 +339,7 @@ export function ArenaApp() {
           <button key={item} onClick={() => { setError(''); setNotice(''); setView(item) }} className={`rounded-xl px-3 py-2 text-left text-sm ${view === item ? 'bg-indigo-600 font-semibold text-white' : 'text-slate-700 hover:bg-slate-100'}`}>{labels[item]}</button>)}
       </nav>
       <main className="min-w-0 space-y-5 md:pb-10">
-        <div className="hidden h-20 items-center justify-between border-b border-slate-200 bg-white md:flex"><div className="text-sm text-slate-500">Arena <span className="mx-2 text-slate-300">/</span><strong className="text-slate-900">{labels[view]}</strong></div><div className="flex items-center gap-3 text-sm"><span className="rounded-full bg-slate-100 px-3 py-1.5 font-medium">{role === 'ADMIN' ? 'Ban tổ chức' : role === 'TEAM' ? session.team_name || 'Đội thi' : 'Khách tham quan'}</span>{role === 'GUEST' ? <Button onClick={() => openAuth('login')}>Đăng nhập</Button> : <button onClick={() => void logout()} className="text-slate-500 hover:text-red-600" aria-label="Đăng xuất"><LogOut className="size-4" /></button>}</div></div>
+        <div className="hidden h-20 items-center justify-between border-b border-slate-200 bg-white md:flex"><div className="text-sm text-slate-500">Arena <span className="mx-2 text-slate-300">/</span><strong className="text-slate-900">{labels[view]}</strong></div><div className="flex items-center gap-3 text-sm"><span className="rounded-full bg-slate-100 px-3 py-1.5 font-medium">{role === 'ADMIN' ? 'Ban tổ chức · ADMIN' : role === 'TEAM' ? session.team_name || 'Đội thi' : 'Khách tham quan'}</span>{role === 'GUEST' && <Button onClick={() => openAuth('login')}>Đăng nhập</Button>}</div></div>
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 md:pt-3"><div><p className="mb-1 text-xs font-bold uppercase tracking-[0.15em] text-indigo-600">BOT K69 · ARENA OTTV2</p><h1 className="text-3xl font-bold tracking-tight">{labels[view]}</h1></div><Button secondary disabled={busy} onClick={() => void run(refreshAll, 'Đã cập nhật dữ liệu')}><RefreshCw className="mr-2 inline size-4" />Làm mới</Button></div>
         {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
         {notice && <div role="status" className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-700">{notice}</div>}
