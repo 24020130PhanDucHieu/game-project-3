@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNo
 import { arenaApi, getSessionToken } from '@/lib/api-client'
 import { createTournamentSocket } from '@/lib/match-socket'
 import { AuthModal, type AuthModalMode } from './modals/auth-modal'
+import { Bell, Bot, Flag, LayoutDashboard, LogOut, Medal, Network, RefreshCw, Shield, Swords, UserRound, type LucideIcon } from 'lucide-react'
 
 type Role = 'GUEST' | 'TEAM' | 'ADMIN'
 type View = 'overview' | 'bracket' | 'match' | 'qualifier' | 'ranking' | 'profile' | 'notifications' | 'admin' | 'practice'
@@ -16,6 +17,11 @@ const labels: Record<View, string> = {
   overview: 'Tổng quan', bracket: 'Bảng đấu', match: 'Trận đấu', qualifier: 'Vòng loại',
   ranking: 'Xếp hạng', profile: 'Hồ sơ đội', notifications: 'Thông báo',
   admin: 'Quản trị', practice: 'Chạy thử bot',
+}
+
+const viewIcons: Record<View, LucideIcon> = {
+  overview: LayoutDashboard, bracket: Network, match: Swords, qualifier: Flag,
+  ranking: Medal, profile: UserRound, notifications: Bell, admin: Shield, practice: Bot,
 }
 
 function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
@@ -300,20 +306,41 @@ export function ArenaApp() {
     finally { setBusy(false) }
   }
 
-  return <div className="min-h-dvh bg-slate-50 text-slate-900">
-    <header className="border-b border-slate-200 bg-white"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4">
+  return <div className="min-h-dvh bg-[#f5f7fb] text-slate-900 md:flex">
+    <aside className="hidden w-[260px] shrink-0 flex-col border-r border-slate-200 bg-white md:sticky md:top-0 md:flex md:h-dvh">
+      <div className="flex h-20 items-center gap-3 border-b border-slate-100 px-5">
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-extrabold text-white">K69</div>
+        <div className="min-w-0"><strong className="block truncate text-sm">BOT K69 <span className="font-normal text-slate-400">|</span> ARENA OTTV2</strong><span className="text-xs text-slate-500">Đấu Trường Lập Trình</span></div>
+      </div>
+      <div className="flex-1 overflow-y-auto px-3 py-5">
+        <p className="mb-2 px-3 text-[11px] font-bold tracking-widest text-slate-500">THI ĐẤU</p>
+        <nav className="space-y-1" aria-label="Điều hướng chính">
+          {(Object.keys(labels) as View[]).filter((item) => item !== 'profile' || role === 'TEAM').filter((item) => item !== 'admin' || role === 'ADMIN').map((item) => {
+            const Icon = viewIcons[item]
+            return <button key={item} onClick={() => { setError(''); setNotice(''); setView(item) }} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition-colors ${view === item ? 'bg-indigo-50 font-bold text-indigo-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'}`}><Icon className="size-[18px] shrink-0" /><span>{labels[item]}</span></button>
+          })}
+        </nav>
+      </div>
+      <div className="border-t border-slate-100 p-4">
+        <p className="truncate text-sm font-semibold">{role === 'GUEST' ? 'Khách tham quan' : session.team_name || session.student_id || 'Quản trị viên'}</p>
+        <p className="text-xs text-slate-500">{role === 'ADMIN' ? 'Ban tổ chức' : role === 'TEAM' ? 'Đội thi' : 'Chưa đăng nhập'}</p>
+        {role === 'GUEST' ? <Button onClick={() => openAuth('login')}>Đăng nhập</Button> : <button onClick={() => void logout()} className="mt-3 flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-red-600"><LogOut className="size-4" />Đăng xuất</button>}
+      </div>
+    </aside>
+    <header className="border-b border-slate-200 bg-white md:hidden"><div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4">
       <strong className="text-lg">BOT K69 · ARENA OTTV2</strong>
       <div className="flex items-center gap-2 text-sm"><span>{role === 'GUEST' ? 'Khách' : `${session.team_name || session.student_id || 'Admin'} · ${role}`}</span>
         {role === 'GUEST' ? <><Button onClick={() => openAuth('login')}>Đăng nhập</Button><Button secondary onClick={() => openAuth('register')}>Đăng ký</Button></> : <Button secondary onClick={() => void logout()}>Đăng xuất</Button>}
       </div>
     </div></header>
-    <div className="mx-auto grid max-w-7xl gap-5 px-4 py-5 md:grid-cols-[220px_1fr]">
-      <nav className="flex flex-wrap gap-2 self-start rounded-2xl border border-slate-200 bg-white p-3 md:flex-col" aria-label="Chức năng">
+    <div className="mx-auto grid min-w-0 max-w-[1600px] flex-1 gap-5 px-4 py-5 md:block md:px-8 md:py-0">
+      <nav className="flex flex-wrap gap-2 self-start rounded-2xl border border-slate-200 bg-white p-3 md:hidden" aria-label="Chức năng">
         {(Object.keys(labels) as View[]).filter((item) => item !== 'profile' || role === 'TEAM').filter((item) => item !== 'admin' || role === 'ADMIN').map((item) =>
-          <button key={item} onClick={() => setView(item)} className={`rounded-xl px-3 py-2 text-left text-sm ${view === item ? 'bg-indigo-600 font-semibold text-white' : 'text-slate-700 hover:bg-slate-100'}`}>{labels[item]}</button>)}
+          <button key={item} onClick={() => { setError(''); setNotice(''); setView(item) }} className={`rounded-xl px-3 py-2 text-left text-sm ${view === item ? 'bg-indigo-600 font-semibold text-white' : 'text-slate-700 hover:bg-slate-100'}`}>{labels[item]}</button>)}
       </nav>
-      <main className="min-w-0 space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3"><h1 className="text-2xl font-bold">{labels[view]}</h1><Button secondary disabled={busy} onClick={() => void run(refreshAll, 'Đã cập nhật dữ liệu')}>Làm mới</Button></div>
+      <main className="min-w-0 space-y-5 md:pb-10">
+        <div className="hidden h-20 items-center justify-between border-b border-slate-200 bg-white md:flex"><div className="text-sm text-slate-500">Arena <span className="mx-2 text-slate-300">/</span><strong className="text-slate-900">{labels[view]}</strong></div><div className="flex items-center gap-3 text-sm"><span className="rounded-full bg-slate-100 px-3 py-1.5 font-medium">{role === 'ADMIN' ? 'Ban tổ chức' : role === 'TEAM' ? session.team_name || 'Đội thi' : 'Khách tham quan'}</span>{role === 'GUEST' ? <Button onClick={() => openAuth('login')}>Đăng nhập</Button> : <button onClick={() => void logout()} className="text-slate-500 hover:text-red-600" aria-label="Đăng xuất"><LogOut className="size-4" /></button>}</div></div>
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 md:pt-3"><div><p className="mb-1 text-xs font-bold uppercase tracking-[0.15em] text-indigo-600">BOT K69 · ARENA OTTV2</p><h1 className="text-3xl font-bold tracking-tight">{labels[view]}</h1></div><Button secondary disabled={busy} onClick={() => void run(refreshAll, 'Đã cập nhật dữ liệu')}><RefreshCw className="mr-2 inline size-4" />Làm mới</Button></div>
         {error && <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
         {notice && <div role="status" className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-700">{notice}</div>}
         {['overview', 'bracket', 'match', 'admin'].includes(view) && <Card><label className="text-sm font-semibold">Giải đấu
@@ -321,9 +348,9 @@ export function ArenaApp() {
             <option value="">Chọn giải</option>{tournaments.map((item) => <option key={item.tournament_id} value={item.tournament_id}>{item.name} · {item.status}</option>)}
           </select></label></Card>}
 
-        {view === 'overview' && <><Card><h2 className="mb-3 text-lg font-semibold">{tournament?.name || 'Chưa có giải đấu'}</h2>
-          {tournament && <div className="grid gap-3 sm:grid-cols-3"><div>Trạng thái: <strong>{tournament.status || '—'}</strong></div><div>Số đội: <strong>{tournament.teams?.length || 0}</strong></div><div>Số trận: <strong>{matches.length}</strong></div></div>}</Card>
-          <Card><h2 className="mb-3 font-semibold">Các trận đấu</h2>{matches.length ? matches.map(([id, item]) => <button key={id} onClick={() => void chooseMatch(id)} className="mb-2 block w-full rounded-xl border border-slate-200 p-3 text-left hover:border-indigo-400">{item.title || id}: {item.team_a?.team_name || 'Chờ đội'} – {item.team_b?.team_name || 'Chờ đội'} · {item.status || '—'}</button>) : <p>Chưa có trận đấu.</p>}</Card></>}
+        {view === 'overview' && <><Card className="overflow-hidden"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="mb-2 text-xs font-bold uppercase tracking-widest text-indigo-600">Giải đấu đang chọn</p><h2 className="text-xl font-bold tracking-tight">{tournament?.name || 'Chưa có giải đấu'}</h2></div>{tournament?.status && <span className="rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">{tournament.status}</span>}</div>
+          {tournament && <div className="mt-6 grid gap-3 sm:grid-cols-3">{[['Đội tham gia', tournament.teams?.length || 0], ['Tổng số trận', matches.length], ['Trận hoàn tất', matches.filter(([, item]) => item.status === 'COMPLETED').length]].map(([label, value]) => <div key={String(label)} className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-sm text-slate-500">{label}</p><strong className="mt-2 block text-3xl font-bold text-slate-950">{value}</strong></div>)}</div>}</Card>
+          <Card><div className="mb-4 flex items-center justify-between gap-3"><h2 className="text-lg font-bold">Các trận đấu</h2><span className="text-xs text-slate-500">{matches.length} trận</span></div>{matches.length ? <div className="grid gap-3 lg:grid-cols-2">{matches.map(([id, item]) => <button key={id} onClick={() => void chooseMatch(id)} className="group rounded-2xl border border-slate-200 bg-white p-4 text-left transition-colors hover:border-indigo-300 hover:bg-indigo-50/40"><span className="text-xs font-semibold text-indigo-600">{item.round_name || item.title || id}</span><div className="mt-3 flex items-center justify-between gap-2"><strong className="min-w-0 flex-1 truncate">{item.team_a?.team_name || 'Chờ đội'}</strong><span className="text-xs font-bold text-slate-400">VS</span><strong className="min-w-0 flex-1 truncate text-right">{item.team_b?.team_name || 'Chờ đội'}</strong></div><div className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">{item.status || 'Chưa bắt đầu'} <span className="float-right font-semibold text-indigo-600 group-hover:underline">Xem trận →</span></div></button>)}</div> : <p className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500">Chưa có trận đấu cho giải này.</p>}</Card></>}
 
         {view === 'bracket' && <Card><h2 className="mb-3 font-semibold">Nhánh đấu · {tournament?.name || 'Chọn giải đấu'}</h2>
           {matches.length ? matches.sort((a, b) => Number(a[1].round_level || 0) - Number(b[1].round_level || 0)).map(([id, item]) =>
@@ -351,7 +378,16 @@ export function ArenaApp() {
 
         {view === 'practice' && <Card><h2 className="mb-3 font-semibold">Chạy thử bot trên worker</h2>{role === 'GUEST' ? <p>Đăng nhập để chạy thử bot.</p> : <><select value={language} onChange={(e) => setLanguage(e.target.value)} className="mb-3 rounded-lg border border-slate-300 px-3 py-2"><option value="PYTHON">Python</option><option value="CPP">C++</option></select><textarea value={code} onChange={(e) => setCode(e.target.value)} rows={12} className="block w-full rounded-xl border border-slate-300 p-3 font-mono text-sm" /><div className="mt-3"><Button disabled={busy || !code.trim()} onClick={() => void run(async () => { const result = await arenaApi.practiceBot({ code_content: code, language, boss_difficulty: 'RANDOM' }); setPracticeResult(result) }, 'Worker đã trả kết quả chạy thử')}>Chạy thử thật</Button></div>{practiceResult && <pre className="mt-3 max-h-96 overflow-auto rounded-xl bg-slate-900 p-3 text-xs text-white">{JSON.stringify(practiceResult, null, 2)}</pre>}</>}</Card>}
 
-        {view === 'admin' && role === 'ADMIN' && <><Card><h2 className="mb-3 font-semibold">Giám sát hệ thống</h2><pre className="max-h-80 overflow-auto rounded-xl bg-slate-900 p-3 text-xs text-white">{JSON.stringify(monitoring, null, 2)}</pre></Card>
+        {view === 'admin' && role === 'ADMIN' && <><Card><div className="mb-5 flex flex-wrap items-center justify-between gap-2"><div><p className="text-xs font-bold uppercase tracking-widest text-indigo-600">Dữ liệu trực tiếp</p><h2 className="mt-1 text-lg font-bold">Giám sát hệ thống</h2></div><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">{monitoring?.contest?.tournament_name || 'Chưa chọn giải'}</span></div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[
+            ['Tài khoản đã đăng ký', monitoring?.contest?.total_registered_accounts],
+            ['Đội tham gia giải', monitoring?.contest?.enrolled_teams],
+            ['Đội đã nộp bài', monitoring?.contest?.submitted_teams],
+            ['Đội chưa nộp bài', monitoring?.contest?.unsubmitted_count],
+          ].map(([label, value]) => <div key={String(label)} className="rounded-2xl border border-slate-200 bg-slate-50 p-4"><p className="text-sm text-slate-500">{label}</p><strong className="mt-3 block text-3xl font-bold tracking-tight text-slate-950">{typeof value === 'number' ? value.toLocaleString('vi-VN') : '—'}</strong></div>)}</div>
+          <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 border-t border-slate-100 pt-4 text-sm text-slate-600"><span>Giải đấu: <strong className="text-slate-900">{monitoring?.contest?.total_tournaments ?? '—'}</strong></span><span>CPU server: <strong className="text-slate-900">{monitoring?.server?.cpu_cores ?? '—'} lõi</strong></span><span>Bộ nhớ: <strong className="text-slate-900">{typeof monitoring?.server?.memory_alloc_mb === 'number' ? `${monitoring.server.memory_alloc_mb.toFixed(1)} MB` : '—'}</strong></span></div>
+          {!!monitoring?.contest?.unsubmitted_teams?.length && <details className="mt-4 rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm"><summary className="cursor-pointer font-semibold text-amber-900">Xem {monitoring.contest.unsubmitted_count} đội chưa nộp bài</summary><ul className="mt-3 grid gap-1 text-amber-950 sm:grid-cols-2">{monitoring.contest.unsubmitted_teams.map((name: string, index: number) => <li key={`${name}-${index}`}>{name}</li>)}</ul></details>}
+        </Card>
           <Card><h2 className="mb-3 font-semibold">Tài khoản đội</h2>{accounts.length ? accounts.map((item) => <div key={item.student_id} className="flex flex-wrap items-center justify-between gap-2 border-b py-2 text-sm"><span>{item.team_name} · {item.student_id}</span><div className="flex gap-2">{tournamentId && <Button secondary disabled={busy} onClick={() => void run(() => arenaApi.enrollAdminAccount(item.student_id, { tournament_id: tournamentId }), 'Đã ghi danh đội', () => loadTournament(tournamentId))}>Ghi danh</Button>}<Button secondary disabled={busy} onClick={() => { if (confirm(`Xóa tài khoản ${item.student_id}?`)) void run(() => arenaApi.deleteAdminAccount(item.student_id), 'Đã xóa tài khoản', loadAdmin) }}>Xóa tài khoản</Button></div></div>) : <p>Chưa có tài khoản.</p>}</Card>
           <Card><h2 className="mb-3 font-semibold">Tạo giải</h2><div className="grid gap-3 sm:grid-cols-2"><Field label="Tên giải" value={createName} onChange={setCreateName} /><Field label="Số đội (4, 8, 16, ...)" value={createSize} onChange={setCreateSize} type="number" /></div><div className="mt-3"><Button disabled={busy || !createName.trim()} onClick={() => void run(() => arenaApi.createTournament({ name: createName, num_teams: Number(createSize) }), 'Đã tạo giải', loadPublic)}>Tạo giải trên server</Button></div></Card>
           {tournamentId && <><Card><h2 className="mb-3 font-semibold">Quản lý đội · {tournament?.name}</h2>{(tournament?.teams || []).map((item: any) => <div key={item.student_id} className="flex items-center justify-between border-b py-2 text-sm"><span>{item.team_name} · {item.student_id}</span><Button secondary disabled={busy} onClick={() => { if (confirm(`Xóa đội ${item.team_name} khỏi giải?`)) void run(() => arenaApi.removeTeam(tournamentId, item.student_id), 'Đã xóa đội', () => loadTournament(tournamentId)) }}>Xóa</Button></div>)}<div className="mt-3 grid gap-3 sm:grid-cols-3"><Field label="MSSV" value={teamId} onChange={setTeamId} /><Field label="Tên đội" value={teamName} onChange={setTeamName} /><Field label="Trường" value={teamUniversity} onChange={setTeamUniversity} /></div><div className="mt-3 flex gap-2"><Button disabled={busy || !teamId || !teamName} onClick={() => void run(() => arenaApi.addTeam(tournamentId, { student_id: teamId, team_name: teamName, university: teamUniversity }), 'Đã thêm đội', () => loadTournament(tournamentId))}>Thêm đội</Button><Button secondary disabled={busy} onClick={() => void run(() => arenaApi.autoSchedule(tournamentId), 'Đã xếp lịch thi đấu', () => loadTournament(tournamentId))}>Xếp lịch</Button></div></Card>
