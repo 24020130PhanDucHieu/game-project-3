@@ -17,7 +17,7 @@ export class ArenaSocket {
 
   constructor(path: string) {
     let base = getApiBaseUrl()
-    if (typeof window !== 'undefined' && (window.location.port === '3000' || base.includes(':3000'))) {
+    if (typeof window !== 'undefined' && base === window.location.origin && window.location.port === '3000') {
       base = 'http://127.0.0.1:8080'
     }
     const wsProto = base.startsWith('https') ? 'wss:' : 'ws:'

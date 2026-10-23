@@ -6,9 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "predev": "python ../scripts/prepare_next_frontend.py",
-    "prebuild": "python ../scripts/prepare_next_frontend.py"
+    "start": "next start"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

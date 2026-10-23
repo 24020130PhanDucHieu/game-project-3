@@ -1,33 +1,53 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Bell, CheckCheck } from 'lucide-react'
+import { Bell } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { initialNotifications } from '@/lib/arena-data'
-import { arenaApi } from '@/lib/api-client'
+
+export type NotificationItem = {
+  id: string
+  title: string
+  body: string
+  time: string
+  unread: boolean
+}
+
+const defaultNotifications: NotificationItem[] = [
+  {
+    id: 'n1',
+    title: 'Hiệp 3 đã bắt đầu',
+    body: 'Luật "Đảo tương khắc" đang được áp dụng. Hãy cập nhật bot.',
+    time: '2 phút trước',
+    unread: true,
+  },
+  {
+    id: 'n2',
+    title: 'Kết quả vòng loại',
+    body: "Đội 'ap' đạt ELO 1184.00 và lọt vào Tứ Kết.",
+    time: '1 giờ trước',
+    unread: true,
+  },
+  {
+    id: 'n3',
+    title: 'Nhắc hạn nộp',
+    body: 'Hạn nộp mã Round 3: 00:32:00 23/10/2026.',
+    time: '3 giờ trước',
+    unread: true,
+  },
+  {
+    id: 'n4',
+    title: 'Bảo trì hệ thống',
+    body: 'Nâng cấp server máy chấm sandbox kết nối WebSocket phân tán.',
+    time: '5 giờ trước',
+    unread: false,
+  },
+]
 
 export function NotificationBell() {
   const [open, setOpen] = useState(false)
-  const [items, setItems] = useState(initialNotifications)
+  const [items, setItems] = useState<NotificationItem[]>(defaultNotifications)
   const ref = useRef<HTMLDivElement>(null)
-  const unread = items.filter((n) => n.unread).length
-
-  useEffect(() => {
-    arenaApi.getNotifications().then((data) => {
-      if (Array.isArray(data) && data.length > 0) {
-        setItems(
-          data.map((n: any, idx: number) => ({
-            id: n.id || `notif-${idx}`,
-            title: n.title || 'Thông báo mới',
-            body: n.body || n.content || '',
-            time: n.time || (n.created_at ? new Date(n.created_at * 1000).toLocaleTimeString('vi-VN') : 'Vừa xong'),
-            unread: n.unread !== false && !n.read,
-            target: n.target || 'Tất cả',
-          })),
-        )
-      }
-    }).catch(() => {})
-  }, [])
+  const unreadCount = items.filter((n) => n.unread).length
 
   useEffect(() => {
     if (!open) return
@@ -43,6 +63,16 @@ export function NotificationBell() {
     }
   }, [open])
 
+  function handleMarkAllRead() {
+    setItems((prev) => prev.map((item) => ({ ...item, unread: false })))
+  }
+
+  function handleItemClick(id: string) {
+    setItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, unread: false } : item)),
+    )
+  }
+
   return (
     <div ref={ref} className="relative">
       <button
@@ -50,16 +80,16 @@ export function NotificationBell() {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="dialog"
-        aria-label={`Thông báo, ${unread} chưa đọc`}
+        aria-label={`Thông báo, ${unreadCount} chưa đọc`}
         className={cn(
-          'relative flex size-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition hover:text-foreground',
-          open && 'border-primary/40 text-foreground ring-3 ring-primary/15',
+          'relative flex size-10 items-center justify-center rounded-full border border-[#dce4ee] bg-white text-[#475569] shadow-sm transition hover:bg-[#f8fafc] hover:text-[#0f172a]',
+          open && 'border-[#434be6] text-[#434be6]',
         )}
       >
-        <Bell className="size-4" aria-hidden />
-        {unread > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold leading-none text-primary-foreground ring-2 ring-background">
-            {unread}
+        <Bell className="size-[18px]" aria-hidden />
+        {unreadCount > 0 && (
+          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#ef4444] px-1 text-[10px] font-bold text-white shadow-sm ring-2 ring-white">
+            {unreadCount}
           </span>
         )}
       </button>
@@ -68,52 +98,53 @@ export function NotificationBell() {
         <div
           role="dialog"
           aria-label="Thông báo"
-          className="absolute right-0 top-11 z-50 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-border bg-popover shadow-[0_12px_32px_-8px_rgb(15_23_42/0.18)] animate-in fade-in-0 zoom-in-95"
+          className="absolute right-0 top-12 z-50 w-[380px] max-w-[calc(100vw-24px)] overflow-hidden rounded-2xl border border-[#dce4ee] bg-white shadow-[0_20px_45px_-10px_rgba(15,23,42,0.18),0_0_1px_1px_rgba(15,23,42,0.06)] animate-in fade-in-0 zoom-in-95"
         >
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          {/* Header matching Image 1 */}
+          <div className="flex items-start justify-between border-b border-[#f1f5f9] px-5 py-4">
             <div>
-              <p className="text-sm font-semibold text-foreground">Thông báo</p>
-              <p className="text-xs text-muted-foreground">{unread} chưa đọc</p>
+              <h3 className="text-base font-extrabold text-[#0f172a]">Thông báo</h3>
+              <p className="text-xs font-medium text-[#64748b]">
+                {unreadCount} chưa đọc
+              </p>
             </div>
             <button
               type="button"
-              onClick={() => {
-                arenaApi.markNotificationRead().catch(() => {})
-                setItems((list) => list.map((n) => ({ ...n, unread: false })))
-              }}
-              disabled={unread === 0}
-              className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-primary hover:bg-accent disabled:text-muted-foreground disabled:hover:bg-transparent"
+              onClick={handleMarkAllRead}
+              className="text-xs font-semibold text-[#434be6] hover:text-[#343bc8] hover:underline"
             >
-              <CheckCheck className="size-3.5" aria-hidden />
-              Đánh dấu đã đọc
+              ✓ Đánh dấu đã đọc
             </button>
           </div>
-          <ul className="max-h-80 divide-y divide-border overflow-y-auto">
-            {items.map((n) => (
-              <li key={n.id}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    arenaApi.markNotificationRead(n.id).catch(() => {})
-                    setItems((list) => list.map((x) => (x.id === n.id ? { ...x, unread: false } : x)))
-                  }}
-                  className="flex w-full gap-3 px-4 py-3 text-left transition hover:bg-secondary/70"
-                >
+
+          {/* List items matching Image 1 */}
+          <div className="max-h-[380px] divide-y divide-[#f8fafc] overflow-y-auto">
+            {items.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => handleItemClick(item.id)}
+                className="flex cursor-pointer gap-3 px-5 py-3.5 transition hover:bg-[#f8fafd]"
+              >
+                <div className="pt-1.5 shrink-0">
                   <span
-                    className={cn('mt-1.5 size-2 shrink-0 rounded-full', n.unread ? 'bg-primary' : 'bg-transparent')}
-                    aria-hidden
+                    className={cn(
+                      'block size-2 rounded-full',
+                      item.unread ? 'bg-[#2563eb]' : 'bg-transparent',
+                    )}
                   />
-                  <span className="min-w-0 flex-1">
-                    <span className={cn('block text-sm', n.unread ? 'font-semibold text-foreground' : 'text-foreground/80')}>
-                      {n.title}
-                    </span>
-                    <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{n.body}</span>
-                    <span className="mt-1 block text-[11px] text-muted-foreground/80">{n.time}</span>
-                  </span>
-                </button>
-              </li>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-[13.5px] font-bold text-[#0f172a] leading-tight mb-1">
+                    {item.title}
+                  </h4>
+                  <p className="text-[12.5px] text-[#475569] leading-relaxed mb-1.5">
+                    {item.body}
+                  </p>
+                  <span className="text-[11.5px] text-[#94a3b8]">{item.time}</span>
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
     </div>

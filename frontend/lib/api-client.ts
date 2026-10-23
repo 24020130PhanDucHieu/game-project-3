@@ -9,10 +9,6 @@ export function getApiBaseUrl(): string {
   if (typeof window === 'undefined') {
     return process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8080'
   }
-  const saved = localStorage.getItem('ARENA_API_URL')
-  if (saved && saved.replace(/\/+$/, '') !== 'https://game-project-3.onrender.com') {
-    return saved.replace(/\/+$/, '')
-  }
   if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL.replace(/\/+$/, '')
   if (
     window.location.hostname.endsWith('.workers.dev') ||
@@ -151,6 +147,8 @@ export const arenaApi = {
       role: 'GUEST' | 'TEAM' | 'ADMIN'
       student_id?: string
       team_name?: string
+      tournament_id?: string
+      match_id?: string
     }>('/session', { cache: 'no-store' })
   },
 
@@ -174,7 +172,7 @@ export const arenaApi = {
   },
 
   async getTournamentList() {
-    return apiRequest<any[]>('/tournaments/list')
+    return apiRequest<any[]>('/tournaments/list', { cache: 'no-store' })
   },
 
   async getTournament(id: string) {
@@ -217,7 +215,7 @@ export const arenaApi = {
   async swapBracket(tournamentId: string, payload: { teamA: string; teamB: string }) {
     return apiRequest(`/tournaments/${encodeURIComponent(tournamentId)}/swap-bracket`, {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ team_1: payload.teamA, team_2: payload.teamB }),
     })
   },
 
@@ -376,14 +374,18 @@ export const arenaApi = {
     return apiRequest<any[]>('/qualifiers', { cache: 'no-store' })
   },
 
+  async createQualifier(payload: Record<string, unknown>) {
+    return apiRequest('/qualifiers', { method: 'POST', body: JSON.stringify(payload) })
+  },
+
   async getQualifier(qid: string) {
     return apiRequest(`/qualifiers/${encodeURIComponent(qid)}`)
   },
 
-  async registerQualifier(qid: string, payload: any) {
+  async registerQualifier(qid: string) {
     return apiRequest(`/qualifiers/${encodeURIComponent(qid)}/register`, {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: '{}',
     })
   },
 
@@ -398,10 +400,22 @@ export const arenaApi = {
     return apiRequest(`/qualifiers/${encodeURIComponent(qid)}/ranking`)
   },
 
-  async qualifierAction(qid: string, action: string) {
+  async qualifierAction(qid: string, action: string, payload: Record<string, unknown> = {}) {
     return apiRequest(`/qualifiers/${encodeURIComponent(qid)}/actions/${encodeURIComponent(action)}`, {
       method: 'POST',
+      body: JSON.stringify(payload),
     })
+  },
+
+  async configureQualifier(qid: string, payload: Record<string, unknown>) {
+    return apiRequest(`/qualifiers/${encodeURIComponent(qid)}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+  },
+
+  async getQualifierTeams(qid: string) {
+    return apiRequest<{ items: any[]; total: number }>(`/qualifiers/${encodeURIComponent(qid)}/teams`)
   },
 
   async deleteQualifier(qid: string) {
@@ -438,7 +452,7 @@ export const arenaApi = {
     })
   },
 
-  async broadcastNotification(payload: { title: string; body: string; target?: string }) {
+  async broadcastNotification(payload: { title: string; message: string; link_tab?: string }) {
     return apiRequest('/admin/notifications', {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -446,30 +460,30 @@ export const arenaApi = {
   },
 
   async getAuditLogs() {
-    return apiRequest<any[]>('/admin/audit-logs')
+    return apiRequest<{ logs: any[] }>('/admin/audit-logs')
   },
 
   // --- NOTIFICATIONS ---
   async getNotifications() {
-    return apiRequest<any[]>('/notifications')
+    return apiRequest<{ notifications: any[]; unread_count: number }>('/notifications')
   },
 
   async markNotificationRead(id?: string) {
     return apiRequest('/notifications/read', {
       method: 'POST',
-      body: JSON.stringify({ id }),
+      body: JSON.stringify(id ? { id } : { all: true }),
     })
   },
 
   // --- RANKING & GITHUB ---
   async getRanking() {
-    return apiRequest<any[]>('/ranking')
+    return apiRequest<any[]>('/ranking', { cache: 'no-store' })
   },
 
-  async fetchGitHub(url: string) {
+  async fetchGitHub(url: string, branch = 'main', filePath = 'bot.py') {
     return apiRequest<{ code: string; language: string }>('/github/fetch', {
       method: 'POST',
-      body: JSON.stringify({ repo_url: url, branch: 'main', file_path: 'bot.py' }),
+      body: JSON.stringify({ repo_url: url, branch, file_path: filePath }),
     })
   },
 

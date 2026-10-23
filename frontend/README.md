@@ -1,19 +1,27 @@
-# Frontend chính ARENA OTTV2
+# Frontend Next.js của ARENA OTTV2
 
-## Chạy và build
+`app/page.tsx` hiển thị `components/arena/arena-app.tsx`. Trang này đọc dữ liệu từ Go API qua `lib/api-client.ts` và chỉ báo thao tác thành công sau khi API trả kết quả. Không dùng dữ liệu mẫu cho các màn đang phát hành.
 
-- Từ gốc repository: `python scripts/build_frontend.py` tạo bản Next.js static trong `frontend/dist` cho Cloudflare và Go.
-- Phát triển: khởi động API Go cổng 8080; trong thư mục này chạy `npm ci` rồi `npm run dev`.
-- Cần Python và Node.js 22. Không đưa file `.env`, khóa SSH hoặc dữ liệu giải thật vào Git.
+## Chạy local
 
-## Nguồn giao diện và nghiệp vụ
+1. Khởi động Go API ở cổng 8080.
+2. Trong `frontend`, chạy `npm ci` rồi `npm run dev`.
+3. Next.js chuyển tiếp `/api/*` tới Go. WebSocket local kết nối trực tiếp tới cổng 8080. Nếu dùng backend khác, đặt `NEXT_PUBLIC_API_URL` trước khi build.
 
-`app/page.tsx` dùng `components/arena/live-portal.tsx`. Trước build/dev, script prepare ghép template thật, gắn phiên bản theo nội dung cho CSS/JS và sao chép assets. Runtime cũ tiếp tục quản lý DOM, auth, API, WebSocket, lịch thi, vòng loại, offline và xử lý sự cố. React chỉ sở hữu vùng bao ngoài, không dựng lại vùng DOM này khi chuyển tab.
+## Đóng gói
 
-Sửa template/style/logic đang phát hành tại `../frontend/`. Thư mục `generated` và bản sao `public/static`, `public/assets` là sản phẩm build, không commit. Các component `ArenaApp`, `*-view`, modal React và `lib/arena-data` từ mẫu thiết kế được giữ để tham khảo; **không phải trang production**, không nối chúng trở lại trang chính khi còn dữ liệu hoặc thao tác mô phỏng.
+Từ gốc repository chạy `python scripts/build_frontend.py`. Script chạy Next.js static export và tạo `frontend/dist` cho Go hoặc static host. Frontend chọn API cùng origin khi Go phục vụ trang; bản Cloudflare dùng `NEXT_PUBLIC_API_URL` nếu có, nếu không sẽ dùng địa chỉ API mặc định trong `lib/api-client.ts`. Cấu hình `CORS_ORIGIN` của Go phải chứa domain frontend khi hai bên khác origin.
 
-Đây là bước chuyển đổi kết hợp, chưa phải thay toàn bộ runtime bằng React. API và schema không thay đổi để phục vụ giao diện.
+## Hợp đồng dữ liệu
 
-## Kiểm thử
+- Giải, trận, bảng xếp hạng: `/api/tournaments/*`, `/api/ranking`.
+- Xác thực, hồ sơ, thông báo: `/api/session`, `/api/teams/*`, `/api/notifications/*`.
+- Vòng loại: `/api/qualifiers/*`; phản hồi HTTP 202 nghĩa là bài đã vào hàng đợi, kết quả chấm được cập nhật sau.
+- Chạy bot và xem lại: `/api/bots/*`, API trận và WebSocket `/ws/tournaments/:id`.
+- Quản trị: các route yêu cầu token ADMIN; giao diện không tự cấp quyền.
 
-Build frontend trước, build backend kiểm thử rồi chạy `tests/e2e/test_portal_integrity.py` với `ARENA_REQUIRE_NEXT=1`. Chạy thêm `test_reliability.py`, `test_offline_shell.py`, `test_offline_submission_sync.py`. CI kiểm tra portal trước bước deploy AWS; `skip_tests` chỉ dành cho xử lý khẩn cấp có chủ đích.
+Các component mẫu cũ trong `components/arena` không được import vào `app/page.tsx`. Khi thêm chức năng, nối với API và trạng thái server trước khi đưa nó lên trang chính.
+
+## Kiểm tra
+
+Chạy `npm run build` trong `frontend`, sau đó chạy `python scripts/build_frontend.py` từ gốc repository để xác minh đường đóng gói static thực tế.

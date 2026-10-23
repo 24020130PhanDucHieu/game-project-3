@@ -78,4 +78,7 @@ frontend/public/assets/
 frontend/public/sw.js
 frontend/public/offline-assets.json
 frontend/.next/
+frontend/dist/
+frontend/node_modules/
+frontend/tsconfig.tsbuildinfo
 *.tsbuildinfo

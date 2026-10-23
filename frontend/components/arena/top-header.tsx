@@ -1,27 +1,20 @@
 'use client'
 
-import { Bell, ChevronDown, CloudOff, LogIn, LogOut, Menu, Trophy, User, UserPlus } from 'lucide-react'
+import { LogOut, Menu } from 'lucide-react'
+import { NotificationBell } from './notification-bell'
 import { cn } from '@/lib/utils'
-import { Btn, Pill } from './primitives'
 
 export type AuthMode = 'team' | 'guest' | 'admin'
 
 export function TopHeader({
   title,
   auth,
-  teamName = 'ap (Cú Đêm K69)',
+  teamName = 'ap',
   teamSid = '24020277',
-  activeTournamentName = 'Giải Đấu BOT K69 Mùa 2',
-  isOffline = false,
-  outboxCount = 0,
-  unreadNotifsCount = 2,
   onLogout,
   onOpenMenu,
-  onOpenTournList,
   onOpenLogin,
-  onOpenRegister,
-  onOpenNotifications,
-  onOpenProfile,
+  onSetAuth,
 }: {
   title: string
   auth: AuthMode
@@ -38,112 +31,111 @@ export function TopHeader({
   onOpenRegister?: () => void
   onOpenNotifications?: () => void
   onOpenProfile?: () => void
+  onSetAuth?: (role: AuthMode) => void
 }) {
-  return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-background/85 px-4 backdrop-blur-md sm:px-6">
-      <button
-        type="button"
-        onClick={onOpenMenu}
-        className="rounded-md p-2 text-muted-foreground hover:bg-secondary lg:hidden"
-        aria-label="Mở menu"
-      >
-        <Menu className="size-5" />
-      </button>
+  const isGuest = auth === 'guest'
+  const initials = (teamName || 'ap').slice(0, 2).toUpperCase()
 
-      {/* Breadcrumb và Bộ chọn giải đấu */}
-      <div className="flex items-center gap-2 text-sm">
+  return (
+    <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-[#e2e8f0] bg-white/95 px-6 backdrop-blur-md sm:px-8">
+      {/* Breadcrumb matching Image 1, 4, 5 */}
+      <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={onOpenTournList}
-          className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1 text-xs font-semibold text-foreground shadow-sm transition hover:bg-secondary"
-          title="Bấm để chuyển đổi giải đấu"
+          onClick={onOpenMenu}
+          className="rounded-lg p-2 text-muted-foreground hover:bg-secondary lg:hidden"
+          aria-label="Mở menu"
         >
-          <Trophy className="size-3.5 text-warning" />
-          <span className="max-w-[140px] truncate sm:max-w-xs">{activeTournamentName}</span>
-          <ChevronDown className="size-3 text-muted-foreground" />
+          <Menu className="size-5" />
         </button>
 
-        <span className="hidden text-border md:inline">/</span>
-        <span className="hidden truncate font-medium text-foreground md:inline">{title}</span>
+        <div className="flex items-center gap-2 text-sm text-[#64748b]">
+          <span className="font-normal text-[#64748b]">Arena</span>
+          <span className="text-[#cbd5e1]">/</span>
+          <strong className="font-bold text-[#0f172a]">{title}</strong>
+        </div>
       </div>
 
-      {/* Cụm hành động bên phải */}
-      <div className="ml-auto flex items-center gap-2 sm:gap-3">
-        {/* Chỉ báo ngoại tuyến (Offline Outbox) */}
-        {isOffline && (
-          <Pill tone="warning" className="cursor-pointer" title="Đang ngoại tuyến, bài nộp được lưu cục bộ">
-            <CloudOff className="size-3" />
-            <span className="hidden sm:inline">Offline</span>
-            {outboxCount > 0 && <span className="font-mono font-bold">({outboxCount})</span>}
-          </Pill>
-        )}
-
-        {/* Nút Chuông Thông báo */}
-        {auth !== 'guest' && <button
-          type="button"
-          onClick={onOpenNotifications}
-          className="relative flex size-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition hover:text-foreground"
-          aria-label="Trung tâm thông báo"
+      {/* Right side controls matching Image 1, 4, 5 */}
+      <div className="flex items-center gap-3.5 sm:gap-4">
+        {/* Role Switcher Pill */}
+        <div
+          className="hidden sm:inline-flex items-center rounded-full border border-[#e2e8f0] bg-[#f1f5f9] p-1 text-xs font-semibold"
+          role="group"
+          aria-label="Chế độ người dùng"
         >
-          <Bell className="size-4" />
-          {unreadNotifsCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-primary-foreground ring-2 ring-background">
-              {unreadNotifsCount}
-            </span>
-          )}
-        </button>}
+          <button
+            type="button"
+            onClick={() => {
+              if (isGuest && onOpenLogin) onOpenLogin()
+              else if (onSetAuth) onSetAuth('team')
+            }}
+            className={cn(
+              'rounded-full px-3.5 py-1.5 transition-all',
+              !isGuest
+                ? 'bg-[#111827] text-white shadow-sm'
+                : 'text-[#64748b] hover:text-[#0f172a]',
+            )}
+          >
+            Đã đăng nhập (Đội tuyển)
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (!isGuest) onLogout()
+              else if (onSetAuth) onSetAuth('guest')
+            }}
+            className={cn(
+              'rounded-full px-3.5 py-1.5 transition-all',
+              isGuest
+                ? 'bg-[#111827] text-white shadow-sm'
+                : 'text-[#64748b] hover:text-[#0f172a]',
+            )}
+          >
+            Khách tham quan
+          </button>
+        </div>
 
-        <div className="hidden h-6 w-px bg-border sm:block" aria-hidden />
+        {/* Floating Notification Popover Bell */}
+        <NotificationBell />
 
-        {/* Trạng thái xác thực */}
-        {auth === 'team' ? (
-          <div className="flex items-center gap-1 rounded-full border border-border bg-card py-1 pl-1 pr-2 shadow-sm">
-            <button
-              type="button"
-              onClick={onOpenProfile}
-              className="flex items-center gap-2 text-left"
-              title="Xem hồ sơ đội"
-            >
-              <div className="flex size-7 items-center justify-center rounded-full bg-primary font-mono text-[11px] font-bold text-primary-foreground">
-                AP
+        {/* User Account Cluster */}
+        {!isGuest ? (
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#3b5998] font-sans text-xs font-bold text-white shadow-sm">
+              {initials}
+            </div>
+
+            <div className="hidden sm:flex flex-col leading-tight">
+              <div className="flex items-center gap-1.5">
+                <strong className="text-xs font-bold text-[#0f172a]">{teamName}</strong>
+                <span className="rounded-md border border-[#dbeafe] bg-[#eff6ff] px-1.5 py-0.5 text-[10px] font-bold text-[#2563eb]">
+                  {auth === 'admin' ? 'BAN TỔ CHỨC' : 'ĐỘI TUYỂN'}
+                </span>
               </div>
-              <div className="hidden min-w-0 pr-1 lg:block">
-                <p className="truncate text-xs font-semibold leading-none text-foreground">{teamName}</p>
-                <p className="font-mono text-[10px] text-muted-foreground">{teamSid}</p>
-              </div>
-            </button>
+              <span className="font-mono text-[11px] text-[#64748b]">
+                SBD: {teamSid}
+              </span>
+            </div>
+
             <button
               type="button"
               onClick={onLogout}
-              className="ml-1 rounded-full p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
-              title="Đăng xuất"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-[#64748b] transition hover:bg-[#fef2f2] hover:text-[#dc2626]"
+              title="Đăng xuất khỏi phiên thi đấu"
             >
               <LogOut className="size-3.5" />
-            </button>
-          </div>
-        ) : auth === 'admin' ? (
-          <div className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-accent/60 py-1 pl-2.5 pr-2 shadow-sm">
-            <span className="text-xs font-bold text-primary">ADMIN (BTC)</span>
-            <button
-              type="button"
-              onClick={onLogout}
-              className="rounded-full p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
-              title="Đăng xuất Admin"
-            >
-              <LogOut className="size-3.5" />
+              <span className="hidden md:inline">Đăng xuất</span>
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <Btn variant="outline" size="sm" onClick={onOpenLogin}>
-              <LogIn className="size-3.5" />
-              <span className="hidden sm:inline">Đăng nhập</span>
-            </Btn>
-            <Btn variant="primary" size="sm" onClick={onOpenRegister}>
-              <UserPlus className="size-3.5" />
-              <span className="hidden sm:inline">Đăng ký đội</span>
-            </Btn>
-          </div>
+          <button
+            type="button"
+            onClick={onOpenLogin}
+            className="flex items-center gap-1.5 rounded-xl bg-[#434be6] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[#343bc8]"
+          >
+            Đăng nhập
+          </button>
         )}
       </div>
     </header>

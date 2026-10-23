@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { Eye, EyeOff, KeyRound, LogIn, ShieldAlert, UserCheck, UserPlus } from 'lucide-react'
-import { Btn, Field, Modal, Notice, SegmentedTabs } from '../primitives'
+import { useEffect, useState } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
+import { cn } from '@/lib/utils'
 
 export type AuthModalMode = 'login' | 'register' | 'forgot'
 
@@ -19,7 +19,8 @@ export function AuthModal({
   onLoginSuccess?: (role: 'team' | 'admin', name: string, sid: string) => void
 }) {
   const [mode, setMode] = useState<AuthModalMode>(initialMode)
-  
+  useEffect(() => { if (open) setMode(initialMode) }, [open, initialMode])
+
   // Login State
   const [loginUser, setLoginUser] = useState('')
   const [loginPass, setLoginPass] = useState('')
@@ -36,14 +37,14 @@ export function AuthModal({
   const [regError, setRegError] = useState<string | null>(null)
   const [regSuccess, setRegSuccess] = useState<string | null>(null)
 
-  // Forgot Password 2-Step State
-  const [forgotStep, setForgotStep] = useState<1 | 2>(1)
+  // Forgot Password State
   const [forgotSid, setForgotSid] = useState('')
   const [forgotToken, setForgotToken] = useState('')
   const [forgotNewPass, setForgotNewPass] = useState('')
-  const [showForgotPass, setShowForgotPass] = useState(false)
   const [forgotLoading, setForgotLoading] = useState(false)
-  const [forgotMsg, setForgotMsg] = useState<{ tone: 'neutral' | 'success' | 'warning'; text: string } | null>(null)
+  const [forgotMsg, setForgotMsg] = useState<string | null>(null)
+
+  if (!open) return null
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -58,11 +59,15 @@ export function AuthModal({
         onClose()
       } else {
         const res = await arenaApi.loginTeam(loginUser.trim(), loginPass)
-        onLoginSuccess?.('team', res.team_name || loginUser.trim(), res.student_id || loginUser.trim())
+        onLoginSuccess?.(
+          'team',
+          res.team_name || loginUser.trim(),
+          res.student_id || loginUser.trim(),
+        )
         onClose()
       }
     } catch (err: any) {
-      setLoginError(err?.message || 'Không thể đăng nhập. Vui lòng thử lại.')
+      setLoginError(err?.message || 'Tên đăng nhập hoặc mật khẩu không chính xác.')
     } finally {
       setLoginLoading(false)
     }
@@ -98,269 +103,320 @@ export function AuthModal({
     }
   }
 
-  async function handleForgotStep1(e: React.FormEvent) {
-    e.preventDefault()
-    setForgotLoading(true)
-    setForgotMsg(null)
-
-    try {
-      await arenaApi.forgotPassword(forgotSid.trim(), '')
-      setForgotStep(2)
-      setForgotMsg({
-        tone: 'success',
-        text: `Đã ghi nhận yêu cầu cho MSSV ${forgotSid}. Vui lòng nhập mã do Ban tổ chức cung cấp để đổi mật khẩu.`,
-      })
-    } catch (err: any) {
-      setForgotMsg({ tone: 'warning', text: err?.message || 'Không thể gửi yêu cầu. Vui lòng thử lại.' })
-    } finally {
-      setForgotLoading(false)
-    }
-  }
-
-  async function handleForgotStep2(e: React.FormEvent) {
-    e.preventDefault()
-    setForgotLoading(true)
-
-    try {
-      if (forgotToken.trim().length < 4) {
-        setForgotMsg({ tone: 'warning', text: 'Mã xác thực không hợp lệ hoặc đã hết hạn.' })
-        return
-      }
-      await arenaApi.resetPassword(forgotSid.trim(), forgotToken.trim(), forgotNewPass)
-      setForgotMsg({ tone: 'success', text: 'Đặt lại mật khẩu thành công! Chuyển sang đăng nhập...' })
-      setTimeout(() => {
-        setMode('login')
-        setForgotStep(1)
-        setLoginUser(forgotSid)
-      }, 1000)
-    } catch (err: any) {
-      setForgotMsg({ tone: 'warning', text: err?.message || 'Không thể đổi mật khẩu. Vui lòng kiểm tra mã.' })
-    } finally {
-      setForgotLoading(false)
-    }
-  }
-
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={
-        mode === 'login'
-          ? 'Đăng nhập đấu trường'
-          : mode === 'register'
-            ? 'Đăng ký đội thi đấu mới'
-            : 'Quên mật khẩu (Xác thực 2 bước)'
-      }
-      description={
-        mode === 'login'
-          ? 'Đăng nhập bằng Mã sinh viên (MSSV) cho Đội thi hoặc tài khoản Ban Tổ Chức.'
-          : mode === 'register'
-            ? 'Khởi tạo tài khoản thi đấu mới cho đội của bạn trên hệ thống Arena.'
-            : 'Quy trình xác minh an toàn để cấp lại mật khẩu mới thông qua Ban Tổ Chức.'
-      }
-      size="md"
-    >
-      <div className="flex flex-col gap-4">
-        {mode !== 'forgot' && (
-          <SegmentedTabs
-            label="Chế độ xác thực"
-            value={mode}
-            onChange={(v) => {
-              setMode(v)
-              setLoginError(null)
-              setRegError(null)
-            }}
-            options={[
-              { value: 'login', label: 'Đăng nhập', icon: <LogIn className="size-4" /> },
-              { value: 'register', label: 'Đăng ký đội', icon: <UserPlus className="size-4" /> },
-            ]}
-          />
-        )}
-
-        {/* Form Đăng Nhập */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm animate-in fade-in-0">
+      <div className="w-full max-w-[460px] overflow-hidden rounded-[24px] border border-[#e2e8f0] bg-white p-8 sm:p-9 shadow-[0_20px_45px_-12px_rgba(15,23,42,0.15)] animate-in zoom-in-95">
         {mode === 'login' && (
-          <form onSubmit={handleLogin} className="flex flex-col gap-3.5">
+          <div>
+            <h2 className="text-2xl font-extrabold text-[#0f172a] tracking-tight">
+              Đăng nhập
+            </h2>
+            <p className="mt-1 text-sm text-[#64748b]">
+              Đăng nhập tài khoản đội thi hoặc Ban tổ chức.
+            </p>
+
             {loginError && (
-              <Notice tone="warning" icon={<ShieldAlert className="size-4" />}>
+              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-600 font-medium">
                 {loginError}
-              </Notice>
+              </div>
             )}
 
-            <Field
-              label="Tên đăng nhập hoặc MSSV"
-              placeholder="Ví dụ: 24020001 hoặc admin"
-              required
-              value={loginUser}
-              onChange={(e) => setLoginUser(e.target.value)}
-              hint="Đội thi sử dụng Mã sinh viên (MSSV); BTC dùng tài khoản admin"
-            />
-
-            <Field
-              label="Mật khẩu"
-              type={showLoginPass ? 'text' : 'password'}
-              placeholder="Nhập mật khẩu"
-              required
-              value={loginPass}
-              onChange={(e) => setLoginPass(e.target.value)}
-              trailing={
-                <button
-                  type="button"
-                  onClick={() => setShowLoginPass(!showLoginPass)}
-                  className="p-1 text-muted-foreground hover:text-foreground"
-                  aria-label={showLoginPass ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+            <form onSubmit={handleLogin} className="mt-6 flex flex-col gap-4">
+              {/* Field 1: Username / MSSV */}
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="inp-login-user"
+                  className="text-[13.5px] font-semibold text-[#1e293b]"
                 >
-                  {showLoginPass ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                </button>
-              }
-            />
+                  Tên đăng nhập hoặc MSSV
+                </label>
+                <div className="flex h-12 items-center rounded-xl border border-[#dce4ee] bg-white px-3.5 transition focus-within:border-[#434be6] focus-within:ring-2 focus-within:ring-[#434be6]/15">
+                  <input
+                    id="inp-login-user"
+                    type="text"
+                    required
+                    value={loginUser}
+                    onChange={(e) => setLoginUser(e.target.value)}
+                    placeholder="Mã sinh viên"
+                    className="w-full border-none bg-transparent text-sm text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
+                  />
+                </div>
+              </div>
 
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Bảo lưu phiên trên thiết bị này</span>
+              {/* Field 2: Password */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="inp-login-pass"
+                    className="text-[13.5px] font-semibold text-[#1e293b]"
+                  >
+                    Mật khẩu
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setMode('forgot')}
+                    className="text-xs font-semibold text-[#434be6] hover:underline"
+                  >
+                    Quên mật khẩu?
+                  </button>
+                </div>
+                <div className="flex h-12 items-center rounded-xl border border-[#dce4ee] bg-white px-3.5 transition focus-within:border-[#434be6] focus-within:ring-2 focus-within:ring-[#434be6]/15">
+                  <input
+                    id="inp-login-pass"
+                    type={showLoginPass ? 'text' : 'password'}
+                    required
+                    value={loginPass}
+                    onChange={(e) => setLoginPass(e.target.value)}
+                    placeholder="Nhập mật khẩu"
+                    className="w-full border-none bg-transparent text-sm text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowLoginPass((v) => !v)}
+                    className="p-1 text-[#64748b] transition hover:text-[#0f172a]"
+                    aria-label={showLoginPass ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                  >
+                    {showLoginPass ? (
+                      <EyeOff className="size-4" />
+                    ) : (
+                      <Eye className="size-4" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit Button matching Image 3 */}
+              <button
+                type="submit"
+                disabled={loginLoading}
+                className="mt-2 flex h-12 w-full items-center justify-center rounded-xl bg-[#434be6] text-sm font-bold text-white shadow-[0_4px_14px_rgba(67,75,230,0.25)] transition hover:bg-[#343bc8] active:translate-y-0.5 disabled:opacity-60"
+              >
+                {loginLoading ? 'Đang xác thực...' : 'Đăng nhập'}
+              </button>
+            </form>
+
+            {/* Secondary Action Buttons matching Image 3 */}
+            <div className="mt-4 flex flex-col gap-2.5">
               <button
                 type="button"
-                onClick={() => {
-                  setMode('forgot')
-                  setForgotStep(1)
-                }}
-                className="font-medium text-primary hover:underline"
+                onClick={() => setMode('register')}
+                className="flex h-11 w-full items-center justify-center rounded-xl border border-[#e2e8f0] bg-white text-xs font-medium text-[#1e293b] transition hover:bg-[#f8fafc] hover:border-[#cbd5e1]"
               >
-                Quên mật khẩu?
+                Chưa có tài khoản?{' '}
+                <strong className="ml-1 font-bold text-[#0f172a]">
+                  Đăng ký đội thi
+                </strong>
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex h-11 w-full items-center justify-center rounded-xl border border-[#e2e8f0] bg-white text-xs font-medium text-[#1e293b] transition hover:bg-[#f8fafc] hover:border-[#cbd5e1]"
+              >
+                Quay về trang chủ
               </button>
             </div>
 
-            <Btn type="submit" variant="primary" loading={loginLoading} className="mt-2 w-full">
-              <LogIn className="size-4" />
-              Đăng nhập đấu trường
-            </Btn>
-          </form>
+            {/* Disclaimer Footer Note matching Image 3 */}
+            <p className="mt-6 text-center text-xs leading-relaxed text-[#64748b]">
+              Đội thi đăng nhập bằng Mã sinh viên (MSSV) và mật khẩu đã tạo. Ban Tổ
+              Chức sử dụng tài khoản Quản trị viên.
+            </p>
+          </div>
         )}
 
-        {/* Form Đăng Ký */}
         {mode === 'register' && (
-          <form onSubmit={handleRegister} className="flex flex-col gap-3.5">
+          <div>
+            <h2 className="text-2xl font-extrabold text-[#0f172a] tracking-tight">
+              Đăng ký đội thi
+            </h2>
+            <p className="mt-1 text-sm text-[#64748b]">
+              Khởi tạo tài khoản thi đấu mới cho đội của bạn.
+            </p>
+
             {regError && (
-              <Notice tone="warning" icon={<ShieldAlert className="size-4" />}>
+              <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-600 font-medium">
                 {regError}
-              </Notice>
+              </div>
             )}
             {regSuccess && (
-              <Notice tone="success" icon={<UserCheck className="size-4" />}>
+              <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-700 font-medium">
                 {regSuccess}
-              </Notice>
+              </div>
             )}
 
-            <Field
-              label="Mã sinh viên Đội trưởng (MSSV)"
-              placeholder="Ví dụ: 24020001"
-              required
-              value={regSid}
-              onChange={(e) => setRegSid(e.target.value)}
-              hint="MSSV được dùng làm tên đăng nhập chính của đội"
-            />
+            <form onSubmit={handleRegister} className="mt-6 flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13.5px] font-semibold text-[#1e293b]">
+                  Mã sinh viên (Đội trưởng)
+                </label>
+                <div className="flex h-12 items-center rounded-xl border border-[#dce4ee] bg-white px-3.5 transition focus-within:border-[#434be6] focus-within:ring-2 focus-within:ring-[#434be6]/15">
+                  <input
+                    type="text"
+                    required
+                    value={regSid}
+                    onChange={(e) => setRegSid(e.target.value)}
+                    placeholder="Ví dụ: 24020001"
+                    className="w-full border-none bg-transparent text-sm text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
+                  />
+                </div>
+              </div>
 
-            <Field
-              label="Tên đội thi đấu"
-              placeholder="Ví dụ: K69 CyberBots"
-              required
-              value={regName}
-              onChange={(e) => setRegName(e.target.value)}
-            />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13.5px] font-semibold text-[#1e293b]">
+                  Tên đội thi đấu
+                </label>
+                <div className="flex h-12 items-center rounded-xl border border-[#dce4ee] bg-white px-3.5 transition focus-within:border-[#434be6] focus-within:ring-2 focus-within:ring-[#434be6]/15">
+                  <input
+                    type="text"
+                    required
+                    value={regName}
+                    onChange={(e) => setRegName(e.target.value)}
+                    placeholder="Ví dụ: K69 CyberBots"
+                    className="w-full border-none bg-transparent text-sm text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
+                  />
+                </div>
+              </div>
 
-            <Field
-              label="Mật khẩu (Tối thiểu 6 ký tự)"
-              type={showRegPass ? 'text' : 'password'}
-              placeholder="Nhập mật khẩu an toàn"
-              required
-              value={regPass}
-              onChange={(e) => setRegPass(e.target.value)}
-              trailing={
-                <button
-                  type="button"
-                  onClick={() => setShowRegPass(!showRegPass)}
-                  className="p-1 text-muted-foreground hover:text-foreground"
-                >
-                  {showRegPass ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                </button>
-              }
-            />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13.5px] font-semibold text-[#1e293b]">
+                  Mật khẩu
+                </label>
+                <div className="flex h-12 items-center rounded-xl border border-[#dce4ee] bg-white px-3.5 transition focus-within:border-[#434be6] focus-within:ring-2 focus-within:ring-[#434be6]/15">
+                  <input
+                    type={showRegPass ? 'text' : 'password'}
+                    required
+                    value={regPass}
+                    onChange={(e) => setRegPass(e.target.value)}
+                    placeholder="Ít nhất 6 ký tự"
+                    className="w-full border-none bg-transparent text-sm text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowRegPass((v) => !v)}
+                    className="p-1 text-[#64748b] transition hover:text-[#0f172a]"
+                  >
+                    {showRegPass ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+              </div>
 
-            <Btn type="submit" variant="primary" loading={regLoading} className="mt-2 w-full">
-              <UserPlus className="size-4" />
-              Hoàn tất đăng ký đội thi
-            </Btn>
-          </form>
+              <button
+                type="submit"
+                disabled={regLoading}
+                className="mt-2 flex h-12 w-full items-center justify-center rounded-xl bg-[#434be6] text-sm font-bold text-white shadow-sm transition hover:bg-[#343bc8] disabled:opacity-60"
+              >
+                {regLoading ? 'Đang tạo tài khoản...' : 'Hoàn tất đăng ký'}
+              </button>
+            </form>
+
+            <div className="mt-4 flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={() => setMode('login')}
+                className="flex h-11 w-full items-center justify-center rounded-xl border border-[#e2e8f0] bg-white text-xs font-medium text-[#1e293b] transition hover:bg-[#f8fafc]"
+              >
+                Đã có tài khoản?{' '}
+                <strong className="ml-1 font-bold text-[#0f172a]">
+                  Đăng nhập ngay
+                </strong>
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex h-11 w-full items-center justify-center rounded-xl border border-[#e2e8f0] bg-white text-xs font-medium text-[#1e293b] transition hover:bg-[#f8fafc]"
+              >
+                Quay về trang chủ
+              </button>
+            </div>
+          </div>
         )}
 
-        {/* Form Quên Mật Khẩu 2 Bước */}
         {mode === 'forgot' && (
-          <div className="flex flex-col gap-3.5">
+          <div>
+            <h2 className="text-2xl font-extrabold text-[#0f172a] tracking-tight">
+              Quên mật khẩu
+            </h2>
+            <p className="mt-1 text-sm text-[#64748b]">
+              Xác minh MSSV đội trưởng để lấy lại quyền truy cập.
+            </p>
+
             {forgotMsg && (
-              <Notice tone={forgotMsg.tone} icon={<KeyRound className="size-4" />}>
-                {forgotMsg.text}
-              </Notice>
+              <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-3 text-xs text-blue-700 font-medium">
+                {forgotMsg}
+              </div>
             )}
 
-            {forgotStep === 1 ? (
-              <form onSubmit={handleForgotStep1} className="flex flex-col gap-3.5">
-                <Field
-                  label="Mã sinh viên (MSSV) của bạn"
-                  placeholder="Nhập MSSV đã đăng ký (VD: 24020001)"
-                  required
-                  value={forgotSid}
-                  onChange={(e) => setForgotSid(e.target.value)}
-                  hint="Ban tổ chức sẽ xác minh danh tính và cấp mã dùng một lần có hiệu lực 15 phút."
-                />
-                <div className="flex gap-2">
-                  <Btn type="button" variant="outline" onClick={() => setMode('login')} className="flex-1">
-                    Quay lại
-                  </Btn>
-                  <Btn type="submit" variant="primary" loading={forgotLoading} className="flex-1">
-                    Tiếp tục xác thực
-                  </Btn>
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault()
+                setForgotLoading(true)
+                setForgotMsg(null)
+                try {
+                  const response = await arenaApi.forgotPassword(forgotSid.trim(), '') as { message?: string }
+                  setForgotMsg(response.message || 'Vui lòng liên hệ ban tổ chức để xác minh danh tính.')
+                } catch (error) {
+                  setForgotMsg(error instanceof Error ? error.message : 'Không gửi được yêu cầu.')
+                } finally {
+                  setForgotLoading(false)
+                }
+              }}
+              className="mt-6 flex flex-col gap-4"
+            >
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13.5px] font-semibold text-[#1e293b]">
+                  Mã sinh viên (MSSV)
+                </label>
+                <div className="flex h-12 items-center rounded-xl border border-[#dce4ee] bg-white px-3.5 transition focus-within:border-[#434be6]">
+                  <input
+                    type="text"
+                    required
+                    value={forgotSid}
+                    onChange={(e) => setForgotSid(e.target.value)}
+                    placeholder="Mã sinh viên"
+                    className="w-full border-none bg-transparent text-sm text-[#0f172a] outline-none"
+                  />
                 </div>
-              </form>
-            ) : (
-              <form onSubmit={handleForgotStep2} className="flex flex-col gap-3.5">
-                <Field
-                  label="Mã khôi phục từ Ban Tổ Chức"
-                  placeholder="Dán mã khôi phục (OTP/Token)"
-                  required
-                  value={forgotToken}
-                  onChange={(e) => setForgotToken(e.target.value)}
-                  hint="Mã xác thực do BTC cấp sau khi đối chiếu thẻ sinh viên."
-                />
+              </div>
 
-                <Field
-                  label="Mật khẩu mới (Tối thiểu 6 ký tự)"
-                  type={showForgotPass ? 'text' : 'password'}
-                  placeholder="Nhập mật khẩu mới"
-                  required
-                  value={forgotNewPass}
-                  onChange={(e) => setForgotNewPass(e.target.value)}
-                  trailing={
-                    <button
-                      type="button"
-                      onClick={() => setShowForgotPass(!showForgotPass)}
-                      className="p-1 text-muted-foreground hover:text-foreground"
-                    >
-                      {showForgotPass ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                    </button>
-                  }
-                />
+              <button
+                type="submit"
+                className="mt-2 flex h-12 w-full items-center justify-center rounded-xl bg-[#434be6] text-sm font-bold text-white shadow-sm transition hover:bg-[#343bc8]"
+              >
+                {forgotLoading ? 'Đang kiểm tra...' : 'Xem hướng dẫn khôi phục'}
+              </button>
+            </form>
 
-                <div className="flex gap-2">
-                  <Btn type="button" variant="outline" onClick={() => setForgotStep(1)} className="flex-1">
-                    Quay lại bước 1
-                  </Btn>
-                  <Btn type="submit" variant="primary" loading={forgotLoading} className="flex-1">
-                    Xác nhận đổi mật khẩu
-                  </Btn>
-                </div>
-              </form>
-            )}
+            <form onSubmit={async (e) => {
+              e.preventDefault()
+              setForgotLoading(true)
+              setForgotMsg(null)
+              try {
+                const response = await arenaApi.resetPassword(forgotSid.trim(), forgotToken.trim(), forgotNewPass) as { message?: string }
+                setForgotMsg(response.message || 'Đã đổi mật khẩu. Bạn có thể đăng nhập.')
+              } catch (error) {
+                setForgotMsg(error instanceof Error ? error.message : 'Không thể đặt lại mật khẩu.')
+              } finally {
+                setForgotLoading(false)
+              }
+            }} className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-5">
+              <p className="text-sm font-semibold">Đã nhận mã từ ban tổ chức?</p>
+              <input required value={forgotToken} onChange={(e) => setForgotToken(e.target.value)} placeholder="Mã đặt lại mật khẩu" className="h-11 rounded-xl border border-slate-300 px-3" />
+              <input required minLength={6} type="password" value={forgotNewPass} onChange={(e) => setForgotNewPass(e.target.value)} placeholder="Mật khẩu mới" className="h-11 rounded-xl border border-slate-300 px-3" />
+              <button type="submit" disabled={forgotLoading} className="h-11 rounded-xl bg-indigo-600 font-semibold text-white disabled:opacity-50">Đặt lại mật khẩu</button>
+            </form>
+
+            <div className="mt-4 flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={() => setMode('login')}
+                className="flex h-11 w-full items-center justify-center rounded-xl border border-[#e2e8f0] bg-white text-xs font-medium text-[#1e293b] transition hover:bg-[#f8fafc]"
+              >
+                Quay lại đăng nhập
+              </button>
+            </div>
           </div>
         )}
       </div>
-    </Modal>
+    </div>
   )
 }

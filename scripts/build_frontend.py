@@ -10,7 +10,7 @@ import hashlib
 
 ROOT = Path(__file__).resolve().parents[1]
 FRONTEND = ROOT / "frontend"
-LEGACY_FRONTEND = ROOT / "frontend-cu"
+LEGACY_FRONTEND = FRONTEND / "legacy"
 INCLUDE = re.compile(r'\{\{template\s+"([\w./-]+\.html)"\s+\.\}\}')
 
 
@@ -75,15 +75,19 @@ def build_next(destination):
     subprocess.run([npm, 'run', 'build'], cwd=app, env=environment, check=True)
     output = app / 'out'
     html = (output / 'index.html').read_text(encoding='utf-8')
-    if 'arena-live-portal' not in html or '/_next/' not in html:
-        raise RuntimeError('Next export did not contain the functional portal')
-    urls = set(json.loads((output / 'offline-assets.json').read_text(encoding='utf-8')))
+    if '/_next/' not in html:
+        raise RuntimeError('Next export did not contain the functional Next.js application')
+    if (output / 'offline-assets.json').exists():
+        urls = set(json.loads((output / 'offline-assets.json').read_text(encoding='utf-8')))
+    else:
+        urls = set()
     urls.update('/' + p.relative_to(output).as_posix() for p in (output / '_next' / 'static').rglob('*') if p.is_file())
     (output / 'offline-assets.json').write_text(json.dumps(sorted(urls)), encoding='utf-8')
     digest = hashlib.sha256(html.encode()).hexdigest()[:16]
-    sw = (output / 'sw.js').read_text(encoding='utf-8')
-    sw = re.sub(r"const CACHE='[^']+';", f"const CACHE='arena-static-next-{digest}';", sw)
-    (output / 'sw.js').write_text(sw, encoding='utf-8')
+    if (output / 'sw.js').exists():
+        sw = (output / 'sw.js').read_text(encoding='utf-8')
+        sw = re.sub(r"const CACHE='[^']+';", f"const CACHE='arena-static-next-{digest}';", sw)
+        (output / 'sw.js').write_text(sw, encoding='utf-8')
     # Replace only this builder's explicit output directory after a successful build.
     if destination.is_symlink() or destination.resolve() != FRONTEND / 'dist':
         raise ValueError('Frontend output must not redirect outside frontend/dist')
