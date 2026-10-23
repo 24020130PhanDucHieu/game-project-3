@@ -179,6 +179,13 @@ if [ -s /etc/arena/backend.env ]; then
 fi
 
 echo "==> Extracting new release into /opt/arena/app..."
+if [ ! -d /opt/arena/app ] || [ -L /opt/arena/app ] || [ -L /opt/arena/app/frontend ]; then
+    echo "Unexpected application directory; refusing to clean frontend files" >&2
+    exit 1
+fi
+# Tar extraction does not remove files deleted from Git. Clear only the two
+# frontend paths owned by this release so stale legacy assets cannot survive.
+sudo rm -rf -- /opt/arena/app/frontend-cu /opt/arena/app/frontend/dist
 sudo tar -xzf {remote_archive} -C /opt/arena/app
 
 echo "==> Running installer and restarting services..."
@@ -216,6 +223,11 @@ def remote_deploy_worker(user, worker_host, key_path, local_archive):
         return False
 
     script = f"""set -eu
+if [ ! -d /opt/arena/app ] || [ -L /opt/arena/app ] || [ -L /opt/arena/app/frontend ]; then
+    echo "Unexpected application directory; refusing to clean frontend files" >&2
+    exit 1
+fi
+sudo rm -rf -- /opt/arena/app/frontend-cu /opt/arena/app/frontend/dist
 sudo tar -xzf {remote_archive} -C /opt/arena/app
 rm -f {remote_archive}
 sudo systemctl restart arena-worker

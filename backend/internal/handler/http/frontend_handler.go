@@ -40,7 +40,7 @@ func registerStaticPortal(router *gin.Engine, root string) {
 		c.Header("Cache-Control", "no-cache")
 		c.File(filepath.Join(root, "index.html"))
 	})
-	for _, name := range []string{"_next", "static", "assets"} {
+	for _, name := range []string{"_next"} {
 		if info, err := os.Stat(filepath.Join(root, name)); err == nil && info.IsDir() {
 			router.StaticFS("/"+name, http.FS(os.DirFS(filepath.Join(root, name))))
 		}
