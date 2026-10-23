@@ -36,13 +36,13 @@
     <p id="qualifier-my-status">Đăng nhập tài khoản đội để nộp bot. Không cần chọn trận đấu.</p>
 
     <!-- Submission Mode Switcher -->
-    <div class="qualifier-mode-switch" style="display: flex; gap: 8px; margin: 12px 0 14px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
-      <button type="button" id="btn-mode-github" class="btn btn-sm btn-primary" onclick="switchQualifierMode('github')">Nộp qua GitHub (Khuyên dùng)</button>
-      <button type="button" id="btn-mode-direct" class="btn btn-sm btn-outline" onclick="switchQualifierMode('direct')">Nộp trực tiếp (Web IDE / File)</button>
+    <div class="qualifier-mode-switch" role="tablist" aria-label="Cách nộp bot vòng loại" style="display: flex; gap: 8px; margin: 12px 0 14px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;">
+      <button type="button" id="btn-mode-github" class="btn btn-sm btn-outline" role="tab" aria-selected="false" aria-controls="qualifier-github-panel" onclick="switchQualifierMode('github')">Nộp qua GitHub</button>
+      <button type="button" id="btn-mode-direct" class="btn btn-sm btn-primary" role="tab" aria-selected="true" aria-controls="qualifier-direct-panel" onclick="switchQualifierMode('direct')">Nộp trực tiếp (Web IDE)</button>
     </div>
 
     <!-- GitHub Submission Panel -->
-    <div id="qualifier-github-panel" style="display: block; margin-bottom: 14px;">
+    <div id="qualifier-github-panel" role="tabpanel" hidden style="margin-bottom: 14px;">
       <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; margin-bottom: 12px;">
         <h4 style="margin: 0 0 10px 0; font-size: 13px; color: #1e293b; font-weight: 600;">3 bước nộp bot qua GitHub cho tân sinh viên:</h4>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; margin-bottom: 12px;">
@@ -62,20 +62,20 @@
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 8px;">
-          <label style="font-size: 13px; font-weight: 600; color: #334155;">Đường dẫn GitHub Repository của đội bạn:
-            <div style="display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
-              <input id="qualifier-git-repo-url" class="login-input-field" placeholder="Ví dụ: https://github.com/sinhvien-k69/my-bot" style="flex: 1; min-width: 240px;">
-              <input id="qualifier-git-branch" class="login-input-field" placeholder="Nhánh (main)" value="main" style="width: 100px;">
-              <input id="qualifier-git-filepath" class="login-input-field" placeholder="Tên file" value="bot.py" style="width: 100px;">
-              <button class="btn btn-primary" type="button" id="btn-fetch-github" onclick="fetchBotFromGitHub()">Kéo mã nguồn từ GitHub</button>
-            </div>
-          </label>
+          <div class="git-field-grid">
+            <label for="qualifier-git-repo-url">GitHub Repository URL<input id="qualifier-git-repo-url" class="login-input-field" placeholder="https://github.com/sinhvien-k69/my-bot"></label>
+            <label for="qualifier-git-branch">Commit / Tag / Nhánh<input id="qualifier-git-branch" class="login-input-field" placeholder="main" value="main"></label>
+            <label for="qualifier-git-filepath">Đường dẫn file<input id="qualifier-git-filepath" class="login-input-field" placeholder="bot.py" value="bot.py"></label>
+          </div>
+          <button class="btn btn-primary" type="button" id="btn-fetch-github" onclick="fetchBotFromGitHub()">Kéo mã nguồn từ GitHub</button>
         </div>
 
         <div id="qualifier-git-sync-status" style="display: none; margin-top: 10px; padding: 8px 12px; border-radius: 6px; font-size: 13px;"></div>
+        <pre id="qualifier-git-preview" class="git-source-preview" hidden></pre>
       </div>
     </div>
 
+    <div id="qualifier-direct-panel" role="tabpanel">
     <div id="qualifier-direct-toolbar" class="ide-toolbar-row">
       <select id="qualifier-language" class="input-text-sm" aria-label="Ngôn ngữ" onchange="onQualifierLanguageChange()"><option value="PYTHON">Python (.py)</option><option value="CPP">C++ (.cpp)</option></select>
       <label class="studio-tool-btn">Tải code lên<input id="qualifier-file" type="file" accept=".py,.cpp" onchange="loadQualifierFile(this)" hidden></label>
@@ -85,6 +85,7 @@
     <div style="position: relative;">
       <textarea id="qualifier-code" class="ide-editor" rows="14" style="width:100%;" aria-label="Mã nguồn vòng loại" oninput="saveQualifierDraft()" placeholder="def decide_move(game_state):&#10;    return 'ROCK'"></textarea>
       <div id="qualifier-code-source-badge" style="position: absolute; top: 8px; right: 8px; display: none; font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(30,41,59,0.85); color: #f8fafc;">Nguồn: GitHub</div>
+    </div>
     </div>
     <div style="display: flex; align-items: center; gap: 12px; margin-top: 10px; flex-wrap: wrap;">
       <button class="btn btn-primary" type="button" id="qualifier-submit" onclick="submitQualifierCode()">Nộp bot vào vòng loại</button>

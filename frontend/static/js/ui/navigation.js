@@ -146,6 +146,7 @@ function switchToTab(tabId, { skipMatchOpen = false } = {}) {
       pane.classList.remove("active");
     }
   });
+  if (typeof renderPortalShell === 'function') renderPortalShell();
 
   // Lưu trạng thái tab đang xem để F5 không bị reset về trang chủ
   localStorage.setItem("activeTabId", tabId);

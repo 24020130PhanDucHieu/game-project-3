@@ -22,13 +22,23 @@ function renderDashboardOverview() {
       headerPillText.textContent = isFinished ? "Đã kết thúc" : "Đang diễn ra";
     }
     if (teamsNumEl) {
-      const cnt = currentTournamentData.teams ? currentTournamentData.teams.length : 8;
+      const cnt = currentTournamentData.teams ? currentTournamentData.teams.length : 0;
       teamsNumEl.textContent = `${cnt} Đội`;
     }
     if (progressEl) {
-      progressEl.textContent = currentTournamentData.champion ? `Quán quân: ${currentTournamentData.champion}` : "Tứ Kết → Chung Kết";
+      const live = Object.values(currentTournamentData.matches || {}).find(m => m.team_a && m.team_b && m.status !== 'COMPLETED');
+      progressEl.textContent = currentTournamentData.champion ? 'Đã kết thúc' : (live?.round_name || 'Chờ xếp lịch');
     }
   }
+
+  const completed = document.getElementById('dash-completed-matches');
+  if (completed) completed.textContent = currentTournamentData ? Object.values(currentTournamentData.matches || {}).filter(m => m.status === 'COMPLETED').length : '—';
+  if (!currentTournamentData) {
+    if (teamsNumEl) teamsNumEl.textContent = '—';
+    if (progressEl) progressEl.textContent = '—';
+    if (statusEl) statusEl.textContent = 'Chưa chọn giải';
+  }
+  renderOverviewSchedule();
 
   // Cập nhật thông tin trận đấu nổi bật
   const teamAEl = document.getElementById("dash-match-team-a");
@@ -70,6 +80,31 @@ function renderDashboardOverview() {
   // Tải danh sách top 5 bảng xếp hạng theo Mockup 1
   if (!activeMatch) { if (teamAEl) teamAEl.textContent="Chưa xếp đội"; if (teamBEl) teamBEl.textContent="Chưa xếp đội"; if (matchScoreEl) matchScoreEl.textContent="0 - 0"; if (matchStatEl) matchStatEl.textContent="Chờ xếp lịch"; }
   loadDashboardTopRanking();
+}
+
+function renderOverviewSchedule() {
+  const root = document.getElementById('overview-stage-schedule');
+  if (!root) return;
+  root.replaceChildren();
+  const tournament = currentTournamentData;
+  if (!tournament) { root.textContent = 'Chọn giải đấu để xem lịch.'; return; }
+  const schedule = tournament.stage_schedule || {};
+  const levels = Object.keys(schedule).sort((a,b) => Number(a) - Number(b));
+  if (!levels.length) { root.textContent = 'Ban tổ chức chưa đặt giờ mở và đóng các vòng.'; return; }
+  const matches = Object.values(tournament.matches || {});
+  for (const level of levels) {
+    const entry = schedule[level] || {};
+    const matching = matches.find(m => Number(m.round_level) === Number(level));
+    const label = matching?.round_name || `Vòng ${level}`;
+    const start = Number(entry.starts_at || 0), end = Number(entry.ends_at || 0);
+    const now = typeof arenaNowSeconds === 'function' ? arenaNowSeconds() : Date.now()/1000;
+    const state = start && now < start ? 'Chưa mở' : end && now >= end ? 'Đã đóng' : 'Đang mở';
+    const row = document.createElement('div'); row.className = 'overview-schedule-row';
+    const name = document.createElement('strong'); name.textContent = label;
+    const meta = document.createElement('span'); meta.textContent = [start && `Mở ${new Date(start*1000).toLocaleString('vi-VN')}`, end && `Đóng ${new Date(end*1000).toLocaleString('vi-VN')}`].filter(Boolean).join(' · ') || 'Chưa đặt thời gian';
+    const badge = document.createElement('span'); badge.className = `overview-schedule-badge ${state === 'Đang mở' ? 'is-open' : ''}`; badge.textContent = state;
+    row.append(name, meta, badge); root.appendChild(row);
+  }
 }
 
 async function loadDashboardTopRanking() {

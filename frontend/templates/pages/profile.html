@@ -20,6 +20,7 @@
   <div class="content-card profile-identity-card" style="display: flex; align-items: center; gap: 20px; padding: 20px; margin-bottom: 20px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; flex-wrap: wrap;">
     <div class="profile-avatar" style="width: 68px; height: 68px; border-radius: 16px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">
       <svg class="arena-icon" style="width: 36px; height: 36px;"><use href="#icon-bot"></use></svg>
+      <span id="profile-team-initials" aria-hidden="true">—</span>
     </div>
     <div style="flex: 1; min-width: 240px;">
       <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
@@ -32,6 +33,10 @@
         <span>Đơn vị: <strong id="profile-university" style="color: #334155;">—</strong></span>
       </div>
       <p id="profile-bio" style="margin: 8px 0 0; font-size: 13px; color: #475569; font-style: italic;">Đội thi đấu BOT ARENA K69</p>
+    </div>
+    <div class="profile-identity-results" aria-label="Kết quả trận Bo5">
+      <div><strong id="profile-summary-wins">0</strong><span>Thắng</span></div>
+      <div><strong id="profile-summary-losses">0</strong><span>Thua</span></div>
     </div>
   </div>
 

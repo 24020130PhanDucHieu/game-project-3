@@ -20,6 +20,11 @@
 
     {{template "partials/sidebar.html" .}}
 
+    <div class="portal-workspace">
+      <header class="portal-topbar" id="portal-topbar">
+        <div class="portal-breadcrumb"><span>Arena</span><span aria-hidden="true">/</span><strong id="portal-current-page">Tổng quan</strong></div>
+        <div class="portal-topbar-actions" id="portal-header-account"></div>
+      </header>
     <main class="app-main-content">
 
       {{template "pages/overview.html" .}}
@@ -36,6 +41,7 @@
       {{template "pages/qualifier.html" .}}
       {{template "pages/profile.html" .}}
     </main>
+    </div>
   </div>
 
   {{template "pages/login.html" .}}

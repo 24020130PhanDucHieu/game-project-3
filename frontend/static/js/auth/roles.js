@@ -2,6 +2,7 @@
 // HỆ THỐNG XÁC THỰC VAI TRÒ & PHÂN QUYỀN (ROLE-BASED ACCESS CONTROL)
 // =============================================================================
 function updateRoleUI() {
+  if (typeof renderPortalShell === 'function') renderPortalShell();
   const profileNav = document.getElementById('nav-btn-profile');
   if (profileNav) profileNav.style.display=currentAppRole==='TEAM' ? 'flex' : 'none';
   renderTeamProfile();

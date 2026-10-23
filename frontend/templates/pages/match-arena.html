@@ -115,13 +115,13 @@
         <p id="studio-rule-summary" class="match-rule-summary" aria-live="polite"></p>
 
         <!-- Chế độ nộp: GitHub vs Trực tiếp -->
-        <div style="display: flex; gap: 8px; margin: 8px 0 12px;">
-          <button class="btn btn-sm btn-primary" id="btn-match-mode-github" type="button" onclick="switchMatchSubmitMode('github')">Nộp qua GitHub</button>
-          <button class="btn btn-sm btn-outline" id="btn-match-mode-direct" type="button" onclick="switchMatchSubmitMode('direct')">Nộp trực tiếp (Web IDE)</button>
+        <div class="match-mode-switch" role="tablist" aria-label="Cách nộp mã trận đấu" style="display: flex; gap: 8px; margin: 8px 0 12px;">
+          <button class="btn btn-sm btn-outline" id="btn-match-mode-github" type="button" role="tab" aria-selected="false" aria-controls="match-github-panel" onclick="switchMatchSubmitMode('github')">Nộp qua GitHub</button>
+          <button class="btn btn-sm btn-primary" id="btn-match-mode-direct" type="button" role="tab" aria-selected="true" aria-controls="match-direct-panel" onclick="switchMatchSubmitMode('direct')">Nộp trực tiếp (Web IDE)</button>
         </div>
 
         <!-- Khung nộp qua GitHub trong trận đấu -->
-        <div id="match-github-panel" style="margin-bottom: 12px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
+        <div id="match-github-panel" role="tabpanel" hidden style="margin-bottom: 12px; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;">
           <div style="display: flex; flex-direction: column; gap: 8px;">
             <div>
               <label class="control-label-sm" for="match-git-repo-url">GitHub Repository</label>
@@ -142,8 +142,10 @@
             </button>
           </div>
           <div id="match-git-sync-status" style="display: none; margin-top: 8px; padding: 6px 10px; border-radius: 6px; font-size: 12px;"></div>
+          <pre id="match-git-preview" class="git-source-preview" hidden></pre>
         </div>
 
+        <div id="match-direct-panel" role="tabpanel">
         <div class="ide-toolbar-row">
           <div class="toolbar-lang-group">
             <label class="control-label-sm" for="studio-sel-lang">Ngôn ngữ</label>
@@ -165,6 +167,7 @@
         <div style="position: relative;">
           <textarea class="studio-code-editor" id="studio-code-editor" spellcheck="false" placeholder="# Viết hàm decide_move(game_state) tại đây..."></textarea>
           <div id="studio-git-source-badge" style="position: absolute; top: 8px; right: 8px; display: none; font-size: 11px; padding: 3px 8px; border-radius: 6px; background: rgba(30,41,59,0.85); color: #f8fafc;">Nguồn: GitHub</div>
+        </div>
         </div>
 
           <label for="studio-rule-note">Điều chỉnh để thích ứng với luật (không bắt buộc)</label>

@@ -32,6 +32,12 @@ async function renderTeamProfile() {
   const langEl = document.getElementById('profile-pref-lang');
 
   if (!isTeam) {
+    const initials = document.getElementById('profile-team-initials');
+    if (initials) initials.textContent = currentAppRole === 'ADMIN' ? 'AD' : 'KT';
+    const winsSummary = document.getElementById('profile-summary-wins');
+    const lossesSummary = document.getElementById('profile-summary-losses');
+    if (winsSummary) winsSummary.textContent = '0';
+    if (lossesSummary) lossesSummary.textContent = '0';
     if (nameEl) nameEl.textContent = currentAppRole === 'ADMIN' ? 'Ban Tổ Chức (Quản trị viên)' : 'Khách tham quan';
     if (sidEl) sidEl.textContent = currentAppRole === 'ADMIN' ? 'ADMIN' : 'Chưa đăng nhập';
     if (captEl) captEl.textContent = currentAppRole === 'ADMIN' ? 'Hội đồng chuyên môn' : '—';
@@ -73,6 +79,8 @@ async function renderTeamProfile() {
   const prefLang = currentTeamProfileData?.preferred_language || teamInTourn?.language || 'PYTHON';
 
   if (nameEl) nameEl.textContent = teamName;
+  const initials = document.getElementById('profile-team-initials');
+  if (initials) initials.textContent = teamName.trim().slice(0, 2).toUpperCase();
   if (sidEl) sidEl.textContent = sid;
   if (captEl) captEl.textContent = captain;
   if (uniEl) uniEl.textContent = university;
@@ -83,6 +91,10 @@ async function renderTeamProfile() {
   const completedMatches = myMatches.filter(m => m.status === 'COMPLETED');
   const wonMatches = completedMatches.filter(m => isMine(m[m.winner])).length;
   const lostMatches = completedMatches.length - wonMatches;
+  const winsSummary = document.getElementById('profile-summary-wins');
+  const lossesSummary = document.getElementById('profile-summary-losses');
+  if (winsSummary) winsSummary.textContent = wonMatches;
+  if (lossesSummary) lossesSummary.textContent = lostMatches;
   const winRate = completedMatches.length > 0 ? Math.round((wonMatches / completedMatches.length) * 100) : 0;
 
   let totalHeats = 0;

@@ -31,21 +31,25 @@
       <div class="hero-stat-card"><span class="stat-icon stat-blue"><svg class="arena-icon " aria-hidden="true" focusable="false"><use href="#icon-users"></use></svg></span>
         <div class="stat-card-content">
           <span class="stat-label">Số đội tham gia</span>
-          <strong class="stat-value" id="dash-teams-num">8 Đội</strong>
+          <strong class="stat-value" id="dash-teams-num">—</strong>
         </div>
+      </div>
+
+      <div class="hero-stat-card"><span class="stat-icon stat-blue"><svg class="arena-icon" aria-hidden="true"><use href="#icon-swords"></use></svg></span>
+        <div class="stat-card-content"><span class="stat-label">Trận đã đấu</span><strong class="stat-value" id="dash-completed-matches">—</strong></div>
       </div>
 
       <div class="hero-stat-card"><span class="stat-icon stat-violet"><svg class="arena-icon " aria-hidden="true" focusable="false"><use href="#icon-bracket"></use></svg></span>
         <div class="stat-card-content">
           <span class="stat-label">Thể thức</span>
-          <strong class="stat-value" id="dash-progress-status">Tứ Kết → Chung Kết</strong>
+          <strong class="stat-value" id="dash-progress-status">—</strong>
         </div>
       </div>
 
       <div class="hero-stat-card"><span class="stat-icon stat-green"><svg class="arena-icon " aria-hidden="true" focusable="false"><use href="#icon-check"></use></svg></span>
         <div class="stat-card-content">
           <span class="stat-label">Trạng thái</span>
-          <strong class="stat-value text-green" id="dash-tourn-status">Đang diễn ra</strong>
+          <strong class="stat-value text-green" id="dash-tourn-status">Chưa chọn giải</strong>
         </div>
       </div>
     </div>
@@ -62,6 +66,11 @@
         <span>Xem sơ đồ nhánh</span>
       </button>
     </div>
+  </div>
+
+  <div class="content-card overview-schedule-card">
+    <div class="card-head-compact"><h3 class="panel-title">Lịch thi đấu</h3><button class="btn btn-outline btn-sm" type="button" onclick="switchToTab('tab-bracket')">Xem bảng đấu</button></div>
+    <div id="overview-stage-schedule" class="overview-schedule-list" role="status">Chọn giải đấu để xem lịch.</div>
   </div>
 
   <div class="overview-lower-grid">
@@ -88,7 +97,7 @@
           </div>
         </div>
 
-        <div class="match-score-display" id="dash-match-score">2 - 1</div>
+        <div class="match-score-display" id="dash-match-score">0 - 0</div>
         <div class="match-meta-subtitle" id="dash-match-meta">Vòng 1 · Thể thức Bo5</div>
 
         <div class="match-highlight-actions">

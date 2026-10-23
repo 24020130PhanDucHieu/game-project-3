@@ -1,4 +1,4 @@
-let currentQualifierSubmitMode = 'github';
+let currentQualifierSubmitMode = 'direct';
 let lastGitSubmissionInfo = { repo_url: '', commit_sha: '' };
 
 function qualifierDraftKey(){return `qualifier-draft:${API_BASE}:${qualifierId}:${currentTeamStudentId||'guest'}`;}
@@ -36,6 +36,11 @@ function switchQualifierMode(mode){
   const btnDirect = document.getElementById('btn-mode-direct');
   const gitPanel = document.getElementById('qualifier-github-panel');
   const directToolbar = document.getElementById('qualifier-direct-toolbar');
+  const directPanel = document.getElementById('qualifier-direct-panel');
+  if (gitPanel) gitPanel.hidden = mode !== 'github';
+  if (directPanel) directPanel.hidden = mode === 'github';
+  if (btnGit) btnGit.setAttribute('aria-selected', String(mode === 'github'));
+  if (btnDirect) btnDirect.setAttribute('aria-selected', String(mode !== 'github'));
 
   if(mode === 'github'){
     if(btnGit){ btnGit.className = 'btn btn-sm btn-primary'; }
@@ -85,6 +90,8 @@ async function fetchBotFromGitHub(){
 
     document.getElementById('qualifier-code').value = data.code;
     document.getElementById('qualifier-language').value = data.language || 'PYTHON';
+    const preview = document.getElementById('qualifier-git-preview');
+    if (preview) { preview.textContent = data.code; preview.hidden = false; }
     saveQualifierDraft();
 
     lastGitSubmissionInfo = {
