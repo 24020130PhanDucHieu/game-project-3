@@ -115,7 +115,7 @@ function SidebarBody({ onPick }: { onPick: () => void }) {
 }
 
 function Topbar({ onMenu }: { onMenu: () => void }) {
-  const { view, role, tournaments, tournamentId, setTournamentId, socketOpen, openAuth, busy } = useLive()
+  const { view, role, tournaments, tournamentId, setTournamentId, socketOpen, openAuth, busy, logout } = useLive()
   const showTournament = TOURNAMENT_VIEWS.includes(view) || (view === 'admin')
   const [spinning, setSpinning] = useState(false)
   return (
@@ -139,11 +139,14 @@ function Topbar({ onMenu }: { onMenu: () => void }) {
         <NotificationBell />
         {role === 'GUEST' ? (
           <>
-            <Button size="sm" variant="secondary" onClick={() => openAuth('register')}><UserPlus className="size-4" /><span className="hidden sm:inline">Đăng ký</span></Button>
+            <Button size="sm" variant="secondary" aria-label="Đăng ký" onClick={() => openAuth('register')}><UserPlus className="size-4" /><span className="hidden sm:inline">Đăng ký</span></Button>
             <Button size="sm" onClick={() => openAuth('login')}><LogIn className="size-4" />Đăng nhập</Button>
           </>
         ) : (
-          <Badge tone={role === 'ADMIN' ? 'accent' : 'info'} className="hidden sm:inline-flex">{role === 'ADMIN' ? 'Ban tổ chức' : 'Đội thi'}</Badge>
+          <>
+            <Badge tone={role === 'ADMIN' ? 'accent' : 'info'}>{role === 'ADMIN' ? 'Ban tổ chức' : 'Đội thi'}</Badge>
+            <Button variant="ghost" size="sm" className="md:hidden" aria-label="Đăng xuất" onClick={() => void logout()}><LogOut className="size-4" /></Button>
+          </>
         )}
       </div>
     </header>

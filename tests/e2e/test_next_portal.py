@@ -1,4 +1,5 @@
 """Exercise the released Next.js page against a disposable real Go API."""
+import os
 import tempfile
 
 from playwright.sync_api import expect, sync_playwright
@@ -9,12 +10,12 @@ import test_reliability as arena
 def run():
     errors = []
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(channel="chrome", headless=True)
+        browser = playwright.chromium.launch(channel=os.environ.get("ARENA_BROWSER","chrome"), headless=True)
         try:
             page = browser.new_page(viewport={"width": 390, "height": 844})
             page.on("pageerror", lambda error: errors.append(str(error)))
             page.goto(arena.BASE)
-            expect(page.get_by_role("heading", name="Tổng quan")).to_be_visible()
+            expect(page.get_by_role("heading", name="Lập trình bot.")).to_be_visible()
             assert page.locator('script[src*="/_next/"]').count() > 0
             assert page.locator("#arena-live-portal").count() == 0
 
@@ -34,8 +35,8 @@ def run():
             with page.expect_response(lambda response: "/api/teams/login" in response.url) as logged_in:
                 page.locator("form").first.get_by_role("button", name="Đăng nhập").click()
             assert logged_in.value.ok, logged_in.value.text()
-            expect(page.get_by_role("button", name="Đăng xuất")).to_be_visible()
-            expect(page.locator("header")).to_contain_text("TEAM")
+            expect(page.get_by_role("button", name="Đăng xuất").first).to_be_visible()
+            expect(page.locator("header").first).to_contain_text("Đội thi")
             assert page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1")
             assert not errors, errors
             print("PASS Next portal: real registration, login and mobile layout", flush=True)
@@ -49,8 +50,8 @@ def run():
             with admin.expect_response(lambda response: "/api/admin/login" in response.url) as admin_login:
                 admin.locator("form").first.get_by_role("button", name="Đăng nhập").click()
             assert admin_login.value.ok, admin_login.value.text()
-            expect(admin.locator("header")).to_contain_text("ADMIN")
-            expect(admin.get_by_role("button", name="Quản trị", exact=True)).to_be_visible()
+            expect(admin.locator("header").first).to_contain_text("Ban tổ chức")
+            expect(admin.get_by_role("button", name="Quản trị Admin")).to_be_visible()
             assert not errors, errors
             print("PASS Next portal: real admin login and role gated navigation", flush=True)
         finally:
