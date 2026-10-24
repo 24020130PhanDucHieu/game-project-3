@@ -151,10 +151,15 @@ async function purgePyodideCache() {
 async function loadScript(base, fresh) {
   const url = base + 'pyodide.js' + (fresh ? '?r=' + Date.now() : '')
   let res
-  try {
-    res = await fetch(url, { cache: fresh ? 'reload' : 'default', credentials: 'omit' })
-  } catch (error) {
-    throw new Error('không kết nối được (' + msg(error) + ')')
+  for (let attempt = 0; ; attempt++) {
+    try {
+      res = await fetch(url, { cache: fresh ? 'reload' : 'default', credentials: 'omit' })
+      break
+    } catch (error) {
+      // mạng chập chờn: thử lại trước khi chuyển sang nguồn khác
+      if (attempt >= 3) throw new Error('không kết nối được (' + msg(error) + ')')
+      await new Promise((r) => setTimeout(r, 700 * 2 ** attempt))
+    }
   }
   if (!res.ok) throw new Error('HTTP ' + res.status)
   const type = res.headers.get('content-type') || ''

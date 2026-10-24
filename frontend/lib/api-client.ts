@@ -61,10 +61,18 @@ export async function apiRequest<T = any>(
     headers.set('Authorization', `Bearer ${token}`)
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  })
+  // Mạng chập chờn (Wi-Fi rớt, phần mềm diệt virus ngắt kết nối): thử lại vài lần trước khi báo lỗi.
+  // Chỉ thử lại khi yêu cầu chưa tới được máy chủ (fetch ném TypeError), nên không gửi trùng.
+  let response: Response | undefined
+  for (let attempt = 0; ; attempt++) {
+    try {
+      response = await fetch(url, { ...options, headers })
+      break
+    } catch (error) {
+      if (attempt >= 3 || options.signal?.aborted || !(error instanceof TypeError)) throw error
+      await new Promise((r) => setTimeout(r, 600 * 2 ** attempt))
+    }
+  }
 
   if (token && response.status === 401 && !endpoint.includes('/login')) {
     clearSessionToken()
