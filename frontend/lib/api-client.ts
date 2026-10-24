@@ -449,6 +449,49 @@ export const arenaApi = {
     )
   },
 
+  /** Lịch sử tính điểm cả vòng loại (admin): mọi trận đã chấm kèm ELO trước/sau. */
+  async getQualifierResults(qid: string, studentId = '') {
+    const q = studentId ? `?student_id=${encodeURIComponent(studentId)}` : ''
+    return apiRequest<{ items: any[]; total: number }>(`/qualifiers/${encodeURIComponent(qid)}/results${q}`)
+  },
+
+  async setQualifierBan(qid: string, studentId: string, banned: boolean, reason = '') {
+    return apiRequest(`/qualifiers/${encodeURIComponent(qid)}/actions/${banned ? 'ban' : 'unban'}`, {
+      method: 'POST',
+      body: JSON.stringify({ student_id: studentId, reason }),
+    })
+  },
+
+  async changePassword(current: string, next: string) {
+    return apiRequest<{ message?: string }>('/teams/password', {
+      method: 'POST',
+      body: JSON.stringify({ current_password: current, new_password: next }),
+    })
+  },
+
+  /** Ảnh camera định kỳ của đội trong trận (JPEG nhỏ). */
+  async uploadSnapshot(tournamentId: string, matchId: string, image: Blob) {
+    return apiRequest(`/tournaments/${encodeURIComponent(tournamentId)}/matches/${encodeURIComponent(matchId)}/snapshots`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'image/jpeg' },
+      body: image,
+    })
+  },
+
+  async getSnapshots(tournamentId: string, matchId: string, round: number) {
+    return apiRequest<{ round: number; items: { side: 'team_a' | 'team_b'; at: number; file: string }[] }>(
+      `/tournaments/${encodeURIComponent(tournamentId)}/matches/${encodeURIComponent(matchId)}/snapshots?round=${round}`)
+  },
+
+  /** Ảnh cần token nên tải bằng fetch rồi tạo object URL (thẻ <img> không gửi được Authorization). */
+  async snapshotUrl(tournamentId: string, matchId: string, file: string) {
+    const token = getSessionToken()
+    const res = await fetch(`${getApiBaseUrl()}/api/tournaments/${encodeURIComponent(tournamentId)}/matches/${encodeURIComponent(matchId)}/snapshots/file?path=${encodeURIComponent(file)}`,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    if (!res.ok) throw new Error(`Không tải được ảnh camera (${res.status})`)
+    return URL.createObjectURL(await res.blob())
+  },
+
   async deleteQualifier(qid: string) {
     return apiRequest(`/qualifiers/${encodeURIComponent(qid)}`, {
       method: 'DELETE',

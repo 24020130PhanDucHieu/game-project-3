@@ -1,5 +1,5 @@
 /* Service worker: giữ giao diện, engine offline và Pyodide trong bộ nhớ đệm để mất mạng vẫn mở trang, kiểm tra mã và đấu thử boss. */
-const VERSION = 'arena-offline-v1'
+const VERSION = 'arena-offline-v2'
 const SHELL = `${VERSION}-shell`
 const STATIC = `${VERSION}-static`
 const PYODIDE = 'https://cdn.jsdelivr.net/pyodide/'
@@ -17,7 +17,8 @@ async function cacheFirst(request, name) {
   const cached = await caches.match(request)
   if (cached) return cached
   const response = await fetch(request)
-  if (response.ok || response.type === 'opaque') (await caches.open(name)).put(request, response.clone())
+  // Không lưu response "opaque" (không đọc được): trả nó cho request kiểu khác sẽ làm Pyodide lỗi.
+  if (response.ok && response.type !== 'opaque') (await caches.open(name)).put(request, response.clone())
   return response
 }
 
@@ -41,7 +42,7 @@ self.addEventListener('fetch', (event) => {
   if (url.href.startsWith(PYODIDE)) { event.respondWith(cacheFirst(request, STATIC)); return }
   if (url.origin !== self.location.origin) return
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/')) return // dữ liệu thật luôn đi qua mạng
-  if (url.pathname.startsWith('/_next/static/')) { event.respondWith(cacheFirst(request, STATIC)); return }
+  if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/offline/pyodide/')) { event.respondWith(cacheFirst(request, STATIC)); return }
   if (request.mode === 'navigate' || url.pathname.startsWith('/offline/') || /\.(png|svg|jpg|ico|woff2?)$/.test(url.pathname)) {
     event.respondWith(networkFirst(request, SHELL))
   }

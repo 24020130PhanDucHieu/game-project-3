@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Bug, Check, Copy, GitCompare } from 'lucide-react'
+import { AlertTriangle, Bug, Check, CheckCircle2, Copy, GitCompare } from 'lucide-react'
 import { diffLines, diffStats } from '@/lib/diff'
 import { decodeRule, rulesMask } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -62,9 +62,9 @@ export function DebugPanel({ steps, ruleId, botError }: { steps: any[]; ruleId?:
         </div>
       </div>
       {botError ? (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 font-mono text-xs text-red-700 dark:text-red-300">⚠ Bot lỗi: {botError}</div>
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 font-mono text-xs text-red-700 dark:text-red-300"><AlertTriangle className="mr-1 inline size-3.5" aria-hidden />Bot lỗi: {botError}</div>
       ) : (
-        <p className="text-xs text-emerald-700 dark:text-emerald-300">✓ Bot chạy không lỗi trong trận này{rules.length ? ` · luật: ${rules.join(', ')}` : ''}.</p>
+        <p className="text-xs text-emerald-700 dark:text-emerald-300"><CheckCircle2 className="mr-1 inline size-3.5" aria-hidden />Bot chạy không lỗi trong trận này{rules.length ? ` · luật: ${rules.join(', ')}` : ''}.</p>
       )}
       {tab === 'moves' ? (
         myMoves.length ? (

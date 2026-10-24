@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Lock, Medal, Swords, Trophy } from 'lucide-react'
+import { Award, Lock, Medal, Swords, Trophy } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { invalidate, useResource } from '@/lib/cache'
 import { decodeRule, stamp } from '@/lib/format'
@@ -39,7 +39,7 @@ export function ChallengesPanel() {
       const res = await arenaApi.attemptChallenge(ch.id, { code, language })
       setResult(res)
       invalidate('chal:')
-      if (res.new_badge) toast('success', `🎉 Nhận huy hiệu ${ch.badge} — ${ch.title}!`)
+      if (res.new_badge) toast('success', `Nhận huy hiệu “${ch.title}”!`)
       else if (res.passed) toast('success', 'Bạn đã vượt thử thách này (đã có huy hiệu).')
       else toast('info', `Chưa đạt: thắng ${res.wins}/${ch.runs} ván, cần ${ch.need_wins}.`)
     } catch (e) {
@@ -110,7 +110,7 @@ export function ChallengesPanel() {
                 <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-4">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 className="text-sm font-semibold">Kết quả: thắng {result.wins}/{result.runs.length} ván{result.runs.length < ch.runs ? ' (dừng sớm)' : ''}</h3>
-                    <Badge tone={result.passed ? 'success' : 'warning'}>{result.passed ? (result.new_badge ? `🎉 Nhận huy hiệu ${ch.badge}` : 'Đạt') : 'Chưa đạt'}</Badge>
+                    <Badge tone={result.passed ? 'success' : 'warning'}>{result.passed ? (result.new_badge ? 'Nhận huy hiệu mới' : 'Đạt') : 'Chưa đạt'}</Badge>
                   </div>
                   <div className="flex flex-wrap gap-1.5">{result.runs.map((r: any, i: number) => <Badge key={i} tone={r.won ? 'success' : 'danger'}>Ván {i + 1}: {r.won ? 'Thắng' : 'Thua'}</Badge>)}</div>
                   {result.board_steps?.length ? <BoardPlayer steps={result.board_steps} autoPlay redName="Bot của bạn" blueName={BOSS[ch.boss]} /> : null}
@@ -134,7 +134,7 @@ export function BadgeStrip({ studentId, milestones = [] }: { studentId: string; 
     <ul className="flex flex-wrap gap-2">
       {all.map((b: any) => (
         <li key={b.id} title={`${b.title} (${b.tier})`} className="flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/10 px-2.5 py-1 text-xs font-semibold">
-          <span aria-hidden>{b.badge}</span><span className="max-w-40 truncate">{b.title}</span>
+          <Award className="size-3.5 text-amber-500" aria-hidden /><span className="max-w-40 truncate">{b.title}</span>
         </li>
       ))}
     </ul>

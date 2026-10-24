@@ -101,6 +101,9 @@ func (s *Service) EnqueueSubmission(id, sid, code, language, requestID string, g
 	if err != nil {
 		return Submission{}, err
 	}
+	if p.Banned {
+		return Submission{}, reject("Đội đã bị ban tổ chức loại khỏi vòng loại: " + p.BanReason)
+	}
 	if p.Pending >= 20 {
 		return Submission{}, ErrSubmissionBacklog
 	}

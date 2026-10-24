@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { useEffect, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { Check, Copy, X } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { useResource } from '@/lib/cache'
@@ -9,7 +10,7 @@ import { decodeRule, stamp } from '@/lib/format'
 import { Badge, Button, ErrorNote, Skeleton, SkeletonRows } from './ui'
 import { useLive } from './context'
 import { BoardPlayer } from './board'
-import { WebcamPanel } from './webcam-panel'
+import { SnapshotPanel } from './snapshot-panel'
 
 const CodeEditor = dynamic(() => import('./code-editor'), { ssr: false, loading: () => <Skeleton className="h-[60vh] w-full rounded-xl" /> })
 
@@ -22,7 +23,9 @@ export function Overlay({ title, subtitle, onClose, children, actions }: { title
     document.body.style.overflow = 'hidden'
     return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev }
   }, [onClose])
-  return (
+  // Render thẳng vào <body>: nếu nằm trong thẻ có transform (hiệu ứng), `fixed` sẽ bị bó trong thẻ đó.
+  if (typeof document === 'undefined') return null
+  return createPortal(
     <div className="fixed inset-0 z-[65] flex items-stretch justify-center bg-black/70 p-2 backdrop-blur-sm sm:p-6" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div role="dialog" aria-modal="true" aria-label={typeof title === 'string' ? title : 'Cửa sổ'} className="animate-fade-up flex w-full max-w-[1500px] flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl">
         <header className="flex flex-wrap items-center gap-3 border-b border-border bg-gradient-to-r from-primary/10 to-transparent px-5 py-3">
@@ -32,7 +35,8 @@ export function Overlay({ title, subtitle, onClose, children, actions }: { title
         </header>
         <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -77,11 +81,11 @@ export function ReplayViewer({ tournamentId, matchId, match, round, onClose, onR
           <div className="space-y-4">
             <div className="rounded-2xl border border-border bg-card/70 p-4">
               <p className="text-xs text-muted-foreground">Kết quả hiệp {data.round_number}</p>
-              <p className="font-display mt-1 text-xl font-extrabold">🏆 {data.winner_name}</p>
+              <p className="font-display mt-1 text-xl font-extrabold">{data.winner_name}</p>
               <p className="text-sm text-muted-foreground">{data.win_reason}</p>
               <div className="mt-2 flex flex-wrap gap-1.5">{decodeRule(data.stage_rule).active.map((c) => <Badge key={c} tone="accent">{c}</Badge>)}</div>
             </div>
-            <WebcamPanel tournamentId={tournamentId} matchId={matchId} compact />
+            <SnapshotPanel tournamentId={tournamentId} matchId={matchId} round={round} redName={data.team_a_name || match.team_a?.team_name || 'Đội Đỏ'} blueName={data.team_b_name || match.team_b?.team_name || 'Đội Xanh'} />
             <details className="rounded-2xl border border-border bg-card/70 p-4">
               <summary className="cursor-pointer text-sm font-semibold">Nhật ký hiệp ({logs.length} dòng)</summary>
               <div className="mt-3 max-h-72 overflow-y-auto rounded-lg bg-muted/50 p-3 font-mono text-[11px] leading-relaxed text-muted-foreground">{logs.map((l, i) => <p key={i}>{l}</p>)}</div>

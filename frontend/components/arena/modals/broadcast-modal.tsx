@@ -86,7 +86,7 @@ export function BroadcastModal({
           <details className="rounded-lg border border-primary/20 bg-accent/40 p-3 sm:p-3.5">
             <summary className="cursor-pointer text-xs font-bold text-accent-foreground flex items-center gap-1.5">
               <Megaphone className="size-4 text-primary" />
-              📢 Phát thông báo mới từ Ban Tổ Chức tới toàn thể thí sinh
+              Phát thông báo mới từ Ban Tổ Chức tới toàn thể thí sinh
             </summary>
 
             <form onSubmit={handleBroadcast} className="mt-3 flex flex-col gap-3">

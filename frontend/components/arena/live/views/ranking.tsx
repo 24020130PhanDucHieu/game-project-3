@@ -15,9 +15,9 @@ const PAGE = 20
 function Podium({ rows }: { rows: any[] }) {
   if (rows.length < 3) return null
   const slots = [
-    { row: rows[1], place: 2, h: 'h-28', medal: '🥈', tint: 'from-slate-300/25 to-slate-300/5', ring: undefined },
-    { row: rows[0], place: 1, h: 'h-40', medal: '🥇', tint: 'from-amber-300/35 to-amber-300/5', ring: 'gold' as const },
-    { row: rows[2], place: 3, h: 'h-24', medal: '🥉', tint: 'from-orange-400/25 to-orange-400/5', ring: undefined },
+    { row: rows[1], place: 2, h: 'h-28', medal: 2, tint: 'from-slate-300/25 to-slate-300/5', ring: undefined },
+    { row: rows[0], place: 1, h: 'h-40', medal: 1, tint: 'from-amber-300/35 to-amber-300/5', ring: 'gold' as const },
+    { row: rows[2], place: 3, h: 'h-24', medal: 3, tint: 'from-orange-400/25 to-orange-400/5', ring: undefined },
   ]
   return (
     <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-b from-primary/15 to-card/80 px-4 pt-8 md:px-10">
@@ -28,7 +28,7 @@ function Podium({ rows }: { rows: any[] }) {
             <Avatar name={row.bot_name || row.team_name} size={place === 1 ? 'xl' : 'lg'} ring={ring} />
             <p className="font-display mt-2 max-w-full truncate text-sm font-extrabold md:text-base">{row.bot_name || row.team_name}</p>
             <p className="gradient-text font-display text-lg font-black tabular-nums">{row.elo_score ?? Math.round(row.elo)}</p>
-            <div className={cn('mt-2 flex w-full items-start justify-center rounded-t-2xl border border-b-0 border-border bg-gradient-to-b pt-3 text-3xl', h, tint, place === 1 && 'glow-gold')} aria-label={`Hạng ${place}`}>{medal}</div>
+            <div className={cn('mt-2 flex w-full items-start justify-center rounded-t-2xl border border-b-0 border-border bg-gradient-to-b pt-3 text-3xl', h, tint, place === 1 && 'glow-gold')} aria-label={`Hạng ${place}`}><span className="font-display text-4xl font-black text-foreground/70">{medal}</span></div>
           </div>
         ))}
       </div>

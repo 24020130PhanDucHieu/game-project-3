@@ -152,7 +152,7 @@ export function ScrimmagePanel() {
               <span className="flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-400">{shownScrim.blue.team_name}<Avatar name={shownScrim.blue.team_name} size="sm" ring="blue" /></span>
             </div>
             {shownScrim.win_reason && <p className="text-sm text-muted-foreground">{shownScrim.win_reason}</p>}
-            {result?.my_bot_error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 font-mono text-xs text-red-700 dark:text-red-300">⚠ Bot của bạn lỗi: {result.my_bot_error}</p>}
+            {result?.my_bot_error && <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 font-mono text-xs text-red-700 dark:text-red-300"> Bot của bạn lỗi: {result.my_bot_error}</p>}
             <BoardPlayer steps={shown.board_steps || []} autoPlay={!replayId} redName={shownScrim.red.team_name} blueName={shownScrim.blue.team_name} />
           </div>
         ) : <EmptyState icon={<Handshake className="size-7" />} title="Chọn đối thủ và bấm Thách đấu" hint="Kết quả và replay sẽ hiện ở đây. Bạn cũng có thể mở lại trận cũ trong lịch sử." />}

@@ -621,6 +621,36 @@ func (h *AccountsHandler) HumanChallenge(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"challenge": h.Human.Issue(), "difficulty": h.Human.Difficulty(), "required": h.Human.Required()})
 }
 
+// ChangePassword: đội đang đăng nhập tự đổi mật khẩu (phải nhập đúng mật khẩu hiện tại).
+func (h *AccountsHandler) ChangePassword(c *gin.Context) {
+	session := requestSession(c)
+	if session.Role != "TEAM" || session.StudentID == "" {
+		c.JSON(http.StatusForbidden, gin.H{"detail": "Chỉ tài khoản đội đổi mật khẩu tại đây."})
+		return
+	}
+	var req struct {
+		Current string `json:"current_password"`
+		New     string `json:"new_password"`
+	}
+	if c.ShouldBindJSON(&req) != nil || len(strings.TrimSpace(req.New)) < 6 || len(req.New) > 72 {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Mật khẩu mới cần từ 6 đến 72 ký tự."})
+		return
+	}
+	if req.Current == req.New {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Mật khẩu mới phải khác mật khẩu hiện tại."})
+		return
+	}
+	if _, err := h.Store.Authenticate(session.StudentID, req.Current); err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"detail": "Mật khẩu hiện tại không đúng."})
+		return
+	}
+	if err := h.Store.SetPassword(session.StudentID, req.New); err != nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"detail": "Chưa đổi được mật khẩu. Hãy thử lại."})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "message": "Đã đổi mật khẩu. Lần đăng nhập sau dùng mật khẩu mới."})
+}
+
 func (h *AccountsHandler) ResetPassword(c *gin.Context) {
 	var req struct {
 		StudentID   string `json:"student_id"`

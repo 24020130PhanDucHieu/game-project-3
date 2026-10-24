@@ -218,9 +218,9 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                         attacker["col"], attacker["row"] = destination
                         defender = next((p for p in enemy if (p["col"], p["row"]) == destination), None)
                         if defender:
-                            log = f"⚡ [Cổng Dịch Chuyển] Quân ({attacker['type']}) của Đội {names[side]} nhảy từ [{origin_portal[0]},{origin_portal[1]}] sang [{destination[0]},{destination[1]}] tập kích ({defender['type']}) đối thủ!"
+                            log = f"[Cổng Dịch Chuyển] Quân ({attacker['type']}) của Đội {names[side]} nhảy từ [{origin_portal[0]},{origin_portal[1]}] sang [{destination[0]},{destination[1]}] tập kích ({defender['type']}) đối thủ!"
                         else:
-                            log = f"⚡ [Cổng Dịch Chuyển] Quân ({attacker['type']}) của Đội {names[side]} nhảy từ [{origin_portal[0]},{origin_portal[1]}] sang [{destination[0]},{destination[1]}] sau lưng đối thủ!"
+                            log = f"[Cổng Dịch Chuyển] Quân ({attacker['type']}) của Đội {names[side]} nhảy từ [{origin_portal[0]},{origin_portal[1]}] sang [{destination[0]},{destination[1]}] sau lưng đối thủ!"
                         clash = {"type": "WARP", "from_col": origin_portal[0], "from_row": origin_portal[1],
                                  "col": destination[0], "row": destination[1], "log": log}
                     else:
@@ -236,7 +236,7 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                 if special_mode and destination in evolve_tiles_set and attacker["type"] in EVOLVE_CYCLE:
                     old_type = attacker["type"]
                     attacker["type"] = EVOLVE_CYCLE[old_type]
-                    evolve_msg = f" 🌀 [Ô Tiến Hóa] ({old_type}) tiến hóa thành ({attacker['type']})!"
+                    evolve_msg = f" [Ô Tiến Hóa] ({old_type}) tiến hóa thành ({attacker['type']})!"
                     log += evolve_msg
                     if not clash:
                         clash = {"type": "EVOLVE", "col": destination[0], "row": destination[1],
@@ -248,9 +248,9 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                     attacker["alive"] = False
                     if defender:
                         defender["alive"] = False
-                        log = f"💥 [BẪY MÌN PHÁT NỔ] Cả quân ({attacker['type']}) của Đội {names[side]} và ({defender['type']}) của Đội {names[opponent]} dẫm bẫy tại [{destination[0]},{destination[1]}] và cùng bị loại bỏ!"
+                        log = f"[BẪY MÌN PHÁT NỔ] Cả quân ({attacker['type']}) của Đội {names[side]} và ({defender['type']}) của Đội {names[opponent]} dẫm bẫy tại [{destination[0]},{destination[1]}] và cùng bị loại bỏ!"
                     else:
-                        log = f"💥 [BẪY MÌN PHÁT NỔ] Quân ({attacker['type']}) của Đội {names[side]} dẫm bẫy mìn ẩn tại [{destination[0]},{destination[1]}] và bị loại bỏ!"
+                        log = f"[BẪY MÌN PHÁT NỔ] Quân ({attacker['type']}) của Đội {names[side]} dẫm bẫy mìn ẩn tại [{destination[0]},{destination[1]}] và bị loại bỏ!"
                     clash = {"type": "TRAP", "col": destination[0], "row": destination[1], "side": colors[side], "log": log}
                 elif defender and attacker["alive"] and defender["alive"]:
                     outcome = GameRulesEngine.check_clash(attacker["type"], defender["type"], reverse)

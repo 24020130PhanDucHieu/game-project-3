@@ -57,7 +57,7 @@ function LiveSlide({ tournament }: { tournament: any }) {
           </div>
         ))}
         <div className="flex flex-wrap justify-center gap-2">
-          <Badge tone={m.status === 'COMPLETED' ? 'accent' : 'success'}>{m.status === 'COMPLETED' ? `🏆 ${m.winner_name}` : `Hiệp ${m.current_round_idx}/${m.max_rounds || 5}`}</Badge>
+          <Badge tone={m.status === 'COMPLETED' ? 'accent' : 'success'}>{m.status === 'COMPLETED' ? `${m.winner_name} thắng` : `Hiệp ${m.current_round_idx}/${m.max_rounds || 5}`}</Badge>
           {decodeRule(round?.stage_rule).active.map((r) => <Badge key={r} tone="accent">{r}</Badge>)}
         </div>
         {steps[i]?.log && <p className="rounded-2xl bg-card/70 px-5 py-3 text-center text-lg">{steps[i].log}</p>}
@@ -76,7 +76,7 @@ function TopSlide() {
     <div className="mx-auto grid h-full max-w-5xl content-center gap-3">
       {rows.length ? rows.map((r, i) => (
         <div key={r.student_id} className={cn('flex items-center gap-5 rounded-2xl border px-6 py-3', i === 0 ? 'glow-gold border-amber-400/60 bg-amber-400/10' : i < 3 ? 'border-primary/40 bg-primary/10' : 'border-border bg-card/70')}>
-          <span className="font-display w-14 text-center text-4xl font-black text-muted-foreground">{['🥇', '🥈', '🥉'][i] ?? i + 1}</span>
+          <span className="font-display w-14 text-center text-4xl font-black text-muted-foreground">{i + 1}</span>
           <Avatar name={r.bot_name} size="lg" />
           <span className="font-display min-w-0 flex-1 truncate text-3xl font-extrabold">{r.bot_name}</span>
           <span className="text-xl text-muted-foreground tabular-nums">{r.wins}/{r.matches_played} trận</span>
@@ -109,9 +109,9 @@ function ClockSlide({ tournament }: { tournament: any }) {
         ) : <p className="font-display text-6xl font-black tabular-nums">{new Date(now).toLocaleTimeString('vi-VN', { hour12: false })}</p>}
       </div>
       <div className="flex min-h-0 flex-col gap-4 overflow-hidden">
-        <p className="font-display text-2xl font-black">📣 Thông báo</p>
+        <p className="font-display text-2xl font-black">Thông báo</p>
         {(notifications.data?.notifications || []).slice(0, 3).map((n) => <div key={n.id} className="rounded-2xl border border-border bg-card/70 p-4"><p className="text-xl font-bold">{n.title}</p><p className="text-lg text-muted-foreground">{n.message}</p></div>)}
-        {(clar.data?.items || []).filter((c: any) => c.public).slice(0, 2).map((c: any) => <div key={c.id} className="rounded-2xl border-l-4 border-primary bg-primary/10 p-4"><p className="text-lg font-semibold">❓ {c.question}</p><p className="text-lg text-muted-foreground">💬 {c.answer}</p></div>)}
+        {(clar.data?.items || []).filter((c: any) => c.public).slice(0, 2).map((c: any) => <div key={c.id} className="rounded-2xl border-l-4 border-primary bg-primary/10 p-4"><p className="text-lg font-semibold"> {c.question}</p><p className="text-lg text-muted-foreground"> {c.answer}</p></div>)}
         {!notifications.data?.notifications.length && !clar.data?.items.length && <p className="text-xl text-muted-foreground">Chưa có thông báo.</p>}
         {windows.length > 0 && <p className="mt-auto text-base text-muted-foreground">Lịch: {windows.map((w) => `${name(w.level)} ${shortTime(w.starts / 1000)}–${shortTime(w.ends / 1000)}`).join(' · ')}</p>}
       </div>

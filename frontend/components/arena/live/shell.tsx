@@ -65,7 +65,7 @@ function NotificationBell() {
       {open && (
         <div className="absolute right-0 z-50 mt-2 w-[min(92vw,26rem)] rounded-2xl border border-border bg-card p-4 shadow-xl">
           <div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-semibold">Thông báo</h3><button className="text-xs font-semibold text-primary hover:underline" onClick={() => { setOpen(false); navigate(role === 'GUEST' ? 'overview' : 'profile') }}>Xem tất cả</button></div>
-          <div className="max-h-96 overflow-y-auto" onClick={() => setOpen(false)}><NotificationList limit={6} /></div>
+          <div className="max-h-96 overflow-y-auto"><NotificationList limit={6} onOpenItem={() => setOpen(false)} /></div>
         </div>
       )}
     </div>

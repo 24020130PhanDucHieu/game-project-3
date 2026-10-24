@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, CalendarClock, CheckCircle2, Flag, Radio, Trophy, Upload, Users } from 'lucide-react'
+import { Bell, Bot, CalendarClock, CheckCircle2, Flag, Radio, Swords, Trophy, Upload, Users } from 'lucide-react'
 import { countdown, relative, shortTime, toDate } from '@/lib/format'
 import { Badge, Button, Card, EmptyState, ProgressBar, Skeleton, SkeletonCards, SkeletonRows, Stat, StatusBadge } from '../ui'
 import { useLive } from '../context'
@@ -53,9 +53,9 @@ function Hero() {
             <Button size="md" variant="secondary" className="px-6 py-3 text-base" onClick={() => navigate('bracket')}>Xem bảng đấu</Button>
           </>}
           {role === 'TEAM' && <>
-            {nextOwn ? <Button className="px-6 py-3 text-base" onClick={() => void enterMatch(nextOwn[0])}>⚔️ Vào trận của {session.team_name || 'đội'}</Button>
-              : openQualifier ? <Button className="px-6 py-3 text-base" onClick={() => navigate('qualifier')}>🚀 Nộp bài vòng loại</Button>
-              : <Button className="px-6 py-3 text-base" onClick={() => navigate('match')}>🤖 Đấu thử với boss</Button>}
+            {nextOwn ? <Button className="px-6 py-3 text-base" onClick={() => void enterMatch(nextOwn[0])}><Swords className="size-5" />Vào trận của {session.team_name || 'đội'}</Button>
+              : openQualifier ? <Button className="px-6 py-3 text-base" onClick={() => navigate('qualifier')}><Upload className="size-5" />Nộp bài vòng loại</Button>
+              : <Button className="px-6 py-3 text-base" onClick={() => navigate('match')}><Bot className="size-5" />Luyện tập với boss</Button>}
             <Button variant="secondary" className="px-6 py-3 text-base" onClick={() => navigate('guide')}>Xem hướng dẫn</Button>
           </>}
           {role === 'ADMIN' && <>

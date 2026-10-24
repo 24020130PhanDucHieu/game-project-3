@@ -11,7 +11,7 @@ import { DiffViewer, LineChart, RatioBars } from './bot-insights'
 import { BadgeStrip } from './challenges'
 import { AcceptScrimmageToggle } from './scrimmage'
 
-const MOVE_LABEL: Record<string, string> = { ROCK: '✊ Búa', PAPER: '✋ Bao', SCISSORS: '✌️ Kéo' }
+const MOVE_LABEL: Record<string, string> = { ROCK: 'Búa', PAPER: 'Bao', SCISSORS: 'Kéo' }
 
 /** Phân tích bot của chính đội: ELO theo lượt, tỉ lệ thắng theo luật/đối thủ, nước mở đầu, so sánh phiên bản. */
 export function BotAnalytics({ teamName }: { teamName?: string }) {
@@ -67,7 +67,7 @@ export function BotAnalytics({ teamName }: { teamName?: string }) {
   // So sánh phiên bản: lịch sử bài vòng loại (có mã) + bài nộp các trận của đội.
   const versions = useMemo(() => {
     const out: { id: string; label: string; code: string }[] = []
-    for (const h of detail.data?.history || []) if (h.code) out.push({ id: `q:${h.id}`, label: `Vòng loại · ${stamp(h.at)}${h.valid || h.status === 'VALID' ? ' ✓' : ''}`, code: h.code })
+    for (const h of detail.data?.history || []) if (h.code) out.push({ id: `q:${h.id}`, label: `Vòng loại · ${stamp(h.at)}${h.valid || h.status === 'VALID' ? '' : ''}`, code: h.code })
     for (const [, m] of ownMatches) {
       for (const s of m.submissions_history || []) if (s.code) out.push({ id: `m:${s.submission_id}`, label: `${m.title || m.round_name} · hiệp ${s.round_number} · ${stamp(s.submitted_at)}`, code: s.code })
     }
@@ -84,11 +84,11 @@ export function BotAnalytics({ teamName }: { teamName?: string }) {
   const history = useResource('mh', () => arenaApi.getMatchHistory(), { ttl: 30_000 })
   const milestones = useMemo(() => {
     const out: { icon: string; label: string }[] = []
-    if ((detail.data?.history || []).some((h: any) => h.valid || h.status === 'VALID')) out.push({ icon: '✅', label: 'Bài hợp lệ đầu tiên' })
-    if (teamName && (history.data || []).some((h: any) => h.winner_name === teamName)) out.push({ icon: '⚔️', label: 'Thắng trận Bo5' })
+    if ((detail.data?.history || []).some((h: any) => h.valid || h.status === 'VALID')) out.push({ icon: 'valid', label: 'Bài hợp lệ đầu tiên' })
+    if (teamName && (history.data || []).some((h: any) => h.winner_name === teamName)) out.push({ icon: 'win', label: 'Thắng trận Bo5' })
     const champ = tournament.data?.champion
-    if (teamName && (champ === teamName || champ?.team_name === teamName)) out.push({ icon: '🏆', label: 'Quán quân' })
-    if ((scrims.data?.items || []).length >= 5) out.push({ icon: '🤝', label: '5 trận giao hữu' })
+    if (teamName && (champ === teamName || champ?.team_name === teamName)) out.push({ icon: 'champion', label: 'Quán quân' })
+    if ((scrims.data?.items || []).length >= 5) out.push({ icon: 'scrim', label: '5 trận giao hữu' })
     return out
   }, [detail.data, history.data, teamName, tournament.data, scrims.data])
 

@@ -10,12 +10,27 @@ import { Badge, Button, Card, DataTable, EmptyState, ErrorNote, Field, SectionTi
 import { useLive, type ViewId } from '../context'
 import { MatchCard, historyWinner, useHistory, useRanking } from '../shared'
 import { BotAnalytics } from '../profile-insights'
-import { TeamEmailCard } from '../email-card'
+import { PasswordCard, TeamEmailCard } from '../email-card'
 import { BadgeStrip } from '../challenges'
+import { ScoreHistoryTable, scoreRows } from '../qualifier-extras'
 
 const VIEWS: ViewId[] = ['profile', 'overview', 'bracket', 'ranking', 'match', 'qualifier', 'guide', 'admin']
 
-export function NotificationList({ limit }: { limit?: number }) {
+/** Lịch sử tính điểm vòng loại của đội (vòng loại đang chọn), xem ngay trong hồ sơ. */
+function ProfileScoreHistory() {
+  const { qualifiers, qualifierId, setQualifierId, session, scope } = useLive()
+  const detail = useResource<any>(qualifierId ? `q:detail:${scope}:${qualifierId}` : null, () => arenaApi.getQualifier(qualifierId), { ttl: 15_000 })
+  if (!qualifiers.data?.length) return null
+  return (
+    <Card title="Lịch sử tính điểm" subtitle="ELO trước và sau từng trận vòng loại" action={qualifiers.data.length > 1 ? (
+      <Select aria-label="Chọn vòng loại" value={qualifierId} onChange={(e) => setQualifierId(e.target.value)} className="w-56">{qualifiers.data.map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}</Select>
+    ) : undefined}>
+      {detail.loading ? <SkeletonRows rows={4} /> : <ScoreHistoryTable rows={scoreRows(detail.data?.results || [], session.student_id || '')} />}
+    </Card>
+  )
+}
+
+export function NotificationList({ limit, onOpenItem }: { limit?: number; onOpenItem?: () => void }) {
   const { notifications, role, run, navigate } = useLive()
   const [filter, setFilter] = useState<'all' | 'unread'>('all')
   const all = notifications.data?.notifications || []
@@ -23,6 +38,7 @@ export function NotificationList({ limit }: { limit?: number }) {
   const markAll = () => run(() => arenaApi.markNotificationRead(), 'Đã đánh dấu tất cả là đã đọc', () => invalidate('nt:'))
   const open = (n: any) => {
     if (role !== 'GUEST' && !n.is_read) void arenaApi.markNotificationRead(n.id).then(() => invalidate('nt:')).catch(() => undefined)
+    onOpenItem?.()
     const tab = String(n.link_tab || '').replace(/^tab-/, '') as ViewId
     if (VIEWS.includes(tab)) navigate(tab)
   }
@@ -157,8 +173,9 @@ export function ProfileView() {
         </>
       )}
 
-      {own && <TeamEmailCard />}
+      {own && <div className="grid gap-6 xl:grid-cols-2"><TeamEmailCard /><PasswordCard /></div>}
       {own && <BotAnalytics teamName={profile.data?.team_name} />}
+      {own && <ProfileScoreHistory />}
       {!own && sid && profile.data && <Card title="Huy hiệu thử thách"><BadgeStrip studentId={sid} /></Card>}
 
       {role !== 'GUEST' && <Card title="Thông báo của bạn"><NotificationList /></Card>}

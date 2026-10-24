@@ -53,6 +53,7 @@ export function fromLocalInput(value: string): number {
 }
 
 export const statusInfo: Record<string, { label: string; tone: Tone }> = {
+  BANNED: { label: 'Bị loại', tone: 'danger' },
   // Giải đấu
   CONFIGURING: { label: 'Đang cấu hình', tone: 'neutral' },
   READY: { label: 'Sẵn sàng', tone: 'info' },

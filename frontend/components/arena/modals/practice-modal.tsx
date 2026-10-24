@@ -49,8 +49,8 @@ export function PracticeModal({
         setRunning(false)
         setCommentary(
           redPieces.length > 0
-            ? '🎉 Bot của bạn đã tiêu diệt toàn bộ quân Boss BTC!'
-            : '💀 Boss BTC đã tiêu diệt toàn bộ quân của bạn!',
+            ? 'Bot của bạn đã tiêu diệt toàn bộ quân Boss BTC!'
+            : 'Boss BTC đã tiêu diệt toàn bộ quân của bạn!',
         )
         return prev
       }

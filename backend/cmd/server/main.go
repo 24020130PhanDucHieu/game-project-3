@@ -124,11 +124,20 @@ func main() {
 	if err := aHandler.ImportLegacy(); err != nil {
 		log.Fatalf("Could not import team accounts: %v", err)
 	}
+	snapHandler := &httpHandler.SnapshotHandler{Service: tournamentService, Dir: httpHandler.SnapshotDir()}
+	go func() {
+		for {
+			snapHandler.Cleanup()
+			time.Sleep(6 * time.Hour)
+		}
+	}()
 	if err := tournamentService.RecoverInterruptedRounds(); err != nil {
 		log.Fatalf("Could not recover interrupted rounds: %v", err)
 	}
 	qualifierService := qualifier.New(qualifierStore, accounts, tournamentService, botRunnerAdapter)
-	qHandler := &httpHandler.QualifierHandler{Service: qualifierService}
+	qHandler := &httpHandler.QualifierHandler{Service: qualifierService, AuditLog: func(actor, action string, details map[string]interface{}) {
+		_ = accounts.LogAdminAction(actor, action, "", "", details)
+	}}
 	simHandler := &httpHandler.SimilarityHandler{Store: qualifierStore, Qualifiers: qualifierService, Tournaments: tournamentService}
 	if err := qualifierService.Recover(); err != nil {
 		log.Fatalf("Could not recover qualifiers: %v", err)
@@ -259,6 +268,7 @@ func main() {
 		api.PUT("/qualifiers/:qid", adminOnly, qHandler.Configure)
 		api.GET("/qualifiers/:qid/teams", adminOnly, qHandler.Teams)
 		api.GET("/qualifiers/:qid/ranking", qHandler.Ranking)
+		api.GET("/qualifiers/:qid/results", adminOnly, qHandler.Results)
 		api.POST("/qualifiers/:qid/register", requireSession(sessions, false, false), qHandler.Register)
 		api.POST("/qualifiers/:qid/submissions", requireSession(sessions, false, false), qHandler.Submit)
 		api.POST("/qualifiers/:qid/actions/:action", adminOnly, qHandler.Action)
@@ -292,6 +302,9 @@ func main() {
 		api.POST("/tournaments/:id/matches/:matchId/auth", mHandler.Auth)
 		api.POST("/tournaments/:id/matches/:matchId/draft-code", matchSession, mHandler.SubmitDraftCode)
 		api.POST("/tournaments/:id/matches/:matchId/code", matchSession, mHandler.SubmitCode)
+		api.POST("/tournaments/:id/matches/:matchId/snapshots", matchSession, snapHandler.Upload)
+		api.GET("/tournaments/:id/matches/:matchId/snapshots", snapHandler.List)
+		api.GET("/tournaments/:id/matches/:matchId/snapshots/file", snapHandler.File)
 		api.POST("/tournaments/:id/matches/:matchId/play-round", matchAdmin, mHandler.PlayRound)
 		api.POST("/tournaments/:id/matches/:matchId/next-round", matchAdmin, mHandler.NextRound)
 		api.POST("/tournaments/:id/matches/:matchId/demo-fill", matchAdmin, mHandler.DemoFill)
@@ -306,6 +319,7 @@ func main() {
 		api.GET("/time", aHandler.GetServerTime)
 		api.POST("/accounts/forgot-password", aHandler.ForgotPassword)
 		api.POST("/accounts/reset-password", aHandler.ResetPassword)
+		api.POST("/teams/password", requireSession(sessions, false, false), aHandler.ChangePassword)
 		api.GET("/notifications", optionalSession(sessions), aHandler.GetNotifications)
 		api.POST("/notifications/read", optionalSession(sessions), aHandler.ReadNotification)
 		api.POST("/admin/notifications", adminOnly, aHandler.AdminBroadcastNotification)

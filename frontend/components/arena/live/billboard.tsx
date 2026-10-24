@@ -26,18 +26,18 @@ export function Billboard() {
     const liveMatch = Object.entries(tournament.data?.matches || {}).find(([, m]: [string, any]) => m.status === 'IN_PROGRESS') as [string, any] | undefined
     if (liveMatch) {
       const [id, m] = liveMatch
-      out.push({ key: `live-${id}`, eyebrow: '● TRỰC TIẾP', title: `${m.team_a?.team_name || '?'}  ${m.team_a?.rounds_won ?? 0} – ${m.team_b?.rounds_won ?? 0}  ${m.team_b?.team_name || '?'}`, lines: [`${m.title || m.round_name} · Hiệp ${m.current_round_idx}/${m.max_rounds || 5}`, 'Bấm để vào xem diễn biến'], accent: 'from-red-600 via-rose-500 to-blue-600', emoji: '⚔️', live: true, onClick: () => void enterMatch(id) })
+      out.push({ key: `live-${id}`, eyebrow: '● TRỰC TIẾP', title: `${m.team_a?.team_name || '?'}  ${m.team_a?.rounds_won ?? 0} – ${m.team_b?.rounds_won ?? 0}  ${m.team_b?.team_name || '?'}`, lines: [`${m.title || m.round_name} · Hiệp ${m.current_round_idx}/${m.max_rounds || 5}`, 'Bấm để vào xem diễn biến'], accent: 'from-red-600 via-rose-500 to-blue-600', emoji: '', live: true, onClick: () => void enterMatch(id) })
     }
     for (const q of qualifiers.data || []) {
       if (q.status !== 'OPEN') continue
       const left = Math.floor((Number(q.deadline) * 1000 - now) / 1000)
-      out.push({ key: `q-${q.id}`, eyebrow: 'VÒNG LOẠI ĐANG MỞ', title: q.name, lines: [left > 0 ? `Còn ${countdown(left)} để nộp bài` : 'Sắp khóa bài', `Top ${q.top_k} vào giải chính`], accent: ACCENTS[2], emoji: '🚀', onClick: () => { setQualifierId(q.id); navigate('qualifier') } })
+      out.push({ key: `q-${q.id}`, eyebrow: 'VÒNG LOẠI ĐANG MỞ', title: q.name, lines: [left > 0 ? `Còn ${countdown(left)} để nộp bài` : 'Sắp khóa bài', `Top ${q.top_k} vào giải chính`], accent: ACCENTS[2], emoji: '', onClick: () => { setQualifierId(q.id); navigate('qualifier') } })
     }
     ;(tournaments.data || []).forEach((t, i) => {
       const champ = typeof t.champion === 'string' ? t.champion : t.champion?.team_name
-      out.push({ key: `t-${t.tournament_id}`, eyebrow: STATUS[t.status] || t.status || 'GIẢI ĐẤU', title: t.name, lines: [champ ? `🏆 Quán quân: ${champ}` : `${t.num_teams} đội · Loại trực tiếp Bo5`, 'Bấm để xem bảng đấu'], accent: ACCENTS[i % ACCENTS.length], emoji: champ ? '🏆' : '🎯', onClick: () => { setTournamentId(t.tournament_id); navigate('bracket') } })
+      out.push({ key: `t-${t.tournament_id}`, eyebrow: STATUS[t.status] || t.status || 'GIẢI ĐẤU', title: t.name, lines: [champ ? `Quán quân: ${champ}` : `${t.num_teams} đội · Loại trực tiếp Bo5`, 'Bấm để xem bảng đấu'], accent: ACCENTS[i % ACCENTS.length], emoji: champ ? '' : '', onClick: () => { setTournamentId(t.tournament_id); navigate('bracket') } })
     })
-    out.push({ key: 'cta', eyebrow: 'FRESHMAN BOT ARENA · K69', title: 'Viết bot. Ra trận. Lên ngôi.', lines: ['Oẳn Tù Tì trên bàn cờ 9×9', 'Python hoặc C++ — đấu thử boss miễn phí'], accent: ACCENTS[3], emoji: '🤖' })
+    out.push({ key: 'cta', eyebrow: 'FRESHMAN BOT ARENA · K69', title: 'Viết bot. Ra trận. Lên ngôi.', lines: ['Oẳn Tù Tì trên bàn cờ 9×9', 'Python hoặc C++ — đấu thử boss miễn phí'], accent: ACCENTS[3], emoji: '' })
     return out
   }, [tournaments.data, qualifiers.data, tournament.data, now, enterMatch, navigate, setQualifierId, setTournamentId])
 

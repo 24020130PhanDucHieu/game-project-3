@@ -31,8 +31,9 @@ function getWorker() {
     pending.delete(id)
     ok ? job.resolve(result) : job.reject(new Error(error || 'Máy chấm offline gặp lỗi'))
   }
-  worker.onerror = () => {
-    pending.forEach((job) => { window.clearTimeout(job.timer); job.reject(new Error('Không khởi động được máy chấm offline')) })
+  worker.onerror = (event) => {
+    const detail = event?.message ? `: ${event.message}` : ''
+    pending.forEach((job) => { window.clearTimeout(job.timer); job.reject(new Error(`Không khởi động được máy chấm offline${detail}. Hãy tải lại trang (Ctrl+F5) rồi thử lại.`)) })
     pending.clear()
     worker?.terminate(); worker = null
   }

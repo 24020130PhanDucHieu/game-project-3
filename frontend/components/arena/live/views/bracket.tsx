@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { Eye, EyeOff, Settings2, Trophy } from 'lucide-react'
+import { Eye, EyeOff, MonitorPlay, Settings2, Trophy } from 'lucide-react'
 import { decodeRule, shortTime } from '@/lib/format'
 import { Badge, Button, Card, DataTable, EmptyState, SectionTitle, Skeleton, SkeletonRows, StatusBadge } from '../ui'
 import { useLive } from '../context'
@@ -45,7 +45,7 @@ export function BracketView() {
     <div className="space-y-6">
       <SectionTitle eyebrow="Giải chính" title="Bảng đấu">
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={() => { window.location.hash = 'trinh-chieu' }}>📺 Trình chiếu</Button>
+          <Button variant="secondary" onClick={() => { window.location.hash = 'trinh-chieu' }}><MonitorPlay className="size-4" />Trình chiếu</Button>
           {role === 'ADMIN' && <Button variant="secondary" onClick={() => navigate('admin')}><Settings2 className="size-4" />Quản lý nhánh đấu</Button>}
         </div>
       </SectionTitle>

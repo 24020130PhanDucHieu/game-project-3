@@ -2,9 +2,10 @@
 
 import dynamic from 'next/dynamic'
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { Camera, Crosshair, Pause, Play, SkipBack, SkipForward, X } from 'lucide-react'
+import { Box, Camera, Castle, Crosshair, Flag, Orbit, Pause, Play, SkipBack, SkipForward, Skull, Sparkles, X, Zap, type LucideIcon } from 'lucide-react'
+import { PieceIcon } from './piece-icons'
 import { cn } from '@/lib/utils'
-import { Button } from './ui'
+import { Button, Select } from './ui'
 import type { Board3DHandle, CameraMode } from './board-3d'
 import { BASES, BOARD_THEMES, PIECE_ICON, useBoardTheme, type BoardTheme } from './board-themes'
 import { asCells, findPiece, highlightFor, NO_HIGHLIGHT, type Highlight } from './board-logic'
@@ -14,9 +15,9 @@ const Board3D = dynamic(() => import('./board-3d'), {
   loading: () => <div className="grid aspect-[4/3] min-h-[320px] w-full place-items-center rounded-2xl border border-border bg-muted/40 text-sm text-muted-foreground">Đang dựng sân đấu 3D…</div>,
 })
 
-type Marker = { icon: string; label: string }
+type Marker = { icon: LucideIcon; label: string; color: string }
 
-const CLASH_ICON: Record<string, string> = { CLASH: '💥', GOAL: '🏁', WARP: '🌀', TRAP: '☠️', EVOLVE: '✨' }
+const CLASH_ICON: Record<string, LucideIcon> = { CLASH: Zap, GOAL: Flag, WARP: Orbit, TRAP: Skull, EVOLVE: Sparkles }
 
 const BOARD_WIDTH = { md: 'max-w-[520px]', lg: 'max-w-[680px]', xl: 'max-w-[760px]' } as const
 export type BoardSize = keyof typeof BOARD_WIDTH
@@ -48,9 +49,9 @@ export function Board({ step, prev, theme, size = 'md', selectedId = null, highl
     add(step?.blue_pieces, 'blue')
     const mystery = step?.mystery_tiles || {}
     const markers = new Map<string, Marker>()
-    asCells(mystery.evolve).forEach(([c, r]) => markers.set(`${r}:${c}`, { icon: '✨', label: 'Ô tiến hóa' }))
-    asCells(mystery.portals).forEach(([c, r]) => markers.set(`${r}:${c}`, { icon: '🌀', label: 'Cổng dịch chuyển' }))
-    asCells(mystery.traps).forEach(([c, r]) => markers.set(`${r}:${c}`, { icon: '☠️', label: 'Bẫy' }))
+    asCells(mystery.evolve).forEach(([c, r]) => markers.set(`${r}:${c}`, { icon: Sparkles, label: 'Ô tiến hóa', color: '#7dffb2' }))
+    asCells(mystery.portals).forEach(([c, r]) => markers.set(`${r}:${c}`, { icon: Orbit, label: 'Cổng dịch chuyển', color: '#b388ff' }))
+    asCells(mystery.traps).forEach(([c, r]) => markers.set(`${r}:${c}`, { icon: Skull, label: 'Bẫy', color: '#ff6b6b' }))
     const obstacles = new Set(asCells(step?.obstacles || mystery.obstacles).map(([c, r]) => `${r}:${c}`))
     const clash = step?.clash_event
     const clashKey = clash && typeof clash.col === 'number' ? `${clash.row}:${clash.col}` : null
@@ -102,20 +103,20 @@ export function Board({ step, prev, theme, size = 'md', selectedId = null, highl
                   {row === 8 && <span className={cn(label, 'bottom-[6%] right-[8%]')} style={{ color: theme.accent }}>{col}</span>}
                   {col === 0 && <span className={cn(label, 'left-[8%] top-[6%]')} style={{ color: theme.accent }}>{row}</span>}
                   {(redHome || blueHome) && (
-                    <span className="absolute inset-0 flex items-center justify-center text-[clamp(10px,2.2vw,16px)]" style={{ background: `radial-gradient(circle, ${redHome ? theme.baseRed : theme.baseBlue}88, transparent 72%)`, boxShadow: `inset 0 0 0 2px ${redHome ? theme.baseRed : theme.baseBlue}aa` }} aria-label={redHome ? 'Cứ điểm Đỏ' : 'Cứ điểm Xanh'}>🏰</span>
+                    <span className="absolute inset-0 flex items-center justify-center text-[clamp(10px,2.2vw,16px)]" style={{ background: `radial-gradient(circle, ${redHome ? theme.baseRed : theme.baseBlue}88, transparent 72%)`, boxShadow: `inset 0 0 0 2px ${redHome ? theme.baseRed : theme.baseBlue}aa` }} aria-label={redHome ? 'Cứ điểm Đỏ' : 'Cứ điểm Xanh'}><Castle className="size-[48%] text-white drop-shadow" aria-hidden /></span>
                   )}
                   {wall && (
                     <span className="absolute inset-[10%] flex items-center justify-center rounded-[30%] text-[clamp(10px,2.4vw,18px)]" aria-label="Chướng ngại vật"
-                      style={{ background: `radial-gradient(circle at 35% 30%, color-mix(in srgb, ${theme.obstacle} 55%, #fff), ${theme.obstacle} 55%, color-mix(in srgb, ${theme.obstacle} 60%, #000))`, boxShadow: '0 3px 6px #0008, inset 0 -3px 4px #0006, inset 0 2px 2px #ffffff44' }}>🪨</span>
+                      style={{ background: `radial-gradient(circle at 35% 30%, color-mix(in srgb, ${theme.obstacle} 55%, #fff), ${theme.obstacle} 55%, color-mix(in srgb, ${theme.obstacle} 60%, #000))`, boxShadow: '0 3px 6px #0008, inset 0 -3px 4px #0006, inset 0 2px 2px #ffffff44' }}><PieceIcon type="ROCK" className="size-[58%] text-white/40" /></span>
                   )}
-                  {marker && !entry && <span className="absolute text-[clamp(10px,2.3vw,17px)] opacity-85" aria-label={marker.label}>{marker.icon}</span>}
+                  {marker && !entry && <span className="absolute grid size-[56%] place-items-center rounded-full" style={{ color: marker.color, background: `${marker.color}22`, boxShadow: `0 0 0 1px ${marker.color}66` }} aria-label={marker.label}><marker.icon className="size-[62%]" aria-hidden /></span>}
                   {trail && <span className="absolute size-[26%] rounded-full opacity-40" style={{ background: trail === 'red' ? theme.red : theme.blue, animation: 'trail-fade 1.4s ease-out forwards' }} aria-hidden />}
                   {hints.moves.has(key) && <span className="absolute inset-[30%] rounded-full bg-emerald-400/70 shadow-[0_0_10px_#34d399]" aria-label="Ô có thể đi" />}
                   {hints.attacks.has(key) && <span className="absolute inset-[3%] z-10 rounded-full border-[3px] border-red-400 shadow-[0_0_12px_#f87171]" aria-label="Có thể tấn công" />}
                   {step !== undefined && !entry && <span className="absolute flex size-[34%] items-center justify-center rounded-full font-mono text-[clamp(6px,1.2vw,9px)] font-bold text-white" style={{ background: `${trailColor}cc` }} aria-hidden>{step}</span>}
                   {ghost && (
                     <span className="absolute inset-[10%] flex items-center justify-center rounded-full text-[clamp(10px,2.4vw,17px)] grayscale" style={{ background: ghost.side === 'red' ? theme.red : theme.blue, animation: 'ghost-out .9s ease-out forwards' }} aria-hidden>
-                      {PIECE_ICON[ghost.piece.type]?.icon ?? '❔'}
+                      <PieceIcon type={ghost.piece.type} className="size-[60%] text-white" />
                     </span>
                   )}
                   {entry && (
@@ -129,14 +130,14 @@ export function Board({ step, prev, theme, size = 'md', selectedId = null, highl
                     >
                       <span className="absolute inset-[9%] flex items-center justify-center rounded-full text-[clamp(10px,2.4vw,18px)] leading-none"
                         style={{ background: `radial-gradient(circle at 34% 28%, color-mix(in srgb, ${color} 55%, #fff), ${color} 50%, color-mix(in srgb, ${color} 65%, #000))`, boxShadow: 'inset 0 -3px 5px #0007, inset 0 2px 3px #ffffff66' }}>
-                        <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,.7)]">{info?.icon ?? '❔'}</span>
+                        <PieceIcon type={entry.piece.type} className="size-[64%] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,.6)]" />
                       </span>
                     </span>
                   )}
                   {model.clashKey === key && model.clash && (
                     <>
                       <span className="clash-ring pointer-events-none absolute inset-[-30%] rounded-full border-2" style={{ borderColor: theme.accent }} aria-hidden />
-                      <span className="clash-icon pointer-events-none absolute z-10 text-[clamp(16px,4vw,30px)]" aria-label={`Va chạm: ${model.clash.type}`}>{CLASH_ICON[model.clash.type] ?? '💥'}</span>
+                      <span className="clash-icon pointer-events-none absolute z-10 text-[clamp(16px,4vw,30px)]" aria-label={`Va chạm: ${model.clash.type}`}>{(() => { const Icon = CLASH_ICON[model.clash.type] ?? Zap; return <Icon className="size-[clamp(16px,4vw,30px)] text-amber-300 drop-shadow-[0_0_6px_rgba(0,0,0,.8)]" aria-hidden /> })()}</span>
                     </>
                   )}
                 </div>
@@ -179,7 +180,7 @@ function PieceCard({ step, id, highlight, theme, redName, blueName, follow, onFo
   const color = piece.side === 'red' ? theme.red : theme.blue
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card/95 px-3 py-2 text-xs shadow-lg backdrop-blur" style={{ borderColor: color }} role="status" aria-label="Thông tin quân đang chọn">
-      <span className="grid size-9 place-items-center rounded-full text-lg" style={{ background: color }}>{info?.icon ?? '❔'}</span>
+      <span className="grid size-9 place-items-center rounded-full text-white" style={{ background: color }}><PieceIcon type={piece.type} className="size-5" /></span>
       <div className="min-w-0">
         <p className="font-bold">{info?.label ?? 'Quân ẩn'} · <span style={{ color }}>{piece.side === 'red' ? redName : blueName}</span></p>
         <p className="text-muted-foreground">
@@ -248,7 +249,7 @@ export function BoardPlayer({ steps, autoPlay = false, redName = 'Đội Đỏ',
         <div className="flex items-center gap-3">
           <div className="flex rounded-lg border border-border bg-muted/50 p-0.5" role="group" aria-label="Chế độ xem">
             {(['2d', '3d'] as const).map((v) => (
-              <button key={v} onClick={() => { setView(v); setNotice('') }} aria-pressed={view === v} className={cn('rounded-md px-3 py-1 text-xs font-extrabold transition-colors', view === v ? 'bg-brand text-primary-foreground shadow' : 'text-muted-foreground hover:text-foreground')}>{v === '2d' ? '2D' : '3D 🎬'}</button>
+              <button key={v} onClick={() => { setView(v); setNotice('') }} aria-pressed={view === v} className={cn('rounded-md px-3 py-1 text-xs font-extrabold transition-colors', view === v ? 'bg-brand text-primary-foreground shadow' : 'text-muted-foreground hover:text-foreground')}>{v === '2d' ? '2D' : <span className="inline-flex items-center gap-1"><Box className="size-3.5" aria-hidden />3D</span>}</button>
             ))}
           </div>
           <ThemePicker theme={theme} onChange={setTheme} />
@@ -256,12 +257,12 @@ export function BoardPlayer({ steps, autoPlay = false, redName = 'Đội Đỏ',
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           {view === '3d' && (
             <>
-              <select value={cam} onChange={(e) => setCam(e.target.value as CameraMode)} className="rounded-lg border border-input bg-background px-2 py-1 text-xs text-foreground" aria-label="Chế độ camera">
-                <option value="cinematic">🎥 Điện ảnh</option><option value="free">🖱️ Tự do</option><option value="top">⬇️ Trên xuống</option>
-              </select>
-              <select value={quality} onChange={(e) => setQuality(e.target.value as 'high' | 'low')} className="rounded-lg border border-input bg-background px-2 py-1 text-xs text-foreground" aria-label="Chất lượng 3D">
+              <Select compact className="w-36" value={cam} onChange={(e) => setCam(e.target.value as CameraMode)} aria-label="Chế độ camera">
+                <option value="cinematic">Camera điện ảnh</option><option value="free">Camera tự do</option><option value="top">Nhìn từ trên</option>
+              </Select>
+              <Select compact className="w-36" value={quality} onChange={(e) => setQuality(e.target.value as 'high' | 'low')} aria-label="Chất lượng 3D">
                 <option value="high">Chất lượng cao</option><option value="low">Tiết kiệm</option>
-              </select>
+              </Select>
               <Button size="sm" variant="secondary" aria-label="Chụp ảnh khung hình" onClick={() => {
                 const url = stage.current?.capture()
                 if (!url) return
@@ -269,11 +270,11 @@ export function BoardPlayer({ steps, autoPlay = false, redName = 'Đội Đỏ',
               }}><Camera className="size-3.5" /></Button>
             </>
           )}
-          <label className="flex items-center gap-2">Tốc độ
-            <select value={speed} onChange={(e) => setSpeed(Number(e.target.value))} className="rounded-lg border border-input bg-background px-2 py-1 text-xs text-foreground" aria-label="Tốc độ phát">
-              <option value={0.5}>0.5×</option><option value={1}>1×</option><option value={2}>2×</option><option value={4}>4×</option>
-            </select>
-          </label>
+          <span className="flex items-center gap-2">Tốc độ
+            <Select compact className="w-20" value={String(speed)} onChange={(e) => setSpeed(Number(e.target.value))} aria-label="Tốc độ phát">
+              <option value="0.5">0.5×</option><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option>
+            </Select>
+          </span>
         </div>
       </div>
       {notice && <p role="status" className="rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">{notice}</p>}

@@ -112,7 +112,7 @@ export function AdminClarifications() {
           {list.data.items.map((item) => <ClarItem key={item.id} item={item} admin onAnswered={() => invalidate('clar:')} />)}
           <Pagination page={page} pageSize={list.data.page_size} total={list.data.total} onChange={setPage} />
         </div>
-      ) : <EmptyState icon={<CheckCircle2 className="size-7" />} title={status === 'OPEN' ? 'Không còn câu hỏi chờ trả lời 🎉' : 'Chưa có câu hỏi'} />}
+      ) : <EmptyState icon={<CheckCircle2 className="size-7" />} title={status === 'OPEN' ? 'Không còn câu hỏi chờ trả lời' : 'Chưa có câu hỏi'} />}
     </Card>
   )
 }

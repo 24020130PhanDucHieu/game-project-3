@@ -1,7 +1,22 @@
 /* Máy chấm offline trong trình duyệt: Pyodide chạy đúng engine 9×9 của server (board.py) trong Web Worker. */
 /* global importScripts, loadPyodide */
-const PYODIDE = 'https://cdn.jsdelivr.net/pyodide/v0.27.2/full/'
-importScripts(PYODIDE + 'pyodide.js')
+// Ưu tiên bản Pyodide lưu ngay trên web (tải lúc build); CDN chỉ là dự phòng vì mạng trường hay chặn CDN.
+const SOURCES = [
+  new URL('./pyodide/', self.location.href).href,
+  'https://cdn.jsdelivr.net/pyodide/v0.27.2/full/',
+  'https://unpkg.com/pyodide@0.27.2/',
+]
+let PYODIDE = ''
+const loadErrors = []
+for (const base of SOURCES) {
+  try {
+    importScripts(base + 'pyodide.js')
+    PYODIDE = base
+    break
+  } catch (error) {
+    loadErrors.push(base + ': ' + (error && error.message ? error.message : error))
+  }
+}
 
 const SHIM = `
 import ast, builtins, importlib, types, sys, json, random
@@ -128,8 +143,16 @@ let ready = null
 let engineVersion = ''
 
 async function boot() {
-  const py = await loadPyodide({ indexURL: PYODIDE })
-  const manifest = await (await fetch('./engine/manifest.json', { cache: 'no-cache' })).json()
+  if (!PYODIDE) throw new Error('Không tải được Pyodide từ web lẫn CDN (' + loadErrors.join(' | ').slice(0, 300) + ')')
+  let py
+  try {
+    py = await loadPyodide({ indexURL: PYODIDE })
+  } catch (error) {
+    throw new Error('Khởi động Pyodide thất bại (' + PYODIDE + '): ' + (error && error.message ? error.message : error))
+  }
+  const res = await fetch('./engine/manifest.json', { cache: 'no-cache' })
+  if (!res.ok) throw new Error('Không tải được engine offline (HTTP ' + res.status + ')')
+  const manifest = await res.json()
   engineVersion = manifest.version
   const fs = py.FS
   for (const dir of ['/arena', '/arena/app', '/arena/app/engine', '/arena/app/models', '/arena/app/sandbox']) { try { fs.mkdir(dir) } catch { /* đã có */ } }
@@ -180,7 +203,7 @@ json.dumps({"status": "SUCCESS", "is_offline": True, "winner": winner, "win_reas
     }
     self.postMessage({ id, ok: true, result: JSON.parse(result) })
   } catch (error) {
-    if (String(error).includes('loadPyodide') || String(error).includes('NetworkError')) ready = null
+    if (/Pyodide|engine offline|NetworkError|Failed to fetch/i.test(String(error && error.message ? error.message : error))) ready = null
     self.postMessage({ id, ok: false, error: String(error && error.message ? error.message : error).split('\n').slice(-3).join(' ') })
   }
 }

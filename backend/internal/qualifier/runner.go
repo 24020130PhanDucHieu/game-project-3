@@ -71,7 +71,7 @@ func contains(items []string, id string) bool {
 func (s *Service) pair(e Event, people map[string]Participant, round int) error {
 	ids := []string{}
 	for id, p := range people {
-		if p.LockedID != "" {
+		if p.LockedID != "" && !p.Banned {
 			ids = append(ids, id)
 		}
 	}

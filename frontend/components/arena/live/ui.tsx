@@ -51,8 +51,8 @@ export function Button({ variant = 'primary', size = 'md', loading, className, c
       type={type}
       disabled={disabled || loading}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50',
-        size === 'sm' ? 'px-3 py-1.5 text-xs' : 'px-4 py-2 text-sm',
+        'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
+        size === 'sm' ? 'h-8 px-3 text-xs' : 'h-10 px-4 text-sm',
         styles,
         className,
       )}
@@ -131,8 +131,8 @@ export function Avatar({ name, size = 'md', ring }: { name?: string; size?: 'sm'
 
 export function EmptyState({ title, hint, action, icon }: { title: string; hint?: string; action?: ReactNode; icon?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border px-6 py-10 text-center">
-      <div className="text-muted-foreground">{icon ?? <Inbox className="size-7" aria-hidden />}</div>
+    <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-muted/20 px-6 py-10 text-center">
+      <div className="grid size-14 place-items-center rounded-full bg-primary/10 text-primary [&_svg]:size-6">{icon ?? <Inbox className="size-6" aria-hidden />}</div>
       <p className="text-sm font-semibold">{title}</p>
       {hint && <p className="max-w-md text-xs text-muted-foreground">{hint}</p>}
       {action && <div className="mt-2">{action}</div>}
@@ -162,13 +162,13 @@ export function ProgressBar({ value, max, label }: { value: number; max: number;
   )
 }
 
-const inputBase = 'block w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:outline-2 focus-visible:outline-ring/40 disabled:opacity-60'
+const inputBase = 'block w-full min-h-10 rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm transition placeholder:text-muted-foreground/70 hover:border-primary/40 focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/25 disabled:cursor-not-allowed disabled:opacity-60'
 
-export function Field({ label, hint, className, ...rest }: InputHTMLAttributes<HTMLInputElement> & { label: string; hint?: string }) {
+export function Field({ label, hint, className, ...rest }: InputHTMLAttributes<HTMLInputElement> & { label?: string; hint?: string }) {
   const id = useId()
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-1 block text-xs font-semibold text-muted-foreground">{label}</label>
+      {label && <label htmlFor={id} className="mb-1 block text-xs font-semibold text-muted-foreground">{label}</label>}
       <input id={id} className={inputBase} {...rest} />
       {hint && <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>}
     </div>
@@ -185,15 +185,7 @@ export function TextArea({ label, className, mono, ...rest }: TextareaHTMLAttrib
   )
 }
 
-export function Select({ label, className, children, ...rest }: SelectHTMLAttributes<HTMLSelectElement> & { label?: string }) {
-  const id = useId()
-  return (
-    <div className={className}>
-      {label && <label htmlFor={id} className="mb-1 block text-xs font-semibold text-muted-foreground">{label}</label>}
-      <select id={id} className={inputBase} {...rest}>{children}</select>
-    </div>
-  )
-}
+export { Select } from './select'
 
 /** Thanh chuyển mục dạng viên thuốc, dùng cho sub-tab. */
 export function Tabs<T extends string>({ tabs, value, onChange, className }: {
@@ -208,7 +200,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, className }: {
           aria-selected={value === tab.id}
           onClick={() => onChange(tab.id)}
           className={cn(
-            'inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+            'inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
             value === tab.id ? 'bg-brand text-primary-foreground shadow-md shadow-primary/25' : 'text-muted-foreground hover:bg-card/70 hover:text-foreground',
           )}
         >
@@ -243,7 +235,7 @@ export function DataTable({ head, children, className }: { head: string[]; child
         <thead className="bg-muted/60 text-xs uppercase tracking-wide text-muted-foreground">
           <tr>{head.map((h, i) => <th key={i} scope="col" className="px-3 py-2.5 font-semibold">{h}</th>)}</tr>
         </thead>
-        <tbody className="divide-y divide-border">{children}</tbody>
+        <tbody className="divide-y divide-border [&>tr]:transition-colors [&>tr:hover]:bg-primary/[0.04] [&>tr:nth-child(even)]:bg-muted/25">{children}</tbody>
       </table>
     </div>
   )

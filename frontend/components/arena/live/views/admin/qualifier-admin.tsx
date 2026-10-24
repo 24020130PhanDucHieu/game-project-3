@@ -1,14 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Flag, Pause, Play, Plus, Snowflake, Trash2, Trophy, UserRoundPlus } from 'lucide-react'
+import { Ban, FileCode2, Flag, Pause, Play, Plus, ShieldCheck, Snowflake, Trash2, Trophy, UserRoundPlus } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { invalidate, useResource } from '@/lib/cache'
 import { fromLocalInput, toLocalInput } from '@/lib/format'
 import { Badge, Button, Card, DataTable, EmptyState, ErrorNote, Field, Pagination, ProgressBar, Select, SkeletonRows, StatusBadge } from '../../ui'
 import { useLive } from '../../context'
+import { AdminScoreHistory, BanDialog, TeamSubmissionsOverlay } from '../../qualifier-extras'
 
-const FILTERS = [['', 'Tất cả'], ['NOT_SUBMITTED', 'Chưa nộp'], ['PENDING', 'Đang kiểm tra'], ['VALID', 'Hợp lệ'], ['INVALID', 'Không hợp lệ'], ['LOCKED', 'Đã khóa']]
+const FILTERS = [['', 'Tất cả'], ['NOT_SUBMITTED', 'Chưa nộp'], ['PENDING', 'Đang kiểm tra'], ['VALID', 'Hợp lệ'], ['INVALID', 'Không hợp lệ'], ['LOCKED', 'Đã khóa'], ['BANNED', 'Bị loại']]
 
 function ConfigForm({ event }: { event?: any }) {
   const { run, setQualifierId } = useLive()
@@ -103,24 +104,34 @@ function Teams({ id }: { id: string }) {
   useEffect(() => { const t = window.setTimeout(() => setDebounced(q), 350); return () => window.clearTimeout(t) }, [q])
   const teams = useResource(`q:teams:${id}:${page}:${debounced}:${filter}`, () => arenaApi.getQualifierTeams(id, { page, q: debounced, filter }), { ttl: 8_000, refreshMs: 20_000 })
   const data = teams.data
+  const [viewing, setViewing] = useState<any>(null)
+  const [banning, setBanning] = useState<any>(null)
   return (
     <Card title="Đội tham gia" action={<div className="flex flex-wrap gap-2"><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm MSSV / tên đội" aria-label="Tìm đội" className="w-48 rounded-xl border border-input bg-background px-3 py-2 text-sm" /><Select aria-label="Lọc trạng thái" value={filter} onChange={(e) => setFilter(e.target.value)} className="w-40">{FILTERS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</Select></div>}>
       {teams.loading ? <SkeletonRows rows={6} /> : teams.error && !data ? <ErrorNote message={teams.error.message} onRetry={() => void teams.reload()} /> : data?.items.length ? (
         <>
-          <DataTable head={['MSSV', 'Đội', 'Trạng thái bài', 'ELO', 'Thắng / Trận']}>
+          <DataTable head={['MSSV', 'Đội', 'Trạng thái bài', 'ELO', 'Thắng / Trận', '']}>
             {data.items.map((t) => (
-              <tr key={t.student_id}>
+              <tr key={t.student_id} className={t.banned ? 'opacity-70' : undefined}>
                 <td className="px-3 py-2.5 font-mono text-xs">{t.student_id}</td>
-                <td className="px-3 py-2.5 font-medium">{t.team_name}{t.test_bot && <Badge className="ml-2">Bot thử</Badge>}</td>
+                <td className="px-3 py-2.5 font-medium">{t.team_name}{t.test_bot && <Badge className="ml-2">Bot thử</Badge>}{t.banned && t.ban_reason && <span className="block text-[11px] font-normal text-red-600 dark:text-red-400">Lý do: {t.ban_reason}</span>}</td>
                 <td className="px-3 py-2.5"><StatusBadge status={t.status} /></td>
                 <td className="px-3 py-2.5 tabular-nums">{Number(t.elo).toFixed(1)}</td>
                 <td className="px-3 py-2.5 tabular-nums">{t.wins}/{t.played}</td>
+                <td className="px-3 py-2.5"><div className="flex justify-end gap-1.5">
+                  <Button size="sm" variant="secondary" onClick={() => setViewing(t)}><FileCode2 className="size-3.5" />Bài nộp</Button>
+                  {!t.test_bot && (t.banned
+                    ? <Button size="sm" variant="ghost" onClick={() => setBanning(t)}><ShieldCheck className="size-3.5" />Bỏ loại</Button>
+                    : <Button size="sm" variant="ghost" className="text-red-600 dark:text-red-400" onClick={() => setBanning(t)}><Ban className="size-3.5" />Loại</Button>)}
+                </div></td>
               </tr>
             ))}
           </DataTable>
           <Pagination page={page} pageSize={data.page_size || 50} total={data.total} onChange={setPage} />
         </>
       ) : <EmptyState title="Không có đội phù hợp" />}
+      {viewing && <TeamSubmissionsOverlay qid={id} team={viewing} onClose={() => setViewing(null)} />}
+      {banning && <BanDialog qid={id} team={banning} onClose={() => setBanning(null)} />}
     </Card>
   )
 }
@@ -156,6 +167,7 @@ export function QualifierAdminTab() {
           <Card title="Điều hành"><Operations event={live} /></Card>
           {live.status === 'OPEN' && <Card title="Cấu hình"><ConfigForm event={live} /></Card>}
           <Teams id={live.id} />
+          <AdminScoreHistory qid={live.id} />
         </>
       )}
     </div>

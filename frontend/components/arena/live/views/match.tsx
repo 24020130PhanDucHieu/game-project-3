@@ -65,7 +65,7 @@ function VictoryBanner({ name }: { name: string }) {
         <span key={i} aria-hidden className="confetti absolute top-0 h-3 w-1.5 rounded-sm" style={{ left: `${(i * 4.3) % 100}%`, background: CONFETTI[i % CONFETTI.length], animationDelay: `${(i % 8) * 0.18}s`, animationDuration: `${2.2 + (i % 5) * 0.4}s` }} />
       ))}
       <p className="text-xs font-extrabold uppercase tracking-[0.3em] text-amber-600 dark:text-amber-300">Kết thúc trận đấu</p>
-      <p className="font-display mt-1 text-2xl font-black md:text-4xl">🏆 {name} giành chiến thắng!</p>
+      <p className="font-display mt-1 text-2xl font-black md:text-4xl">{name} giành chiến thắng!</p>
     </div>
   )
 }
@@ -84,7 +84,7 @@ function Scoreboard({ match }: { match: any }) {
         {team ? <Avatar name={team.team_name} size="xl" ring={isWin ? 'gold' : tone} /> : <span className="size-16 rounded-2xl border border-dashed border-border" aria-hidden />}
         <p className="font-display max-w-full truncate text-lg font-extrabold">{team?.team_name || 'Chờ đội'}</p>
         <p className="font-display text-6xl font-black tabular-nums leading-none">{team ? team.rounds_won ?? 0 : '–'}</p>
-        {isWin && <Badge tone="warning">🏆 Chiến thắng</Badge>}
+        {isWin && <Badge tone="warning">Chiến thắng</Badge>}
         {team && !isWin && (team.code_valid ? <Badge tone="success">Đã nộp bot</Badge> : team.code_submitted ? <Badge tone="danger">Bot lỗi</Badge> : <Badge tone="warning">Chưa nộp bot</Badge>)}
       </div>
     )
@@ -155,7 +155,7 @@ function RoundsPanel({ tournamentId, matchId, match }: { tournamentId: string; m
       {replay.loading ? <SkeletonRows rows={6} /> : replay.error && !data ? <ErrorNote message={replay.error.message} onRetry={() => void replay.reload()} /> : data && (
         <>
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card/60 px-4 py-3">
-            <p className="text-sm"><span className="text-muted-foreground">Hiệp {data.round_number}:</span> <strong>🏆 {data.winner_name}</strong> <span className="text-muted-foreground">— {data.win_reason}</span></p>
+            <p className="text-sm"><span className="text-muted-foreground">Hiệp {data.round_number}:</span> <strong>{data.winner_name}</strong> <span className="text-muted-foreground">— {data.win_reason}</span></p>
             <div className="flex flex-wrap gap-1.5">{decodeRule(data.stage_rule).active.map((c) => <Badge key={c} tone="accent">{c}</Badge>)}</div>
           </div>
           <BoardPlayer steps={data.board_steps || []} autoPlay={selected !== null} size="lg" redName={data.team_a_name || match.team_a?.team_name} blueName={data.team_b_name || match.team_b?.team_name} />
@@ -219,7 +219,7 @@ function RecordsPanel({ tournamentId, matchId, match, canSeeCode }: { tournament
               return (
                 <li key={n} className="card-lift flex items-center gap-3 rounded-xl border border-border bg-card/70 p-3">
                   <span className={cn('font-display flex size-11 shrink-0 items-center justify-center rounded-xl text-lg font-black text-white', r.winner === 'team_a' ? 'bg-red-500' : 'bg-blue-500')}>{n}</span>
-                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">🏆 {r.winner_name}</span><span className="block truncate text-xs text-muted-foreground">{r.win_reason}</span></span>
+                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{r.winner_name}</span><span className="block truncate text-xs text-muted-foreground">{r.win_reason}</span></span>
                   <Button size="sm" onClick={() => setRound(n)}><PlayCircle className="size-4" />Replay</Button>
                 </li>
               )

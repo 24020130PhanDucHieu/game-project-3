@@ -55,7 +55,11 @@ func registerStaticPortal(router *gin.Engine, root string) {
 	if info, err := os.Stat(filepath.Join(root, "offline")); err == nil && info.IsDir() {
 		offline := http.FileServer(http.FS(os.DirFS(filepath.Join(root, "offline"))))
 		router.GET("/offline/*path", func(c *gin.Context) {
-			c.Header("Cache-Control", "no-cache")
+			if strings.HasPrefix(c.Param("path"), "/pyodide/") {
+				c.Header("Cache-Control", "public, max-age=604800") // lõi Pyodide theo phiên bản, ~13 MB
+			} else {
+				c.Header("Cache-Control", "no-cache")
+			}
 			http.StripPrefix("/offline", offline).ServeHTTP(c.Writer, c.Request)
 		})
 	}

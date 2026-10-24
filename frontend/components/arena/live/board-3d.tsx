@@ -7,7 +7,8 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
-import { BASES, PIECE_ICON, type BoardTheme } from './board-themes'
+import { BASES, type BoardTheme } from './board-themes'
+import { drawPieceIcon } from './piece-icons'
 import { asCells, NO_HIGHLIGHT, type Highlight } from './board-logic'
 
 export type CameraMode = 'cinematic' | 'free' | 'top'
@@ -59,16 +60,15 @@ function canvasTexture(size: number, draw: (ctx: CanvasRenderingContext2D) => vo
 }
 
 /** Huy hiệu tròn có viền vàng chứa biểu tượng Kéo/Búa/Bao. */
-const iconTexture = (icon: string) => canvasTexture(128, (ctx) => {
+/** Huy hiệu tròn viền vàng chứa biểu tượng quân vẽ riêng (giống bàn 2D, không phụ thuộc font emoji). */
+const iconTexture = (type: string) => canvasTexture(128, (ctx) => {
   const g = ctx.createRadialGradient(52, 46, 6, 64, 64, 62)
   g.addColorStop(0, 'rgba(255,255,255,0.97)')
   g.addColorStop(1, 'rgba(200,205,226,0.92)')
   ctx.fillStyle = g
   ctx.beginPath(); ctx.arc(64, 64, 57, 0, Math.PI * 2); ctx.fill()
   ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(232,195,106,1)'; ctx.stroke()
-  ctx.font = '68px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif'
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-  ctx.fillText(icon, 64, 70)
+  drawPieceIcon(ctx, type, 128, '#312e81')
 })
 
 const labelTexture = (text: string, color: string) => canvasTexture(64, (ctx) => {
@@ -231,7 +231,7 @@ export default function Board3D({ step, prev, animate, theme, camera, quality, o
     const iconMat = (type: string) => {
       const key = type || '?'
       let m = iconMats.get(key)
-      if (!m) { m = track(new THREE.SpriteMaterial({ map: track(iconTexture(PIECE_ICON[key]?.icon ?? '❔')), transparent: true, toneMapped: false, depthWrite: false })); iconMats.set(key, m) }
+      if (!m) { m = track(new THREE.SpriteMaterial({ map: track(iconTexture(key)), transparent: true, toneMapped: false, depthWrite: false })); iconMats.set(key, m) }
       return m
     }
     const profile = [[0, 0], [0.42, 0], [0.43, 0.05], [0.39, 0.09], [0.33, 0.12], [0.27, 0.2], [0.22, 0.32], [0.21, 0.4], [0.29, 0.45], [0.31, 0.5], [0.27, 0.54], [0, 0.55]]

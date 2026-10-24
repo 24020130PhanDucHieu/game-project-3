@@ -16,7 +16,50 @@ import (
 	"time"
 )
 
-type QualifierHandler struct{ Service *qualifier.Service }
+type QualifierHandler struct {
+	Service  *qualifier.Service
+	AuditLog func(actor, action string, details map[string]interface{})
+}
+
+// Results: lịch sử tính điểm của cả vòng loại (admin): mọi trận đã chấm kèm ELO trước/sau của hai đội.
+func (h *QualifierHandler) Results(c *gin.Context) {
+	id := c.Param("qid")
+	if _, err := h.Service.Event(id); err != nil {
+		qualifierError(c, err)
+		return
+	}
+	raw, err := h.Service.Store.List("job:" + id + ":")
+	if err != nil {
+		qualifierError(c, err)
+		return
+	}
+	people, err := h.Service.ParticipantSummaries(id)
+	if err != nil {
+		qualifierError(c, err)
+		return
+	}
+	student := strings.ToUpper(strings.TrimSpace(c.Query("student_id")))
+	items := []gin.H{}
+	for _, value := range raw {
+		var job qualifier.Job
+		if json.Unmarshal(value, &job) != nil {
+			continue
+		}
+		if student != "" && job.A != student && job.B != student {
+			continue
+		}
+		items = append(items, gin.H{"id": job.ID, "round": job.Round, "status": job.Status, "a": job.A, "b": job.B,
+			"a_name": people[job.A].Name, "b_name": people[job.B].Name, "winner": job.Winner, "reason": job.Reason, "error": job.Error,
+			"before_a": job.BeforeA, "after_a": job.AfterA, "before_b": job.BeforeB, "after_b": job.AfterB})
+	}
+	sort.Slice(items, func(i, j int) bool {
+		if items[i]["round"].(int) != items[j]["round"].(int) {
+			return items[i]["round"].(int) > items[j]["round"].(int)
+		}
+		return items[i]["id"].(string) < items[j]["id"].(string)
+	})
+	c.JSON(http.StatusOK, gin.H{"items": items, "total": len(items)})
+}
 
 func (h *QualifierHandler) Register(c *gin.Context) {
 	session := requestSession(c)
@@ -374,6 +417,19 @@ func (h *QualifierHandler) Action(c *gin.Context) {
 		err = h.Service.Reopen(id, req.Deadline, req.Reason)
 	case "pause":
 		err = h.Service.Pause(id)
+	case "ban", "unban":
+		var req struct {
+			StudentID string `json:"student_id"`
+			Reason    string `json:"reason"`
+		}
+		if c.ShouldBindJSON(&req) != nil {
+			c.JSON(400, gin.H{"detail": "Thông tin đội không hợp lệ."})
+			return
+		}
+		err = h.Service.SetBanned(id, req.StudentID, c.Param("action") == "ban", req.Reason)
+		if err == nil && h.AuditLog != nil {
+			h.AuditLog(requestSession(c).Actor(), "QUALIFIER_"+strings.ToUpper(c.Param("action")), map[string]interface{}{"qualifier_id": id, "student_id": strings.ToUpper(req.StudentID), "reason": req.Reason})
+		}
 	case "test-bots":
 		var req struct {
 			Count int `json:"count"`
@@ -434,13 +490,16 @@ func (h *QualifierHandler) Teams(c *gin.Context) {
 		if p.LockedID != "" {
 			status = "LOCKED"
 		}
+		if p.Banned {
+			status = "BANNED"
+		}
 		if query != "" && !strings.Contains(strings.ToLower(p.SID+" "+p.Name), query) {
 			continue
 		}
 		if filter != "" && filter != status {
 			continue
 		}
-		items = append(items, gin.H{"student_id": p.SID, "team_name": p.Name, "test_bot": p.TestBot, "status": status, "elo": p.Elo, "wins": p.Wins, "played": p.Played, "submitted_at": p.SubmittedAt})
+		items = append(items, gin.H{"student_id": p.SID, "team_name": p.Name, "test_bot": p.TestBot, "status": status, "elo": p.Elo, "wins": p.Wins, "played": p.Played, "submitted_at": p.SubmittedAt, "banned": p.Banned, "ban_reason": p.BanReason})
 	}
 	sort.Slice(items, func(i, j int) bool { return items[i]["student_id"].(string) < items[j]["student_id"].(string) })
 	page := qualifierPage(c)

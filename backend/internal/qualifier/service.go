@@ -40,6 +40,8 @@ type Event struct {
 type Participant struct {
 	Pending       int      `json:"pending_submissions,omitempty"`
 	TestBot       bool     `json:"test_bot,omitempty"`
+	Banned        bool     `json:"banned,omitempty"`
+	BanReason     string   `json:"ban_reason,omitempty"`
 	SID           string   `json:"student_id"`
 	Name          string   `json:"team_name"`
 	Code          string   `json:"code,omitempty"`
@@ -254,6 +256,9 @@ func (s *Service) Freeze(id string) error {
 	}
 	rows := map[string]interface{}{}
 	for sid, p := range people {
+		if p.Banned {
+			continue
+		}
 		if p.LockedID != "" {
 			e.Eligible++
 			continue
@@ -359,7 +364,7 @@ func (s *Service) Ranked(id string) ([]Participant, error) {
 	}
 	list := []Participant{}
 	for _, p := range people {
-		if p.LockedID != "" {
+		if p.LockedID != "" && !p.Banned {
 			list = append(list, p)
 		}
 	}
