@@ -142,8 +142,36 @@ def decide_move(game_state):
 let ready = null
 let engineVersion = ''
 
+// Bộ nhớ đệm của trình duyệt có thể giữ bản hỏng (trang HTML thay cho file JS/WASM) từ bản web cũ:
+// xóa các file Pyodide đã lưu rồi tải lại bỏ qua cache, không cần người dùng xóa dữ liệu trình duyệt.
+async function purgePyodideCache() {
+  if (typeof caches === 'undefined') return
+  for (const name of await caches.keys()) {
+    if (!name.startsWith('arena-offline')) continue
+    const cache = await caches.open(name)
+    for (const req of await cache.keys()) {
+      if (req.url.includes('/offline/pyodide/') || req.url.includes('/pyodide/') || req.url.includes('pyodide@')) await cache.delete(req)
+    }
+  }
+}
+
+async function retryLoad() {
+  try { await purgePyodideCache() } catch (error) { loadErrors.push('cache: ' + (error && error.message ? error.message : error)) }
+  const bust = '?r=' + Date.now()
+  for (const base of SOURCES) {
+    try {
+      importScripts(base + 'pyodide.js' + bust)
+      PYODIDE = base
+      return
+    } catch (error) {
+      loadErrors.push(base + ' (lần 2): ' + (error && error.message ? error.message : error))
+    }
+  }
+}
+
 async function boot() {
-  if (!PYODIDE) throw new Error('Không tải được Pyodide từ web lẫn CDN (' + loadErrors.join(' | ').slice(0, 300) + ')')
+  if (!PYODIDE) await retryLoad()
+  if (!PYODIDE) throw new Error('Không tải được Pyodide từ web lẫn CDN (' + loadErrors.join(' | ').slice(0, 600) + ')')
   let py
   try {
     py = await loadPyodide({ indexURL: PYODIDE })
@@ -167,7 +195,7 @@ async function boot() {
 self.onmessage = async (event) => {
   const { id, kind, payload } = event.data || {}
   try {
-    ready = ready || boot()
+    ready = ready || boot().catch((error) => { ready = null; throw error })
     const py = await ready
     if (kind === 'prepare') { self.postMessage({ id, ok: true, result: { version: engineVersion } }); return }
     if ((payload.language || 'PYTHON') !== 'PYTHON') throw new Error('Chạy offline chỉ hỗ trợ Python. C++ cần kết nối tới máy chấm.')
