@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { AlertTriangle, Check, CheckCircle2, ClipboardList, Clock, Code2, Crown, DoorOpen, Handshake, Hourglass, History, PlayCircle, Radio, Search, ShieldAlert, Swords, Trophy } from 'lucide-react'
+import { AlertTriangle, Check, CheckCircle2, ClipboardList, Clock, Code2, Crown, DoorOpen, Handshake, Hourglass, History, MessagesSquare, PlayCircle, Radio, Search, ShieldAlert, Swords, Trophy } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { invalidate, useResource } from '@/lib/cache'
 import { cn } from '@/lib/utils'
@@ -14,11 +14,13 @@ import { Workbench } from '../workbench'
 import { SyncStatusCard } from '../sync-status'
 import { enqueue, isRetryable, newSubmissionId } from '@/lib/outbox'
 import { WebcamPanel } from '../webcam-panel'
+import { ChatPanel, useChat } from '../chat-panel'
+import { chatStore } from '@/lib/chat-store'
 import { ScrimmagePanel } from '../scrimmage'
 import { CodeViewer, ReplayViewer } from '../replay-viewer'
 import { RoundLog } from '../round-log'
 
-type MatchTab = 'live' | 'records' | 'submit' | 'history' | 'control' | 'scrim'
+type MatchTab = 'live' | 'chat' | 'records' | 'submit' | 'history' | 'control' | 'scrim'
 
 function RuleLine({ tournament, match, now }: { tournament: any; match: any; now: number }) {
   const level = match.round_level
@@ -450,8 +452,18 @@ export function MatchView() {
   const own = !!match && ownMatches.some(([id]) => id === matchId)
   const levels = [...new Set(matches.map(([, m]) => m.round_name))]
 
-  const tabs: { id: MatchTab; label: string; icon: React.ReactNode }[] = [
+  const chat = useChat()
+  const canChat = !!match && (role === 'ADMIN' || session.match_id === matchId)
+  useEffect(() => {
+    if (canChat) chatStore.open(tournamentId, matchId)
+    else chatStore.close()
+  }, [canChat, tournamentId, matchId])
+  useEffect(() => () => chatStore.close(), [])
+  const unread = chat.key === `${tournamentId}:${matchId}` && tab !== 'chat' ? chat.unread : 0
+
+  const tabs: { id: MatchTab; label: string; icon: React.ReactNode; badge?: React.ReactNode }[] = [
     { id: 'live', label: 'Diễn biến', icon: <Radio className="size-4" /> },
+    ...(match ? [{ id: 'chat' as const, label: 'Trò chuyện', icon: <MessagesSquare className="size-4" />, badge: unread > 0 ? <span data-testid="chat-unread" className="ml-0.5 grid min-w-5 place-items-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold leading-5 text-white">{unread > 99 ? '99+' : unread}</span> : undefined }] : []),
     ...(match ? [{ id: 'records' as const, label: 'Lịch sử & Replay', icon: <PlayCircle className="size-4" /> }] : []),
     ...(own ? [{ id: 'submit' as const, label: 'Nộp bot', icon: <ClipboardList className="size-4" /> }] : []),
     ...(role === 'ADMIN' && match ? [{ id: 'control' as const, label: 'Điều hành', icon: <ShieldAlert className="size-4" /> }] : []),
@@ -486,6 +498,8 @@ export function MatchView() {
             matches.length ? (
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{matches.map(([id, m]) => <MatchCard key={id} id={id} match={m} onOpen={(mid) => void enterMatch(mid)} />)}</div>
             ) : <EmptyState title="Giải chưa có trận" hint="Ban tổ chức cần xếp lịch để tạo cặp đấu." />
+          ) : tab === 'chat' ? (
+            <ChatPanel tournamentId={tournamentId} matchId={matchId} match={match} />
           ) : tab === 'records' ? (
             <RecordsPanel tournamentId={tournamentId} matchId={matchId} match={match} canSeeCode={own || role === 'ADMIN'} />
           ) : tab === 'submit' ? (

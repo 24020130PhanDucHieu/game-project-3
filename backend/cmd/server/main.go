@@ -221,6 +221,11 @@ func main() {
 	r.GET("/ws/rtc/:id/:matchId", requireSession(sessions, false, true), func(c *gin.Context) {
 		rtcHub.Serve(c, cfg.CORSOrigin)
 	})
+	// Chat trong trận: đội của trận + ban tổ chức; lịch sử lưu trong kho bản ghi.
+	chatHub := wsHandler.NewChatHub(qualifierStore)
+	r.GET("/ws/chat/:id/:matchId", requireSession(sessions, false, true), func(c *gin.Context) {
+		chatHub.Serve(c, cfg.CORSOrigin)
+	})
 
 	// API Routes Group
 	api := r.Group("/api")
