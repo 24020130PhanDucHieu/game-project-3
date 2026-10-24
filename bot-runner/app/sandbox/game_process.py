@@ -95,7 +95,8 @@ class GameProcess:
             self.reader.start()
             self.process.stdin.write(json.dumps(initial_payload if initial_payload is not None else {'code':code,'strict':os.getenv('ENVIRONMENT','').lower()=='production'})+'\n')
             self.process.stdin.flush()
-            ready=self.responses.get(timeout=5)
+            # Máy nhỏ (t3.micro hết CPU credit) có thể khởi động tiến trình con chậm: chờ đủ lâu trước khi báo lỗi sandbox.
+            ready=self.responses.get(timeout=float(os.getenv('SANDBOX_READY_TIMEOUT','15')))
             if ready.get('isolation_error'):
                 raise SandboxUnavailableError(ready['error'])
             if not ready.get('ready'):
