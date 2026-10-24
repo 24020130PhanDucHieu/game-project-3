@@ -11,6 +11,7 @@ import { Badge, Button, ErrorNote, Skeleton, SkeletonRows } from './ui'
 import { useLive } from './context'
 import { BoardPlayer } from './board'
 import { SnapshotPanel } from './snapshot-panel'
+import { RoundLog } from './round-log'
 
 const CodeEditor = dynamic(() => import('./code-editor'), { ssr: false, loading: () => <Skeleton className="h-[60vh] w-full rounded-xl" /> })
 
@@ -86,10 +87,7 @@ export function ReplayViewer({ tournamentId, matchId, match, round, onClose, onR
               <div className="mt-2 flex flex-wrap gap-1.5">{decodeRule(data.stage_rule).active.map((c) => <Badge key={c} tone="accent">{c}</Badge>)}</div>
             </div>
             <SnapshotPanel tournamentId={tournamentId} matchId={matchId} round={round} redName={data.team_a_name || match.team_a?.team_name || 'Đội Đỏ'} blueName={data.team_b_name || match.team_b?.team_name || 'Đội Xanh'} />
-            <details className="rounded-2xl border border-border bg-card/70 p-4">
-              <summary className="cursor-pointer text-sm font-semibold">Nhật ký hiệp ({logs.length} dòng)</summary>
-              <div className="mt-3 max-h-72 overflow-y-auto rounded-lg bg-muted/50 p-3 font-mono text-[11px] leading-relaxed text-muted-foreground">{logs.map((l, i) => <p key={i}>{l}</p>)}</div>
-            </details>
+            <RoundLog logs={logs} redName={data.team_a_name || match.team_a?.team_name || 'Đội Đỏ'} blueName={data.team_b_name || match.team_b?.team_name || 'Đội Xanh'} defaultOpen maxHeight="max-h-80" />
           </div>
         </div>
       )}

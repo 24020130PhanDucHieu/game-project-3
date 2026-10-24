@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ClipboardList, Code2, DoorOpen, Handshake, History, PlayCircle, Radio, Search, ShieldAlert, Swords } from 'lucide-react'
+import { AlertTriangle, Check, CheckCircle2, ClipboardList, Clock, Code2, Crown, DoorOpen, Handshake, Hourglass, History, PlayCircle, Radio, Search, ShieldAlert, Swords, Trophy } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { invalidate, useResource } from '@/lib/cache'
 import { cn } from '@/lib/utils'
@@ -16,6 +16,7 @@ import { enqueue, isRetryable, newSubmissionId } from '@/lib/outbox'
 import { WebcamPanel } from '../webcam-panel'
 import { ScrimmagePanel } from '../scrimmage'
 import { CodeViewer, ReplayViewer } from '../replay-viewer'
+import { RoundLog } from '../round-log'
 
 type MatchTab = 'live' | 'records' | 'submit' | 'history' | 'control' | 'scrim'
 
@@ -70,45 +71,107 @@ function VictoryBanner({ name }: { name: string }) {
   )
 }
 
+/** Một đội trên sân đấu: avatar, tên, điểm lớn, chấm hiệp thắng và trạng thái nộp bot. */
+function TeamPanel({ match, side, won }: { match: any; side: 'team_a' | 'team_b'; won: 'team_a' | 'team_b' | null }) {
+  const team = match[side]
+  const red = side === 'team_a'
+  const isWin = won === side
+  const need = Math.ceil((match.max_rounds || 5) / 2)
+  const score = team ? team.rounds_won ?? 0 : 0
+  const state = !team ? null : team.code_valid ? { icon: <CheckCircle2 className="size-3.5" />, text: 'Đã nộp bot', cls: 'bg-emerald-400/20 text-emerald-200 ring-emerald-300/30' }
+    : team.code_submitted ? { icon: <AlertTriangle className="size-3.5" />, text: 'Bot lỗi', cls: 'bg-red-400/20 text-red-200 ring-red-300/30' }
+    : { icon: <Hourglass className="size-3.5" />, text: 'Chưa nộp bot', cls: 'bg-amber-400/20 text-amber-200 ring-amber-300/30' }
+  return (
+    <div className={cn('relative flex flex-1 flex-col gap-4 rounded-2xl p-4 md:p-5', red ? 'items-start text-left md:items-start' : 'items-end text-right md:items-end', 'bg-white/[0.06] ring-1 ring-white/10 backdrop-blur-sm', isWin && 'ring-2 ring-amber-300/70 shadow-[0_0_40px_rgba(251,191,36,.35)]')}>
+      <div className={cn('flex w-full items-center gap-3', !red && 'flex-row-reverse')}>
+        <div className="relative">
+          {team ? <Avatar name={team.team_name} size="xl" ring={isWin ? 'gold' : red ? 'red' : 'blue'} /> : <span className="grid size-16 place-items-center rounded-2xl border border-dashed border-white/30 text-white/50" aria-hidden>?</span>}
+          {isWin && <Crown className="absolute -right-2 -top-3 size-6 rotate-12 text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,.9)]" aria-label="Chiến thắng" />}
+        </div>
+        <div className="min-w-0">
+          <p className={cn('text-[11px] font-extrabold uppercase tracking-[0.25em]', red ? 'text-red-300' : 'text-sky-300')}>{red ? 'Đội Đỏ' : 'Đội Xanh'}</p>
+          <p className="font-display truncate text-xl font-extrabold md:text-2xl">{team?.team_name || 'Chờ đội'}</p>
+          {team?.university && <p className="truncate text-xs text-white/60">{team.university}</p>}
+        </div>
+      </div>
+      <div className={cn('flex w-full items-end gap-4', !red && 'flex-row-reverse')}>
+        <p className="font-display text-7xl font-black leading-none tabular-nums drop-shadow-[0_2px_12px_rgba(0,0,0,.4)] md:text-8xl" aria-label={`${score} hiệp thắng`}>{team ? score : '–'}</p>
+        <div className="pb-2">
+          <div className={cn('flex gap-1.5', !red && 'justify-end')} aria-hidden>
+            {Array.from({ length: need }, (_, i) => (
+              <span key={i} className={cn('h-2.5 w-7 rounded-full transition-all', i < score ? (red ? 'bg-red-400 shadow-[0_0_10px_rgba(248,113,113,.9)]' : 'bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,.9)]') : 'bg-white/20')} />
+            ))}
+          </div>
+          <p className="mt-1 text-[11px] text-white/60">{need - score > 0 ? `Cần thêm ${need - score} hiệp thắng` : 'Đủ hiệp thắng'}</p>
+        </div>
+      </div>
+      {isWin ? <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/25 px-3 py-1 text-xs font-bold text-amber-200 ring-1 ring-amber-300/40"><Trophy className="size-3.5" />Chiến thắng</span>
+        : state && <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1', state.cls)}>{state.icon}{state.text}</span>}
+    </div>
+  )
+}
+
+/** Thanh các hiệp: ô nào đã đấu tô theo đội thắng, ô hiện tại nhấp nháy. */
+function RoundTrack({ match }: { match: any }) {
+  const rounds: any[] = match.rounds_history || []
+  const total = match.max_rounds || 5
+  const current = match.current_round_idx || 1
+  return (
+    <ol className="flex items-center justify-center gap-2" aria-label="Các hiệp của trận">
+      {Array.from({ length: total }, (_, i) => {
+        const n = i + 1
+        const r = rounds.find((x, j) => Number(x.round_number || j + 1) === n)
+        const live = !r && n === current && match.status !== 'COMPLETED'
+        return (
+          <li key={n} title={r ? `Hiệp ${n}: ${r.winner_name}` : `Hiệp ${n}`} className={cn('flex h-9 min-w-9 items-center justify-center rounded-xl px-3 text-xs font-extrabold tabular-nums ring-1 transition-all',
+            r ? (r.winner === 'team_a' ? 'bg-red-500 text-white ring-red-300/60 shadow-[0_0_14px_rgba(239,68,68,.55)]' : 'bg-sky-500 text-white ring-sky-300/60 shadow-[0_0_14px_rgba(14,165,233,.55)]')
+              : live ? 'animate-live bg-white/20 text-white ring-white/60' : 'bg-white/[0.07] text-white/40 ring-white/10')}>
+            {r ? <span className="flex items-center gap-1"><Check className="size-3.5" />H{n}</span> : `H${n}`}
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
 function Scoreboard({ match }: { match: any }) {
   const won = winnerSide(match)
   const now = useNow()
   const ends = match.intermission_ends_at ? Number(match.intermission_ends_at) * 1000 : 0
-  const live = match.status === 'IN_PROGRESS'
-  const Side = ({ side, tone }: { side: 'team_a' | 'team_b'; tone: 'red' | 'blue' }) => {
-    const team = match[side]
-    const isWin = won === side
-    return (
-      <div className={cn('relative flex flex-1 flex-col items-center gap-3 rounded-2xl border p-5 text-center', tone === 'red' ? 'border-red-500/30 bg-gradient-to-b from-red-500/15 to-transparent' : 'border-blue-500/30 bg-gradient-to-b from-blue-500/15 to-transparent', isWin && 'glow-gold')}>
-        <span className={cn('text-[11px] font-extrabold uppercase tracking-[0.2em]', tone === 'red' ? 'text-red-500 dark:text-red-400' : 'text-blue-500 dark:text-blue-400')}>{tone === 'red' ? 'Đội Đỏ' : 'Đội Xanh'}</span>
-        {team ? <Avatar name={team.team_name} size="xl" ring={isWin ? 'gold' : tone} /> : <span className="size-16 rounded-2xl border border-dashed border-border" aria-hidden />}
-        <p className="font-display max-w-full truncate text-lg font-extrabold">{team?.team_name || 'Chờ đội'}</p>
-        <p className="font-display text-6xl font-black tabular-nums leading-none">{team ? team.rounds_won ?? 0 : '–'}</p>
-        {isWin && <Badge tone="warning">Chiến thắng</Badge>}
-        {team && !isWin && (team.code_valid ? <Badge tone="success">Đã nộp bot</Badge> : team.code_submitted ? <Badge tone="danger">Bot lỗi</Badge> : <Badge tone="warning">Chưa nộp bot</Badge>)}
-      </div>
-    )
-  }
+  const live = match.status === 'IN_PROGRESS' || match.round_status === 'BATTLE_RUNNING'
   return (
-    <div className="relative space-y-5">
+    <div className="relative space-y-4">
       <RoundBanner round={match.current_round_idx || 1} matchId={match.match_id} />
       {match.status === 'COMPLETED' && match.winner_name && <VictoryBanner name={match.winner_name} />}
-      <div className="flex flex-col items-stretch gap-3 md:flex-row md:items-center">
-        <Side side="team_a" tone="red" />
-        <div className="flex flex-col items-center gap-1 px-2 text-center">
-          <span className="font-display gradient-text text-4xl font-black">VS</span>
-          <span className="text-xs font-semibold text-muted-foreground">Bo{match.max_rounds || 5} · thắng 3 hiệp</span>
-          {live && <Badge tone="success"><span className="animate-live size-1.5 rounded-full bg-emerald-400" aria-hidden />ĐANG ĐẤU</Badge>}
+      <section className="aurora relative overflow-hidden rounded-3xl p-4 text-white shadow-xl md:p-6" style={{ backgroundImage: 'linear-gradient(120deg,#1e1b4b,#3b0764,#0c4a6e,#4c0519,#1e1b4b)' }} aria-label="Bảng tỉ số">
+        <div className="pointer-events-none absolute -left-20 top-1/2 size-72 -translate-y-1/2 rounded-full bg-red-500/25 blur-3xl aurora-blob" aria-hidden />
+        <div className="pointer-events-none absolute -right-20 top-1/2 size-72 -translate-y-1/2 rounded-full bg-sky-500/25 blur-3xl aurora-blob-slow" aria-hidden />
+        <div className="aurora-dots pointer-events-none absolute inset-0" aria-hidden />
+        <div className="relative space-y-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.25em] text-white/70"><Swords className="size-4" />{match.round_name || 'Trận đấu'}{match.title ? ` · ${match.title}` : ''}</p>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              {live ? <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 font-bold text-emerald-200 ring-1 ring-emerald-300/40"><span className="animate-live size-2 rounded-full bg-emerald-400" aria-hidden />ĐANG ĐẤU</span>
+                : <span className="rounded-full bg-white/10 px-3 py-1 font-semibold ring-1 ring-white/15"><StatusBadge status={match.status} /></span>}
+              {match.status !== 'COMPLETED' && match.round_status && <span className="rounded-full bg-white/10 px-1 py-0.5 ring-1 ring-white/15"><StatusBadge status={match.round_status} /></span>}
+              {ends > now && <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-400/20 px-3 py-1 font-semibold text-sky-100 ring-1 ring-sky-300/30"><Clock className="size-3.5" />Hiệp kế sau {countdown(Math.ceil((ends - now) / 1000))}</span>}
+            </div>
+          </div>
+          <div className="flex flex-col items-stretch gap-3 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-5">
+            <TeamPanel match={match} side="team_a" won={won} />
+            <div className="flex flex-col items-center gap-2 px-1 text-center">
+              <div className="relative grid size-20 place-items-center">
+                <span className={cn('absolute inset-0 rounded-full bg-white/10', live && 'animate-ping')} aria-hidden />
+                <span className="relative grid size-16 place-items-center rounded-full bg-gradient-to-br from-fuchsia-500 via-violet-500 to-sky-500 shadow-lg ring-4 ring-white/20"><span className="font-display text-2xl font-black">VS</span></span>
+              </div>
+              <span className="rounded-full bg-white/10 px-3 py-0.5 text-[11px] font-bold tracking-wider ring-1 ring-white/15">BO{match.max_rounds || 5}</span>
+              <span className="text-[11px] text-white/60">Hiệp {match.current_round_idx || 1}/{match.max_rounds || 5}</span>
+            </div>
+            <TeamPanel match={match} side="team_b" won={won} />
+          </div>
+          <RoundTrack match={match} />
         </div>
-        <Side side="team_b" tone="blue" />
-      </div>
-      <div className="flex flex-wrap items-center justify-center gap-2 text-sm">
-        <StatusBadge status={match.status} />
-        {match.status !== 'COMPLETED' && <StatusBadge status={match.round_status} />}
-        <Badge>Hiệp {match.current_round_idx || 1}/{match.max_rounds || 5}</Badge>
-        {ends > now && <Badge tone="info">Hiệp kế tiếp sau {countdown(Math.ceil((ends - now) / 1000))}</Badge>}
-        {match.winner_name && <Badge tone="accent">Thắng: {match.winner_name}</Badge>}
-      </div>
+      </section>
     </div>
   )
 }
@@ -159,12 +222,7 @@ function RoundsPanel({ tournamentId, matchId, match }: { tournamentId: string; m
             <div className="flex flex-wrap gap-1.5">{decodeRule(data.stage_rule).active.map((c) => <Badge key={c} tone="accent">{c}</Badge>)}</div>
           </div>
           <BoardPlayer steps={data.board_steps || []} autoPlay={selected !== null} size="lg" redName={data.team_a_name || match.team_a?.team_name} blueName={data.team_b_name || match.team_b?.team_name} />
-          <details className="rounded-xl border border-border bg-card/60 px-4 py-3">
-            <summary className="cursor-pointer text-sm font-semibold">Nhật ký hiệp ({logs.length} dòng)</summary>
-            <div className="mt-3 max-h-64 overflow-y-auto rounded-lg bg-muted/50 p-3 font-mono text-[11px] leading-relaxed text-muted-foreground">
-              {logs.length ? logs.map((l, i) => <p key={i}>{typeof l === 'string' ? l : JSON.stringify(l)}</p>) : <p>Không có nhật ký.</p>}
-            </div>
-          </details>
+          <RoundLog logs={logs} redName={data.team_a_name || match.team_a?.team_name || 'Đội Đỏ'} blueName={data.team_b_name || match.team_b?.team_name || 'Đội Xanh'} defaultOpen={false} />
         </>
       )}
     </div>

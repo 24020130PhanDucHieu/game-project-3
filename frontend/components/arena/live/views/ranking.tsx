@@ -46,28 +46,46 @@ function SummaryStat({ icon, label, value }: { icon: React.ReactNode; label: str
   )
 }
 
+const PILLAR = [
+  { h: 'h-44 md:h-52', grad: 'from-amber-200/90 via-amber-400/55 to-amber-600/25', edge: 'ring-amber-300/70', glow: 'shadow-[0_0_60px_-10px_rgba(251,191,36,.7)]', delay: '0.25s' },
+  { h: 'h-32 md:h-36', grad: 'from-slate-100/80 via-slate-300/45 to-slate-500/20', edge: 'ring-slate-300/60', glow: 'shadow-[0_0_44px_-12px_rgba(203,213,225,.6)]', delay: '0.05s' },
+  { h: 'h-24 md:h-28', grad: 'from-orange-200/80 via-orange-400/45 to-orange-700/20', edge: 'ring-orange-300/60', glow: 'shadow-[0_0_40px_-12px_rgba(251,146,60,.6)]', delay: '0.45s' },
+]
+
 function Podium({ rows }: { rows: any[] }) {
   if (rows.length < 3) return null
-  const slots = [
-    { row: rows[1], place: 2, h: 'h-28', tint: 'from-slate-300/30 to-slate-300/5', ring: undefined },
-    { row: rows[0], place: 1, h: 'h-40', tint: 'from-amber-300/40 to-amber-300/5', ring: 'gold' as const },
-    { row: rows[2], place: 3, h: 'h-24', tint: 'from-orange-400/30 to-orange-400/5', ring: undefined },
-  ]
+  // Thứ tự hiển thị: hạng 2 – hạng 1 – hạng 3.
+  const order = [{ row: rows[1], place: 2 }, { row: rows[0], place: 1 }, { row: rows[2], place: 3 }]
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-b from-primary/15 to-card/80 px-4 pt-8 md:px-10">
-      <div className="hero-grid absolute inset-0 -z-0 opacity-60" aria-hidden />
-      <div className="relative grid grid-cols-3 items-end gap-3 md:gap-6">
-        {slots.map(({ row, place, h, tint, ring }) => (
-          <div key={row.student_id} className="flex flex-col items-center text-center">
-            {place === 1 && <Crown className="mb-1 size-7 text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,.7)]" aria-hidden />}
-            <Avatar name={row.bot_name || row.team_name} size={place === 1 ? 'xl' : 'lg'} ring={ring} />
-            <p className="font-display mt-2 max-w-full truncate text-sm font-extrabold md:text-base">{row.bot_name || row.team_name}</p>
-            <p className="gradient-text font-display text-lg font-black tabular-nums">{row.elo_score ?? Math.round(row.elo)}</p>
-            <div className={cn('mt-2 flex w-full items-start justify-center rounded-t-2xl border border-b-0 border-border bg-gradient-to-b pt-3 text-3xl', h, tint, place === 1 && 'glow-gold')} aria-label={`Hạng ${place}`}><RankBadge rank={place} /></div>
-          </div>
-        ))}
+    <section className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-b from-primary/20 via-card/80 to-card px-3 pt-8 md:px-10" aria-label="Top 3">
+      <div className="hero-grid absolute inset-0 opacity-50" aria-hidden />
+      <div className="aurora-blob pointer-events-none absolute -top-24 left-1/2 size-80 -translate-x-1/2 rounded-full bg-amber-300/25 blur-3xl" aria-hidden />
+      <div className="relative grid grid-cols-3 items-end gap-2 md:gap-6">
+        {order.map(({ row, place }) => {
+          const style = PILLAR[place - 1]
+          const name = row.bot_name || row.team_name
+          return (
+            <div key={row.student_id} className="flex flex-col items-center text-center">
+              <div className="podium-person flex flex-col items-center" style={{ animationDelay: `calc(${style.delay} + .35s)` }}>
+                {place === 1 && <Crown className="mb-1 size-8 text-amber-400 drop-shadow-[0_0_14px_rgba(251,191,36,.9)]" aria-hidden />}
+                <Avatar name={name} size={place === 1 ? 'xl' : 'lg'} ring={place === 1 ? 'gold' : undefined} />
+                <p className="font-display mt-2 max-w-full truncate text-sm font-extrabold md:text-lg">{name}</p>
+                <p className="text-[11px] text-muted-foreground">{row.student_id}</p>
+                <div className="mt-1.5 flex items-center gap-1.5">
+                  <span className="gradient-text font-display text-xl font-black tabular-nums md:text-2xl">{row.elo_score ?? Math.round(row.elo)}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">ELO</span>
+                </div>
+                <p className="mb-2 mt-0.5 rounded-full bg-muted/70 px-2.5 py-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground">{row.wins ?? 0} thắng / {row.matches_played ?? 0} trận</p>
+              </div>
+              <div className={cn('podium-pillar podium-shine relative flex w-full items-start justify-center overflow-hidden rounded-t-2xl bg-gradient-to-b ring-1 backdrop-blur-sm', style.h, style.grad, style.edge, style.glow)} style={{ animationDelay: style.delay }} aria-label={`Hạng ${place}`}>
+                <span className="font-display pointer-events-none absolute -bottom-4 select-none text-[7rem] font-black leading-none text-white/20 md:text-[9rem]" aria-hidden>{place}</span>
+                <span className="relative mt-3"><RankBadge rank={place} /></span>
+              </div>
+            </div>
+          )
+        })}
       </div>
-    </div>
+    </section>
   )
 }
 
@@ -106,7 +124,7 @@ function GlobalRanking() {
               {slice.map((r) => {
                 const own = sameStudent(r.student_id, session.student_id)
                 return (
-                  <tr key={r.student_id} className={cn(own && 'bg-primary/10')}>
+                  <tr key={r.student_id} className={cn(r.rank === 1 && 'bg-gradient-to-r from-amber-400/15 to-transparent', r.rank === 2 && 'bg-gradient-to-r from-slate-300/15 to-transparent', r.rank === 3 && 'bg-gradient-to-r from-orange-400/15 to-transparent', own && '!bg-primary/10')}>
                     <td className="w-14 px-3 py-2"><RankBadge rank={r.rank} /></td>
                     <td className="px-3 py-2.5 font-medium"><span className="inline-flex items-center gap-2"><Avatar name={r.bot_name} size="sm" />{r.bot_name}</span>{own && <Badge tone="accent" className="ml-2">Bạn</Badge>}</td>
                     <td className="px-3 py-2.5 text-muted-foreground">{r.student_id}</td>
