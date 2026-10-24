@@ -29,10 +29,7 @@ func (s *QualifierRecords) GatewayLease() (<-chan error, error) {
 	if s.db == nil {
 		return lost, nil
 	}
-	host, _ := os.Hostname()
-	nonce := make([]byte, 6)
-	_, _ = rand.Read(nonce)
-	holder := fmt.Sprintf("%s:%d:%s", host, os.Getpid(), hex.EncodeToString(nonce))
+	holder := gatewayID()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	_, err := s.db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS arena_gateway_lease (
@@ -99,13 +96,27 @@ RETURNING holder`, holder, fmt.Sprintf("%d seconds", int(leaseTTL.Seconds()))).S
 	return lost, nil
 }
 
-// ReleaseGatewayLease nhả khoá khi gateway tắt có kiểm soát, để gateway mới lên ngay không phải chờ hết hạn.
+// gatewayID định danh khoá theo MÁY (GATEWAY_ID hoặc hostname), không theo tiến trình: gateway khởi động lại
+// trên cùng máy (deploy, systemd restart) lấy lại khoá của chính nó ngay, còn gateway trên máy khác vẫn bị chặn.
+func gatewayID() string {
+	if id := os.Getenv("GATEWAY_ID"); id != "" {
+		return id
+	}
+	host, err := os.Hostname()
+	if err != nil || host == "" {
+		nonce := make([]byte, 6)
+		_, _ = rand.Read(nonce)
+		return "gateway-" + hex.EncodeToString(nonce)
+	}
+	return host
+}
+
+// ReleaseGatewayLease nhả khoá khi gateway tắt có kiểm soát, để gateway trên máy khác (dự phòng) lên ngay.
 func (s *QualifierRecords) ReleaseGatewayLease() {
 	if s.db == nil {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	host, _ := os.Hostname()
-	_, _ = s.db.ExecContext(ctx, `DELETE FROM arena_gateway_lease WHERE id = 1 AND holder LIKE $1`, fmt.Sprintf("%s:%d:%%", host, os.Getpid()))
+	_, _ = s.db.ExecContext(ctx, `DELETE FROM arena_gateway_lease WHERE id = 1 AND holder = $1`, gatewayID())
 }
