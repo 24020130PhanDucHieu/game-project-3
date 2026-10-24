@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Bot, ClipboardList, DoorOpen, Handshake, History, Radio, Search, ShieldAlert, Swords } from 'lucide-react'
+import { Bot, ClipboardList, Code2, DoorOpen, Handshake, History, PlayCircle, Radio, Search, ShieldAlert, Swords } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { invalidate, useResource } from '@/lib/cache'
 import { cn } from '@/lib/utils'
@@ -14,8 +14,9 @@ import { Workbench } from '../workbench'
 import { enqueue, isRetryable, newSubmissionId } from '@/lib/outbox'
 import { WebcamPanel } from '../webcam-panel'
 import { ScrimmagePanel } from '../scrimmage'
+import { CodeViewer, ReplayViewer } from '../replay-viewer'
 
-type MatchTab = 'live' | 'submit' | 'history' | 'practice' | 'control' | 'scrim'
+type MatchTab = 'live' | 'records' | 'submit' | 'history' | 'practice' | 'control' | 'scrim'
 
 function RuleLine({ tournament, match, now }: { tournament: any; match: any; now: number }) {
   const level = match.round_level
@@ -111,6 +112,28 @@ function Scoreboard({ match }: { match: any }) {
   )
 }
 
+function RoundStrip({ match, value, onPick }: { match: any; value: number | null; onPick: (n: number) => void }) {
+  const rounds: any[] = match.rounds_history || []
+  const total = match.max_rounds || 5
+  return (
+    <div className="grid grid-cols-5 gap-2" role="tablist" aria-label="Chọn hiệp">
+      {Array.from({ length: total }, (_, i) => {
+        const r = rounds.find((x, j) => Number(x.round_number || j + 1) === i + 1)
+        const n = i + 1
+        const red = r?.winner === 'team_a'
+        return (
+          <button key={n} role="tab" aria-selected={value === n} disabled={!r} onClick={() => onPick(n)}
+            className={cn('rounded-xl border px-2 py-2 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-40',
+              value === n ? 'border-primary bg-primary/15 ring-1 ring-primary/40' : 'border-border bg-card/60 hover:border-primary/50')}>
+            <span className="block text-[10px] font-bold uppercase tracking-wide text-muted-foreground">Hiệp {n}</span>
+            <span className={cn('block truncate text-xs font-semibold', r ? (red ? 'text-red-600 dark:text-red-400' : 'text-blue-600 dark:text-blue-400') : 'text-muted-foreground')}>{r ? r.winner_name : n === (match.current_round_idx || 1) && match.status !== 'COMPLETED' ? 'Đang chờ' : '—'}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function RoundsPanel({ tournamentId, matchId, match }: { tournamentId: string; matchId: string; match: any }) {
   const { scope } = useLive()
   const rounds: any[] = match.rounds_history || []
@@ -126,55 +149,86 @@ function RoundsPanel({ tournamentId, matchId, match }: { tournamentId: string; m
   const data = replay.data
   const logs: any[] = [...(data?.system_logs || []), ...(data?.move_logs || []).map((l: any) => l.log || l)]
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Chọn hiệp">
-        {rounds.map((r, i) => {
-          const n = Number(r.round_number || i + 1)
-          return <Button key={n} size="sm" variant={n === number ? 'primary' : 'secondary'} onClick={() => setSelected(n)}>Hiệp {n}{r.winner_name ? ` · ${r.winner_name}` : ''}</Button>
-        })}
-      </div>
-      {replay.loading ? <SkeletonRows rows={4} /> : replay.error && !data ? <ErrorNote message={replay.error.message} onRetry={() => void replay.reload()} /> : data && (
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <BoardPlayer steps={data.board_steps || []} autoPlay={selected !== null} redName={data.team_a_name || match.team_a?.team_name} blueName={data.team_b_name || match.team_b?.team_name} />
-          <div className="space-y-3">
-            <div className="rounded-xl border border-border p-3"><p className="text-xs text-muted-foreground">Kết quả hiệp {data.round_number}</p><p className="mt-1 font-semibold">{data.winner_name}</p><p className="text-sm text-muted-foreground">{data.win_reason}</p></div>
-            {data.rules && <div className="flex flex-wrap gap-1.5">{[...decodeRule(data.stage_rule).active].map((c) => <Badge key={c} tone="accent">{c}</Badge>)}</div>}
-            <div className="max-h-64 overflow-y-auto rounded-xl bg-muted/50 p-3 font-mono text-[11px] leading-relaxed text-muted-foreground">
+    <div className="space-y-5">
+      <RoundStrip match={match} value={number} onPick={setSelected} />
+      {replay.loading ? <SkeletonRows rows={6} /> : replay.error && !data ? <ErrorNote message={replay.error.message} onRetry={() => void replay.reload()} /> : data && (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card/60 px-4 py-3">
+            <p className="text-sm"><span className="text-muted-foreground">Hiệp {data.round_number}:</span> <strong>🏆 {data.winner_name}</strong> <span className="text-muted-foreground">— {data.win_reason}</span></p>
+            <div className="flex flex-wrap gap-1.5">{decodeRule(data.stage_rule).active.map((c) => <Badge key={c} tone="accent">{c}</Badge>)}</div>
+          </div>
+          <BoardPlayer steps={data.board_steps || []} autoPlay={selected !== null} size="lg" redName={data.team_a_name || match.team_a?.team_name} blueName={data.team_b_name || match.team_b?.team_name} />
+          <details className="rounded-xl border border-border bg-card/60 px-4 py-3">
+            <summary className="cursor-pointer text-sm font-semibold">Nhật ký hiệp ({logs.length} dòng)</summary>
+            <div className="mt-3 max-h-64 overflow-y-auto rounded-lg bg-muted/50 p-3 font-mono text-[11px] leading-relaxed text-muted-foreground">
               {logs.length ? logs.map((l, i) => <p key={i}>{typeof l === 'string' ? l : JSON.stringify(l)}</p>) : <p>Không có nhật ký.</p>}
             </div>
-          </div>
-        </div>
+          </details>
+        </>
       )}
     </div>
   )
 }
 
-function SubmissionHistory({ tournamentId, matchId, enabled }: { tournamentId: string; matchId: string; enabled: boolean }) {
+function SubmissionHistory({ tournamentId, matchId, enabled, match }: { tournamentId: string; matchId: string; enabled: boolean; match?: any }) {
   const { scope, role } = useLive()
   const subs = useResource<any[]>(enabled ? `subs:${scope}:${tournamentId}:${matchId}` : null, () => arenaApi.getSubmissions(tournamentId, matchId).then((r: any) => (Array.isArray(r) ? r : [])), { ttl: 5_000, refreshMs: 15_000 })
+  const [code, setCode] = useState<any>(null)
+  const [round, setRound] = useState<number | null>(null)
   if (!enabled) return null
   const list = [...(subs.data || [])].sort((a, b) => Number(b.submitted_at) - Number(a.submitted_at))
+  const played = new Set((match?.rounds_history || []).map((r: any, i: number) => Number(r.round_number || i + 1)))
   return (
     <Card title="Lịch sử bài nộp" subtitle="Chỉ đội của bạn và ban tổ chức xem được mã nguồn">
       {subs.loading ? <SkeletonRows rows={3} /> : list.length ? (
-        <DataTable head={['Thời gian', 'Hiệp', ...(role === 'ADMIN' ? ['Đội'] : []), 'Ngôn ngữ', 'Kết quả', 'Chi tiết']}>
+        <DataTable head={['Thời gian', 'Hiệp', ...(role === 'ADMIN' ? ['Đội'] : []), 'Ngôn ngữ', 'Kết quả', '']}>
           {list.map((s) => (
-            <tr key={s.submission_id} className="align-top">
+            <tr key={s.submission_id} className="align-middle">
               <td className="px-3 py-2.5 whitespace-nowrap">{stamp(s.submitted_at)}</td>
               <td className="px-3 py-2.5 tabular-nums">{s.round_number}</td>
               {role === 'ADMIN' && <td className="px-3 py-2.5">{s.team_name}</td>}
               <td className="px-3 py-2.5">{s.language}</td>
-              <td className="px-3 py-2.5"><StatusBadge status={s.validation_status} />{s.execution_time_ms ? <span className="ml-2 text-xs text-muted-foreground">{s.execution_time_ms} ms</span> : null}</td>
-              <td className="px-3 py-2.5 text-xs">
-                {s.error_message && <p className="mb-1 text-red-600 dark:text-red-400">{s.error_message}</p>}
-                {s.explanation && <p className="mb-1 text-muted-foreground">Ghi chú: {s.explanation}</p>}
-                {s.code && <details><summary className="cursor-pointer font-semibold text-primary">Xem mã</summary><pre className="mt-2 max-h-56 overflow-auto rounded-lg bg-muted p-2 font-mono text-[11px]">{s.code}</pre></details>}
+              <td className="px-3 py-2.5"><StatusBadge status={s.validation_status} />{s.execution_time_ms ? <span className="ml-2 text-xs text-muted-foreground">{s.execution_time_ms} ms</span> : null}{s.error_message && <span className="ml-2 text-xs text-red-600 dark:text-red-400">lỗi</span>}</td>
+              <td className="px-3 py-2.5">
+                <div className="flex justify-end gap-1.5">
+                  {s.code && <Button size="sm" variant="secondary" onClick={() => setCode(s)}><Code2 className="size-3.5" />Xem mã</Button>}
+                  <Button size="sm" variant="secondary" disabled={!played.has(Number(s.round_number))} title={played.has(Number(s.round_number)) ? undefined : 'Hiệp này chưa đấu'} onClick={() => setRound(Number(s.round_number))}><PlayCircle className="size-3.5" />Xem replay</Button>
+                </div>
               </td>
             </tr>
           ))}
         </DataTable>
       ) : <EmptyState title="Chưa có bài nộp" />}
+      {code && <CodeViewer submission={code} onClose={() => setCode(null)} />}
+      {round !== null && match && <ReplayViewer tournamentId={tournamentId} matchId={matchId} match={match} round={round} onRound={setRound} onClose={() => setRound(null)} />}
     </Card>
+  )
+}
+
+function RecordsPanel({ tournamentId, matchId, match, canSeeCode }: { tournamentId: string; matchId: string; match: any; canSeeCode: boolean }) {
+  const [round, setRound] = useState<number | null>(null)
+  const rounds: any[] = match.rounds_history || []
+  return (
+    <div className="space-y-6">
+      <Card title="Các hiệp đã đấu" subtitle="Mở replay toàn màn hình: bàn cờ lớn 2D/3D, camera hai đội và nhật ký">
+        {rounds.length ? (
+          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {rounds.map((r, i) => {
+              const n = Number(r.round_number || i + 1)
+              return (
+                <li key={n} className="card-lift flex items-center gap-3 rounded-xl border border-border bg-card/70 p-3">
+                  <span className={cn('font-display flex size-11 shrink-0 items-center justify-center rounded-xl text-lg font-black text-white', r.winner === 'team_a' ? 'bg-red-500' : 'bg-blue-500')}>{n}</span>
+                  <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">🏆 {r.winner_name}</span><span className="block truncate text-xs text-muted-foreground">{r.win_reason}</span></span>
+                  <Button size="sm" onClick={() => setRound(n)}><PlayCircle className="size-4" />Replay</Button>
+                </li>
+              )
+            })}
+          </ul>
+        ) : <EmptyState title="Chưa có hiệp nào hoàn tất" />}
+      </Card>
+      <SubmissionHistory tournamentId={tournamentId} matchId={matchId} enabled={canSeeCode} match={match} />
+      {round !== null && <ReplayViewer tournamentId={tournamentId} matchId={matchId} match={match} round={round} onRound={setRound} onClose={() => setRound(null)} />}
+    </div>
   )
 }
 
@@ -243,7 +297,7 @@ function SubmitPanel({ tournamentId, matchId, match, tournament }: { tournamentI
           ) : undefined}
         />
       </Card>
-      <SubmissionHistory tournamentId={tournamentId} matchId={matchId} enabled />
+      <SubmissionHistory tournamentId={tournamentId} matchId={matchId} enabled match={match} />
     </div>
   )
 }
@@ -339,6 +393,7 @@ export function MatchView() {
 
   const tabs: { id: MatchTab; label: string; icon: React.ReactNode }[] = [
     { id: 'live', label: 'Diễn biến', icon: <Radio className="size-4" /> },
+    ...(match ? [{ id: 'records' as const, label: 'Lịch sử & Replay', icon: <PlayCircle className="size-4" /> }] : []),
     ...(own ? [{ id: 'submit' as const, label: 'Nộp bot', icon: <ClipboardList className="size-4" /> }] : []),
     ...(role === 'ADMIN' && match ? [{ id: 'control' as const, label: 'Điều hành', icon: <ShieldAlert className="size-4" /> }] : []),
     { id: 'practice', label: 'Đấu thử boss', icon: <Bot className="size-4" /> },
@@ -377,6 +432,8 @@ export function MatchView() {
             matches.length ? (
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{matches.map(([id, m]) => <MatchCard key={id} id={id} match={m} onOpen={(mid) => void enterMatch(mid)} />)}</div>
             ) : <EmptyState title="Giải chưa có trận" hint="Ban tổ chức cần xếp lịch để tạo cặp đấu." />
+          ) : tab === 'records' ? (
+            <RecordsPanel tournamentId={tournamentId} matchId={matchId} match={match} canSeeCode={own || role === 'ADMIN'} />
           ) : tab === 'submit' ? (
             <SubmitPanel tournamentId={tournamentId} matchId={matchId} match={match} tournament={t} />
           ) : tab === 'control' ? (
@@ -386,15 +443,10 @@ export function MatchView() {
               <Card title={match.title || matchId} subtitle={match.round_name} action={<RuleLine tournament={t} match={match} now={now} />}>
                 <Scoreboard match={match} />
               </Card>
-              <div className="grid gap-6 xl:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
-                <Card title="Sân đấu" subtitle="Bàn cờ do server thực thi — chọn hiệp, tua từng bước, đổi giao diện hoặc xem 3D điện ảnh">
-                  <RoundsPanel tournamentId={tournamentId} matchId={matchId} match={match} />
-                </Card>
-                <div className="space-y-6">
-                  <WebcamPanel tournamentId={tournamentId} matchId={matchId} />
-                </div>
-              </div>
-              {(own || role === 'ADMIN') && <SubmissionHistory tournamentId={tournamentId} matchId={matchId} enabled={role === 'ADMIN' || session.match_id === matchId} />}
+              <Card title="Sân đấu" subtitle="Bàn cờ do server thực thi — chọn hiệp, tua từng bước, đổi giao diện hoặc xem 3D điện ảnh">
+                <RoundsPanel tournamentId={tournamentId} matchId={matchId} match={match} />
+              </Card>
+              <WebcamPanel tournamentId={tournamentId} matchId={matchId} />
             </>
           )}
         </>

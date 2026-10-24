@@ -125,7 +125,7 @@ function remoteFor(snap: RtcSnapshot, match: (p: PeerInfo) => boolean): { peer?:
   return { peer, remote: peer ? snap.remotes.find((r) => r.peer.id === peer.id) : undefined }
 }
 
-export function WebcamPanel({ tournamentId, matchId }: { tournamentId: string; matchId: string }) {
+export function WebcamPanel({ tournamentId, matchId, compact = false }: { tournamentId: string; matchId: string; compact?: boolean }) {
   const { role, session, enterMatch, ownMatches } = useLive()
   const inRoom = role === 'ADMIN' || (role === 'TEAM' && session.match_id === matchId)
   const { snap, room } = useRtc(tournamentId, matchId, inRoom)
@@ -159,8 +159,8 @@ export function WebcamPanel({ tournamentId, matchId }: { tournamentId: string; m
 
   return (
     <Card
-      title="Webcam phòng đấu"
-      subtitle={admin ? 'Giám sát camera hai đội. Video truyền trực tiếp giữa trình duyệt, máy chủ không lưu hình.' : 'Camera của bạn chỉ được gửi cho ban tổ chức (và đối thủ nếu được cho phép).'}
+      title={compact ? 'Camera hai đội' : 'Webcam phòng đấu'}
+      subtitle={compact ? undefined : admin ? 'Giám sát camera hai đội. Video truyền trực tiếp giữa trình duyệt, máy chủ không lưu hình.' : 'Camera của bạn chỉ được gửi cho ban tổ chức (và đối thủ nếu được cho phép).'}
       action={<Badge tone={connected ? 'success' : snap.status === 'connecting' ? 'warning' : 'neutral'}>{connected ? <Wifi className="size-3" /> : <WifiOff className="size-3" />}{connected ? 'Đã kết nối' : snap.status === 'connecting' ? 'Đang kết nối…' : 'Mất kết nối'}</Badge>}
     >
       <div className="space-y-4">
@@ -209,7 +209,7 @@ export function WebcamPanel({ tournamentId, matchId }: { tournamentId: string; m
             </label>
           )}
         </div>
-        <p className="text-[11px] text-muted-foreground">Camera chỉ được gửi sau khi bạn bấm “Bật camera” và đồng ý quyền của trình duyệt; micro luôn tắt cho tới khi bạn bật. Cần HTTPS (hoặc localhost). Nếu mạng chặn kết nối trực tiếp, hình có thể không hiện.</p>
+        {!compact && <p className="text-[11px] text-muted-foreground">Camera chỉ được gửi sau khi bạn bấm “Bật camera” và đồng ý quyền của trình duyệt; micro luôn tắt cho tới khi bạn bật. Cần HTTPS (hoặc localhost). Nếu mạng chặn kết nối trực tiếp, hình có thể không hiện.</p>}
       </div>
     </Card>
   )

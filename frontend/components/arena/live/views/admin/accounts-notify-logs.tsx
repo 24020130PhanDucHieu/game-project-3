@@ -7,6 +7,7 @@ import { invalidate, useResource } from '@/lib/cache'
 import { stamp } from '@/lib/format'
 import { Badge, Button, Card, DataTable, EmptyState, ErrorNote, Field, Pagination, Select, SkeletonRows, Tabs, TextArea } from '../../ui'
 import { useLive } from '../../context'
+import { PasswordReveal } from '../../email-card'
 
 const PAGE = 20
 
@@ -34,13 +35,14 @@ export function AccountsTab() {
     <Card title={`Tài khoản đội (${accounts.data?.length ?? '…'})`} subtitle={tournamentId ? `Ghi danh vào: ${tournament.data?.name || tournamentId}` : 'Chọn giải ở thanh trên cùng để ghi danh'} action={<SearchBox value={q} onChange={setQ} placeholder="Tìm MSSV hoặc tên đội" />}>
       {accounts.loading ? <SkeletonRows rows={8} /> : accounts.error && !accounts.data ? <ErrorNote message={accounts.error.message} onRetry={() => void accounts.reload()} /> : slice.length ? (
         <>
-          <DataTable head={['MSSV', 'Tên đội', '']}>
+          <DataTable head={['MSSV', 'Tên đội', 'Mật khẩu', '']}>
             {slice.map((a) => {
               const isEnrolled = enrolled.has(String(a.student_id).toUpperCase())
               return (
                 <tr key={a.student_id}>
                   <td className="px-3 py-2.5 font-mono text-xs">{a.student_id}</td>
                   <td className="px-3 py-2.5 font-medium">{a.team_name}</td>
+                  <td className="px-3 py-2.5"><PasswordReveal studentId={a.student_id} available={a.password_available !== false} /></td>
                   <td className="px-3 py-2.5"><div className="flex justify-end gap-2">
                     {isEnrolled ? <Badge tone="success">Đã trong giải</Badge> : <Button size="sm" variant="secondary" disabled={busy || !tournamentId} onClick={() => void run(() => arenaApi.enrollAdminAccount(a.student_id, { tournament_id: tournamentId }), `Đã ghi danh ${a.team_name}`, () => { invalidate('t:'); invalidate('tl') })}><UserPlus className="size-3.5" />Ghi danh</Button>}
                     <Button size="sm" variant="ghost" aria-label={`Xóa tài khoản ${a.student_id}`} disabled={busy} onClick={async () => { if (await confirm({ title: `Xóa tài khoản ${a.student_id}?`, message: 'Đội mất quyền đăng nhập. Lịch sử thi đấu được giữ nguyên và mã sinh viên không đăng ký lại được.', danger: true, confirmLabel: 'Xóa tài khoản' })) void run(() => arenaApi.deleteAdminAccount(a.student_id), 'Đã xóa tài khoản', () => invalidate('admin:accounts')) }}><Trash2 className="size-4" /></Button>

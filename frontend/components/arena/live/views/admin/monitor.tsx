@@ -83,6 +83,9 @@ export function MonitorTab({ onGo }: { onGo: Go }) {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
+        <Card title="Gửi email" action={<StatusBadge status={data.mail?.configured ? 'READY' : 'UNAVAILABLE'} label={data.mail?.configured ? 'Đã cấu hình SMTP' : 'Chưa cấu hình'} />}>
+          <p className="text-sm text-muted-foreground">{data.mail?.configured ? 'Đội quên mật khẩu sẽ nhận mã khôi phục qua email đã đăng ký.' : 'Chưa đặt SMTP_USER / SMTP_PASSWORD trên server — đội quên mật khẩu chưa nhận được mã qua email. Xem docs/EMAIL_SETUP.md.'}</p>
+        </Card>
         <Card title="Cơ sở dữ liệu" action={<><StatusBadge status={db.status} /><Button size="sm" variant="secondary" loading={busy} onClick={async () => { if (await confirm({ title: 'Cập nhật thống kê truy vấn?', message: 'Chạy ANALYZE; không thu hồi dung lượng ổ đĩa.', confirmLabel: 'Chạy' })) void run(() => arenaApi.optimizeDatabase() as Promise<any>, 'Đã cập nhật thống kê cơ sở dữ liệu', () => monitor.reload()) }}><Database className="size-3.5" />Tối ưu</Button></>}>
           <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
             {[['Nhà cung cấp', db.provider], ['Dung lượng CSDL', db.db_size], ['Dung lượng bảng chính', db.tables_size], ['Số bản ghi', db.record_count?.toLocaleString?.('vi-VN')], ['Kết nối đang chạy', db.active_connections], ['Pool (dùng/mở/tối đa)', db.pool_open !== undefined ? `${db.pool_in_use}/${db.pool_open}/${db.pool_max_open}` : undefined]].map(([k, v]) => (
@@ -112,7 +115,7 @@ export function MonitorTab({ onGo }: { onGo: Go }) {
           <DataTable head={['Máy', 'Trạng thái', 'Đang chạy / Sức chứa', 'Đã chạy', 'Lỗi', 'Trung bình', 'Thành công']}>
             {nodes.map((n, i) => (
               <tr key={i}>
-                <td className="px-3 py-2.5 font-medium">{n.name}<span className="block text-xs text-muted-foreground">{n.host}</span></td>
+                <td className="px-3 py-2.5 font-medium">{n.name}<span className="block font-mono text-xs text-muted-foreground">{n.host}{/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(n.host || '') ? ' · IP nội bộ VPC' : /^(127\.|localhost)/.test(n.host || '') ? ' · cùng máy với gateway' : ''}</span></td>
                 <td className="px-3 py-2.5"><StatusBadge status={n.status === 'UNREACHABLE' ? 'UNAVAILABLE' : n.status === 'HEALTHY' || n.status === 'READY' ? 'READY' : n.status} label={n.status} /></td>
                 <td className="px-3 py-2.5 tabular-nums">{n.active}/{n.capacity}</td>
                 <td className="px-3 py-2.5 tabular-nums">{n.finished}</td>

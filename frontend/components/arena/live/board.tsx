@@ -29,7 +29,10 @@ function asCells(list: any): Cell[] {
 const CLASH_ICON: Record<string, string> = { CLASH: '💥', GOAL: '🏁', WARP: '🌀', TRAP: '☠️', EVOLVE: '✨' }
 
 /** Bàn cờ 2D: ô theo theme, quân huy hiệu phát sáng, vệt đường đi, va chạm và quân bị diệt có hoạt ảnh. */
-export function Board({ step, prev, theme }: { step: any; prev?: any; theme: BoardTheme }) {
+const BOARD_WIDTH = { md: 'max-w-[520px]', lg: 'max-w-[680px]', xl: 'max-w-[760px]' } as const
+export type BoardSize = keyof typeof BOARD_WIDTH
+
+export function Board({ step, prev, theme, size = 'md' }: { step: any; prev?: any; theme: BoardTheme; size?: BoardSize }) {
   const model = useMemo(() => {
     const prevById = new Map<string, any>()
     for (const p of [...(prev?.red_pieces || []), ...(prev?.blue_pieces || [])]) prevById.set(p.id, p)
@@ -66,7 +69,7 @@ export function Board({ step, prev, theme }: { step: any; prev?: any; theme: Boa
   } as CSSProperties
 
   return (
-    <div className="mx-auto w-full max-w-[520px]">
+    <div className={cn('mx-auto w-full', BOARD_WIDTH[size])}>
       <div className="rounded-2xl p-2 shadow-2xl" style={{ ...vars, background: `linear-gradient(145deg, ${theme.frame}, ${theme.backdrop})`, boxShadow: `0 0 0 1px ${theme.frame}, 0 16px 40px -12px ${theme.frame}88` }}>
         <div className="grid grid-cols-9 overflow-hidden rounded-xl" role="grid" aria-label="Bàn cờ 9×9">
           {Array.from({ length: 81 }, (_, index) => {
@@ -148,8 +151,8 @@ export function ThemePicker({ theme, onChange }: { theme: BoardTheme; onChange: 
 }
 
 /** Trình phát các bước của một hiệp (replay, hiệp mới nhất, đấu thử boss). */
-export function BoardPlayer({ steps, autoPlay = false, redName = 'Đội Đỏ', blueName = 'Đội Xanh' }: {
-  steps: any[]; autoPlay?: boolean; redName?: string; blueName?: string
+export function BoardPlayer({ steps, autoPlay = false, redName = 'Đội Đỏ', blueName = 'Đội Xanh', size = 'md' }: {
+  steps: any[]; autoPlay?: boolean; redName?: string; blueName?: string; size?: BoardSize
 }) {
   const [theme, setTheme] = useBoardTheme()
   const [index, setIndex] = useState(Math.max(0, steps.length - 1))
@@ -229,7 +232,7 @@ export function BoardPlayer({ steps, autoPlay = false, redName = 'Đội Đỏ',
       {view === '3d' ? (
         <Board3D handleRef={stage} step={step} prev={prev} animate={animate && playing} theme={theme} camera={cam} quality={quality}
           onUnsupported={() => { setView('2d'); setNotice('Thiết bị hoặc trình duyệt không hỗ trợ WebGL nên đã chuyển về bàn cờ 2D.') }} />
-      ) : <Board step={step} prev={prev} theme={theme} />}
+      ) : <Board step={step} prev={prev} theme={theme} size={size} />}
       <div className="flex items-center gap-2">
         <Button size="sm" variant="secondary" aria-label="Bước đầu" onClick={() => { setPlaying(false); setIndex(0) }}><SkipBack className="size-4" /></Button>
         <Button size="sm" aria-label={playing ? 'Tạm dừng' : 'Phát'} onClick={() => { if (index >= steps.length - 1) setIndex(0); setPlaying((p) => !p) }}>{playing ? <Pause className="size-4" /> : <Play className="size-4" />}</Button>

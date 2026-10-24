@@ -10,6 +10,7 @@ import { Badge, Button, Card, DataTable, EmptyState, ErrorNote, Field, SectionTi
 import { useLive, type ViewId } from '../context'
 import { MatchCard, historyWinner, useHistory, useRanking } from '../shared'
 import { BotAnalytics } from '../profile-insights'
+import { TeamEmailCard } from '../email-card'
 import { BadgeStrip } from '../challenges'
 
 const VIEWS: ViewId[] = ['profile', 'overview', 'bracket', 'ranking', 'match', 'qualifier', 'guide', 'admin']
@@ -156,6 +157,7 @@ export function ProfileView() {
         </>
       )}
 
+      {own && <TeamEmailCard />}
       {own && <BotAnalytics teamName={profile.data?.team_name} />}
       {!own && sid && profile.data && <Card title="Huy hiệu thử thách"><BadgeStrip studentId={sid} /></Card>}
 

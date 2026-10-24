@@ -4,6 +4,7 @@ import { Bell, CalendarClock, CheckCircle2, Flag, Radio, Trophy, Upload, Users }
 import { countdown, relative, shortTime, toDate } from '@/lib/format'
 import { Badge, Button, Card, EmptyState, ProgressBar, Skeleton, SkeletonCards, SkeletonRows, Stat, StatusBadge } from '../ui'
 import { useLive } from '../context'
+import { Billboard } from '../billboard'
 import { MatchCard, historyWinner, useHistory, useNow, useRanking } from '../shared'
 
 function StageClock({ tournament }: { tournament: any }) {
@@ -41,14 +42,10 @@ function Hero() {
   return (
     <section className="relative isolate overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary/25 via-card to-cyan/10 p-6 shadow-lg md:p-10">
       <div className="hero-grid absolute inset-0 -z-10" aria-hidden />
-      <div className="pointer-events-none absolute -right-10 top-4 hidden select-none gap-4 text-6xl opacity-90 md:flex" aria-hidden>
-        <span className="animate-float" style={{ ['--r' as string]: '-12deg' }}>✊</span>
-        <span className="animate-float [animation-delay:.6s]" style={{ ['--r' as string]: '6deg' }}>✋</span>
-        <span className="animate-float [animation-delay:1.2s]" style={{ ['--r' as string]: '14deg' }}>✌️</span>
-      </div>
+      <div className="grid items-center gap-8 lg:grid-cols-[1fr_minmax(0,560px)]">
       <div className="max-w-2xl">
         <Badge tone={live ? 'success' : 'accent'}>{live ? <><span className="animate-live size-1.5 rounded-full bg-emerald-400" aria-hidden />ĐANG CÓ TRẬN TRỰC TIẾP</> : 'FRESHMAN BOT ARENA · K69'}</Badge>
-        <h1 className="font-display mt-4 text-4xl font-black leading-[1.05] tracking-tight md:text-6xl">Lập trình bot.<br /><span className="gradient-text">Chinh phục đấu trường.</span></h1>
+        <h1 className="font-display mt-4 text-4xl font-black leading-[1.05] tracking-tight md:text-5xl">Lập trình bot.<br /><span className="gradient-text">Chinh phục đấu trường.</span></h1>
         <p className="mt-4 max-w-xl text-base text-muted-foreground">Viết thuật toán Oẳn Tù Tì trên bàn cờ 9×9, nộp bot và xem nó thi đấu tự động. Leo bảng xếp hạng, vượt vòng loại và giành ngôi quán quân.</p>
         <div className="mt-6 flex flex-wrap gap-3">
           {role === 'GUEST' && <>
@@ -66,6 +63,8 @@ function Hero() {
             <Button variant="secondary" className="px-6 py-3 text-base" onClick={() => navigate('bracket')}>Xem bảng đấu</Button>
           </>}
         </div>
+      </div>
+      <Billboard />
       </div>
     </section>
   )

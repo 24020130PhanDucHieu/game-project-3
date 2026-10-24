@@ -51,7 +51,7 @@ function chrome(dark: boolean) {
 export type EditorLanguage = 'PYTHON' | 'CPP'
 
 /** Trình soạn code CodeMirror 6: tô màu cú pháp, số dòng, tự thụt lề, bắt cặp ngoặc. */
-export default function CodeEditor({ value, onChange, language, placeholder, invalid, onCursor, minHeight = 340 }: {
+export default function CodeEditor({ value, onChange, language, placeholder, invalid, onCursor, minHeight = 340, readOnly = false }: {
   value: string
   onChange: (value: string) => void
   language: EditorLanguage
@@ -59,6 +59,7 @@ export default function CodeEditor({ value, onChange, language, placeholder, inv
   invalid?: boolean
   onCursor?: (line: number, col: number) => void
   minHeight?: number
+  readOnly?: boolean
 }) {
   const host = useRef<HTMLDivElement>(null)
   const view = useRef<EditorView | null>(null)
@@ -75,6 +76,7 @@ export default function CodeEditor({ value, onChange, language, placeholder, inv
     const state = EditorState.create({
       doc: value,
       extensions: [
+        EditorState.readOnly.of(readOnly), EditorView.editable.of(!readOnly),
         lineNumbers(), highlightActiveLine(), highlightActiveLineGutter(), history(), drawSelection(), indentOnInput(), bracketMatching(), closeBrackets(),
         keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap, indentWithTab]),
         EditorState.tabSize.of(4),

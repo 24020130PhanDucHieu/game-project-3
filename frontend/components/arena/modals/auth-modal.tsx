@@ -33,6 +33,7 @@ export function AuthModal({
   const [regSid, setRegSid] = useState('')
   const [regName, setRegName] = useState('')
   const [regPass, setRegPass] = useState('')
+  const [regEmail, setRegEmail] = useState('')
   const [showRegPass, setShowRegPass] = useState(false)
   const [regLoading, setRegLoading] = useState(false)
   const [regError, setRegError] = useState<string | null>(null)
@@ -40,6 +41,7 @@ export function AuthModal({
 
   // Forgot Password State
   const [forgotSid, setForgotSid] = useState('')
+  const [forgotEmail, setForgotEmail] = useState('')
   const [forgotToken, setForgotToken] = useState('')
   const [forgotNewPass, setForgotNewPass] = useState('')
   const [forgotLoading, setForgotLoading] = useState(false)
@@ -90,6 +92,7 @@ export function AuthModal({
         student_id: regSid.trim(),
         team_name: regName.trim(),
         password: regPass,
+        email: regEmail.trim(),
       })
       setRegSuccess(`Đăng ký thành công đội "${regName}"! Bạn có thể đăng nhập ngay.`)
       setTimeout(() => {
@@ -306,6 +309,24 @@ export function AuthModal({
                 </div>
               </div>
 
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13.5px] font-semibold text-foreground">
+                  Email (để khôi phục mật khẩu)
+                </label>
+                <div className="flex h-12 items-center rounded-xl border border-input bg-card px-3.5 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+                  <input
+                    type="email"
+                    required
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    placeholder="ten@gmail.com"
+                    autoComplete="email"
+                    className="w-full border-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground">Mã khôi phục mật khẩu sẽ được gửi tới email này.</p>
+              </div>
+
               <button
                 type="submit"
                 disabled={regLoading}
@@ -358,7 +379,7 @@ export function AuthModal({
                 setForgotLoading(true)
                 setForgotMsg(null)
                 try {
-                  const response = await arenaApi.forgotPassword(forgotSid.trim(), '') as { message?: string }
+                  const response = await arenaApi.forgotPassword(forgotSid.trim(), forgotEmail.trim()) as { message?: string }
                   setForgotMsg(response.message || 'Vui lòng liên hệ ban tổ chức để xác minh danh tính.')
                 } catch (error) {
                   setForgotMsg(error instanceof Error ? error.message : 'Không gửi được yêu cầu.')
@@ -384,11 +405,29 @@ export function AuthModal({
                 </div>
               </div>
 
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[13.5px] font-semibold text-foreground">
+                  Email đã đăng ký của đội
+                </label>
+                <div className="flex h-12 items-center rounded-xl border border-input bg-card px-3.5 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+                  <input
+                    type="email"
+                    required
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    placeholder="ten@gmail.com"
+                    autoComplete="email"
+                    className="w-full border-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground">Chúng tôi gửi mã khôi phục (hiệu lực 15 phút) tới email này nếu khớp với tài khoản.</p>
+              </div>
+
               <button
                 type="submit"
                 className="mt-2 flex h-12 w-full items-center justify-center rounded-xl bg-brand text-sm font-bold text-white shadow-sm transition hover:brightness-110"
               >
-                {forgotLoading ? 'Đang kiểm tra...' : 'Xem hướng dẫn khôi phục'}
+                {forgotLoading ? 'Đang gửi...' : 'Gửi mã khôi phục qua email'}
               </button>
             </form>
 

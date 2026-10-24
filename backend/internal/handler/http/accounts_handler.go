@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 	"runtime"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"project-tuan3/internal/auth"
+	"project-tuan3/internal/mailer"
 	"project-tuan3/internal/repository"
 	"project-tuan3/internal/service"
 )
@@ -34,7 +36,11 @@ type AccountsHandler struct {
 	QueueCounts      func(context.Context) (map[string]int, error)
 	// Records chứa nhật ký mọi thao tác ghi của quản trị (middleware AdminAudit) để hiển thị cùng nhật ký sự kiện.
 	Records *repository.QualifierRecords
-	mu      sync.Mutex
+	// Mailer gửi mã khôi phục mật khẩu tới email đội đã đăng ký.
+	Mailer     mailer.Sender
+	mu         sync.Mutex
+	forgotMu   sync.Mutex
+	forgotSeen map[string][]time.Time
 }
 
 // Monitoring returns live real-time metrics of servers, judges, and contest submissions.
@@ -165,6 +171,7 @@ func (h *AccountsHandler) Monitoring(c *gin.Context) {
 			"gc_cycles":       m.NumGC,
 		},
 		"worker_pool": pool,
+		"mail":        gin.H{"configured": h.Mailer != nil && h.Mailer.Configured()},
 		"contest": gin.H{
 			"tournament_name": func() interface{} {
 				if activeTourn != nil {
@@ -231,6 +238,7 @@ func (h *AccountsHandler) Register(c *gin.Context) {
 		StudentID string `json:"student_id"`
 		TeamName  string `json:"team_name"`
 		Password  string `json:"password"`
+		Email     string `json:"email"`
 	}
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 4096)
 	if c.ShouldBindJSON(&req) != nil {
@@ -241,6 +249,10 @@ func (h *AccountsHandler) Register(c *gin.Context) {
 	req.TeamName = strings.TrimSpace(req.TeamName)
 	if err := validateRegistration(req.StudentID, req.TeamName, req.Password); err != nil {
 		c.JSON(400, gin.H{"detail": err.Error()})
+		return
+	}
+	if !validEmail(req.Email) {
+		c.JSON(400, gin.H{"detail": "Vui lòng nhập email hợp lệ để có thể khôi phục mật khẩu."})
 		return
 	}
 	h.mu.Lock()
@@ -257,7 +269,25 @@ func (h *AccountsHandler) Register(c *gin.Context) {
 		}
 		return
 	}
+	_ = h.Store.SetEmail(req.StudentID, req.Email)
 	c.JSON(http.StatusCreated, gin.H{"student_id": req.StudentID, "team_name": req.TeamName})
+}
+
+var emailPattern = regexp.MustCompile(`^[^\s@<>",;]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}$`)
+
+func validEmail(email string) bool { return emailPattern.MatchString(strings.TrimSpace(email)) }
+
+// maskEmail che phần giữa email để hiển thị cho chính đội: ng***@gmail.com.
+func maskEmail(email string) string {
+	at := strings.LastIndex(email, "@")
+	if at <= 0 {
+		return ""
+	}
+	name := email[:at]
+	if len(name) > 2 {
+		name = name[:2] + "***"
+	}
+	return name + email[at:]
 }
 
 var studentIDPattern = regexp.MustCompile(`^[A-Z0-9][A-Z0-9_-]{3,31}$`)
@@ -295,6 +325,7 @@ func (h *AccountsHandler) ImportAccounts(c *gin.Context) {
 			StudentID string `json:"student_id"`
 			TeamName  string `json:"team_name"`
 			Password  string `json:"password"`
+			Email     string `json:"email"`
 		} `json:"rows"`
 		TournamentID string `json:"tournament_id"`
 	}
@@ -338,6 +369,9 @@ func (h *AccountsHandler) ImportAccounts(c *gin.Context) {
 			} else {
 				created++
 				result["status"] = "CREATED"
+				if validEmail(row.Email) {
+					_ = h.Store.SetEmail(sid, row.Email)
+				}
 				if generated {
 					result["password"] = password
 				}
@@ -422,28 +456,135 @@ func (h *AccountsHandler) Enroll(c *gin.Context) {
 	c.JSON(200, gin.H{"status": "SUCCESS", "tournament_id": req.TournamentID})
 }
 
+const forgotLimit = 3
+
+// ForgotPassword: đội nhập MSSV + email đã đăng ký; nếu khớp, hệ thống gửi mã khôi phục (hiệu lực 15 phút)
+// tới email đó. Luôn trả cùng một thông báo để không lộ MSSV/email nào tồn tại. Admin vẫn tạo mã trực tiếp.
 func (h *AccountsHandler) ForgotPassword(c *gin.Context) {
 	var req struct {
 		StudentID string `json:"student_id"`
+		Email     string `json:"email"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.StudentID) == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": "Vui lòng nhập Mã sinh viên của bạn."})
 		return
 	}
-	if requestSession(c).Role != "ADMIN" {
-		c.JSON(200, gin.H{"status": "SUCCESS", "message": "Liên hệ ban tổ chức để xác minh danh tính và nhận mã đặt lại mật khẩu có hiệu lực 15 phút."})
+	if requestSession(c).Role == "ADMIN" {
+		token, err := h.Store.RequestPasswordReset(req.StudentID, c.ClientIP(), c.Request.UserAgent())
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": "Không tìm thấy tài khoản với Mã sinh viên này."})
+			return
+		}
+		_ = h.Store.LogAdminAction(requestSession(c).Actor(), "ISSUE_RESET_TOKEN", "", "", map[string]interface{}{"student_id": strings.ToUpper(req.StudentID)})
+		c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "message": "Mã xác thực đặt lại mật khẩu đã được tạo (có hiệu lực trong 15 phút).", "reset_token": token})
 		return
 	}
-	token, err := h.Store.RequestPasswordReset(req.StudentID, c.ClientIP(), c.Request.UserAgent())
+	if !validEmail(req.Email) {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Vui lòng nhập email đã đăng ký của đội."})
+		return
+	}
+	if h.Mailer == nil || !h.Mailer.Configured() {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"detail": "Hệ thống chưa cấu hình gửi email. Vui lòng liên hệ ban tổ chức để được cấp mã khôi phục."})
+		return
+	}
+	sid := strings.ToUpper(strings.TrimSpace(req.StudentID))
+	h.forgotMu.Lock()
+	if h.forgotSeen == nil {
+		h.forgotSeen = map[string][]time.Time{}
+	}
+	recent := h.forgotSeen[sid][:0]
+	for _, at := range h.forgotSeen[sid] {
+		if time.Since(at) < time.Hour {
+			recent = append(recent, at)
+		}
+	}
+	if len(recent) >= forgotLimit {
+		h.forgotSeen[sid] = recent
+		h.forgotMu.Unlock()
+		c.Header("Retry-After", "3600")
+		c.JSON(http.StatusTooManyRequests, gin.H{"detail": "Bạn đã yêu cầu quá nhiều lần. Vui lòng thử lại sau 1 giờ."})
+		return
+	}
+	h.forgotSeen[sid] = append(recent, time.Now())
+	h.forgotMu.Unlock()
+
+	generic := gin.H{"status": "SUCCESS", "message": "Nếu MSSV và email khớp với tài khoản, mã khôi phục đã được gửi tới email (hiệu lực 15 phút). Hãy kiểm tra cả thư mục Spam."}
+	account, err := h.Store.Get(sid)
+	if err != nil || account.Deleted || account.Email == "" || !strings.EqualFold(account.Email, strings.TrimSpace(req.Email)) {
+		c.JSON(http.StatusOK, generic)
+		return
+	}
+	token, err := h.Store.RequestPasswordReset(sid, c.ClientIP(), c.Request.UserAgent())
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"detail": "Không tìm thấy tài khoản với Mã sinh viên này."})
+		c.JSON(http.StatusOK, generic)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"status":      "SUCCESS",
-		"message":     "Mã xác thực đặt lại mật khẩu đã được tạo (có hiệu lực trong 15 phút).",
-		"reset_token": token,
-	})
+	body := strings.Join([]string{
+		"Xin chào đội " + account.TeamName + ",",
+		"",
+		"Mã khôi phục mật khẩu cho tài khoản " + sid + " là:",
+		"",
+		"    " + token,
+		"",
+		"Mã có hiệu lực trong 15 phút. Mở BOT K69 ARENA → Đăng nhập → Quên mật khẩu, nhập mã này và mật khẩu mới.",
+		"Nếu bạn không yêu cầu, hãy bỏ qua email này.",
+		"",
+		"Ban tổ chức BOT K69 ARENA",
+	}, "\r\n")
+	if err := h.Mailer.Send(account.Email, "Mã khôi phục mật khẩu BOT K69 ARENA", body); err != nil {
+		log.Printf("[Mailer] gửi mã khôi phục cho %s thất bại: %v", sid, err)
+		c.JSON(http.StatusServiceUnavailable, gin.H{"detail": "Chưa gửi được email lúc này. Vui lòng thử lại sau hoặc liên hệ ban tổ chức."})
+		return
+	}
+	c.JSON(http.StatusOK, generic)
+}
+
+// ViewPassword cho ban tổ chức xem mật khẩu của một đội (để hỗ trợ đội quên mật khẩu). Mỗi lần xem đều ghi nhật ký.
+func (h *AccountsHandler) ViewPassword(c *gin.Context) {
+	account, err := h.Store.Get(c.Param("studentId"))
+	if err != nil || account.Deleted {
+		c.JSON(http.StatusNotFound, gin.H{"detail": "Tài khoản không tồn tại."})
+		return
+	}
+	password, err := h.Store.Password(account)
+	if err != nil {
+		c.JSON(http.StatusConflict, gin.H{"detail": "Không giải mã được mật khẩu cũ (khóa mã hóa đã đổi). Hãy cấp mã khôi phục để đội đặt lại."})
+		return
+	}
+	_ = h.Store.LogAdminAction(requestSession(c).Actor(), "VIEW_PASSWORD", "", "", map[string]interface{}{"student_id": account.StudentID})
+	c.Header("Cache-Control", "no-store")
+	c.JSON(http.StatusOK, gin.H{"student_id": account.StudentID, "password": password})
+}
+
+// TeamEmail: đội xem (dạng che bớt) và cập nhật email khôi phục của mình.
+func (h *AccountsHandler) TeamEmail(c *gin.Context) {
+	session := requestSession(c)
+	if session.Role != "TEAM" || session.StudentID == "" {
+		c.JSON(http.StatusForbidden, gin.H{"detail": "Chỉ tài khoản đội có email khôi phục."})
+		return
+	}
+	if c.Request.Method == http.MethodGet {
+		account, err := h.Store.Get(session.StudentID)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"detail": "Tài khoản không tồn tại."})
+			return
+		}
+		c.Header("Cache-Control", "no-store")
+		c.JSON(http.StatusOK, gin.H{"has_email": account.Email != "", "email_masked": maskEmail(account.Email)})
+		return
+	}
+	var req struct {
+		Email string `json:"email"`
+	}
+	if c.ShouldBindJSON(&req) != nil || !validEmail(req.Email) {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Email không hợp lệ."})
+		return
+	}
+	if err := h.Store.SetEmail(session.StudentID, req.Email); err != nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"detail": "Chưa lưu được email."})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "has_email": true, "email_masked": maskEmail(strings.ToLower(strings.TrimSpace(req.Email)))})
 }
 
 func (h *AccountsHandler) ResetPassword(c *gin.Context) {

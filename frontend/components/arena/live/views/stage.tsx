@@ -11,6 +11,7 @@ import { Avatar, Badge } from '../ui'
 import { useLive } from '../context'
 import { MatchCard, useNow, useRanking, winnerSide } from '../shared'
 import { BOARD_THEMES } from '../board-themes'
+import { BracketTree } from '../bracket-tree'
 
 const Board3D = dynamic(() => import('../board-3d'), { ssr: false })
 
@@ -24,21 +25,7 @@ const SLIDES: { id: Slide; label: string }[] = [
 ]
 
 function BracketSlide({ tournament }: { tournament: any }) {
-  const rounds = useMemo(() => {
-    const groups = new Map<number, [string, any][]>()
-    Object.entries(tournament?.matches || {}).forEach(([id, m]: [string, any]) => groups.set(Number(m.round_level) || 1, [...(groups.get(Number(m.round_level) || 1) || []), [id, m]]))
-    return [...groups.entries()].sort((a, b) => a[0] - b[0])
-  }, [tournament])
-  return (
-    <div className="flex h-full min-h-0 gap-6 overflow-x-auto px-2">
-      {rounds.map(([level, list]) => (
-        <div key={level} className="flex min-w-72 flex-1 flex-col">
-          <p className="font-display mb-4 text-center text-2xl font-black text-primary">{list[0][1].round_name}</p>
-          <div className="flex flex-1 flex-col justify-around gap-4">{list.map(([id, m]) => <div key={id} className="origin-center scale-[1.08]"><MatchCard id={id} match={m} /></div>)}</div>
-        </div>
-      ))}
-    </div>
-  )
+  return <div className="flex h-full items-center justify-center"><BracketTree matches={tournament?.matches || {}} scale={1.25} /></div>
 }
 
 function LiveSlide({ tournament }: { tournament: any }) {

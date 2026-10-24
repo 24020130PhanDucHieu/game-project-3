@@ -5,7 +5,8 @@ import { Eye, EyeOff, Settings2, Trophy } from 'lucide-react'
 import { decodeRule, shortTime } from '@/lib/format'
 import { Badge, Button, Card, DataTable, EmptyState, SectionTitle, Skeleton, SkeletonRows, StatusBadge } from '../ui'
 import { useLive } from '../context'
-import { MatchCard, useNow } from '../shared'
+import { useNow } from '../shared'
+import { BracketTree } from '../bracket-tree'
 
 function WindowBadge({ window, now }: { window?: any; now: number }) {
   if (!window?.starts_at || !window?.ends_at) return <Badge>Chưa đặt lịch</Badge>
@@ -64,17 +65,8 @@ export function BracketView() {
         <Card><EmptyState title="Giải chưa có sơ đồ nhánh" /></Card>
       ) : (
         <Card title={t.name} subtitle={`${t.teams?.length ?? 0}/${t.num_teams} đội · Bo5, mỗi hiệp nộp bot mới`} action={<StatusBadge status={t.status} />} padded={false}>
-          <div className="overflow-x-auto p-5">
-            <div className="flex min-w-max gap-8">
-              {rounds.map((round) => (
-                <div key={round.level} className="flex w-60 flex-col">
-                  <div className="mb-3 flex items-center justify-between gap-2"><h3 className="text-sm font-semibold">{round.name}</h3><span className="text-[11px] text-muted-foreground">{round.list.length} trận</span></div>
-                  <div className="flex flex-1 flex-col justify-around gap-3">
-                    {round.list.map(([id, m]) => <MatchCard key={id} id={id} match={m} selected={id === matchId} onOpen={(mid) => void enterMatch(mid)} />)}
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="p-5">
+            <BracketTree matches={t.matches} selected={matchId} onOpen={(mid) => void enterMatch(mid)} />
           </div>
         </Card>
       )}

@@ -31,6 +31,7 @@ type Account struct {
 	CreatedAt         time.Time `json:"created_at"`
 	Deleted           bool      `json:"deleted"`
 	PasswordChangedAt time.Time `json:"password_changed_at,omitempty"`
+	Email             string    `json:"email,omitempty"`
 }
 
 // Accounts are independent of tournament rosters. Deleted IDs remain reserved
@@ -254,6 +255,21 @@ func (s *Accounts) Create(id, name, password string) error {
 	}
 	return s.save(Account{StudentID: id, TeamName: strings.TrimSpace(name), Hash: string(hash), Secret: sealed, CreatedAt: time.Now().UTC()}, true)
 }
+// SetEmail lưu email dùng để khôi phục mật khẩu (đã kiểm tra định dạng ở handler).
+func (s *Accounts) SetEmail(id, email string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	a, err := s.get(accountID(id))
+	if err != nil {
+		return err
+	}
+	if a.Deleted {
+		return ErrAccountMissing
+	}
+	a.Email = strings.ToLower(strings.TrimSpace(email))
+	return s.save(a, false)
+}
+
 func (s *Accounts) sealPassword(id, password string) (string, error) {
 	nonce := make([]byte, s.cipher.NonceSize())
 	if _, err := rand.Read(nonce); err != nil {

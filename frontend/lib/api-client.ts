@@ -126,6 +126,7 @@ export const arenaApi = {
     team_name: string
     password?: string
     contact_email?: string
+    email?: string
     github_url?: string
   }) {
     return apiRequest('/teams/register', {
@@ -450,7 +451,7 @@ export const arenaApi = {
     return apiRequest<any[]>('/admin/accounts')
   },
 
-  async importAccounts(rows: { student_id: string; team_name: string; password?: string }[], tournamentId?: string) {
+  async importAccounts(rows: { student_id: string; team_name: string; password?: string; email?: string }[], tournamentId?: string) {
     return apiRequest<{ created: number; enrolled: number; results: any[] }>('/admin/accounts/import', {
       method: 'POST',
       body: JSON.stringify({ rows, tournament_id: tournamentId }),
@@ -486,6 +487,18 @@ export const arenaApi = {
       method: 'POST',
       body: JSON.stringify(payload),
     })
+  },
+
+  async viewAccountPassword(studentId: string) {
+    return apiRequest<{ password: string }>(`/admin/accounts/${encodeURIComponent(studentId)}/password`, { cache: 'no-store' })
+  },
+
+  async getTeamEmail() {
+    return apiRequest<{ has_email: boolean; email_masked: string }>('/teams/email', { cache: 'no-store' })
+  },
+
+  async setTeamEmail(email: string) {
+    return apiRequest<{ has_email: boolean; email_masked: string }>('/teams/email', { method: 'PUT', body: JSON.stringify({ email }) })
   },
 
   async getJudges() {

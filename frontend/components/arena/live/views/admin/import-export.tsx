@@ -9,7 +9,7 @@ import { stamp } from '@/lib/format'
 import { Badge, Button, Card, DataTable, ProgressBar, Select } from '../../ui'
 import { useLive } from '../../context'
 
-type Row = { student_id: string; team_name: string; password: string; problem?: string }
+type Row = { student_id: string; team_name: string; password: string; email: string; problem?: string }
 const CHUNK = 100
 const STATUS_TONE: Record<string, 'success' | 'warning' | 'danger' | 'neutral'> = { CREATED: 'success', EXISTS: 'neutral', DUPLICATE: 'warning', INVALID: 'danger', ERROR: 'danger' }
 const STATUS_LABEL: Record<string, string> = { CREATED: 'Đã tạo', EXISTS: 'Đã tồn tại', DUPLICATE: 'Trùng trong file', INVALID: 'Không hợp lệ', ERROR: 'Lỗi lưu' }
@@ -22,10 +22,11 @@ function readRows(text: string): Row[] {
   let sid = find('student_id', 'mssv', 'ma_sinh_vien', 'mã sinh viên')
   let name = find('team_name', 'ten_doi', 'tên đội', 'team')
   let pass = find('password', 'mat_khau', 'mật khẩu')
+  const mail = find('email', 'mail', 'e-mail')
   let body = table.slice(1)
   if (sid < 0 && name < 0) { sid = 0; name = 1; pass = 2; body = table } // file không có tiêu đề
   return body.map((r) => {
-    const row: Row = { student_id: (r[sid] ?? '').trim().toUpperCase(), team_name: (r[name] ?? '').trim(), password: pass >= 0 ? (r[pass] ?? '') : '' }
+    const row: Row = { student_id: (r[sid] ?? '').trim().toUpperCase(), team_name: (r[name] ?? '').trim(), password: pass >= 0 ? (r[pass] ?? '') : '', email: mail >= 0 ? (r[mail] ?? '').trim() : '' }
     if (!/^[A-Z0-9][A-Z0-9_-]{3,31}$/.test(row.student_id)) row.problem = 'Mã sinh viên 4–32 ký tự chữ/số'
     else if (row.team_name.length < 2 || row.team_name.length > 80) row.problem = 'Tên đội 2–80 ký tự'
     else if (row.password && (row.password.length < 6 || row.password.length > 72)) row.problem = 'Mật khẩu 6–72 ký tự'
@@ -49,7 +50,7 @@ function ImportCard() {
     setProgress({ done: 0, total: valid.length })
     // Chia nhỏ vì mỗi tài khoản cần băm mật khẩu bcrypt; tránh một yêu cầu quá lâu.
     for (let i = 0; i < valid.length; i += CHUNK) {
-      const chunk = valid.slice(i, i + CHUNK).map(({ student_id, team_name, password }) => ({ student_id, team_name, password }))
+      const chunk = valid.slice(i, i + CHUNK).map(({ student_id, team_name, password, email }) => ({ student_id, team_name, password, email }))
       const res: any = await run(() => arenaApi.importAccounts(chunk, target || undefined), `Đã xử lý ${Math.min(i + CHUNK, valid.length)}/${valid.length} dòng`)
       if (!res) break
       all.push(...res.results.map((r: any) => ({ ...r, row: r.row + i })))
@@ -80,7 +81,7 @@ function ImportCard() {
             <option value="">Không ghi danh</option>
             {tournaments.data?.map((t) => <option key={t.tournament_id} value={t.tournament_id}>{t.name}{t.tournament_id === tournamentId ? ' (đang chọn)' : ''}</option>)}
           </Select>
-          <Button variant="ghost" size="sm" onClick={() => downloadCsv('mau-nhap-doi.csv', ['student_id', 'team_name', 'password'], [['24020001', 'Alpha Bot', ''], ['24020002', 'Beta Bot', 'matkhau123']])}><FileSpreadsheet className="size-4" />Tải file mẫu</Button>
+          <Button variant="ghost" size="sm" onClick={() => downloadCsv('mau-nhap-doi.csv', ['student_id', 'team_name', 'password', 'email'], [['24020001', 'Alpha Bot', '', 'alpha@gmail.com'], ['24020002', 'Beta Bot', 'matkhau123', 'beta@gmail.com']])}><FileSpreadsheet className="size-4" />Tải file mẫu</Button>
         </div>
 
         {rows.length > 0 && !results.length && (

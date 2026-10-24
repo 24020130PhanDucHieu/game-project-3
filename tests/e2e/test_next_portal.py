@@ -25,6 +25,7 @@ def run():
             registration.locator("input").nth(0).fill("29971111")
             registration.locator("input").nth(1).fill("Next Portal Team")
             registration.locator("input").nth(2).fill("verification-password")
+            registration.locator("input").nth(3).fill("portal-team@example.com")
             with page.expect_response(lambda response: "/api/teams/register" in response.url) as registered:
                 registration.get_by_role("button", name="Hoàn tất đăng ký").click()
             assert registered.value.ok, registered.value.text()

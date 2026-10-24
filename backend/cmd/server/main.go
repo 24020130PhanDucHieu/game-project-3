@@ -20,6 +20,7 @@ import (
 	"project-tuan3/internal/config"
 	httpHandler "project-tuan3/internal/handler/http"
 	wsHandler "project-tuan3/internal/handler/websocket"
+	"project-tuan3/internal/mailer"
 	"project-tuan3/internal/middleware"
 	"project-tuan3/internal/observability"
 	"project-tuan3/internal/qualifier"
@@ -98,6 +99,10 @@ func main() {
 	}
 	aHandler.DatabaseReady = qualifierStore.Ready
 	aHandler.Records = qualifierStore
+	aHandler.Mailer = mailer.FromEnv()
+	if !aHandler.Mailer.Configured() {
+		log.Println("[Mailer] Chưa cấu hình SMTP_USER/SMTP_PASSWORD — khôi phục mật khẩu qua email bị tắt")
+	}
 	judges = repository.NewJudges(qualifierStore)
 	mHandler.Judges = judges
 	jHandler := &httpHandler.JudgesHandler{Judges: judges}
@@ -215,6 +220,9 @@ func main() {
 		api.POST("/teams/register", aHandler.Register)
 		api.GET("/admin/accounts", adminOnly, aHandler.List)
 		api.POST("/admin/accounts/import", adminOnly, aHandler.ImportAccounts)
+		api.GET("/admin/accounts/:studentId/password", adminOnly, aHandler.ViewPassword)
+		api.GET("/teams/email", requireSession(sessions, false, false), aHandler.TeamEmail)
+		api.PUT("/teams/email", requireSession(sessions, false, false), aHandler.TeamEmail)
 		api.DELETE("/admin/accounts/:studentId", adminOnly, aHandler.Delete)
 		api.POST("/admin/accounts/:studentId/enroll", adminOnly, aHandler.Enroll)
 		api.GET("/admin/monitoring", adminOnly, aHandler.Monitoring)
