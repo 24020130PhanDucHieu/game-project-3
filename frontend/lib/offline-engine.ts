@@ -87,5 +87,5 @@ export function isBusyError(error: unknown) {
 export function registerOfflineSupport() {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
   if (process.env.NODE_ENV !== 'production' && !/[?&]sw=1/.test(location.search)) return
-  void navigator.serviceWorker.register('/arena-sw.js').catch(() => undefined)
+  void navigator.serviceWorker.register('/arena-sw.js', { updateViaCache: 'none' }).catch(() => undefined)
 }
