@@ -22,6 +22,20 @@ class BoardRulesTests(unittest.TestCase):
                 self.assertEqual({k:v for k,v in full.items() if k!='board_steps'}, {k:v for k,v in lean.items() if k!='board_steps'})
                 self.assertEqual(bool(full['mystery_tiles']),bool(int(rule.split('_')[1]) & 8))
 
+    def test_random_obstacles_rule_blocks_cells(self):
+        def decide(code, state):
+            return next(k for k,v in state['remaining_cards'].items() if v), None
+        with patch('app.engine.board.BotRunner.run_python_code', side_effect=decide):
+            one=simulate_board('a','b',stage_rule='COMBO_16',tie_seed='rocks')
+            two=simulate_board('a','b',stage_rule='COMBO_16',tie_seed='rocks')
+        walls={tuple(c) for c in one['board_steps'][0]['obstacles']}
+        self.assertTrue(walls)
+        self.assertEqual(walls,{tuple(c) for c in two['board_steps'][0]['obstacles']})
+        for step in one['board_steps']:
+            for piece in step.get('red_pieces', []) + step.get('blue_pieces', []):
+                if piece.get('alive', True):
+                    self.assertNotIn((piece['col'], piece['row']), walls)
+
     def test_validation_state_matches_first_real_turn_for_every_rule(self):
         from app.sandbox.runner import BotRunner
         rules = ('STAGE_1_STANDARD', 'STAGE_2_MUTATED', 'RULE_REVERSE', 'RULE_FOG',

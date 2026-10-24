@@ -1,16 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { Check, CloudOff, Download, Flag, LogIn, Trash2 } from 'lucide-react'
+import { Check, Flag, LogIn } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { invalidate, useResource } from '@/lib/cache'
-import { enqueue, isRetryable, newSubmissionId, remove, type OutboxItem } from '@/lib/outbox'
+import { enqueue, isRetryable, newSubmissionId } from '@/lib/outbox'
 import { cn } from '@/lib/utils'
 import { countdown, qualifierSteps, relative, sameStudent, stamp, shortTime } from '@/lib/format'
 import { Badge, Button, Card, DataTable, EmptyState, ErrorNote, ProgressBar, SectionTitle, Select, Skeleton, SkeletonRows, Stat, StatusBadge } from '../ui'
 import { useLive } from '../context'
 import { useNow } from '../shared'
 import { Workbench } from '../workbench'
+import { SyncStatusCard } from '../sync-status'
 import { ChallengesPanel } from '../challenges'
 import { Tabs } from '../ui'
 
@@ -28,37 +29,6 @@ function Stepper({ status }: { status: string }) {
         </li>
       ))}
     </ol>
-  )
-}
-
-function OutboxPanel({ items }: { items: OutboxItem[] }) {
-  const { flushOutbox, toast } = useLive()
-  if (!items.length) return null
-  const download = (item: OutboxItem) => {
-    const blob = new Blob([item.payload.code], { type: 'text/plain;charset=utf-8' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = `bot-du-phong-${item.id.slice(0, 8)}.${item.payload.language === 'CPP' ? 'cpp' : 'py'}`
-    a.click()
-    URL.revokeObjectURL(a.href)
-  }
-  return (
-    <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
-      <p className="flex items-center gap-2 text-sm font-semibold text-amber-800 dark:text-amber-300"><CloudOff className="size-4" />{items.length} bài đang lưu trên thiết bị, chưa được server xác nhận</p>
-      <p className="mt-1 text-xs text-muted-foreground">Bài sẽ tự gửi lại khi có mạng. “Đã lưu trên máy” chưa phải “server đã nhận”: hãy giữ trang này và nối mạng trước hạn nộp.</p>
-      <ul className="mt-3 space-y-2">
-        {items.map((item) => (
-          <li key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-card px-3 py-2 text-xs">
-            <span>{stamp(item.savedAt)} · {item.payload.language} · {item.attempts} lần thử{item.lastError ? ` · ${item.lastError}` : ''}</span>
-            <span className="flex gap-1">
-              <Button size="sm" variant="secondary" onClick={() => download(item)}><Download className="size-3.5" />Tải bản dự phòng</Button>
-              <Button size="sm" variant="ghost" aria-label="Bỏ bài này" onClick={() => { remove(item.id); toast('info', 'Đã bỏ bài khỏi hàng chờ') }}><Trash2 className="size-3.5" /></Button>
-            </span>
-          </li>
-        ))}
-      </ul>
-      <div className="mt-3"><Button size="sm" onClick={() => void flushOutbox()}>Gửi lại ngay</Button></div>
-    </div>
   )
 }
 
@@ -179,13 +149,14 @@ export function QualifierView() {
 
               <Card title="Nộp bài vòng loại" subtitle={`Bản hợp lệ cuối cùng sẽ được khóa khi hết hạn. Hỗ trợ Python và C++. ${event.git_mode ? 'Vòng này bắt buộc lấy mã từ GitHub.' : ''}`}>
                 <div className="space-y-4">
-                  <OutboxPanel items={mine} />
                   <Workbench
                     draftKey={`qualifier:${qualifierId}:${session.student_id}`}
                     submitLabel="Gửi tới hàng đợi chấm"
                     submitting={submitting}
                     submitDisabledReason={blocked}
                     onSubmit={submit}
+                    extra={<SyncStatusCard draftKey={`qualifier:${qualifierId}:${session.student_id}`} pending={mine} serverLoading={detail.loading}
+                      server={history[0] ? { id: history[0].id, code: history[0].code, language: history[0].language, at: Number(history[0].at), valid: history[0].valid } : null} />}
                   />
                 </div>
               </Card>

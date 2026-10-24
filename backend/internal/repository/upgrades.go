@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"log"
 	"crypto/rand"
 	"crypto/sha256"
 	"database/sql"
@@ -383,8 +384,11 @@ func (s *Accounts) MarkNotificationRead(id, recipientID string) error {
 	sid := accountID(recipientID)
 	if s.db != nil {
 		_, err := s.db.Exec(`INSERT INTO arena_notification_reads(notification_id, recipient_id)
-SELECT id, $2 FROM arena_notifications WHERE id = $1 AND (recipient_id = $2 OR recipient_id = 'ALL')
+SELECT id, $2::VARCHAR(64) FROM arena_notifications WHERE id = $1::VARCHAR(64) AND (recipient_id = $2::VARCHAR(64) OR recipient_id = 'ALL' OR ($2::VARCHAR(64) = 'ADMIN' AND recipient_id = 'ADMIN'))
 ON CONFLICT DO NOTHING`, id, sid)
+		if err != nil {
+			log.Printf("notification read %s/%s: %v", id, sid, err)
+		}
 		return err
 	}
 
@@ -408,8 +412,11 @@ func (s *Accounts) MarkAllNotificationsRead(recipientID string) error {
 
 	if s.db != nil {
 		_, err := s.db.Exec(`INSERT INTO arena_notification_reads(notification_id, recipient_id)
-SELECT id, $1 FROM arena_notifications WHERE recipient_id = $1 OR recipient_id = 'ALL'
+SELECT id, $1::VARCHAR(64) FROM arena_notifications WHERE recipient_id = $1::VARCHAR(64) OR recipient_id = 'ALL'
 ON CONFLICT DO NOTHING`, sid)
+		if err != nil {
+			log.Printf("notification read-all %s: %v", sid, err)
+		}
 		return err
 	}
 

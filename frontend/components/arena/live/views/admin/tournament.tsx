@@ -8,23 +8,28 @@ import { comboId, fromLocalInput, ruleBits, rulesMask, toLocalInput } from '@/li
 import { Badge, Button, Card, DataTable, EmptyState, Field, Select } from '../../ui'
 import { useLive } from '../../context'
 
-function TournamentCreate() {
-  const { run, setTournamentId } = useLive()
+function TournamentCreate({ onDone }: { onDone: () => void }) {
+  const { run, setTournamentId, tournaments, busy } = useLive()
   const [name, setName] = useState('')
   const [size, setSize] = useState('8')
   return (
-    <Card title="Tạo giải đấu mới" subtitle="Số đội là lũy thừa của 2, từ 4 đến 128">
-      <div className="grid gap-3 sm:grid-cols-[2fr_1fr_auto] sm:items-end">
-        <Field label="Tên giải" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} />
-        <Select label="Số đội" value={size} onChange={(e) => setSize(e.target.value)}>{[4, 8, 16, 32, 64, 128].map((n) => <option key={n} value={n}>{n} đội</option>)}</Select>
-        <Button disabled={!name.trim()} onClick={() => void run(async () => {
-          const created: any = await arenaApi.createTournament({ name: name.trim(), num_teams: Number(size) })
-          const id = created?.tournament_id || created?.tournament?.tournament_id
-          if (id) setTournamentId(id)
-          setName('')
-        }, 'Đã tạo giải đấu', () => { invalidate('tl') })}><Plus className="size-4" />Tạo giải</Button>
-      </div>
-    </Card>
+    <form className="grid gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4 sm:grid-cols-[2fr_1fr_auto] sm:items-end" onSubmit={(e) => {
+      e.preventDefault()
+      void run(async () => {
+        const created: any = await arenaApi.createTournament({ name: name.trim(), num_teams: Number(size) })
+        const id = created?.tournament_id || created?.tournament?.tournament_id
+        invalidate('tl')
+        await tournaments.reload() // danh sách phải có giải mới trước, nếu không bộ chọn sẽ nhảy về giải cũ
+        if (id) setTournamentId(id)
+        setName('')
+        onDone()
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      }, `Đã tạo và chọn giải “${name.trim()}”`)
+    }}>
+      <Field label="Tên giải mới" autoFocus value={name} maxLength={120} onChange={(e) => setName(e.target.value)} />
+      <Select label="Số đội" value={size} onChange={(e) => setSize(e.target.value)}>{[4, 8, 16, 32, 64, 128].map((n) => <option key={n} value={n}>{n} đội</option>)}</Select>
+      <Button type="submit" disabled={busy || !name.trim()}><Plus className="size-4" />Tạo và chọn</Button>
+    </form>
   )
 }
 
@@ -158,16 +163,32 @@ function StageEditor({ tournament, id }: { tournament: any; id: string }) {
 export function TournamentTab() {
   const { tournament, tournamentId, tournaments, setTournamentId, run, confirm, busy } = useLive()
   const t = tournament.data
+  const [creating, setCreating] = useState(false)
+  const empty = tournaments.data && !tournaments.data.length
+  useEffect(() => { if (empty) setCreating(true) }, [empty])
+  const teams = t?.teams?.length ?? 0
   return (
     <div className="space-y-6">
-      <TournamentCreate />
-      <Card title="Giải đang quản lý" action={tournamentId && <Button size="sm" variant="danger" disabled={busy} onClick={async () => { if (await confirm({ title: `Xóa giải “${t?.name || tournamentId}”?`, message: 'Toàn bộ trận, bài nộp và kết quả của giải sẽ bị xóa vĩnh viễn.', danger: true, confirmLabel: 'Xóa giải' })) void run(async () => { await arenaApi.deleteTournament(tournamentId); setTournamentId('') }, 'Đã xóa giải', () => { invalidate('tl'); invalidate('t:') }) }}><Trash2 className="size-4" />Xóa giải</Button>}>
-        <Select aria-label="Chọn giải" value={tournamentId} onChange={(e) => setTournamentId(e.target.value)}>
-          {!tournaments.data?.length && <option value="">Chưa có giải</option>}
-          {tournaments.data?.map((x) => <option key={x.tournament_id} value={x.tournament_id}>{x.name} · {x.status}</option>)}
-        </Select>
+      <Card padded={false}>
+        <div className="flex flex-wrap items-end gap-3 p-4">
+          <Select label="Giải đang quản lý" aria-label="Chọn giải" value={tournamentId} onChange={(e) => setTournamentId(e.target.value)} className="min-w-64 flex-1">
+            {!tournaments.data?.length && <option value="">Chưa có giải</option>}
+            {tournaments.data?.map((x) => <option key={x.tournament_id} value={x.tournament_id}>{x.name} · {x.status}</option>)}
+          </Select>
+          <Button variant={creating ? 'secondary' : 'primary'} onClick={() => setCreating((v) => !v)} aria-expanded={creating}><Plus className="size-4" />{creating ? 'Đóng' : 'Tạo giải mới'}</Button>
+          {tournamentId && <Button variant="danger" disabled={busy} onClick={async () => { if (await confirm({ title: `Xóa giải “${t?.name || tournamentId}”?`, message: 'Toàn bộ trận, bài nộp và kết quả của giải sẽ bị xóa vĩnh viễn.', danger: true, confirmLabel: 'Xóa giải' })) void run(async () => { await arenaApi.deleteTournament(tournamentId); setTournamentId('') }, 'Đã xóa giải', () => { invalidate('tl'); invalidate('t:') }) }}><Trash2 className="size-4" />Xóa</Button>}
+        </div>
+        {creating && <div className="px-4 pb-4"><TournamentCreate onDone={() => setCreating(false)} /></div>}
+        {t && (
+          <div className="flex flex-wrap gap-2 border-t border-border px-4 py-3 text-xs">
+            <Badge tone="accent">{t.status}</Badge>
+            <Badge tone={teams >= t.num_teams ? 'success' : 'warning'}>{teams}/{t.num_teams} đội</Badge>
+            <Badge tone="neutral">{Object.keys(t.matches || {}).length} trận</Badge>
+            <span className="text-muted-foreground">Bước tiếp theo: {teams < t.num_teams ? 'thêm đủ đội' : !Object.values(t.matches || {}).some((m: any) => m.team_a) ? 'xếp lịch thi đấu' : 'đặt lịch và luật từng vòng'}</span>
+          </div>
+        )}
       </Card>
-      {t ? <><Roster tournament={t} id={tournamentId} /><StageEditor tournament={t} id={tournamentId} /></> : tournamentId ? null : <EmptyState title="Chưa có giải để quản lý" hint="Tạo giải mới ở phía trên." />}
+      {t ? <><Roster tournament={t} id={tournamentId} /><StageEditor tournament={t} id={tournamentId} /></> : tournamentId ? null : <EmptyState title="Chưa có giải để quản lý" hint="Bấm “Tạo giải mới” để bắt đầu." />}
     </div>
   )
 }

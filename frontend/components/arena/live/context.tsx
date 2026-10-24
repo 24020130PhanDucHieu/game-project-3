@@ -3,6 +3,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { CheckCircle2, Info, XCircle, X } from 'lucide-react'
 import { arenaApi, clearSessionToken, getSessionToken } from '@/lib/api-client'
+import { webcamStore } from '@/lib/webcam-store'
+import { registerOfflineSupport } from '@/lib/offline-engine'
 import { invalidate, useResource, type Resource } from '@/lib/cache'
 import { createTournamentSocket } from '@/lib/match-socket'
 import { isRetryable, listOutbox, markFailed, remove as removeOutbox, type OutboxItem } from '@/lib/outbox'
@@ -113,9 +115,11 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   }, [scope])
 
   useEffect(() => { void refreshSession() }, [refreshSession])
+  useEffect(() => { registerOfflineSupport() }, [])
   useEffect(() => {
     const expired = () => {
       clearSessionToken()
+      webcamStore.leave()
       setSession(GUEST)
       invalidate('')
       setView((v) => (v === 'admin' ? 'overview' : v))
@@ -238,6 +242,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     await run(() => arenaApi.logout(), 'Đã đăng xuất')
+    webcamStore.leave()
     setSession(GUEST)
     invalidate('')
     setView('overview')

@@ -175,7 +175,7 @@ export function GuideView() {
             {[
               ['Tôi không nộp được bài trong trận?', 'Kiểm tra: đã “Vào phòng trận” chưa, luật vòng đã công bố chưa, cửa sổ vòng còn mở không, và hiệp có đang chạy/nghỉ không. Giao diện hiển thị lý do ngay dưới nút Nộp.'],
               ['Vì sao tôi không thấy mã của đối thủ?', 'Mã nguồn riêng chỉ đội sở hữu và ban tổ chức xem được; replay che thông tin đối thủ theo luật sương mù.'],
-              ['Đấu thử có tính điểm không?', 'Không. Đấu thử boss không ghi vào giải, bài nộp, lịch sử hay ELO.'],
+              ['Đấu thử có tính điểm không?', 'Không. Đấu thử với boss (trong tab Nộp bot) không ghi vào giải, bài nộp, lịch sử hay ELO.'],
               ['Bảng xếp hạng tính thế nào?', 'Xếp hạng toàn hệ thống dựa trên các trận Bo5 đã hoàn tất (hiệp lẻ không tính). Xếp hạng vòng loại dùng ELO sau mỗi lượt ghép cặp.'],
               ['Có thể nộp qua Git không?', 'Có thể lấy mã từ một repo GitHub công khai vào ô soạn thảo; một số vòng loại yêu cầu bắt buộc kèm commit. Hệ thống chưa tự nhận bài qua webhook.'],
               ['Ai sửa kết quả khi có sự cố?', 'Chỉ ban tổ chức, qua thao tác có ghi nhật ký và có thể hoàn tác.'],

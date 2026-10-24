@@ -1,8 +1,10 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Bot, FileCode2, GitBranch, ShieldCheck, Swords } from 'lucide-react'
+import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { Bot, CloudOff, Download, FileCode2, GitBranch, HardDrive, ShieldCheck, Swords } from 'lucide-react'
+import { isNetworkError, offlineEngine } from '@/lib/offline-engine'
+import { useOnline } from '@/lib/use-online'
 import { arenaApi } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 import { Badge, Button, Field, Select, Skeleton, TextArea } from './ui'
@@ -43,7 +45,7 @@ export type WorkbenchValue = { code: string; language: 'PYTHON' | 'CPP'; explana
  * Khung soạn bot dùng chung cho nộp bài trận, nộp bài vòng loại và đấu thử boss.
  * Bản nháp lưu trong localStorage theo draftKey để không mất khi tải lại trang.
  */
-const PRACTICE_RULES: [string, string][] = [['STAGE_1_STANDARD', 'Luật chuẩn'], ['COMBO_1', 'Trộn quân'], ['COMBO_2', 'Đảo tương khắc'], ['COMBO_4', 'Sương mù'], ['COMBO_7', 'Cả ba luật']]
+const PRACTICE_RULES: [string, string][] = [['STAGE_1_STANDARD', 'Luật chuẩn'], ['COMBO_1', 'Trộn quân'], ['COMBO_2', 'Đảo tương khắc'], ['COMBO_4', 'Sương mù'], ['COMBO_16', 'Chướng ngại ngẫu nhiên'], ['COMBO_7', 'Cả ba luật']]
 
 export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSubmit, submitting, submitDisabledReason, extra, practice = true, renderActions }: {
   draftKey: string
@@ -99,16 +101,24 @@ export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSu
   const bytes = useMemo(() => new Blob([code]).size, [code])
   const tooLarge = bytes > MAX_BYTES
   const lineCount = code ? code.split('\n').length : 0
-  const canUse = role !== 'GUEST'
+  const online = useOnline()
+  const offline = useSyncExternalStore(offlineEngine.subscribe, offlineEngine.get, offlineEngine.server)
+  // Chạy trên máy không cần đăng nhập; khi mất mạng phiên có thể chưa tải được.
+  const canUse = role !== 'GUEST' || !online
 
   async function validate() {
     setWorking('validate')
-    try {
-      const result: any = await arenaApi.validateCode(code, language, ruleId)
+    const show = (result: any) => {
       const ok = result?.is_valid !== false && result?.valid !== false && !result?.error_message
-      setValidation({ ok, message: ok ? `Mã hợp lệ${result?.execution_time_ms ? ` · ${result.execution_time_ms} ms` : ''}${result?.test_move ? ` · nước thử: ${result.test_move}` : ''}.` : result?.error_message || 'Mã không hợp lệ.' })
+      const where = result?.is_offline ? ' (chạy trên máy, offline)' : ''
+      setValidation({ ok, message: ok ? `Mã hợp lệ${where}${result?.execution_time_ms !== undefined ? ` · ${result.execution_time_ms} ms` : ''}${result?.test_move ? ` · nước thử: ${result.test_move}` : ''}.` : `${result?.error_message || 'Mã không hợp lệ.'}${where}` })
+    }
+    try {
+      show(online ? await arenaApi.validateCode(code, language, ruleId) : await offlineEngine.validate(code, language, ruleId))
     } catch (e) {
-      setValidation({ ok: false, message: e instanceof Error ? e.message : 'Không kiểm tra được mã.' })
+      if (online && isNetworkError(e)) {
+        try { show(await offlineEngine.validate(code, language, ruleId)) } catch (inner) { setValidation({ ok: false, message: inner instanceof Error ? inner.message : 'Không kiểm tra được mã.' }) }
+      } else setValidation({ ok: false, message: e instanceof Error ? e.message : 'Không kiểm tra được mã.' })
     } finally { setWorking(null) }
   }
 
@@ -116,8 +126,11 @@ export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSu
     setWorking('practice')
     setPracticeResult(null)
     try {
-      setPracticeResult(await arenaApi.practiceBot({ code_content: code, language, boss, side: 'team_a', rule_id: practiceRule }))
+      setPracticeResult(online ? await arenaApi.practiceBot({ code_content: code, language, boss, side: 'team_a', rule_id: practiceRule }) : await offlineEngine.practice(code, language, boss, practiceRule))
     } catch (e) {
+      if (online && isNetworkError(e)) {
+        try { setPracticeResult(await offlineEngine.practice(code, language, boss, practiceRule)); return } catch (inner) { e = inner }
+      }
       toast('error', e instanceof Error ? e.message : 'Không chạy thử được')
     } finally { setWorking(null) }
   }
@@ -224,13 +237,24 @@ export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSu
         {renderActions?.({ code, language, explanation, commit })}
       </div>
       {!canUse && <p className="text-xs text-muted-foreground">Đăng nhập để kiểm tra mã và đấu thử boss.</p>}
+      <div className={cn('flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2 text-xs', online ? 'border-border bg-muted/30 text-muted-foreground' : 'border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200')}>
+        {online ? <HardDrive className="size-3.5" /> : <CloudOff className="size-3.5" />}
+        <span className="min-w-0 flex-1">
+          {!online ? (offline.status === 'ready' ? 'Đang mất mạng — “Kiểm tra mã” và “Đấu thử” chạy ngay trên máy bằng engine offline (chỉ Python).' : 'Đang mất mạng và chưa tải gói offline — hãy tải khi có mạng để luyện tập offline.')
+            : offline.status === 'ready' ? `Gói chạy offline đã sẵn sàng${offline.version ? ` (engine ${offline.version})` : ''}: mất mạng vẫn kiểm tra mã và đấu thử boss được.`
+            : offline.status === 'loading' ? 'Đang tải gói chạy offline (~10 MB, chỉ tải một lần)…'
+            : offline.status === 'error' ? `Chưa tải được gói offline: ${offline.error}`
+            : 'Tải trước gói chạy offline để vẫn kiểm tra mã và đấu thử boss khi mất mạng.'}
+        </span>
+        {online && offline.status !== 'ready' && <Button size="sm" variant="secondary" loading={offline.status === 'loading'} onClick={() => void offlineEngine.prepare()}><Download className="size-3.5" />Tải gói offline</Button>}
+      </div>
       {submitDisabledReason && <p className="text-xs text-amber-700 dark:text-amber-300">{submitDisabledReason}</p>}
       {extra}
 
       {practiceResult && (
         <div className="space-y-3 rounded-xl border border-border bg-muted/30 p-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className="text-sm font-semibold">Kết quả đấu thử (không tính vào giải)</h3>
+            <h3 className="text-sm font-semibold">Kết quả đấu thử (không tính vào giải){practiceResult.is_offline && <Badge tone="warning" className="ml-2">Chạy trên máy · offline</Badge>}</h3>
             <Badge tone={practiceResult.winner === 'team_a' ? 'success' : 'warning'}>{practiceResult.winner === 'team_a' ? 'Bot của bạn thắng' : practiceResult.winner === 'team_b' ? 'Boss thắng' : 'Hòa'}</Badge>
           </div>
           {practiceResult.win_reason && <p className="text-sm text-muted-foreground">{practiceResult.win_reason}</p>}

@@ -1,87 +1,26 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { Camera, CameraOff, Eye, EyeOff, Lock, Maximize2, Mic, MicOff, Volume2, VolumeX, Wifi, WifiOff } from 'lucide-react'
-import { RtcRoom, type PeerInfo, type Remote, type RtcSnapshot } from '@/lib/rtc'
+import { type PeerInfo, type Remote, type RtcSnapshot } from '@/lib/rtc'
+import { webcamStore } from '@/lib/webcam-store'
 import { cn } from '@/lib/utils'
 import { Avatar, Badge, Button, Card, EmptyState, Select } from './ui'
 import { useLive } from './context'
 
-const EMPTY: RtcSnapshot = { status: 'idle', self: null, peers: [], allowOpponent: false, remotes: [], error: '' }
-
-function useRtc(tournamentId: string, matchId: string, enabled: boolean) {
-  const [snap, setSnap] = useState<RtcSnapshot>(EMPTY)
-  const room = useRef<RtcRoom | null>(null)
+/** Đọc trạng thái webcam dùng chung; phòng và camera không bị đóng khi component bị gỡ. */
+function useWebcam(tournamentId: string, matchId: string, enabled: boolean) {
+  const st = useSyncExternalStore(webcamStore.subscribe, webcamStore.get, webcamStore.server)
   useEffect(() => {
-    if (!enabled || !tournamentId || !matchId) return
-    let frame = 0
-    const next = new RtcRoom(tournamentId, matchId, () => {
-      if (frame) return
-      frame = requestAnimationFrame(() => { frame = 0; setSnap(next.snapshot()) })
-    })
-    room.current = next
-    next.connect()
-    return () => { cancelAnimationFrame(frame); next.destroy(); room.current = null; setSnap(EMPTY) }
+    if (enabled && tournamentId && matchId) webcamStore.join(tournamentId, matchId)
+    else if (!enabled && st.key === `${tournamentId}:${matchId}`) webcamStore.leave()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tournamentId, matchId, enabled])
-  return { snap, room }
+  const mine = st.key === `${tournamentId}:${matchId}`
+  return { st, snap: mine ? st.snap : EMPTY, stream: mine ? st.stream : null }
 }
 
-/** Camera/mic của chính mình. Mặc định tắt; chỉ xin quyền khi người dùng bấm bật. */
-function useLocalCamera() {
-  const [stream, setStream] = useState<MediaStream | null>(null)
-  const [micOn, setMicOn] = useState(false)
-  const [error, setError] = useState('')
-  const [devices, setDevices] = useState<MediaDeviceInfo[]>([])
-  const [deviceId, setDeviceId] = useState('')
-  const streamRef = useRef<MediaStream | null>(null)
-
-  const stop = useCallback(() => {
-    streamRef.current?.getTracks().forEach((t) => t.stop())
-    streamRef.current = null
-    setStream(null)
-    setMicOn(false)
-  }, [])
-
-  const start = useCallback(async (id?: string) => {
-    setError('')
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setError(window.isSecureContext ? 'Trình duyệt không hỗ trợ camera.' : 'Camera chỉ dùng được trên HTTPS hoặc localhost.')
-      return
-    }
-    const video: MediaTrackConstraints = { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 24, max: 30 }, ...(id ? { deviceId: { exact: id } } : {}) }
-    try {
-      let next: MediaStream
-      try { next = await navigator.mediaDevices.getUserMedia({ video, audio: true }) }
-      catch (e) {
-        if (e instanceof DOMException && (e.name === 'NotFoundError' || e.name === 'OverconstrainedError')) throw e
-        next = await navigator.mediaDevices.getUserMedia({ video, audio: false }) // không có/không cho dùng mic
-      }
-      next.getAudioTracks().forEach((t) => { t.enabled = false }) // mic tắt cho tới khi người dùng bật
-      streamRef.current?.getTracks().forEach((t) => t.stop())
-      streamRef.current = next
-      setStream(next)
-      setMicOn(false)
-      setDeviceId(next.getVideoTracks()[0]?.getSettings().deviceId || '')
-      setDevices((await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === 'videoinput'))
-    } catch (e) {
-      const name = e instanceof DOMException ? e.name : ''
-      setError(name === 'NotAllowedError' ? 'Bạn đã từ chối quyền camera. Hãy cho phép camera trong cài đặt trình duyệt rồi thử lại.'
-        : name === 'NotFoundError' ? 'Không tìm thấy camera trên thiết bị này.'
-        : name === 'NotReadableError' ? 'Camera đang được ứng dụng khác sử dụng.'
-        : 'Không bật được camera.')
-    }
-  }, [])
-
-  const toggleMic = useCallback(() => {
-    const track = streamRef.current?.getAudioTracks()[0]
-    if (!track) { setError('Không có micro khả dụng.'); return }
-    track.enabled = !track.enabled
-    setMicOn(track.enabled)
-  }, [])
-
-  useEffect(() => stop, [stop])
-  return { stream, micOn, error, devices, deviceId, start, stop, toggleMic }
-}
+const EMPTY: RtcSnapshot = { status: 'idle', self: null, peers: [], allowOpponent: false, remotes: [], error: '' }
 
 function VideoTile({ stream, label, sub, tone, mirror, muted = true, live, placeholder, locked }: {
   stream: MediaStream | null; label: string; sub?: string; tone?: 'red' | 'blue' | 'gold' | 'primary'; mirror?: boolean
@@ -128,11 +67,9 @@ function remoteFor(snap: RtcSnapshot, match: (p: PeerInfo) => boolean): { peer?:
 export function WebcamPanel({ tournamentId, matchId, compact = false }: { tournamentId: string; matchId: string; compact?: boolean }) {
   const { role, session, enterMatch, ownMatches } = useLive()
   const inRoom = role === 'ADMIN' || (role === 'TEAM' && session.match_id === matchId)
-  const { snap, room } = useRtc(tournamentId, matchId, inRoom)
-  const cam = useLocalCamera()
-  const [error, setError] = useState('')
-  useEffect(() => { room.current?.setLocalStream(cam.stream) }, [cam.stream, room, snap.status])
-  useEffect(() => { setError(cam.error || snap.error) }, [cam.error, snap.error])
+  const { st, snap, stream } = useWebcam(tournamentId, matchId, inRoom)
+  const cam = { stream, micOn: st.micOn, devices: st.devices, deviceId: st.deviceId, start: (id?: string) => webcamStore.start(id), stop: () => webcamStore.stop(), toggleMic: () => webcamStore.toggleMic() }
+  const error = st.error || snap.error
 
   if (role === 'GUEST') {
     return <Card title="Webcam"><EmptyState icon={<CameraOff className="size-7" />} title="Đăng nhập để dùng webcam" hint="Webcam dành cho đội thi trong trận của mình và ban tổ chức." /></Card>
@@ -199,11 +136,11 @@ export function WebcamPanel({ tournamentId, matchId, compact = false }: { tourna
               )}
             </>
           ) : (
-            <Button size="sm" disabled={!connected} onClick={() => void cam.start()}><Camera className="size-4" />Bật camera</Button>
+            <Button size="sm" disabled={!connected} onClick={() => void cam.start()}><Camera className="size-4" />{st.wasOn ? 'Bật lại camera' : 'Bật camera'}</Button>
           )}
           {admin && (
             <label className="ml-auto flex cursor-pointer items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-1.5 text-xs font-semibold">
-              <input type="checkbox" className="accent-primary" checked={snap.allowOpponent} disabled={!connected} onChange={(e) => room.current?.setAllowOpponent(e.target.checked)} />
+              <input type="checkbox" className="accent-primary" checked={snap.allowOpponent} disabled={!connected} onChange={(e) => webcamStore.setAllowOpponent(e.target.checked)} />
               {snap.allowOpponent ? <Eye className="size-4 text-primary" /> : <EyeOff className="size-4 text-muted-foreground" />}
               Cho phép hai đội xem nhau
             </label>

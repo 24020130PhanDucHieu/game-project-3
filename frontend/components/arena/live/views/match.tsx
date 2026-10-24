@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Bot, ClipboardList, Code2, DoorOpen, Handshake, History, PlayCircle, Radio, Search, ShieldAlert, Swords } from 'lucide-react'
+import { ClipboardList, Code2, DoorOpen, Handshake, History, PlayCircle, Radio, Search, ShieldAlert, Swords } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { invalidate, useResource } from '@/lib/cache'
 import { cn } from '@/lib/utils'
@@ -11,12 +11,13 @@ import { useLive } from '../context'
 import { BoardPlayer } from '../board'
 import { MatchCard, TeamLine, historyWinner, useHistory, useNow, winnerSide } from '../shared'
 import { Workbench } from '../workbench'
+import { SyncStatusCard } from '../sync-status'
 import { enqueue, isRetryable, newSubmissionId } from '@/lib/outbox'
 import { WebcamPanel } from '../webcam-panel'
 import { ScrimmagePanel } from '../scrimmage'
 import { CodeViewer, ReplayViewer } from '../replay-viewer'
 
-type MatchTab = 'live' | 'records' | 'submit' | 'history' | 'practice' | 'control' | 'scrim'
+type MatchTab = 'live' | 'records' | 'submit' | 'history' | 'control' | 'scrim'
 
 function RuleLine({ tournament, match, now }: { tournament: any; match: any; now: number }) {
   const level = match.round_level
@@ -233,7 +234,7 @@ function RecordsPanel({ tournamentId, matchId, match, canSeeCode }: { tournament
 }
 
 function SubmitPanel({ tournamentId, matchId, match, tournament }: { tournamentId: string; matchId: string; match: any; tournament: any }) {
-  const { session, enterMatch, toast, outbox, flushOutbox } = useLive()
+  const { session, enterMatch, toast, outbox, scope } = useLive()
   const now = useNow(5000)
   const inRoom = session.match_id === matchId
   const side = sameStudent(match.team_a?.student_id, session.student_id) ? 'team_a' : 'team_b'
@@ -248,6 +249,9 @@ function SubmitPanel({ tournamentId, matchId, match, tournament }: { tournamentI
   else if (['BATTLE_RUNNING', 'ROUND_FINISHED'].includes(match.round_status)) blocked = 'Hiệp đang chạy / nghỉ giữa hiệp — chờ hiệp kế tiếp để nộp bot mới.'
   const [submitting, setSubmitting] = useState(false)
   const pending = outbox.filter((o) => o.kind === 'match' && o.matchId === matchId)
+  const round = match.current_round_idx || 1
+  const subs = useResource<any[]>(inRoom ? `subs:${scope}:${tournamentId}:${matchId}` : null, () => arenaApi.getSubmissions(tournamentId, matchId).then((r: any) => (Array.isArray(r) ? r : [])), { ttl: 5_000, refreshMs: 15_000 })
+  const latest = (subs.data || []).filter((s) => Number(s.round_number) === round).sort((a, b) => Number(b.submitted_at) - Number(a.submitted_at))[0]
 
   if (!inRoom) {
     return (
@@ -289,12 +293,8 @@ function SubmitPanel({ tournamentId, matchId, match, tournament }: { tournamentI
               setSubmitting(false)
             }
           }}
-          extra={pending.length > 0 ? (
-            <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
-              <span>{pending.length} bài của trận này đang lưu trên thiết bị, chưa được server xác nhận. “Đã lưu trên máy” chưa phải “server đã nhận”.</span>
-              <Button size="sm" variant="secondary" onClick={() => void flushOutbox()}>Gửi lại ngay</Button>
-            </div>
-          ) : undefined}
+          extra={<SyncStatusCard draftKey={`match:${tournamentId}:${matchId}:${session.student_id}:${round}`} pending={pending} serverLoading={subs.loading}
+            server={latest ? { id: latest.submission_id, code: latest.code, language: latest.language, at: Number(latest.submitted_at), valid: latest.validation_status ? !/INVALID|ERROR/.test(latest.validation_status) : undefined } : null} />}
         />
       </Card>
       <SubmissionHistory tournamentId={tournamentId} matchId={matchId} enabled match={match} />
@@ -396,7 +396,6 @@ export function MatchView() {
     ...(match ? [{ id: 'records' as const, label: 'Lịch sử & Replay', icon: <PlayCircle className="size-4" /> }] : []),
     ...(own ? [{ id: 'submit' as const, label: 'Nộp bot', icon: <ClipboardList className="size-4" /> }] : []),
     ...(role === 'ADMIN' && match ? [{ id: 'control' as const, label: 'Điều hành', icon: <ShieldAlert className="size-4" /> }] : []),
-    { id: 'practice', label: 'Đấu thử boss', icon: <Bot className="size-4" /> },
     { id: 'scrim', label: 'Giao hữu', icon: <Handshake className="size-4" /> },
     { id: 'history', label: 'Lịch sử', icon: <History className="size-4" /> },
   ]
@@ -408,11 +407,7 @@ export function MatchView() {
         <Tabs tabs={tabs} value={tab} onChange={setTab} />
       </SectionTitle>
 
-      {tab === 'history' ? <HistoryPanel /> : tab === 'scrim' ? <ScrimmagePanel /> : tab === 'practice' ? (
-        <Card title="Đấu thử với boss" subtitle="Không ghi vào giải, bài nộp, lịch sử hay ELO. Bot của bạn luôn là phía Đỏ.">
-          <Workbench draftKey={`practice:${session.student_id || 'guest'}`} />
-        </Card>
-      ) : (
+      {tab === 'history' ? <HistoryPanel /> : tab === 'scrim' ? <ScrimmagePanel /> : (
         <>
           <Card padded={false}>
             <div className="flex flex-wrap items-end gap-3 p-4">

@@ -103,6 +103,8 @@ export const ruleBits = [
   { bit: 1, key: 'shuffle', label: 'Trộn quân', hint: 'Số lượng và vị trí quân được xáo ngẫu nhiên, hai bên đối xứng.' },
   { bit: 2, key: 'reverse', label: 'Đảo tương khắc', hint: 'Búa thắng Bao, Bao thắng Kéo, Kéo thắng Búa.' },
   { bit: 4, key: 'fog', label: 'Sương mù', hint: 'Không thấy loại quân của đối thủ (hiện ?).' },
+  { bit: 8, key: 'mystery', label: 'Ô bí ẩn', hint: 'Một số ô đặc biệt trên bàn kích hoạt hiệu ứng khi quân bước vào.' },
+  { bit: 16, key: 'obstacles', label: 'Chướng ngại ngẫu nhiên', hint: 'Mỗi trận sinh ngẫu nhiên các khối đá đối xứng trên bàn; không quân nào đi vào hay xuyên qua được.' },
 ] as const
 
 export function decodeRule(ruleId: unknown): { id: string; active: string[]; extra: string[] } {
@@ -121,10 +123,10 @@ export function decodeRule(ruleId: unknown): { id: string; active: string[]; ext
       return { id, active: ['Sương mù'], extra: [] }
     case 'RULE_SPECIAL_TILES':
     case 'STAGE_SPECIAL_TILES':
-      return { id, active: [], extra: ['Ô đặc biệt'] }
+      return { id, active: ['Ô bí ẩn'], extra: [] }
     case 'RULE_OBSTACLES':
     case 'STAGE_OBSTACLES':
-      return { id, active: [], extra: ['Chướng ngại vật'] }
+      return { id, active: ['Chướng ngại ngẫu nhiên'], extra: [] }
     default:
       return { id, active: [], extra: [] }
   }
@@ -136,7 +138,7 @@ export function comboId(mask: number): string {
 
 export function rulesMask(ruleId: unknown): number {
   const combo = /^COMBO_(\d+)$/.exec(String(ruleId || ''))
-  if (combo) return Number(combo[1]) & 7
+  if (combo) return Number(combo[1]) & 31
   const decoded = decodeRule(ruleId).active
   return ruleBits.reduce((mask, r) => (decoded.includes(r.label) ? mask | r.bit : mask), 0)
 }

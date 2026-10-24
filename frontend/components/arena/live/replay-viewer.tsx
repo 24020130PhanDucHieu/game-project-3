@@ -42,7 +42,7 @@ export function CodeViewer({ submission, onClose }: { submission: any; onClose: 
   return (
     <Overlay
       title={`Mã nguồn · ${submission.team_name || 'Bài nộp'}`}
-      subtitle={`Hiệp ${submission.round_number} · ${submission.language} · ${stamp(submission.submitted_at)}`}
+      subtitle={`${submission.round_number ? `Hiệp ${submission.round_number} · ` : ""}${submission.language} · ${stamp(submission.submitted_at)}`}
       onClose={onClose}
       actions={<Button size="sm" variant="secondary" onClick={() => { void navigator.clipboard?.writeText(submission.code || '').then(() => { setCopied(true); window.setTimeout(() => setCopied(false), 1500) }) }}>{copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copied ? 'Đã chép' : 'Sao chép'}</Button>}
     >
