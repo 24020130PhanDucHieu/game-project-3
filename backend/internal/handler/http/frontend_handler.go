@@ -40,9 +40,15 @@ func registerStaticPortal(router *gin.Engine, root string) {
 		c.Header("Cache-Control", "no-cache")
 		c.File(filepath.Join(root, "index.html"))
 	})
-	for _, name := range []string{"_next"} {
-		if info, err := os.Stat(filepath.Join(root, name)); err == nil && info.IsDir() {
-			router.StaticFS("/"+name, http.FS(os.DirFS(filepath.Join(root, name))))
-		}
+	if info, err := os.Stat(filepath.Join(root, "_next")); err == nil && info.IsDir() {
+		router.StaticFS("/_next", http.FS(os.DirFS(filepath.Join(root, "_next"))))
+	}
+	// Máy chấm offline (worker + engine Python): luôn kiểm tra bản mới để engine khớp với server.
+	if info, err := os.Stat(filepath.Join(root, "offline")); err == nil && info.IsDir() {
+		offline := http.FileServer(http.FS(os.DirFS(filepath.Join(root, "offline"))))
+		router.GET("/offline/*path", func(c *gin.Context) {
+			c.Header("Cache-Control", "no-cache")
+			http.StripPrefix("/offline", offline).ServeHTTP(c.Writer, c.Request)
+		})
 	}
 }
