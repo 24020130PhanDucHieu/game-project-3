@@ -9,7 +9,7 @@ def run():
     admin=arena.api('POST','/api/admin/login',{'password':arena.PASSWORD})['session_token']
     event=arena.api('POST','/api/qualifiers',{'name':'Offline recovery','deadline':time.time()+600,'rounds':1,'top_k':8},admin)
     qid=event['id']
-    arena.api('POST','/api/teams/register',{'email': 'e2e-team@example.com', 'student_id':'27778888','team_name':'Offline team','password':'offline123'},expected=201)
+    arena.api('POST','/api/teams/register',{'email': 'e2e-27778888@example.com', 'student_id': '27778888','team_name':'Offline team','password':'offline123'},expected=201)
     token=arena.api('POST','/api/teams/login',{'username':'27778888','password':'offline123'})['session_token']
     arena.api('POST',f'/api/qualifiers/{qid}/register',token=token)
     with sync_playwright() as p:
@@ -49,7 +49,7 @@ def run():
             teams=arena.api('GET',f'/api/qualifiers/{qid}/teams',token=admin)
             assert teams['items'][0]['submitted_at']>0
             arena.api('GET',f'/api/qualifiers/{qid}/teams',token=token,expected=403)
-            arena.api('POST','/api/teams/register',{'email': 'e2e-team@example.com', 'student_id':'27778889','team_name':'Other team','password':'offline123'},expected=201)
+            arena.api('POST','/api/teams/register',{'email': 'e2e-27778889@example.com', 'student_id': '27778889','team_name':'Other team','password':'offline123'},expected=201)
             other=arena.api('POST','/api/teams/login',{'username':'27778889','password':'offline123'})['session_token']
             private=arena.api('GET',f'/api/qualifiers/{qid}?student_id=27778888',token=other)
             assert not private.get('history'),'team cannot read another team code'

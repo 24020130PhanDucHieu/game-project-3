@@ -36,7 +36,7 @@ def run_ui(server, admin):
     tokens = []
     for n in range(8):
         sid = str(26000001+n)
-        api('POST', '/api/teams/register', {'email': 'e2e-team@example.com', 'student_id': sid, 'team_name': f'UI Team {n}', 'password': 'qualifier123'}, expected=201)
+        api('POST', '/api/teams/register', {'email': f'e2e-{sid.lower()}@example.com', 'student_id': sid, 'team_name': f'UI Team {n}', 'password': 'qualifier123'}, expected=201)
         token = api('POST', '/api/teams/login', {'username': sid, 'password': 'qualifier123'})['session_token']
         tokens.append(token)
         if n:

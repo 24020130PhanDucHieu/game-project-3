@@ -18,7 +18,7 @@ def run(server):
     tokens = []
     for index in range(3):
         sid = str(28880000+index)
-        arena.api('POST', '/api/teams/register', {'email': 'e2e-team@example.com', 'student_id': sid, 'team_name': 'Recovery '+sid,
+        arena.api('POST', '/api/teams/register', {'email': f'e2e-{sid.lower()}@example.com', 'student_id': sid, 'team_name': 'Recovery '+sid,
                                                 'password': 'queue123'}, expected=201)
         token = arena.api('POST', '/api/teams/login', {'username': sid, 'password': 'queue123'})['session_token']
         arena.api('POST', f'/api/qualifiers/{qid}/register', token=token)

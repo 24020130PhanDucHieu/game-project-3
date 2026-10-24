@@ -11,7 +11,7 @@ def run(server):
     api = arena.api
     admin = api('POST', '/api/admin/login', {'username': 'admin', 'password': arena.PASSWORD})['session_token']
     api('GET', '/api/admin/accounts', expected=401)
-    api('POST', '/api/teams/register', {'email': 'e2e-team@example.com', 'student_id': 'admin', 'team_name': 'Invalid', 'password': 'password123'}, expected=400)
+    api('POST', '/api/teams/register', {'email': 'e2e-admin@example.com', 'student_id': 'admin', 'team_name': 'Invalid', 'password': 'password123'}, expected=400)
     sid, password = '24990001', 'My registered password!'
     errors = []
     with sync_playwright() as p:
@@ -32,7 +32,7 @@ def run(server):
         team_token = team.evaluate("sessionStorage.getItem('arenaSessionToken')")
         api('GET', '/api/admin/accounts', token=team_token, expected=403)
         api('POST', '/api/teams/login', {'username': sid, 'password': 'k69' + sid}, expected=401)
-        api('POST', '/api/teams/register', {'email': 'e2e-team@example.com', 'student_id': sid, 'team_name': 'Duplicate', 'password': 'password123'}, expected=409)
+        api('POST', '/api/teams/register', {'email': f'e2e-{sid.lower()}@example.com', 'student_id': sid, 'team_name': 'Duplicate', 'password': 'password123'}, expected=409)
         cup = api('POST', '/api/tournaments/create', {'name': 'Registered Cup', 'num_teams': 4}, admin)['tournament']
         tid = cup['tournament_id']
         organizer = arena.open_page(browser, errors, [])
@@ -49,7 +49,7 @@ def run(server):
         api('POST', f'/api/admin/accounts/{sid}/enroll', {'tournament_id': 'missing'}, admin, expected=400)
         for n in range(2, 5):
             other = str(24990000 + n)
-            api('POST', '/api/teams/register', {'email': 'e2e-team@example.com', 'student_id': other, 'team_name': f'Registered {n}', 'password': 'password123'}, expected=201)
+            api('POST', '/api/teams/register', {'email': f'e2e-{other.lower()}@example.com', 'student_id': other, 'team_name': f'Registered {n}', 'password': 'password123'}, expected=201)
             api('POST', f'/api/admin/accounts/{other}/enroll', {'tournament_id': tid}, admin)
         api('POST', f'/api/tournaments/{tid}/auto-schedule', {}, admin)
         tournament = api('GET', f'/api/tournaments/{tid}')
@@ -72,7 +72,7 @@ def run(server):
         api('GET', '/api/session', token=team_token, expected=401)
         api('GET', '/api/session', token=selected['session_token'], expected=401)
         api('POST', '/api/teams/login', {'username': sid, 'password': password}, expected=401)
-        api('POST', '/api/teams/register', {'email': 'e2e-team@example.com', 'student_id': sid, 'team_name': 'Duplicate', 'password': 'password123'}, expected=409)
+        api('POST', '/api/teams/register', {'email': f'e2e-{sid.lower()}@example.com', 'student_id': sid, 'team_name': 'Duplicate', 'password': 'password123'}, expected=409)
         assert not errors, errors
         browser.close()
     print('PASS registration UI, login without tournament, F5, admin privacy, custom password, duplicate prevention, enrollment, match access, restart, encrypted persistence and account deletion')
