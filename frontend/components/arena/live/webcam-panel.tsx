@@ -92,7 +92,12 @@ export function WebcamPanel({ tournamentId, matchId, compact = false }: { tourna
   const opponent = mySide === 'team_a' ? sideB : sideA
 
   const tileStatus = (e: { peer?: PeerInfo; remote?: Remote }, label: string) =>
-    !e.peer ? `${label} chưa vào phòng` : !e.remote ? 'Chưa kết nối' : e.remote.live ? '' : 'Chưa bật camera'
+    !e.peer ? `${label} chưa vào phòng`
+      : !e.remote ? 'Chưa kết nối'
+      : e.remote.live ? ''
+      : e.remote.state === 'failed' ? 'Không kết nối được (mạng chặn kết nối trực tiếp)'
+      : e.remote.state !== 'connected' ? 'Đang kết nối…'
+      : 'Chưa có hình (camera chưa bật hoặc đang bị ứng dụng khác dùng)'
 
   return (
     <Card
