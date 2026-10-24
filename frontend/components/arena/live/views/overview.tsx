@@ -1,6 +1,6 @@
 'use client'
 
-import { Bell, Bot, CalendarClock, CheckCircle2, Flag, Radio, Swords, Trophy, Upload, Users } from 'lucide-react'
+import { Bell, Bot, CalendarClock, CheckCircle2, Flag, History, Radio, Swords, Trophy, Upload, Users } from 'lucide-react'
 import { countdown, relative, shortTime, toDate } from '@/lib/format'
 import { Badge, Button, Card, EmptyState, ProgressBar, Skeleton, SkeletonCards, SkeletonRows, Stat, StatusBadge } from '../ui'
 import { useLive } from '../context'
@@ -117,13 +117,13 @@ export function OverviewView() {
 
       <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
         <div className="space-y-6">
-          <Card title="Trận đang chờ / đang đấu" subtitle="Bấm để vào xem diễn biến">
+          <Card icon={<Swords />} title="Trận đang chờ / đang đấu" subtitle="Bấm để vào xem diễn biến">
             {tournament.loading ? <SkeletonRows rows={3} /> : live.length ? (
               <div className="grid gap-3 md:grid-cols-2">{live.map(([id, m]) => <MatchCard key={id} id={id} match={m} onOpen={(mid) => void enterMatch(mid)} />)}</div>
             ) : <EmptyState title="Hiện chưa có trận nào đang diễn ra" hint="Trận sẽ xuất hiện ở đây khi hai đội đã được xếp cặp." />}
           </Card>
 
-          <Card title="Kết quả gần đây" subtitle="Các trận Bo5 đã có hiệp hoàn tất trên toàn hệ thống">
+          <Card icon={<History />} title="Kết quả gần đây" subtitle="Các trận Bo5 đã có hiệp hoàn tất trên toàn hệ thống">
             {history.loading ? <SkeletonRows rows={4} /> : history.data?.length ? (
               <ul className="divide-y divide-border">
                 {[...history.data].sort((a, b) => Number(b.timestamp) - Number(a.timestamp)).slice(0, 8).map((item) => (
@@ -140,7 +140,7 @@ export function OverviewView() {
         </div>
 
         <div className="space-y-6">
-          <Card title="Vòng loại" action={<button className="text-xs font-semibold text-primary hover:underline" onClick={() => navigate('qualifier')}>Mở tab Vòng loại →</button>}>
+          <Card icon={<Flag />} title="Vòng loại" action={<button className="text-xs font-semibold text-primary hover:underline" onClick={() => navigate('qualifier')}>Mở tab Vòng loại →</button>}>
             {qualifiers.loading ? <SkeletonRows rows={2} /> : qualifiers.data?.length ? (
               <div className="space-y-4">
                 {qualifiers.data.slice(0, 3).map((q) => (
@@ -153,7 +153,7 @@ export function OverviewView() {
             ) : <EmptyState title="Chưa có vòng loại" />}
           </Card>
 
-          <Card title="Top 5 xếp hạng" action={<button className="text-xs font-semibold text-primary hover:underline" onClick={() => navigate('ranking')}>Xem tất cả →</button>}>
+          <Card icon={<Trophy />} title="Top 5 xếp hạng" action={<button className="text-xs font-semibold text-primary hover:underline" onClick={() => navigate('ranking')}>Xem tất cả →</button>}>
             {ranking.loading ? <SkeletonRows rows={5} /> : ranking.data?.length ? (
               <ol className="space-y-2">
                 {ranking.data.slice(0, 5).map((r, i) => (
@@ -167,7 +167,7 @@ export function OverviewView() {
             ) : <EmptyState title="Chưa có dữ liệu xếp hạng" />}
           </Card>
 
-          <Card title="Thông báo mới" action={role !== 'GUEST' ? <Badge tone="accent">{notifications.data?.unread_count ?? 0} chưa đọc</Badge> : undefined}>
+          <Card icon={<Bell />} title="Thông báo mới" action={role !== 'GUEST' ? <Badge tone="accent">{notifications.data?.unread_count ?? 0} chưa đọc</Badge> : undefined}>
             {notifications.loading ? <SkeletonRows rows={3} /> : notifications.data?.notifications.length ? (
               <ul className="space-y-3">
                 {notifications.data.notifications.slice(0, 3).map((n) => (

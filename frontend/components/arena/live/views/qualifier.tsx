@@ -15,6 +15,18 @@ import { SyncStatusCard } from '../sync-status'
 import { ChallengesPanel } from '../challenges'
 import { ScoreHistoryTable, scoreRows } from '../qualifier-extras'
 import { CodeViewer } from '../replay-viewer'
+import { RankBadge } from './ranking'
+
+/** Bảng màu banner theo trạng thái vòng loại (gradient trôi liên tục). */
+const AURORA: Record<string, string> = {
+  OPEN: 'linear-gradient(120deg,#4f46e5,#7c3aed,#c026d3,#0ea5e9,#4f46e5)',
+  CLOSING: 'linear-gradient(120deg,#4f46e5,#7c3aed,#c026d3,#0ea5e9,#4f46e5)',
+  LOCKED: 'linear-gradient(120deg,#1d4ed8,#4f46e5,#0891b2,#7c3aed,#1d4ed8)',
+  RUNNING: 'linear-gradient(120deg,#ea580c,#db2777,#9333ea,#f59e0b,#ea580c)',
+  PAUSED: 'linear-gradient(120deg,#475569,#6d28d9,#334155,#7c3aed,#475569)',
+  FINISHED: 'linear-gradient(120deg,#059669,#0d9488,#0284c7,#16a34a,#059669)',
+  PROMOTED: 'linear-gradient(120deg,#059669,#0d9488,#ca8a04,#16a34a,#059669)',
+}
 
 const STEP_LABEL: Record<string, string> = { OPEN: 'Nhận bài', LOCKED: 'Khóa bài', RUNNING: 'Ghép cặp & chấm', FINISHED: 'Hoàn tất', PROMOTED: 'Chốt đội' }
 
@@ -41,7 +53,7 @@ function Countdown({ seconds }: { seconds: number }) {
   return (
     <div className="flex gap-2" role="timer" aria-label="Thời gian còn lại để nộp bài">
       {parts.map(([v, label]) => (
-        <div key={label} className="min-w-14 rounded-xl bg-white/15 px-2 py-1.5 text-center backdrop-blur">
+        <div key={label} className="min-w-14 rounded-xl border border-white/20 bg-white/15 px-2 py-1.5 text-center shadow-inner backdrop-blur-md">
           <div className="font-display text-2xl font-black tabular-nums leading-none text-white">{String(v).padStart(2, '0')}</div>
           <div className="mt-1 text-[10px] uppercase tracking-wider text-white/70">{label}</div>
         </div>
@@ -52,7 +64,7 @@ function Countdown({ seconds }: { seconds: number }) {
 
 function HeroStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-xl bg-white/10 px-3 py-2.5 backdrop-blur">
+    <div className="rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 backdrop-blur-md transition hover:bg-white/15">
       <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-white/70">{icon}{label}</p>
       <p className="font-display mt-0.5 text-lg font-extrabold tabular-nums text-white">{value}</p>
     </div>
@@ -69,7 +81,7 @@ function Podium({ items, mine }: { items: any[]; mine?: string }) {
         <div key={r.student_id} className="text-center">
           <p className={cn('truncate text-sm font-bold', sameStudent(r.student_id, mine) && 'text-primary')}>{r.team_name}</p>
           <p className="mb-2 text-xs tabular-nums text-muted-foreground">{Number(r.elo).toFixed(1)} ELO</p>
-          <div className={cn('flex items-start justify-center rounded-t-xl bg-gradient-to-b pt-2 font-display text-2xl font-black text-white shadow-inner', height[i], tone[i])}>{r.rank}</div>
+          <div className={cn('flex items-start justify-center rounded-t-xl bg-gradient-to-b pt-2 shadow-inner', height[i], tone[i])}><RankBadge rank={r.rank} /></div>
         </div>
       ) : <div key={i} />)}
     </div>
@@ -90,7 +102,7 @@ function RankingPanel({ qid, mine }: { qid: string; mine?: string }) {
         <DataTable head={['Hạng', 'Đội', 'ELO', 'Thắng / Trận', 'Nghỉ']}>
           {items.map((r) => (
             <tr key={r.student_id} className={cn(sameStudent(r.student_id, mine) && 'bg-primary/10 font-semibold')}>
-              <td className="px-3 py-2.5 tabular-nums">{r.rank <= 3 ? <Medal className={cn('inline size-4', r.rank === 1 ? 'text-amber-500' : r.rank === 2 ? 'text-slate-400' : 'text-orange-500')} aria-label={`Hạng ${r.rank}`} /> : r.rank}</td>
+              <td className="w-14 px-3 py-2"><RankBadge rank={r.rank} /></td>
               <td className="px-3 py-2.5">{r.team_name}<span className="block font-mono text-[11px] font-normal text-muted-foreground">{r.student_id}</span></td>
               <td className="px-3 py-2.5 tabular-nums">{Number(r.elo).toFixed(1)}</td>
               <td className="px-3 py-2.5 tabular-nums">{r.wins}/{r.played}</td>
@@ -176,9 +188,10 @@ export function QualifierView() {
   return (
     <div className="space-y-6">
       {detail.loading && !event ? <Skeleton className="h-72 w-full rounded-3xl" /> : detail.error && !detail.data ? <ErrorNote message={detail.error.message} onRetry={() => void detail.reload()} /> : event && (
-        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 p-6 text-white shadow-xl sm:p-8">
-          <div className="pointer-events-none absolute -right-16 -top-20 size-72 rounded-full bg-white/10 blur-2xl" aria-hidden />
-          <div className="pointer-events-none absolute -bottom-24 left-10 size-64 rounded-full bg-fuchsia-300/20 blur-3xl" aria-hidden />
+        <section className="aurora relative overflow-hidden rounded-3xl p-6 text-white shadow-xl shadow-primary/20 sm:p-8" style={{ backgroundImage: AURORA[event.status] || AURORA.OPEN }}>
+          <div className="aurora-blob pointer-events-none absolute -right-16 -top-24 size-80 rounded-full bg-white/15 blur-3xl" aria-hidden />
+          <div className="aurora-blob-slow pointer-events-none absolute -bottom-28 left-6 size-72 rounded-full bg-cyan-300/25 blur-3xl" aria-hidden />
+          <div className="aurora-dots pointer-events-none absolute inset-0" aria-hidden />
           <div className="relative space-y-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
@@ -206,7 +219,14 @@ export function QualifierView() {
               <HeroStat icon={<Medal className="size-3.5" />} label="Vào giải chính" value={`Top ${event.top_k}`} />
               <HeroStat icon={<Timer className="size-3.5" />} label="Trận đã chấm" value={`${event.completed ?? 0}/${event.total ?? 0}`} />
             </div>
-            {event.total > 0 && <div className="[&_*]:!text-white/80"><ProgressBar value={event.completed || 0} max={event.total} label="Tiến độ chấm lượt hiện tại" /></div>}
+            {event.total > 0 && (
+              <div>
+                <div className="mb-1.5 flex justify-between text-xs text-white/80"><span>Tiến độ chấm lượt hiện tại</span><span className="tabular-nums">{Math.round(((event.completed || 0) / event.total) * 100)}%</span></div>
+                <div className="h-2 overflow-hidden rounded-full bg-white/20" role="progressbar" aria-valuemin={0} aria-valuemax={event.total} aria-valuenow={event.completed || 0} aria-label="Tiến độ chấm lượt hiện tại">
+                  <div className="h-full rounded-full bg-gradient-to-r from-white to-amber-200 shadow-[0_0_12px_rgba(255,255,255,.7)] transition-[width] duration-700" style={{ width: `${Math.min(100, ((event.completed || 0) / event.total) * 100)}%` }} />
+                </div>
+              </div>
+            )}
             {event.error && <ErrorNote message={event.error} />}
           </div>
         </section>

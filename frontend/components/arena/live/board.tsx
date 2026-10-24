@@ -103,11 +103,11 @@ export function Board({ step, prev, theme, size = 'md', selectedId = null, highl
                   {row === 8 && <span className={cn(label, 'bottom-[6%] right-[8%]')} style={{ color: theme.accent }}>{col}</span>}
                   {col === 0 && <span className={cn(label, 'left-[8%] top-[6%]')} style={{ color: theme.accent }}>{row}</span>}
                   {(redHome || blueHome) && (
-                    <span className="absolute inset-0 flex items-center justify-center text-[clamp(10px,2.2vw,16px)]" style={{ background: `radial-gradient(circle, ${redHome ? theme.baseRed : theme.baseBlue}88, transparent 72%)`, boxShadow: `inset 0 0 0 2px ${redHome ? theme.baseRed : theme.baseBlue}aa` }} aria-label={redHome ? 'Cứ điểm Đỏ' : 'Cứ điểm Xanh'}><Castle className="size-[48%] text-white drop-shadow" aria-hidden /></span>
+                    <span className="absolute inset-0 flex items-center justify-center text-[clamp(10px,2.2vw,16px)]" style={{ background: `radial-gradient(circle, ${redHome ? theme.baseRed : theme.baseBlue}88, transparent 72%)`, boxShadow: `inset 0 0 0 2px ${redHome ? theme.baseRed : theme.baseBlue}aa` }} aria-label={redHome ? 'Cứ điểm Đỏ' : 'Cứ điểm Xanh'}>{!entry && <Castle className="size-[48%] text-white drop-shadow" aria-hidden />}</span>
                   )}
                   {wall && (
                     <span className="absolute inset-[10%] flex items-center justify-center rounded-[30%] text-[clamp(10px,2.4vw,18px)]" aria-label="Chướng ngại vật"
-                      style={{ background: `radial-gradient(circle at 35% 30%, color-mix(in srgb, ${theme.obstacle} 55%, #fff), ${theme.obstacle} 55%, color-mix(in srgb, ${theme.obstacle} 60%, #000))`, boxShadow: '0 3px 6px #0008, inset 0 -3px 4px #0006, inset 0 2px 2px #ffffff44' }}><PieceIcon type="ROCK" className="size-[58%] text-white/40" /></span>
+                      style={{ background: `radial-gradient(circle at 35% 30%, color-mix(in srgb, ${theme.obstacle} 55%, #fff), ${theme.obstacle} 55%, color-mix(in srgb, ${theme.obstacle} 60%, #000))`, boxShadow: '0 3px 6px #0008, inset 0 -3px 4px #0006, inset 0 2px 2px #ffffff44' }}><span className="size-full rounded-[30%] opacity-60" style={{ background: 'repeating-linear-gradient(135deg, transparent 0 5px, #ffffff14 5px 6px), radial-gradient(circle at 70% 75%, #0000004d, transparent 55%)' }} aria-hidden /></span>
                   )}
                   {marker && !entry && <span className="absolute grid size-[56%] place-items-center rounded-full" style={{ color: marker.color, background: `${marker.color}22`, boxShadow: `0 0 0 1px ${marker.color}66` }} aria-label={marker.label}><marker.icon className="size-[62%]" aria-hidden /></span>}
                   {trail && <span className="absolute size-[26%] rounded-full opacity-40" style={{ background: trail === 'red' ? theme.red : theme.blue, animation: 'trail-fade 1.4s ease-out forwards' }} aria-hidden />}
@@ -130,7 +130,7 @@ export function Board({ step, prev, theme, size = 'md', selectedId = null, highl
                     >
                       <span className="absolute inset-[9%] flex items-center justify-center rounded-full text-[clamp(10px,2.4vw,18px)] leading-none"
                         style={{ background: `radial-gradient(circle at 34% 28%, color-mix(in srgb, ${color} 55%, #fff), ${color} 50%, color-mix(in srgb, ${color} 65%, #000))`, boxShadow: 'inset 0 -3px 5px #0007, inset 0 2px 3px #ffffff66' }}>
-                        <PieceIcon type={entry.piece.type} className="size-[64%] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,.6)]" />
+                        <PieceIcon type={entry.piece.type} strokeWidth={2.3} className="size-[62%] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,.55)]" />
                       </span>
                     </span>
                   )}

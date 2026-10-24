@@ -14,16 +14,21 @@ export const toneClass: Record<Tone, string> = {
   accent: 'border-primary/25 bg-primary/10 text-primary',
 }
 
-export function Card({ children, className, title, subtitle, action, padded = true }: {
+export function Card({ children, className, title, subtitle, action, padded = true, icon }: {
   children?: ReactNode; className?: string; title?: ReactNode; subtitle?: ReactNode; action?: ReactNode; padded?: boolean
+  /** Icon nhỏ cạnh tiêu đề (lucide). */
+  icon?: ReactNode
 }) {
   return (
     <section className={cn('animate-fade-up rounded-2xl border border-border bg-card/80 text-card-foreground shadow-sm backdrop-blur-sm', className)}>
       {(title || action) && (
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-gradient-to-r from-primary/[0.07] to-transparent px-5 py-3.5">
-          <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-2.5">
+            {icon && <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary [&_svg]:size-4" aria-hidden>{icon}</span>}
+            <div className="min-w-0">
             {title && <h2 className="truncate text-[15px] font-bold tracking-tight">{title}</h2>}
             {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
+            </div>
           </div>
           {action && <div className="flex flex-wrap items-center gap-2">{action}</div>}
         </header>

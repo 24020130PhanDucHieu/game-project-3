@@ -138,14 +138,24 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     { refreshMs: 30_000 },
   )
 
-  // Tự chọn giải: ưu tiên giải đang diễn ra.
+  // Tự chọn giải: ưu tiên giải của phiên trận (đội đã vào phòng), sau đó giải đang diễn ra.
   useEffect(() => {
     const list = tournaments.data
     if (!list?.length) return
     if (!tournamentId || !list.some((t) => t.tournament_id === tournamentId)) {
-      setTournamentIdState(list.find((t) => t.status === 'RUNNING')?.tournament_id || list[0].tournament_id)
+      const own = session.tournament_id && list.some((t) => t.tournament_id === session.tournament_id) ? session.tournament_id : ''
+      setTournamentIdState(own || list.find((t) => t.status === 'RUNNING')?.tournament_id || list[0].tournament_id)
     }
-  }, [tournaments.data, tournamentId])
+  }, [tournaments.data, tournamentId, session.tournament_id])
+  // Phiên trận mới (vào phòng trận khác giải) thì chuyển sang đúng giải đó.
+  const lastSessionTournament = useRef('')
+  useEffect(() => {
+    const id = session.tournament_id || ''
+    if (id && id !== lastSessionTournament.current) {
+      lastSessionTournament.current = id
+      setTournamentIdState(id)
+    }
+  }, [session.tournament_id])
   useEffect(() => {
     const list = qualifiers.data
     if (!list?.length) return

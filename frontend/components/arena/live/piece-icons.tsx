@@ -1,81 +1,62 @@
 import type { SVGProps } from 'react'
 
 /**
- * Biểu tượng quân cờ vẽ riêng (thay emoji ✊✋✌️): hiển thị giống nhau trên mọi máy.
- * Mỗi quân gồm các path trên khung 24×24; dùng cho bàn 2D (SVG) và vẽ lên canvas làm texture 3D (Path2D).
+ * Biểu tượng quân cờ hình bàn tay (Búa = nắm đấm, Bao = xoè tay, Kéo = tay chữ V), nét đồng bộ với bộ icon Lucide.
+ * Mỗi quân là các path trên khung 24×24; dùng cho bàn 2D (SVG) và vẽ lên canvas làm texture 3D (Path2D).
  */
 export type PieceType = 'ROCK' | 'PAPER' | 'SCISSORS' | 'JOKER'
 
-type Shape = { fill?: string[]; stroke?: string[] }
-
-export const PIECE_SHAPES: Record<PieceType, Shape> = {
-  // Búa: khối đá cắt mặt.
-  ROCK: {
-    fill: ['M7.2 4.6 15.8 3.4 20.6 9.2 19.4 17.4 12.6 20.8 5 18.2 3.2 10.4Z'],
-    stroke: ['M7.2 4.6 11 10.2 15.8 3.4', 'M11 10.2 20.6 9.2', 'M11 10.2 12.6 20.8', 'M11 10.2 3.2 10.4', 'M11 10.2 5 18.2'],
-  },
-  // Bao: tờ giấy có góc gấp và dòng chữ.
-  PAPER: {
-    fill: ['M6 2.8h8.6L19 7.2v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3.8a1 1 0 0 1 1-1Z'],
-    stroke: ['M14.6 2.8v4.4H19', 'M8 11.2h8', 'M8 14.4h8', 'M8 17.6h5.2'],
-  },
-  // Kéo: hai vòng tay cầm và hai lưỡi bắt chéo.
-  SCISSORS: {
-    stroke: ['M6.4 8.6a2.8 2.8 0 1 0 0-5.6 2.8 2.8 0 0 0 0 5.6Z', 'M6.4 21a2.8 2.8 0 1 0 0-5.6 2.8 2.8 0 0 0 0 5.6Z', 'M8.6 7.4 20.4 18.2', 'M8.6 16.6 20.4 5.8', 'M13.2 12l1.2-1.1'],
-  },
-  // Joker: ngôi sao năm cánh.
-  JOKER: {
-    fill: ['M12 2.6l2.75 5.9 6.45.75-4.8 4.4 1.3 6.35L12 16.8 6.3 20l1.3-6.35-4.8-4.4 6.45-.75Z'],
-  },
+export const PIECE_PATHS: Record<PieceType, string[]> = {
+  // Búa: nắm đấm (Lucide hand-fist).
+  ROCK: [
+    'M12.035 17.012a3 3 0 0 0-3-3l-.311-.002a.72.72 0 0 1-.505-1.229l1.195-1.195A2 2 0 0 1 10.828 11H12a2 2 0 0 0 0-4H9.243a3 3 0 0 0-2.122.879l-2.707 2.707A4.83 4.83 0 0 0 3 14a8 8 0 0 0 8 8h2a8 8 0 0 0 8-8V7a2 2 0 1 0-4 0v2a2 2 0 1 0 4 0',
+    'M13.888 9.662A2 2 0 0 0 17 8V5A2 2 0 1 0 13 5',
+    'M9 5A2 2 0 1 0 5 5V10',
+    'M9 7V4A2 2 0 1 1 13 4V7.268',
+  ],
+  // Bao: bàn tay xoè (Lucide hand).
+  PAPER: [
+    'M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2',
+    'M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2',
+    'M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8',
+    'M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15',
+  ],
+  // Kéo: tay chữ V — ngón trỏ và ngón giữa giơ cao, ngón áp út và út gập (vẽ theo nét của Lucide hand-metal).
+  SCISSORS: [
+    // Ngón trỏ nghiêng trái, ngón giữa nghiêng phải: hai ngón xoè thành chữ V.
+    'M7.4 13.6 4.2 5.1a1.9 1.9 0 0 1 3.55-1.3l3.05 7.7',
+    'M10.8 11.5 13.4 3.3a1.9 1.9 0 0 1 3.6 1.15l-2.3 7.75',
+    'M18.4 13v-.6a1.9 1.9 0 0 0-3.8 0v.8',
+    'm7.4 15.4-1.7-1.7a2 2 0 0 0-2.8 2.85l3.55 3.55C7.9 21.55 9.6 22.3 12.3 22.3h1.6a7.7 7.7 0 0 0 7.7-7.7v-2a1.9 1.9 0 0 0-3.8 0v1.6',
+  ],
+  // Joker: ngôi sao.
+  JOKER: ['M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.12 2.12 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.12 2.12 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.12 2.12 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.12 2.12 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.12 2.12 0 0 0 1.597-1.16z'],
 }
+
+const UNKNOWN = ['M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3', 'M12 17h.01']
 
 export const PIECE_LABEL: Record<string, string> = { ROCK: 'Búa', PAPER: 'Bao', SCISSORS: 'Kéo', JOKER: 'Joker' }
 
-export function PieceIcon({ type, ...props }: { type?: string } & SVGProps<SVGSVGElement>) {
-  const shape = PIECE_SHAPES[(type as PieceType)] as Shape | undefined
-  if (!shape) {
-    return (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden {...props}>
-        <path d="M9.2 9a3 3 0 1 1 4.3 2.7c-.9.5-1.5 1.2-1.5 2.3" /><path d="M12 18h.01" />
-      </svg>
-    )
-  }
+export function PieceIcon({ type, strokeWidth = 2, ...props }: { type?: string; strokeWidth?: number } & SVGProps<SVGSVGElement>) {
+  const paths = PIECE_PATHS[type as PieceType] ?? UNKNOWN
   return (
-    <svg viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" aria-hidden {...props}>
-      {shape.fill?.map((d) => <path key={d} d={d} fill="currentColor" fillOpacity={0.9} stroke="currentColor" strokeWidth={1.4} />)}
-      {shape.stroke?.map((d) => <path key={d} d={d} fill="none" stroke={shape.fill ? 'rgba(0,0,0,.35)' : 'currentColor'} strokeWidth={shape.fill ? 1.1 : 2} />)}
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden {...props}>
+      {paths.map((d) => <path key={d} d={d} />)}
     </svg>
   )
 }
 
-/** Vẽ quân lên canvas 2D (texture 3D): huy hiệu tròn + biểu tượng. */
+/** Vẽ quân lên canvas 2D (texture 3D), cùng nét với bàn 2D. */
 export function drawPieceIcon(ctx: CanvasRenderingContext2D, type: string, size: number, color: string) {
-  const shape = PIECE_SHAPES[type as PieceType]
-  const scale = (size * 0.62) / 24
+  const paths = PIECE_PATHS[type as PieceType] ?? UNKNOWN
+  const scale = (size * 0.56) / 24
   ctx.save()
-  ctx.translate(size * 0.19, size * 0.19)
+  ctx.translate(size * 0.22, size * 0.22)
   ctx.scale(scale, scale)
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
-  if (!shape) {
-    ctx.strokeStyle = color
-    ctx.lineWidth = 2.2
-    ctx.stroke(new Path2D('M9.2 9a3 3 0 1 1 4.3 2.7c-.9.5-1.5 1.2-1.5 2.3'))
-    ctx.stroke(new Path2D('M12 18h.01'))
-  } else {
-    for (const d of shape.fill || []) {
-      const p = new Path2D(d)
-      ctx.fillStyle = color
-      ctx.fill(p)
-      ctx.strokeStyle = color
-      ctx.lineWidth = 1.4
-      ctx.stroke(p)
-    }
-    for (const d of shape.stroke || []) {
-      ctx.strokeStyle = shape.fill ? 'rgba(0,0,0,.35)' : color
-      ctx.lineWidth = shape.fill ? 1.1 : 2.2
-      ctx.stroke(new Path2D(d))
-    }
-  }
+  ctx.strokeStyle = color
+  ctx.lineWidth = 2.1
+  for (const d of paths) ctx.stroke(new Path2D(d))
   ctx.restore()
 }

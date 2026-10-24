@@ -15,7 +15,7 @@ export function TeamEmailCard() {
   const [email, setEmail] = useState('')
   const missing = info.data && !info.data.has_email
   return (
-    <Card title="Email khôi phục mật khẩu" className={missing ? 'border-amber-500/50' : undefined} action={info.data ? (info.data.has_email ? <Badge tone="success">{info.data.email_masked}</Badge> : <Badge tone="warning">Chưa có email</Badge>) : undefined}>
+    <Card icon={<Mail />} title="Email khôi phục mật khẩu" className={missing ? 'border-amber-500/50' : undefined} action={info.data ? (info.data.has_email ? <Badge tone="success">{info.data.email_masked}</Badge> : <Badge tone="warning">Chưa có email</Badge>) : undefined}>
       {missing && <p className="mb-3 rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-300">Đội bạn chưa có email. Nếu quên mật khẩu, hệ thống không thể gửi mã khôi phục — hãy thêm email ngay.</p>}
       <form className="flex flex-wrap items-end gap-3" onSubmit={(e) => { e.preventDefault(); void run(() => arenaApi.setTeamEmail(email), 'Đã lưu email khôi phục', () => { setEmail(''); invalidate('team:email') }) }}>
         <Field label={info.data?.has_email ? 'Đổi sang email mới' : 'Email của đội'} type="email" required className="min-w-64 flex-1" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="ten@gmail.com" autoComplete="email" />
@@ -41,7 +41,7 @@ export function PasswordCard() {
   const [sent, setSent] = useState(false)
   const mismatch = !!again && next !== again
   return (
-    <Card title="Mật khẩu & bảo mật" action={<KeyRound className="size-4 text-muted-foreground" />}>
+    <Card icon={<KeyRound />} title="Mật khẩu & bảo mật">
       <div className="mb-4 inline-flex rounded-xl border border-border bg-muted/40 p-1 text-xs font-semibold" role="tablist">
         {([['change', 'Đổi mật khẩu'], ['recover', 'Quên mật khẩu']] as const).map(([id, label]) => (
           <button key={id} role="tab" aria-selected={mode === id} onClick={() => setMode(id)} className={mode === id ? 'rounded-lg bg-card px-3 py-1.5 text-foreground shadow-sm' : 'rounded-lg px-3 py-1.5 text-muted-foreground hover:text-foreground'}>{label}</button>

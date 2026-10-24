@@ -22,7 +22,7 @@ import (
 // Ảnh nằm trên đĩa gateway, chỉ admin và hai đội của trận được xem (ảnh có khuôn mặt sinh viên).
 const (
 	snapshotMaxBytes = 40 * 1024
-	snapshotInterval = 8 * time.Second
+	snapshotInterval = 6 * time.Second // ảnh gửi 10 giây/lần; chừa khoảng lệch thời gian chụp
 	snapshotMaxAge   = 30 * 24 * time.Hour
 )
 

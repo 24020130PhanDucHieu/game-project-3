@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { BarChart3, GitCompare } from 'lucide-react'
+import { Award, BarChart3, GitCompare } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { useResource } from '@/lib/cache'
 import { decodeRule, sameStudent, stamp } from '@/lib/format'
@@ -94,10 +94,10 @@ export function BotAnalytics({ teamName }: { teamName?: string }) {
 
   return (
     <div className="space-y-6">
-      <Card title="Huy hiệu" action={<AcceptScrimmageToggle />}>
+      <Card icon={<Award />} title="Huy hiệu" action={<AcceptScrimmageToggle />}>
         {sid && <BadgeStrip studentId={sid} milestones={milestones} />}
       </Card>
-      <Card title="Phân tích bot" action={<Tabs value={tab} onChange={setTab} tabs={[{ id: 'stats', label: 'Thống kê', icon: <BarChart3 className="size-4" /> }, { id: 'diff', label: 'So sánh phiên bản', icon: <GitCompare className="size-4" /> }]} />}>
+      <Card icon={<BarChart3 />} title="Phân tích bot" action={<Tabs value={tab} onChange={setTab} tabs={[{ id: 'stats', label: 'Thống kê', icon: <BarChart3 className="size-4" /> }, { id: 'diff', label: 'So sánh phiên bản', icon: <GitCompare className="size-4" /> }]} />}>
         {tab === 'stats' ? (
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="lg:col-span-2">

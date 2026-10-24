@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { Bell, CheckCheck, DoorOpen, LogIn, Search, UserRound } from 'lucide-react'
+import { Award, Bell, CheckCheck, DoorOpen, History, LineChart, LogIn, Search, Swords, UserRound } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { invalidate, useResource } from '@/lib/cache'
 import { cn } from '@/lib/utils'
@@ -22,7 +22,7 @@ function ProfileScoreHistory() {
   const detail = useResource<any>(qualifierId ? `q:detail:${scope}:${qualifierId}` : null, () => arenaApi.getQualifier(qualifierId), { ttl: 15_000 })
   if (!qualifiers.data?.length) return null
   return (
-    <Card title="Lịch sử tính điểm" subtitle="ELO trước và sau từng trận vòng loại" action={qualifiers.data.length > 1 ? (
+    <Card icon={<LineChart />} title="Lịch sử tính điểm" subtitle="ELO trước và sau từng trận vòng loại" action={qualifiers.data.length > 1 ? (
       <Select aria-label="Chọn vòng loại" value={qualifierId} onChange={(e) => setQualifierId(e.target.value)} className="w-56">{qualifiers.data.map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}</Select>
     ) : undefined}>
       {detail.loading ? <SkeletonRows rows={4} /> : <ScoreHistoryTable rows={scoreRows(detail.data?.results || [], session.student_id || '')} />}
@@ -146,7 +146,7 @@ export function ProfileView() {
 
             <div className="space-y-6">
               {own && (
-                <Card title="Trận của đội tôi" subtitle={tournament.data?.name}>
+                <Card icon={<Swords />} title="Trận của đội tôi" subtitle={tournament.data?.name}>
                   {ownMatches.length ? (
                     <div className="space-y-3">
                       {ownMatches.map(([id, m]) => (
@@ -158,7 +158,7 @@ export function ProfileView() {
                   ) : <EmptyState title="Đội chưa có trận trong giải đang chọn" hint="Ban tổ chức sẽ ghi danh và xếp cặp. Bạn vẫn có thể tham gia vòng loại." action={<Button variant="secondary" size="sm" onClick={() => navigate('qualifier')}>Đến Vòng loại</Button>} />}
                 </Card>
               )}
-              <Card title="Trận gần đây">
+              <Card icon={<History />} title="Trận gần đây">
                 {history.loading ? <SkeletonRows rows={3} /> : myHistory.length ? (
                   <DataTable head={['Vòng', 'Đối thủ', 'Kết quả']}>
                     {myHistory.map((h) => {
@@ -176,9 +176,9 @@ export function ProfileView() {
       {own && <div className="grid gap-6 xl:grid-cols-2"><TeamEmailCard /><PasswordCard /></div>}
       {own && <BotAnalytics teamName={profile.data?.team_name} />}
       {own && <ProfileScoreHistory />}
-      {!own && sid && profile.data && <Card title="Huy hiệu thử thách"><BadgeStrip studentId={sid} /></Card>}
+      {!own && sid && profile.data && <Card icon={<Award />} title="Huy hiệu thử thách"><BadgeStrip studentId={sid} /></Card>}
 
-      {role !== 'GUEST' && <Card title="Thông báo của bạn"><NotificationList /></Card>}
+      {role !== 'GUEST' && <Card icon={<Bell />} title="Thông báo của bạn"><NotificationList /></Card>}
     </div>
   )
 }

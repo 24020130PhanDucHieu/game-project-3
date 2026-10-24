@@ -188,6 +188,15 @@ h1, h2, h3, .font-display { font-family: var(--font-display); word-spacing: 0.14
 .animate-float { animation: float-y 5s ease-in-out infinite; }
 .animate-live { animation: pulse-ring 1.6s ease-out infinite; }
 .animate-fade-up { animation: fade-up .35s ease both; }
+/* Banner "aurora": gradient nhiều màu trôi chậm + đốm sáng bay; tắt khi người dùng chọn giảm chuyển động. */
+@keyframes aurora-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+@keyframes aurora-blob { 0%, 100% { transform: translate(0, 0) scale(1); } 33% { transform: translate(8%, -10%) scale(1.15); } 66% { transform: translate(-10%, 8%) scale(.9); } }
+.aurora { background-size: 300% 300%; animation: aurora-shift 14s ease-in-out infinite; }
+.aurora-blob { animation: aurora-blob 18s ease-in-out infinite; }
+.aurora-blob-slow { animation: aurora-blob 26s ease-in-out infinite reverse; }
+.aurora-dots { background-image: radial-gradient(rgba(255,255,255,.16) 1px, transparent 1px); background-size: 18px 18px; mask-image: linear-gradient(to bottom, #000, transparent 85%); }
+@media (prefers-reduced-motion: reduce) { .aurora, .aurora-blob, .aurora-blob-slow { animation: none; } }
+
 
 /* ---------- Hoạt ảnh bàn cờ ---------- */
 @keyframes piece-pop { 0% { transform: scale(.55); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
