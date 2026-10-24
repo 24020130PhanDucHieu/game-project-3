@@ -47,6 +47,7 @@ func (s *QualifierRecords) GatewayLease() (<-chan error, error) {
 INSERT INTO arena_gateway_lease (id, holder, expires_at) VALUES (1, $1, now() + $2::interval)
 ON CONFLICT (id) DO UPDATE SET holder = EXCLUDED.holder, expires_at = EXCLUDED.expires_at
 WHERE arena_gateway_lease.expires_at < now() OR arena_gateway_lease.holder = EXCLUDED.holder
+   OR arena_gateway_lease.holder LIKE EXCLUDED.holder || ':%'
 RETURNING holder`, holder, fmt.Sprintf("%d seconds", int(leaseTTL.Seconds()))).Scan(&got)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -67,7 +68,13 @@ RETURNING holder`, holder, fmt.Sprintf("%d seconds", int(leaseTTL.Seconds()))).S
 			if err != nil {
 				return nil, fmt.Errorf("database unavailable for the gateway writer lease: %w", err)
 			}
-			return nil, errors.New("another Arena gateway holds the database writer lease")
+			var other string
+			var expires time.Time
+			var now time.Time
+			probe, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			_ = s.db.QueryRowContext(probe, `SELECT holder, expires_at, now() FROM arena_gateway_lease WHERE id = 1`).Scan(&other, &expires, &now)
+			cancel()
+			return nil, fmt.Errorf("another Arena gateway holds the database writer lease (holder %q, this gateway %q, expires in %s)", other, holder, expires.Sub(now).Round(time.Second))
 		}
 		time.Sleep(time.Second)
 	}
