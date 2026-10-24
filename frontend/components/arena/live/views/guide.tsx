@@ -1,14 +1,16 @@
 'use client'
 
 import { useState, type ReactNode } from 'react'
-import { BookOpen, Check, Copy, Cpu, FileCode2, Flag, HelpCircle, ListOrdered, MessageCircleQuestion, Scale, WifiOff } from 'lucide-react'
+import { Activity, BookOpen, Check, Copy, Cpu, FileCode2, Flag, HelpCircle, ListOrdered, Lock, MessageCircleQuestion, Scale, WifiOff } from 'lucide-react'
 import { decodeRule, ruleBits, shortTime } from '@/lib/format'
 import { Badge, Button, Card, DataTable, SectionTitle, Tabs } from '../ui'
 import { useLive } from '../context'
 import { CPP_TEMPLATE, PY_TEMPLATE } from '../workbench'
 import { TeamClarifications } from '../clarifications'
+import { SystemStatusCard } from '../system-status'
+import { PrivacyPolicy } from '../privacy-policy'
 
-type Section = 'flow' | 'rules' | 'bot' | 'qualifier' | 'offline' | 'faq' | 'ask'
+type Section = 'flow' | 'rules' | 'bot' | 'qualifier' | 'offline' | 'faq' | 'ask' | 'privacy' | 'status'
 
 function Code({ children }: { children: string }) {
   const [copied, setCopied] = useState(false)
@@ -54,6 +56,8 @@ export function GuideView() {
           { id: 'offline', label: 'Mất mạng', icon: <WifiOff className="size-4" /> },
           { id: 'faq', label: 'Câu hỏi thường gặp', icon: <HelpCircle className="size-4" /> },
           { id: 'ask', label: 'Hỏi BTC', icon: <MessageCircleQuestion className="size-4" /> },
+          { id: 'privacy', label: 'Dữ liệu cá nhân', icon: <Lock className="size-4" /> },
+          { id: 'status', label: 'Trạng thái hệ thống', icon: <Activity className="size-4" /> },
         ]}
       />
 
@@ -159,7 +163,7 @@ export function GuideView() {
             <ul className="list-inside list-disc space-y-2">
               <li><strong className="text-foreground">“Đã lưu trên máy” chưa phải “server đã nhận”.</strong> Hãy nối mạng trước hạn nộp và giữ trình duyệt mở.</li>
               <li>Dùng cùng một thiết bị và trình duyệt; không xóa dữ liệu trình duyệt. Đổi tài khoản sẽ không gửi bài của đội cũ.</li>
-              <li>Kiểm tra mã và đấu thử boss luôn cần mạng.</li>
+              <li>Bấm “Tải gói offline” trong tab Nộp bot khi còn mạng (khoảng 10 MB, chỉ một lần); sau đó mất mạng vẫn kiểm tra mã và đấu thử boss được ngay trên máy (chỉ Python). Thẻ “Trạng thái bài” cho biết bài đang nằm ở đâu và đã khớp với máy chủ chưa.</li>
               <li>Bản nháp trong ô soạn thảo được lưu tự động, nhưng nếu mất điện đúng lúc vừa gõ thì phần chưa kịp lưu có thể mất.</li>
               <li>Nếu máy chấm lỗi, hệ thống thử lại hoặc chuyển sang máy khác; ban tổ chức có thể tạm dừng để xử lý.</li>
             </ul>
@@ -168,6 +172,8 @@ export function GuideView() {
       )}
 
       {section === 'ask' && <TeamClarifications />}
+      {section === 'privacy' && <PrivacyPolicy />}
+      {section === 'status' && <SystemStatusCard />}
 
       {section === 'faq' && (
         <Card title="Câu hỏi thường gặp">

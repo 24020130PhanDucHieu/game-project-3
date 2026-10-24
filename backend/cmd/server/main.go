@@ -148,6 +148,10 @@ func main() {
 
 	// 5. Gin HTTP Engine
 	r := gin.New()
+	// Chỉ tin X-Forwarded-For từ Caddy chạy cùng máy; IP thật dùng cho nhật ký và giới hạn tần suất.
+	if err := r.SetTrustedProxies([]string{"127.0.0.1", "::1"}); err != nil {
+		log.Fatalf("trusted proxies: %v", err)
+	}
 	r.Use(middleware.RecoveryMiddleware())
 	r.Use(middleware.LoggerMiddleware())
 	r.Use(middleware.RequestBounds())

@@ -5,11 +5,14 @@ import (
 	"crypto/subtle"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"project-tuan3/internal/auth"
@@ -20,6 +23,8 @@ import (
 
 type MatchHandler struct {
 	Human       *humancheck.Guard
+	adminMu     sync.Mutex
+	adminFails  map[string]adminFailure
 	Accounts    *repository.Accounts
 	Judges      *repository.Judges
 	AccountSync func() error
@@ -31,6 +36,53 @@ func NewMatchHandler(service *service.TournamentService, sessions *auth.Manager)
 	return &MatchHandler{service: service, sessions: sessions}
 }
 
+type adminFailure struct {
+	count int
+	until time.Time
+}
+
+const (
+	adminMaxFailures = 5
+	adminLockout     = 15 * time.Minute
+)
+
+// localRequest: request do chính máy gateway gửi (watchdog), không đi qua Caddy.
+func localRequest(c *gin.Context) bool {
+	ip := net.ParseIP(c.RemoteIP())
+	return ip != nil && ip.IsLoopback() && c.GetHeader("X-Forwarded-For") == ""
+}
+
+// adminLocked cho biết IP đang bị khóa đăng nhập ban tổ chức và còn bao lâu.
+func (h *MatchHandler) adminLocked(ip string) time.Duration {
+	h.adminMu.Lock()
+	defer h.adminMu.Unlock()
+	if f, ok := h.adminFails[ip]; ok && time.Now().Before(f.until) {
+		return time.Until(f.until)
+	}
+	return 0
+}
+
+func (h *MatchHandler) adminResult(ip string, ok bool) {
+	h.adminMu.Lock()
+	defer h.adminMu.Unlock()
+	if h.adminFails == nil {
+		h.adminFails = map[string]adminFailure{}
+	}
+	if ok {
+		delete(h.adminFails, ip)
+		return
+	}
+	f := h.adminFails[ip]
+	if !f.until.IsZero() && time.Now().After(f.until) {
+		f = adminFailure{}
+	}
+	f.count++
+	if f.count >= adminMaxFailures {
+		f.until = time.Now().Add(adminLockout)
+	}
+	h.adminFails[ip] = f
+}
+
 func (h *MatchHandler) AdminLogin(c *gin.Context) {
 	var req map[string]interface{}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -39,6 +91,20 @@ func (h *MatchHandler) AdminLogin(c *gin.Context) {
 	}
 	username, _ := req["username"].(string)
 	password, _ := req["password"].(string)
+	ip := c.ClientIP()
+	if wait := h.adminLocked(ip); wait > 0 {
+		c.Header("Retry-After", strconv.Itoa(int(wait.Seconds())+1))
+		c.JSON(http.StatusTooManyRequests, gin.H{"detail": fmt.Sprintf("Đăng nhập ban tổ chức sai quá %d lần. Thử lại sau %d phút.", adminMaxFailures, int(wait.Minutes())+1)})
+		return
+	}
+	if !localRequest(c) {
+		challenge, _ := req["human_challenge"].(string)
+		solution, _ := req["human_solution"].(string)
+		if err := h.Human.Check(challenge, solution); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error(), "human_check": true})
+			return
+		}
+	}
 	if username != "" && !isAdminUsername(username) {
 		if h.Judges == nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"detail": "Invalid organizer credentials"})
@@ -46,6 +112,7 @@ func (h *MatchHandler) AdminLogin(c *gin.Context) {
 		}
 		judge, err := h.Judges.Authenticate(username, password)
 		if errors.Is(err, repository.ErrJudgeCredentials) {
+			h.adminResult(ip, false)
 			c.JSON(http.StatusUnauthorized, gin.H{"detail": err.Error()})
 			return
 		}
@@ -58,14 +125,17 @@ func (h *MatchHandler) AdminLogin(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"detail": "Could not create session"})
 			return
 		}
+		h.adminResult(ip, true)
 		c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "role": "ADMIN", "judge": judge.Username, "display_name": judge.DisplayName, "session_token": token})
 		return
 	}
 	configured := os.Getenv("ADMIN_PASSWORD")
 	if configured == "" || subtle.ConstantTimeCompare([]byte(password), []byte(configured)) != 1 {
+		h.adminResult(ip, false)
 		c.JSON(http.StatusUnauthorized, gin.H{"detail": "Invalid organizer credentials"})
 		return
 	}
+	h.adminResult(ip, true)
 	token, err := h.sessions.Create(auth.Session{Role: "ADMIN"})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"detail": "Could not create session"})

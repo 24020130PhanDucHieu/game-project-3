@@ -82,7 +82,9 @@ export async function apiRequest<T = any>(
       else if (data.error) errorMsg = data.error
       else if (data.message) errorMsg = data.message
     } catch {}
-    throw new Error(errorMsg)
+    const error = new Error(errorMsg) as Error & { status?: number }
+    error.status = response.status
+    throw error
   }
 
   const contentType = response.headers.get('content-type')
@@ -116,10 +118,10 @@ export const arenaApi = {
     return { team_name: res.team?.team_name, student_id: res.team?.student_id }
   },
 
-  async loginAdmin(password: string, username = '') {
+  async loginAdmin(password: string, username = '', proof?: { human_challenge: string; human_solution: string } | null) {
     const res = await apiRequest<{ session_token: string; judge?: string; display_name?: string }>('/admin/login', {
       method: 'POST',
-      body: JSON.stringify(username ? { username, password } : { password }),
+      body: JSON.stringify({ ...(username ? { username } : {}), password, ...(proof || {}) }),
     })
     if (!res.session_token) throw new Error('Máy chủ không trả phiên quản trị hợp lệ.')
     setSessionToken(res.session_token)

@@ -8,6 +8,7 @@ import { dateStamp, downloadCsv, parseCsv } from '@/lib/csv'
 import { stamp } from '@/lib/format'
 import { Badge, Button, Card, DataTable, ProgressBar, Select } from '../../ui'
 import { useLive } from '../../context'
+import { CertificatesCard } from './certificates'
 
 type Row = { student_id: string; team_name: string; password: string; email: string; problem?: string }
 const CHUNK = 100
@@ -186,5 +187,5 @@ function ExportCard() {
 }
 
 export function ImportExportTab() {
-  return <div className="space-y-6"><ImportCard /><ExportCard /></div>
+  return <div className="space-y-6"><ImportCard /><ExportCard /><CertificatesCard /></div>
 }

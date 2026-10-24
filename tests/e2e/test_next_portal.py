@@ -26,6 +26,7 @@ def run():
             registration.locator("input").nth(1).fill("Next Portal Team")
             registration.locator("input").nth(2).fill("verification-password")
             registration.locator("input").nth(3).fill("portal-team@example.com")
+            page.get_by_label("Đồng ý quy chế và xử lý dữ liệu cá nhân").check()
             page.get_by_role("checkbox", name="Tôi không phải robot").click()
             expect(page.get_by_text("Đã xác minh bạn không phải robot")).to_be_visible(timeout=20000)
             with page.expect_response(lambda response: "/api/teams/register" in response.url) as registered:
@@ -53,6 +54,8 @@ def run():
             admin.get_by_role("button", name="Đăng nhập", exact=True).click()
             admin.locator("#inp-login-user").fill("ADMIN")
             admin.locator("#inp-login-pass").fill(arena.PASSWORD)
+            admin.get_by_role("checkbox", name="Tôi không phải robot").click()
+            expect(admin.get_by_text("Đã xác minh bạn không phải robot")).to_be_visible(timeout=20000)
             with admin.expect_response(lambda response: "/api/admin/login" in response.url) as admin_login:
                 admin.locator("form").first.get_by_role("button", name="Đăng nhập").click()
             assert admin_login.value.ok, admin_login.value.text()

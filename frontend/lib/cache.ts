@@ -112,10 +112,22 @@ export function useResource<T>(
 
   useEffect(() => {
     if (!key || !refreshMs) return
-    const timer = window.setInterval(() => {
-      if (document.visibilityState === 'visible') void run(true)
-    }, refreshMs)
-    return () => window.clearInterval(timer)
+    // Lệch ngẫu nhiên ±20% để hàng nghìn máy không hỏi máy chủ cùng một nhịp; máy chủ báo bận (429/5xx)
+    // thì giãn dần tới 5 phút, có dữ liệu trở lại thì về nhịp thường.
+    let timer = 0
+    let delay = refreshMs
+    let stopped = false
+    const tick = async () => {
+      if (stopped) return
+      if (document.visibilityState === 'visible') {
+        await run(true)
+        const status = (store.get(key)?.error as { status?: number } | undefined)?.status
+        delay = status === 429 || (status !== undefined && status >= 500) ? Math.min(delay * 2, 300_000) : refreshMs
+      }
+      if (!stopped) timer = window.setTimeout(tick, delay * (0.8 + Math.random() * 0.4))
+    }
+    timer = window.setTimeout(tick, refreshMs * (0.8 + Math.random() * 0.4))
+    return () => { stopped = true; window.clearTimeout(timer) }
   }, [key, refreshMs, run])
 
   const entry = key ? store.get(key) : undefined

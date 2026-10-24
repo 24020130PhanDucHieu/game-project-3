@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -41,7 +42,14 @@ func registerStaticPortal(router *gin.Engine, root string) {
 		c.File(filepath.Join(root, "index.html"))
 	})
 	if info, err := os.Stat(filepath.Join(root, "_next")); err == nil && info.IsDir() {
-		router.StaticFS("/_next", http.FS(os.DirFS(filepath.Join(root, "_next"))))
+		// File trong _next/static có mã băm trong tên: cho trình duyệt và CDN giữ 1 năm, đỡ tải cho máy chủ.
+		next := http.StripPrefix("/_next", http.FileServer(http.FS(os.DirFS(filepath.Join(root, "_next")))))
+		router.GET("/_next/*path", func(c *gin.Context) {
+			if strings.HasPrefix(c.Param("path"), "/static/") {
+				c.Header("Cache-Control", "public, max-age=31536000, immutable")
+			}
+			next.ServeHTTP(c.Writer, c.Request)
+		})
 	}
 	// Máy chấm offline (worker + engine Python): luôn kiểm tra bản mới để engine khớp với server.
 	if info, err := os.Stat(filepath.Join(root, "offline")); err == nil && info.IsDir() {

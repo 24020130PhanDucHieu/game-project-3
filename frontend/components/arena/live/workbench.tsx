@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic'
 import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { Bot, CloudOff, Download, FileCode2, GitBranch, HardDrive, ShieldCheck, Swords } from 'lucide-react'
-import { isNetworkError, offlineEngine } from '@/lib/offline-engine'
+import { isBusyError, isNetworkError, offlineEngine } from '@/lib/offline-engine'
 import { useOnline } from '@/lib/use-online'
 import { arenaApi } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
@@ -116,7 +116,8 @@ export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSu
     try {
       show(online ? await arenaApi.validateCode(code, language, ruleId) : await offlineEngine.validate(code, language, ruleId))
     } catch (e) {
-      if (online && isNetworkError(e)) {
+      if (online && (isNetworkError(e) || (isBusyError(e) && language === 'PYTHON'))) {
+        if (isBusyError(e)) toast('info', 'Máy chấm đang bận — chạy thử ngay trên máy của bạn (kết quả giống máy chủ, không tính vào giải).')
         try { show(await offlineEngine.validate(code, language, ruleId)) } catch (inner) { setValidation({ ok: false, message: inner instanceof Error ? inner.message : 'Không kiểm tra được mã.' }) }
       } else setValidation({ ok: false, message: e instanceof Error ? e.message : 'Không kiểm tra được mã.' })
     } finally { setWorking(null) }
@@ -128,7 +129,8 @@ export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSu
     try {
       setPracticeResult(online ? await arenaApi.practiceBot({ code_content: code, language, boss, side: 'team_a', rule_id: practiceRule }) : await offlineEngine.practice(code, language, boss, practiceRule))
     } catch (e) {
-      if (online && isNetworkError(e)) {
+      if (online && (isNetworkError(e) || (isBusyError(e) && language === 'PYTHON'))) {
+        if (isBusyError(e)) toast('info', 'Máy chấm đang bận — chạy thử ngay trên máy của bạn (kết quả giống máy chủ, không tính vào giải).')
         try { setPracticeResult(await offlineEngine.practice(code, language, boss, practiceRule)); return } catch (inner) { e = inner }
       }
       toast('error', e instanceof Error ? e.message : 'Không chạy thử được')

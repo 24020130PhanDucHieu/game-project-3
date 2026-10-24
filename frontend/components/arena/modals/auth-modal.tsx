@@ -5,6 +5,7 @@ import { Eye, EyeOff } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 import { HumanCheck, type HumanProof } from './human-check'
+import { PRIVACY_ITEMS } from '../live/privacy-policy'
 
 export type AuthModalMode = 'login' | 'register' | 'forgot'
 
@@ -39,6 +40,7 @@ export function AuthModal({
   const [regLoading, setRegLoading] = useState(false)
   const [regError, setRegError] = useState<string | null>(null)
   const [regSuccess, setRegSuccess] = useState<string | null>(null)
+  const [regAgree, setRegAgree] = useState(false)
 
   // Forgot Password State
   const [forgotSid, setForgotSid] = useState('')
@@ -63,14 +65,14 @@ export function AuthModal({
 
     const userClean = loginUser.trim().toUpperCase()
     const organizer = asOrganizer || userClean === 'ADMIN' || userClean === 'BTC'
-    if (!organizer && !proof) {
+    if (!proof) {
       setLoginError('Hãy tích ô “Tôi không phải robot” trước khi đăng nhập.')
       setLoginLoading(false)
       return
     }
     try {
       if (organizer) {
-        const res = await arenaApi.loginAdmin(loginPass, loginUser.trim())
+        const res = await arenaApi.loginAdmin(loginPass, loginUser.trim(), proof)
         onLoginSuccess?.('admin', res.display_name || 'Ban Tổ Chức (Admin)', res.judge || 'ADMIN')
         onClose()
       } else {
@@ -85,7 +87,7 @@ export function AuthModal({
     } catch (err: any) {
       setLoginError(err?.message || 'Tên đăng nhập hoặc mật khẩu không chính xác.')
     } finally {
-      if (!organizer) spendProof()
+      spendProof()
       setLoginLoading(false)
     }
   }
@@ -97,6 +99,10 @@ export function AuthModal({
 
     if (regPass.length < 6) {
       setRegError('Mật khẩu phải từ 6 ký tự trở lên.')
+      return
+    }
+    if (!regAgree) {
+      setRegError('Hãy đọc và đồng ý quy chế giải cùng cách xử lý dữ liệu cá nhân trước khi đăng ký.')
       return
     }
     if (!proof) {
@@ -210,7 +216,7 @@ export function AuthModal({
                 </div>
               </div>
 
-              {!asOrganizer && <HumanCheck value={proof} onChange={setProof} resetKey={proofKey} />}
+              <HumanCheck value={proof} onChange={setProof} resetKey={proofKey} />
 
               <label className="flex cursor-pointer items-center gap-2 text-[13px] font-medium text-muted-foreground">
                 <input type="checkbox" className="accent-primary" checked={asOrganizer} onChange={(e) => setAsOrganizer(e.target.checked)} />
@@ -348,6 +354,17 @@ export function AuthModal({
                   />
                 </div>
                 <p className="text-[11px] text-muted-foreground">Dùng để đăng nhập thay cho MSSV và nhận mã khôi phục mật khẩu. Mỗi email chỉ gắn với một đội.</p>
+              </div>
+
+              <div className="rounded-xl border border-border bg-muted/30 p-3 text-[12.5px]">
+                <label className="flex cursor-pointer items-start gap-2 font-medium text-foreground">
+                  <input type="checkbox" className="mt-0.5 accent-primary" checked={regAgree} onChange={(e) => setRegAgree(e.target.checked)} aria-label="Đồng ý quy chế và xử lý dữ liệu cá nhân" />
+                  <span>Tôi đồng ý với quy chế giải và việc ban tổ chức xử lý dữ liệu cá nhân của đội để tổ chức giải.</span>
+                </label>
+                <details className="mt-2 text-muted-foreground">
+                  <summary className="cursor-pointer font-semibold text-primary">Xem dữ liệu được thu và quyền của bạn</summary>
+                  <ul className="mt-2 space-y-1.5">{PRIVACY_ITEMS.map((item) => <li key={item.title}><strong className="text-foreground">{item.title}:</strong> {item.body}</li>)}</ul>
+                </details>
               </div>
 
               <HumanCheck value={proof} onChange={setProof} resetKey={proofKey} />

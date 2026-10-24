@@ -13,7 +13,10 @@ Chế độ hoạt động:
 YÊU CẦU:
   - BASE_URL=<URL gateway>
   - ADMIN_PASSWORD=<mật khẩu admin>
-  - ALERT_WEBHOOK_URL=<Discord/Telegram/Slack webhook>
+  - ALERT_WEBHOOK_URL=<Discord/Telegram/Slack webhook> (tùy chọn)
+  - Email: dùng sẵn SMTP_HOST/SMTP_PORT/SMTP_USER/SMTP_PASSWORD/SMTP_FROM của gateway;
+    người nhận là ALERT_EMAIL (mặc định SMTP_FROM). Mỗi loại lỗi gửi tối đa 1 mail/15 phút,
+    và gửi thêm mail "đã phục hồi" khi hệ thống ổn trở lại.
   - BACKUP_DIR=<thư mục backup> (tùy chọn)
 
 Cách chạy:
@@ -25,6 +28,9 @@ import argparse
 import glob
 import json
 import os
+import shutil
+import smtplib
+from email.message import EmailMessage
 import signal
 import sys
 import time
@@ -201,7 +207,18 @@ class HealthChecker:
                     "message": f"{failed} bài chấm lỗi",
                 })
 
-        # 6. Backup freshness
+        # 6. Ổ đĩa gateway (đầy đĩa làm hỏng log, sao lưu và cập nhật)
+        try:
+            usage = shutil.disk_usage("/")
+            percent = usage.used * 100 / usage.total
+            if percent >= 93:
+                alerts.append({"severity": "CRITICAL", "component": "disk", "message": f"Ổ đĩa gateway đã dùng {percent:.0f}% (còn {usage.free // 2**20} MB)"})
+            elif percent >= 85:
+                alerts.append({"severity": "WARNING", "component": "disk", "message": f"Ổ đĩa gateway đã dùng {percent:.0f}% (còn {usage.free // 2**20} MB)"})
+        except OSError:
+            pass
+
+        # 7. Backup freshness
         if self.backup_dir:
             dump_files = glob.glob(str(Path(self.backup_dir) / "*.dump"))
             if not dump_files:
@@ -274,12 +291,96 @@ def send_slack(webhook_url: str, text: str):
     fetch_json(webhook_url, payload={"text": text}, timeout=10)
 
 
+def send_email(subject: str, text: str) -> bool:
+    """Gửi cảnh báo qua SMTP đã cấu hình cho gateway (Gmail App password)."""
+    host = os.environ.get("SMTP_HOST", "").strip()
+    user = os.environ.get("SMTP_USER", "").strip()
+    password = os.environ.get("SMTP_PASSWORD", "").replace(" ", "")
+    sender = os.environ.get("SMTP_FROM", "").strip() or user
+    to = os.environ.get("ALERT_EMAIL", "").strip() or sender
+    if not (host and user and password and to):
+        return False
+    msg = EmailMessage()
+    msg["From"], msg["To"], msg["Subject"] = sender, to, subject
+    msg.set_content(text)
+    port = int(os.environ.get("SMTP_PORT", "587") or 587)
+    if port == 465:
+        server = smtplib.SMTP_SSL(host, port, timeout=20)
+    else:
+        server = smtplib.SMTP(host, port, timeout=20)
+        server.starttls()
+    with server:
+        server.login(user, password)
+        server.send_message(msg)
+    return True
+
+
+STATE_FILE = Path(os.environ.get("ALERT_STATE_FILE", "/var/lib/arena/alert-state.json"))
+REPEAT_SECONDS = 15 * 60
+
+
+def _alert_key(alert: Dict[str, str]) -> str:
+    return f"{alert['component']}:{alert['severity']}"
+
+
+def select_alerts(alerts: List[Dict[str, str]], state: dict, now: float):
+    """Chống spam: chỉ gửi loại lỗi mới hoặc đã quá 15 phút kể từ lần gửi trước. Trả (cần gửi, đã phục hồi, state mới)."""
+    active = {_alert_key(a): a for a in alerts}
+    sent = dict(state.get("sent", {}))
+    due = [a for k, a in active.items() if k not in sent or now - sent[k] >= REPEAT_SECONDS]
+    recovered = [k for k in sent if k not in active]
+    for a in due:
+        sent[_alert_key(a)] = now
+    for k in recovered:
+        sent.pop(k, None)
+    return due, recovered, {"sent": sent}
+
+
+def load_state() -> dict:
+    try:
+        return json.loads(STATE_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def save_state(state: dict):
+    try:
+        STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        STATE_FILE.write_text(json.dumps(state), encoding="utf-8")
+    except OSError as e:
+        _log("WARN", f"  Không lưu được trạng thái cảnh báo: {e}")
+
+
+def notify(alerts: List[Dict[str, str]], base_url: str):
+    """Gửi cảnh báo mới và báo phục hồi, có chống spam giữa các lần chạy watchdog."""
+    state = load_state()
+    due, recovered, new_state = select_alerts(alerts, state, time.time())
+    if due:
+        dispatch_alerts(due, base_url)
+    if recovered:
+        text = f"✅ Arena đã phục hồi — {_ts()}\nGateway: {base_url}\nCác lỗi đã hết: " + ", ".join(recovered)
+        try:
+            if send_email("[Arena] Đã phục hồi", text):
+                _log("INFO", "  ✔ Đã gửi mail báo phục hồi")
+        except Exception as e:
+            _log("ERROR", f"  ❌ Gửi mail phục hồi thất bại: {e}")
+    save_state(new_state)
+
+
 def dispatch_alerts(alerts: List[Dict[str, str]], base_url: str):
     """Send alerts to all configured channels."""
     if not alerts:
         return
 
     text = format_alert_text(alerts, base_url)
+    emailed = False
+    try:
+        worst = "NGHIÊM TRỌNG" if any(a["severity"] == "CRITICAL" for a in alerts) else "Cảnh báo"
+        emailed = send_email(f"[Arena] {worst}: " + ", ".join(sorted({a['component'] for a in alerts})), text)
+        if emailed:
+            _log("INFO", "  ✔ Đã gửi cảnh báo qua email")
+    except Exception as e:
+        _log("ERROR", f"  ❌ Gửi email cảnh báo thất bại: {e}")
 
     # Discord
     discord_url = os.environ.get("ALERT_WEBHOOK_URL") or os.environ.get("DISCORD_WEBHOOK_URL")
@@ -309,8 +410,8 @@ def dispatch_alerts(alerts: List[Dict[str, str]], base_url: str):
         except Exception as e:
             _log("ERROR", f"  ❌ Slack webhook failed: {e}")
 
-    # If no webhook configured, just print
-    if not (discord_url or (tg_token and tg_chat) or slack_url):
+    # If no channel configured, just print
+    if not (emailed or discord_url or (tg_token and tg_chat) or slack_url):
         _log("WARN", "  Không có ALERT_WEBHOOK_URL, TELEGRAM_BOT_TOKEN, hoặc SLACK_WEBHOOK_URL")
         _log("WARN", "  Cảnh báo chỉ in ra console")
     
@@ -416,9 +517,10 @@ def main():
             for a in alerts:
                 icon = "🔴" if a["severity"] == "CRITICAL" else "🟡"
                 print(f"  {icon} [{a['component']}] {a['message']}")
-            dispatch_alerts(alerts, base_url)
+            notify(alerts, base_url)
             return 1
         else:
+            notify([], base_url)
             _log("INFO", "✔ Hệ thống hoạt động bình thường — không có cảnh báo")
             return 0
 
@@ -448,8 +550,9 @@ def main():
                     for a in alerts:
                         icon = "🔴" if a["severity"] == "CRITICAL" else "🟡"
                         _log(a["severity"], f"[{a['component']}] {a['message']}")
-                    dispatch_alerts(alerts, base_url)
+                    notify(alerts, base_url)
                 else:
+                    notify([], base_url)
                     if check_count % 30 == 1:  # Log OK status periodically
                         _log("INFO", f"✔ OK (check #{check_count}, alerts total: {alert_count})")
             except Exception as e:

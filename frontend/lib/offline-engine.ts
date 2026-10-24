@@ -77,6 +77,12 @@ export function isNetworkError(error: unknown) {
   return error instanceof TypeError || (error instanceof Error && /Failed to fetch|NetworkError|Load failed|mất kết nối|không kết nối/i.test(error.message))
 }
 
+/** Máy chấm bận hoặc đã chạm hạn mức (429/502/503/504) → chạy thử trên máy người dùng thay vì chờ. */
+export function isBusyError(error: unknown) {
+  const status = (error as { status?: number } | null)?.status
+  return status === 429 || status === 502 || status === 503 || status === 504
+}
+
 export function registerOfflineSupport() {
   if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
   if (process.env.NODE_ENV !== 'production' && !/[?&]sw=1/.test(location.search)) return
