@@ -17,15 +17,10 @@ import { ScoreHistoryTable, scoreRows } from '../qualifier-extras'
 import { CodeViewer } from '../replay-viewer'
 import { Podium, RankBadge, SummaryStat, WinRate } from './ranking'
 
-/** Bảng màu banner theo trạng thái vòng loại (gradient trôi liên tục). */
-const AURORA: Record<string, string> = {
-  OPEN: 'linear-gradient(120deg,#4f46e5,#7c3aed,#c026d3,#0ea5e9,#4f46e5)',
-  CLOSING: 'linear-gradient(120deg,#4f46e5,#7c3aed,#c026d3,#0ea5e9,#4f46e5)',
-  LOCKED: 'linear-gradient(120deg,#1d4ed8,#4f46e5,#0891b2,#7c3aed,#1d4ed8)',
-  RUNNING: 'linear-gradient(120deg,#ea580c,#db2777,#9333ea,#f59e0b,#ea580c)',
-  PAUSED: 'linear-gradient(120deg,#475569,#6d28d9,#334155,#7c3aed,#475569)',
-  FINISHED: 'linear-gradient(120deg,#059669,#0d9488,#0284c7,#16a34a,#059669)',
-  PROMOTED: 'linear-gradient(120deg,#059669,#0d9488,#ca8a04,#16a34a,#059669)',
+/** Hai màu pha cho banner theo trạng thái vòng loại (loang từ hai góc trên). */
+const TINT: Record<string, [string, string]> = {
+  OPEN: ['#8b5cf6', '#38bdf8'], CLOSING: ['#8b5cf6', '#38bdf8'], LOCKED: ['#3b82f6', '#06b6d4'],
+  RUNNING: ['#f97316', '#ec4899'], PAUSED: ['#64748b', '#8b5cf6'], FINISHED: ['#10b981', '#06b6d4'], PROMOTED: ['#10b981', '#f59e0b'],
 }
 
 const STEP_LABEL: Record<string, string> = { OPEN: 'Nhận bài', LOCKED: 'Khóa bài', RUNNING: 'Ghép cặp & chấm', FINISHED: 'Hoàn tất', PROMOTED: 'Chốt đội' }
@@ -36,8 +31,8 @@ function Stepper({ status }: { status: string }) {
     <ol className="grid grid-cols-5 gap-2" aria-label="Tiến trình vòng loại">
       {qualifierSteps.map((step, i) => (
         <li key={step} className="min-w-0">
-          <div className={cn('h-1.5 rounded-full transition-colors', i < current ? 'bg-white/80' : i === current ? 'bg-amber-300 shadow-[0_0_12px_rgba(252,211,77,.8)]' : 'bg-white/20')} />
-          <p className={cn('mt-1.5 truncate text-[11px]', i === current ? 'font-bold text-white' : 'text-white/60')}>
+          <div className={cn('h-1.5 rounded-full transition-colors', i < current ? 'bg-primary' : i === current ? 'bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,.8)]' : 'bg-muted')} />
+          <p className={cn('mt-1.5 truncate text-[11px]', i === current ? 'font-bold text-foreground' : 'text-muted-foreground')}>
             {i < current && <Check className="mr-0.5 inline size-3" aria-hidden />}{STEP_LABEL[step]}
           </p>
         </li>
@@ -53,9 +48,9 @@ function Countdown({ seconds }: { seconds: number }) {
   return (
     <div className="flex gap-2" role="timer" aria-label="Thời gian còn lại để nộp bài">
       {parts.map(([v, label]) => (
-        <div key={label} className="min-w-14 rounded-xl border border-white/20 bg-white/15 px-2 py-1.5 text-center shadow-inner backdrop-blur-md">
-          <div className="font-display text-2xl font-black tabular-nums leading-none text-white">{String(v).padStart(2, '0')}</div>
-          <div className="mt-1 text-[10px] uppercase tracking-wider text-white/70">{label}</div>
+        <div key={label} className="min-w-14 rounded-xl bg-card/90 px-2 py-1.5 text-center shadow-sm ring-1 ring-border backdrop-blur-md">
+          <div className="font-display text-2xl font-black tabular-nums leading-none text-foreground">{String(v).padStart(2, '0')}</div>
+          <div className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
         </div>
       ))}
     </div>
@@ -64,9 +59,9 @@ function Countdown({ seconds }: { seconds: number }) {
 
 function HeroStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-white/15 bg-white/10 px-3 py-2.5 backdrop-blur-md transition hover:bg-white/15">
-      <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-white/70">{icon}{label}</p>
-      <p className="font-display mt-0.5 text-lg font-extrabold tabular-nums text-white">{value}</p>
+    <div className="rounded-xl bg-card/80 px-3 py-2.5 shadow-sm ring-1 ring-border backdrop-blur-md transition hover:bg-card">
+      <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground"><span className="text-primary">{icon}</span>{label}</p>
+      <p className="font-display mt-0.5 text-lg font-extrabold tabular-nums">{value}</p>
     </div>
   )
 }
@@ -179,19 +174,19 @@ export function QualifierView() {
   return (
     <div className="space-y-6">
       {detail.loading && !event ? <Skeleton className="h-72 w-full rounded-3xl" /> : detail.error && !detail.data ? <ErrorNote message={detail.error.message} onRetry={() => void detail.reload()} /> : event && (
-        <section className="aurora relative overflow-hidden rounded-3xl p-6 text-white shadow-xl shadow-primary/20 sm:p-8" style={{ backgroundImage: AURORA[event.status] || AURORA.OPEN }}>
-          <div className="aurora-blob pointer-events-none absolute -right-16 -top-24 size-80 rounded-full bg-white/15 blur-3xl" aria-hidden />
-          <div className="aurora-blob-slow pointer-events-none absolute -bottom-28 left-6 size-72 rounded-full bg-cyan-300/25 blur-3xl" aria-hidden />
-          <div className="aurora-dots pointer-events-none absolute inset-0" aria-hidden />
+        <section className="banner-soft relative overflow-hidden rounded-3xl p-6 sm:p-8" style={{ ['--tint-a' as string]: (TINT[event.status] || TINT.OPEN)[0], ['--tint-b' as string]: (TINT[event.status] || TINT.OPEN)[1] }}>
+          <div className="aurora-blob pointer-events-none absolute -right-16 -top-24 -z-10 size-80 rounded-full blur-3xl opacity-25" style={{ background: 'var(--tint-b)' }} aria-hidden />
+          <div className="aurora-blob-slow pointer-events-none absolute -bottom-28 left-6 -z-10 size-72 rounded-full blur-3xl opacity-20" style={{ background: 'var(--tint-a)' }} aria-hidden />
+          <div className="soft-dots pointer-events-none absolute inset-0 -z-10" aria-hidden />
           <div className="relative space-y-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-[.25em] text-white/70">Vòng tuyển chọn</p>
+                <p className="text-xs font-bold uppercase tracking-[.25em] text-primary">Vòng tuyển chọn</p>
                 <h1 className="font-display mt-1 text-3xl font-black sm:text-4xl">{event.name}</h1>
-                <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-white/80">
-                  <span className="rounded-full bg-white px-0.5 py-0.5 shadow-sm"><StatusBadge status={event.status} /></span>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                  <StatusBadge status={event.status} />
                   {event.status === 'PAUSED' && <Badge tone="warning">Tạm dừng sau lượt hiện tại</Badge>}
-                  <span className="flex items-center gap-1"><CalendarClock className="size-4" />Hạn nộp {shortTime(event.deadline)}{deadline ? ` · ${relative(event.deadline, now)}` : ''}</span>
+                  <span className="flex items-center gap-1"><CalendarClock className="size-4 text-primary" />Hạn nộp {shortTime(event.deadline)}{deadline ? ` · ${relative(event.deadline, now)}` : ''}</span>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-2">
@@ -212,9 +207,9 @@ export function QualifierView() {
             </div>
             {event.total > 0 && (
               <div>
-                <div className="mb-1.5 flex justify-between text-xs text-white/80"><span>Tiến độ chấm lượt hiện tại</span><span className="tabular-nums">{Math.round(((event.completed || 0) / event.total) * 100)}%</span></div>
-                <div className="h-2 overflow-hidden rounded-full bg-white/20" role="progressbar" aria-valuemin={0} aria-valuemax={event.total} aria-valuenow={event.completed || 0} aria-label="Tiến độ chấm lượt hiện tại">
-                  <div className="h-full rounded-full bg-gradient-to-r from-white to-amber-200 shadow-[0_0_12px_rgba(255,255,255,.7)] transition-[width] duration-700" style={{ width: `${Math.min(100, ((event.completed || 0) / event.total) * 100)}%` }} />
+                <div className="mb-1.5 flex justify-between text-xs text-muted-foreground"><span>Tiến độ chấm lượt hiện tại</span><span className="tabular-nums">{Math.round(((event.completed || 0) / event.total) * 100)}%</span></div>
+                <div className="h-2 overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuemin={0} aria-valuemax={event.total} aria-valuenow={event.completed || 0} aria-label="Tiến độ chấm lượt hiện tại">
+                  <div className="h-full rounded-full bg-gradient-to-r from-primary to-emerald-400 transition-[width] duration-700" style={{ width: `${Math.min(100, ((event.completed || 0) / event.total) * 100)}%` }} />
                 </div>
               </div>
             )}

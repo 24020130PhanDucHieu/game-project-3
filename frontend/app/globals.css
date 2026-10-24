@@ -225,3 +225,18 @@ h1, h2, h3, .font-display { font-family: var(--font-display); word-spacing: 0.14
 .podium-person { animation: podium-pop .6s cubic-bezier(.2,.8,.2,1) both; }
 .podium-shine::after { content: ''; position: absolute; inset: 0; width: 40%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent); animation: podium-shine 4.5s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .podium-pillar, .podium-person { animation: none; } .podium-shine::after { animation: none; display: none; } }
+
+/* Banner nền sáng pha màu: hai vệt màu loang từ hai góc trên nền thẻ, lưới mờ; tự đổi sang dạng tối dịu ở chế độ dark. */
+.banner-soft {
+  position: relative; isolation: isolate;
+  background:
+    radial-gradient(75% 95% at 0% 0%, color-mix(in oklab, var(--tint-a, #8b5cf6) 30%, transparent), transparent 70%),
+    radial-gradient(75% 95% at 100% 0%, color-mix(in oklab, var(--tint-b, #38bdf8) 26%, transparent), transparent 70%),
+    linear-gradient(180deg, color-mix(in oklab, var(--tint-a, #8b5cf6) 9%, var(--card)) 0%, var(--card) 100%);
+  border: 1px solid color-mix(in oklab, var(--tint-a, #8b5cf6) 28%, var(--border));
+  box-shadow: 0 22px 44px -26px color-mix(in oklab, var(--tint-a, #8b5cf6) 60%, transparent);
+}
+.soft-dots {
+  background-image: linear-gradient(color-mix(in oklab, var(--tint-a, #8b5cf6) 14%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in oklab, var(--tint-a, #8b5cf6) 14%, transparent) 1px, transparent 1px);
+  background-size: 34px 34px; mask-image: linear-gradient(to bottom, #000, transparent 80%);
+}
