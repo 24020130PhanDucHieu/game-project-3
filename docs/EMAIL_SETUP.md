@@ -7,7 +7,7 @@
 2. Vào https://myaccount.google.com/apppasswords → tạo mật khẩu ứng dụng tên "BOT K69 ARENA" → chép chuỗi 16 ký tự.
 
 ## Đặt biến môi trường trên gateway AWS
-Thêm vào file env của dịch vụ `arena-api` (ví dụ `/etc/arena/arena.env`, quyền 600):
+SSH vào máy gateway (`ssh -i <khóa>.pem ubuntu@13.250.49.111`), mở file env của dịch vụ `arena-api` bằng `sudo nano /etc/arena/backend.env` và thêm vào cuối (giữ nguyên các dòng có sẵn; deploy không ghi đè file này):
 
 ```dotenv
 SMTP_HOST=smtp.gmail.com
