@@ -47,6 +47,14 @@ export type WorkbenchValue = { code: string; language: 'PYTHON' | 'CPP'; explana
  */
 const PRACTICE_RULES: [string, string][] = [['STAGE_1_STANDARD', 'Luật chuẩn'], ['COMBO_1', 'Trộn quân'], ['COMBO_2', 'Đảo tương khắc'], ['COMBO_4', 'Sương mù'], ['COMBO_16', 'Chướng ngại ngẫu nhiên'], ['COMBO_7', 'Cả ba luật']]
 
+/** Lý do máy chủ không chấm được, để người dùng biết vì sao phải chạy trên máy. */
+function serverReason(e: unknown) {
+  const status = (e as { status?: number } | null)?.status
+  if (status === 429) return 'đang giới hạn số lần chạy, thử lại sau ít phút'
+  if (status) return `lỗi ${status}${e instanceof Error && e.message ? ` (${e.message})` : ''}`
+  return `không kết nối được${e instanceof Error && e.message ? ` (${e.message})` : ''}`
+}
+
 export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSubmit, submitting, submitDisabledReason, extra, practice = true, renderActions }: {
   draftKey: string
   ruleId?: string
@@ -118,7 +126,7 @@ export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSu
     } catch (e) {
       if (online && (isNetworkError(e) || (isBusyError(e) && language === 'PYTHON'))) {
         if (isBusyError(e)) toast('info', 'Máy chấm đang bận — chạy thử ngay trên máy của bạn (kết quả giống máy chủ, không tính vào giải).')
-        try { show(await offlineEngine.validate(code, language, ruleId)) } catch (inner) { setValidation({ ok: false, message: inner instanceof Error ? inner.message : 'Không kiểm tra được mã.' }) }
+        try { show(await offlineEngine.validate(code, language, ruleId)) } catch (inner) { setValidation({ ok: false, message: `Máy chủ: ${serverReason(e)}. Chạy trên máy: ${inner instanceof Error ? inner.message : 'lỗi'}` }) }
       } else setValidation({ ok: false, message: e instanceof Error ? e.message : 'Không kiểm tra được mã.' })
     } finally { setWorking(null) }
   }
@@ -131,7 +139,7 @@ export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSu
     } catch (e) {
       if (online && (isNetworkError(e) || (isBusyError(e) && language === 'PYTHON'))) {
         if (isBusyError(e)) toast('info', 'Máy chấm đang bận — chạy thử ngay trên máy của bạn (kết quả giống máy chủ, không tính vào giải).')
-        try { setPracticeResult(await offlineEngine.practice(code, language, boss, practiceRule)); return } catch (inner) { e = inner }
+        try { setPracticeResult(await offlineEngine.practice(code, language, boss, practiceRule)); return } catch (inner) { e = new Error(`Máy chủ: ${serverReason(e)}. Chạy trên máy: ${inner instanceof Error ? inner.message : 'lỗi'}`) }
       }
       toast('error', e instanceof Error ? e.message : 'Không chạy thử được')
     } finally { setWorking(null) }

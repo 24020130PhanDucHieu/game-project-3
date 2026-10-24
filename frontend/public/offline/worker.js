@@ -1,5 +1,5 @@
 /* Máy chấm offline trong trình duyệt: Pyodide chạy đúng engine 9×9 của server (board.py) trong Web Worker. */
-/* global importScripts, loadPyodide */
+/* global loadPyodide */
 // Ưu tiên bản Pyodide lưu ngay trên web (tải lúc build); CDN chỉ là dự phòng vì mạng trường hay chặn CDN.
 const SOURCES = [
   new URL('./pyodide/', self.location.href).href,
@@ -8,15 +8,6 @@ const SOURCES = [
 ]
 let PYODIDE = ''
 const loadErrors = []
-for (const base of SOURCES) {
-  try {
-    importScripts(base + 'pyodide.js')
-    PYODIDE = base
-    break
-  } catch (error) {
-    loadErrors.push(base + ': ' + (error && error.message ? error.message : error))
-  }
-}
 
 const SHIM = `
 import ast, builtins, importlib, types, sys, json, random
@@ -142,42 +133,64 @@ def decide_move(game_state):
 let ready = null
 let engineVersion = ''
 
+const msg = (error) => (error && error.message ? error.message : String(error))
+
 // Bộ nhớ đệm của trình duyệt có thể giữ bản hỏng (trang HTML thay cho file JS/WASM) từ bản web cũ:
-// xóa các file Pyodide đã lưu rồi tải lại bỏ qua cache, không cần người dùng xóa dữ liệu trình duyệt.
+// xóa mọi file Pyodide đã lưu (ở mọi cache), không cần người dùng xóa dữ liệu trình duyệt.
 async function purgePyodideCache() {
   if (typeof caches === 'undefined') return
   for (const name of await caches.keys()) {
-    if (!name.startsWith('arena-offline')) continue
     const cache = await caches.open(name)
     for (const req of await cache.keys()) {
-      if (req.url.includes('/offline/pyodide/') || req.url.includes('/pyodide/') || req.url.includes('pyodide@')) await cache.delete(req)
+      if (req.url.includes('pyodide')) await cache.delete(req)
     }
   }
 }
 
-async function retryLoad() {
-  try { await purgePyodideCache() } catch (error) { loadErrors.push('cache: ' + (error && error.message ? error.message : error)) }
-  const bust = '?r=' + Date.now()
+// Tải pyodide.js bằng fetch (không dùng importScripts) để kiểm tra được nội dung và báo lỗi rõ ràng.
+async function loadScript(base, fresh) {
+  const url = base + 'pyodide.js' + (fresh ? '?r=' + Date.now() : '')
+  let res
+  try {
+    res = await fetch(url, { cache: fresh ? 'reload' : 'default', credentials: 'omit' })
+  } catch (error) {
+    throw new Error('không kết nối được (' + msg(error) + ')')
+  }
+  if (!res.ok) throw new Error('HTTP ' + res.status)
+  const type = res.headers.get('content-type') || ''
+  const text = await res.text()
+  if (type.includes('text/html') || /^\s*</.test(text)) throw new Error('nhận được trang HTML thay vì file JS')
+  ;(0, eval)(text)
+  if (typeof self.loadPyodide !== 'function') throw new Error('file pyodide.js không hợp lệ')
+}
+
+async function startPyodide(fresh) {
   for (const base of SOURCES) {
     try {
-      importScripts(base + 'pyodide.js' + bust)
-      PYODIDE = base
-      return
+      await loadScript(base, fresh)
     } catch (error) {
-      loadErrors.push(base + ' (lần 2): ' + (error && error.message ? error.message : error))
+      loadErrors.push(base + (fresh ? ' [tải lại]' : '') + ': ' + msg(error))
+      continue
+    }
+    try {
+      const py = await self.loadPyodide({ indexURL: base })
+      PYODIDE = base
+      return py
+    } catch (error) {
+      loadErrors.push(base + (fresh ? ' [tải lại]' : '') + ' khởi động: ' + msg(error))
     }
   }
+  return null
 }
 
 async function boot() {
-  if (!PYODIDE) await retryLoad()
-  if (!PYODIDE) throw new Error('Không tải được Pyodide từ web lẫn CDN (' + loadErrors.join(' | ').slice(0, 600) + ')')
-  let py
-  try {
-    py = await loadPyodide({ indexURL: PYODIDE })
-  } catch (error) {
-    throw new Error('Khởi động Pyodide thất bại (' + PYODIDE + '): ' + (error && error.message ? error.message : error))
+  loadErrors.length = 0
+  let py = await startPyodide(false)
+  if (!py) {
+    try { await purgePyodideCache() } catch (error) { loadErrors.push('xóa cache: ' + msg(error)) }
+    py = await startPyodide(true)
   }
+  if (!py) throw new Error('Không khởi động được máy chấm trên máy (' + loadErrors.join(' | ').slice(0, 900) + ')')
   const res = await fetch('./engine/manifest.json', { cache: 'no-cache' })
   if (!res.ok) throw new Error('Không tải được engine offline (HTTP ' + res.status + ')')
   const manifest = await res.json()
