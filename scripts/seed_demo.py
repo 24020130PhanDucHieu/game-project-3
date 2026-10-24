@@ -53,7 +53,7 @@ def main():
     print(f"Giải {tid}")
 
     for sid, name in (("24020001", "Alpha Bot"), ("24020002", "Beta Bot")):
-        call("POST", "/teams/register", {"student_id": sid, "team_name": name, "password": "secret123"})
+        call("POST", "/teams/register", {"email": f"{sid.lower()}@example.com", "student_id": sid, "team_name": name, "password": "secret123"})
         step(f"Tài khoản đội {name} ({sid} / secret123)", call("POST", f"/admin/accounts/{sid}/enroll", {"tournament_id": tid}, admin))
     for sid, name, uni in (("24020003", "Gamma Bot", "UET"), ("24020004", "Delta Bot", "HUST")):
         step(f"Thêm đội {name}", call("POST", f"/tournaments/{tid}/teams", {"student_id": sid, "team_name": name, "university": uni}, admin))

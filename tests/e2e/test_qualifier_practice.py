@@ -10,7 +10,7 @@ def run():
     admin = api('POST','/api/admin/login',{'username':'admin','password':arena.PASSWORD})['session_token']
     event = api('POST','/api/qualifiers',{'name':'Practice only','deadline':time.time()+3600,'rounds':2,'top_k':8},admin)
     qid = event['id']
-    api('POST','/api/teams/register',{'student_id':'27770001','team_name':'Practice team','password':'practice123'},expected=201)
+    api('POST','/api/teams/register',{'email': 'e2e-team@example.com', 'student_id':'27770001','team_name':'Practice team','password':'practice123'},expected=201)
     token = api('POST','/api/teams/login',{'username':'27770001','password':'practice123'})['session_token']
     api('POST',f'/api/qualifiers/{qid}/register',token=token)
     before = api('GET',f'/api/qualifiers/{qid}',token=token)
