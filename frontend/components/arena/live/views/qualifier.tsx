@@ -1,13 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Award, Ban, CalendarClock, Check, ClipboardList, Code2, Flag, LineChart, ListOrdered, LogIn, Medal, Swords, Timer, Users } from 'lucide-react'
+import { Award, Ban, CalendarClock, Check, ClipboardList, Code2, Flag, Flame, LineChart, ListOrdered, LogIn, Medal, Swords, Timer, Trophy, Users } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { invalidate, useResource } from '@/lib/cache'
 import { enqueue, isRetryable, newSubmissionId } from '@/lib/outbox'
 import { cn } from '@/lib/utils'
 import { qualifierSteps, relative, sameStudent, stamp, shortTime } from '@/lib/format'
-import { Badge, Button, Card, DataTable, EmptyState, ErrorNote, Pagination, ProgressBar, Select, Skeleton, SkeletonRows, StatusBadge, Tabs } from '../ui'
+import { Avatar, Badge, Button, Card, DataTable, EmptyState, ErrorNote, Pagination, ProgressBar, Select, Skeleton, SkeletonRows, StatusBadge, Tabs } from '../ui'
 import { useLive } from '../context'
 import { useNow } from '../shared'
 import { Workbench } from '../workbench'
@@ -15,7 +15,7 @@ import { SyncStatusCard } from '../sync-status'
 import { ChallengesPanel } from '../challenges'
 import { ScoreHistoryTable, scoreRows } from '../qualifier-extras'
 import { CodeViewer } from '../replay-viewer'
-import { RankBadge } from './ranking'
+import { Podium, RankBadge, SummaryStat, WinRate } from './ranking'
 
 /** Bảng màu banner theo trạng thái vòng loại (gradient trôi liên tục). */
 const AURORA: Record<string, string> = {
@@ -71,41 +71,32 @@ function HeroStat({ icon, label, value }: { icon: React.ReactNode; label: string
   )
 }
 
-function Podium({ items, mine }: { items: any[]; mine?: string }) {
-  const order = [items[1], items[0], items[2]]
-  const height = ['h-20', 'h-28', 'h-16']
-  const tone = ['from-slate-300 to-slate-400', 'from-amber-300 to-amber-500', 'from-orange-300 to-orange-500']
-  return (
-    <div className="grid grid-cols-3 items-end gap-3" aria-label="Top 3 vòng loại">
-      {order.map((r, i) => r ? (
-        <div key={r.student_id} className="text-center">
-          <p className={cn('truncate text-sm font-bold', sameStudent(r.student_id, mine) && 'text-primary')}>{r.team_name}</p>
-          <p className="mb-2 text-xs tabular-nums text-muted-foreground">{Number(r.elo).toFixed(1)} ELO</p>
-          <div className={cn('flex items-start justify-center rounded-t-xl bg-gradient-to-b pt-2 shadow-inner', height[i], tone[i])}><RankBadge rank={r.rank} /></div>
-        </div>
-      ) : <div key={i} />)}
-    </div>
-  )
-}
-
 function RankingPanel({ qid, mine }: { qid: string; mine?: string }) {
+  const { qualifiers } = useLive()
   const [page, setPage] = useState(1)
   useEffect(() => setPage(1), [qid])
   const ranking = useResource<any>(`q:rank:${qid}:${page}`, () => arenaApi.getQualifierRanking(qid, page), { ttl: 10_000, refreshMs: 20_000 })
   const items: any[] = ranking.data?.items || []
+  const topK = Number(qualifiers.data?.find((q) => q.id === qid)?.top_k) || 0
   if (ranking.loading) return <Card><SkeletonRows rows={6} /></Card>
   if (!items.length) return <Card><EmptyState icon={<ListOrdered className="size-6" />} title="Chưa có bảng xếp hạng" hint="Bảng xếp hạng hiện khi bài được khóa và bắt đầu ghép cặp." /></Card>
   return (
     <div className="space-y-6">
-      {page === 1 && items.length >= 2 && <Card><Podium items={items} mine={mine} /></Card>}
-      <Card title="Bảng xếp hạng" subtitle="Xếp theo ELO; bằng nhau thì xét độ khó đối thủ">
-        <DataTable head={['Hạng', 'Đội', 'ELO', 'Thắng / Trận', 'Nghỉ']}>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <SummaryStat icon={<Users className="size-5" />} label="Đội trên bảng" value={ranking.data?.total ?? items.length} />
+        <SummaryStat icon={<Trophy className="size-5" />} label="ELO cao nhất" value={`${Number(items[0]?.elo).toFixed(1)} · ${items[0]?.team_name ?? ''}`} />
+        <SummaryStat icon={<Flame className="size-5" />} label="Vào giải chính" value={topK ? `Top ${topK}` : '—'} />
+      </div>
+      {page === 1 && items.length >= 3 && <Podium rows={items.slice(0, 3)} />}
+      <Card icon={<ListOrdered />} title="Bảng xếp hạng" subtitle="Xếp theo ELO; bằng nhau thì xét độ khó đối thủ">
+        <DataTable head={['Hạng', 'Đội', 'ELO', 'Thắng / Trận', 'Tỉ lệ thắng', 'Nghỉ']}>
           {items.map((r) => (
-            <tr key={r.student_id} className={cn(sameStudent(r.student_id, mine) && 'bg-primary/10 font-semibold')}>
+            <tr key={r.student_id} className={cn(r.rank === 1 && 'bg-gradient-to-r from-amber-400/15 to-transparent', r.rank === 2 && 'bg-gradient-to-r from-slate-300/15 to-transparent', r.rank === 3 && 'bg-gradient-to-r from-orange-400/15 to-transparent', sameStudent(r.student_id, mine) && '!bg-primary/10')}>
               <td className="w-14 px-3 py-2"><RankBadge rank={r.rank} /></td>
-              <td className="px-3 py-2.5">{r.team_name}<span className="block font-mono text-[11px] font-normal text-muted-foreground">{r.student_id}</span></td>
-              <td className="px-3 py-2.5 tabular-nums">{Number(r.elo).toFixed(1)}</td>
+              <td className="px-3 py-2.5 font-medium"><span className="inline-flex items-center gap-2"><Avatar name={r.team_name} size="sm" />{r.team_name}</span>{sameStudent(r.student_id, mine) && <Badge tone="accent" className="ml-2">Bạn</Badge>}<span className="block font-mono text-[11px] font-normal text-muted-foreground">{r.student_id}</span></td>
+              <td className="px-3 py-2.5 font-semibold tabular-nums">{Number(r.elo).toFixed(1)}</td>
               <td className="px-3 py-2.5 tabular-nums">{r.wins}/{r.played}</td>
+              <td className="px-3 py-2.5"><WinRate value={r.played ? Math.round((r.wins / r.played) * 100) : 0} /></td>
               <td className="px-3 py-2.5 tabular-nums">{r.byes}</td>
             </tr>
           ))}

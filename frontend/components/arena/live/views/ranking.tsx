@@ -27,7 +27,7 @@ export function RankBadge({ rank }: { rank: number }) {
   return <span className="inline-grid size-8 place-items-center rounded-full bg-muted text-xs font-bold tabular-nums text-muted-foreground" aria-label={`Hạng ${rank}`}>{rank}</span>
 }
 
-function WinRate({ value }: { value: number }) {
+export function WinRate({ value }: { value: number }) {
   const v = Math.max(0, Math.min(100, Number(value) || 0))
   return (
     <span className="inline-flex items-center gap-2">
@@ -37,7 +37,7 @@ function WinRate({ value }: { value: number }) {
   )
 }
 
-function SummaryStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
+export function SummaryStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
       <span className="grid size-10 place-items-center rounded-xl bg-primary/10 text-primary">{icon}</span>
@@ -52,7 +52,7 @@ const PILLAR = [
   { h: 'h-24 md:h-28', grad: 'from-orange-200/80 via-orange-400/45 to-orange-700/20', edge: 'ring-orange-300/60', glow: 'shadow-[0_0_40px_-12px_rgba(251,146,60,.6)]', delay: '0.45s' },
 ]
 
-function Podium({ rows }: { rows: any[] }) {
+export function Podium({ rows }: { rows: any[] }) {
   if (rows.length < 3) return null
   // Thứ tự hiển thị: hạng 2 – hạng 1 – hạng 3.
   const order = [{ row: rows[1], place: 2 }, { row: rows[0], place: 1 }, { row: rows[2], place: 3 }]
@@ -75,7 +75,7 @@ function Podium({ rows }: { rows: any[] }) {
                   <span className="gradient-text font-display text-xl font-black tabular-nums md:text-2xl">{row.elo_score ?? Math.round(row.elo)}</span>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">ELO</span>
                 </div>
-                <p className="mb-2 mt-0.5 rounded-full bg-muted/70 px-2.5 py-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground">{row.wins ?? 0} thắng / {row.matches_played ?? 0} trận</p>
+                <p className="mb-2 mt-0.5 rounded-full bg-muted/70 px-2.5 py-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground">{row.wins ?? 0} thắng / {row.matches_played ?? row.played ?? 0} trận</p>
               </div>
               <div className={cn('podium-pillar podium-shine relative flex w-full items-start justify-center overflow-hidden rounded-t-2xl bg-gradient-to-b ring-1 backdrop-blur-sm', style.h, style.grad, style.edge, style.glow)} style={{ animationDelay: style.delay }} aria-label={`Hạng ${place}`}>
                 <span className="font-display pointer-events-none absolute -bottom-4 select-none text-[7rem] font-black leading-none text-white/20 md:text-[9rem]" aria-hidden>{place}</span>
@@ -155,40 +155,50 @@ function QualifierRanking() {
   )
   const data = ranking.data
   const topK = event?.top_k || 0
+  const items: any[] = data?.items || []
 
   return (
-    <Card
-      title="Xếp hạng vòng loại"
-      subtitle="Mỗi trang 50 đội; ELO cập nhật theo từng lượt ghép cặp"
-      action={qualifiers.data?.length ? (
-        <Select aria-label="Chọn vòng loại" value={qualifierId} onChange={(e) => setQualifierId(e.target.value)} className="w-56">
-          {qualifiers.data.map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}
-        </Select>
-      ) : undefined}
-    >
-      {!qualifiers.loading && !qualifiers.data?.length ? <EmptyState title="Chưa có vòng loại" /> : ranking.loading ? <SkeletonRows rows={8} /> : ranking.error && !data ? <ErrorNote message={ranking.error.message} onRetry={() => void ranking.reload()} /> : data?.items.length ? (
+    <div className="space-y-5">
+      {qualifiers.data?.length ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="flex items-center gap-2 text-sm text-muted-foreground"><Flag className="size-4 text-primary" />Xếp hạng vòng loại · ELO cập nhật theo từng lượt ghép cặp</p>
+          <Select aria-label="Chọn vòng loại" value={qualifierId} onChange={(e) => setQualifierId(e.target.value)} className="w-64">
+            {qualifiers.data.map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}
+          </Select>
+        </div>
+      ) : null}
+      {!qualifiers.loading && !qualifiers.data?.length ? <Card><EmptyState title="Chưa có vòng loại" /></Card> : ranking.loading ? <Card><SkeletonRows rows={8} /></Card> : ranking.error && !data ? <ErrorNote message={ranking.error.message} onRetry={() => void ranking.reload()} /> : items.length ? (
         <>
-          <DataTable head={['#', 'Đội', 'MSSV', 'ELO', 'Thắng / Trận', 'Lượt nghỉ', '']}>
-            {data.items.map((r) => {
-              const own = sameStudent(r.student_id, session.student_id)
-              const qualified = topK > 0 && r.rank <= topK
-              return (
-                <tr key={r.student_id} className={cn(own && 'bg-primary/10', qualified && 'font-medium')}>
-                  <td className="w-14 px-3 py-2"><RankBadge rank={r.rank} /></td>
-                  <td className="px-3 py-2.5">{r.team_name}{own && <Badge tone="accent" className="ml-2">Bạn</Badge>}</td>
-                  <td className="px-3 py-2.5 text-muted-foreground">{r.student_id}</td>
-                  <td className="px-3 py-2.5 font-semibold tabular-nums">{Number(r.elo).toFixed(1)}</td>
-                  <td className="px-3 py-2.5 tabular-nums">{r.wins}/{r.played}</td>
-                  <td className="px-3 py-2.5 tabular-nums">{r.byes}</td>
-                  <td className="px-3 py-2.5">{qualified && <Badge tone="success"><Flame className="size-3" />Vào giải chính</Badge>}</td>
-                </tr>
-              )
-            })}
-          </DataTable>
-          <Pagination page={page} pageSize={data.page_size || 50} total={data.total} onChange={setPage} />
+          <div className="grid gap-3 sm:grid-cols-3">
+            <SummaryStat icon={<Users className="size-5" />} label="Đội trên bảng" value={data?.total ?? items.length} />
+            <SummaryStat icon={<Trophy className="size-5" />} label="ELO cao nhất" value={`${Number(items[0]?.elo).toFixed(1)} · ${items[0]?.team_name ?? ''}`} />
+            <SummaryStat icon={<Flame className="size-5" />} label="Vào giải chính" value={topK ? `Top ${topK}` : '—'} />
+          </div>
+          {page === 1 && items.length >= 3 && <Podium rows={items.slice(0, 3)} />}
+          <Card icon={<Flag />} title="Bảng xếp hạng vòng loại" subtitle="Mỗi trang 50 đội; bằng ELO thì xét độ khó đối thủ">
+            <DataTable head={['#', 'Đội', 'MSSV', 'ELO', 'Thắng / Trận', 'Tỉ lệ thắng', 'Lượt nghỉ', '']}>
+              {items.map((r) => {
+                const own = sameStudent(r.student_id, session.student_id)
+                const qualified = topK > 0 && r.rank <= topK
+                return (
+                  <tr key={r.student_id} className={cn(r.rank === 1 && 'bg-gradient-to-r from-amber-400/15 to-transparent', r.rank === 2 && 'bg-gradient-to-r from-slate-300/15 to-transparent', r.rank === 3 && 'bg-gradient-to-r from-orange-400/15 to-transparent', own && '!bg-primary/10')}>
+                    <td className="w-14 px-3 py-2"><RankBadge rank={r.rank} /></td>
+                    <td className="px-3 py-2.5 font-medium"><span className="inline-flex items-center gap-2"><Avatar name={r.team_name} size="sm" />{r.team_name}</span>{own && <Badge tone="accent" className="ml-2">Bạn</Badge>}</td>
+                    <td className="px-3 py-2.5 text-muted-foreground">{r.student_id}</td>
+                    <td className="px-3 py-2.5 font-semibold tabular-nums">{Number(r.elo).toFixed(1)}</td>
+                    <td className="px-3 py-2.5 tabular-nums">{r.wins}/{r.played}</td>
+                    <td className="px-3 py-2.5"><WinRate value={r.played ? Math.round((r.wins / r.played) * 100) : 0} /></td>
+                    <td className="px-3 py-2.5 tabular-nums">{r.byes}</td>
+                    <td className="px-3 py-2.5">{qualified && <Badge tone="success"><Flame className="size-3" />Vào giải chính</Badge>}</td>
+                  </tr>
+                )
+              })}
+            </DataTable>
+            <Pagination page={page} pageSize={data?.page_size || 50} total={data?.total ?? items.length} onChange={setPage} />
+          </Card>
         </>
-      ) : <EmptyState title="Chưa có kết quả" hint="Bảng xếp hạng có sau khi vòng loại bắt đầu chấm." />}
-    </Card>
+      ) : <Card><EmptyState title="Chưa có kết quả" hint="Bảng xếp hạng có sau khi vòng loại bắt đầu chấm." /></Card>}
+    </div>
   )
 }
 

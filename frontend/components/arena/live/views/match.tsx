@@ -78,20 +78,20 @@ function TeamPanel({ match, side, won }: { match: any; side: 'team_a' | 'team_b'
   const isWin = won === side
   const need = Math.ceil((match.max_rounds || 5) / 2)
   const score = team ? team.rounds_won ?? 0 : 0
-  const state = !team ? null : team.code_valid ? { icon: <CheckCircle2 className="size-3.5" />, text: 'Đã nộp bot', cls: 'bg-emerald-400/20 text-emerald-200 ring-emerald-300/30' }
-    : team.code_submitted ? { icon: <AlertTriangle className="size-3.5" />, text: 'Bot lỗi', cls: 'bg-red-400/20 text-red-200 ring-red-300/30' }
-    : { icon: <Hourglass className="size-3.5" />, text: 'Chưa nộp bot', cls: 'bg-amber-400/20 text-amber-200 ring-amber-300/30' }
+  const state = !team ? null : team.code_valid ? { icon: <CheckCircle2 className="size-3.5" />, text: 'Đã nộp bot', cls: 'bg-white/90 text-emerald-700 ring-white' }
+    : team.code_submitted ? { icon: <AlertTriangle className="size-3.5" />, text: 'Bot lỗi', cls: 'bg-white/90 text-red-700 ring-white' }
+    : { icon: <Hourglass className="size-3.5" />, text: 'Chưa nộp bot', cls: 'bg-white/90 text-amber-700 ring-white' }
   return (
-    <div className={cn('relative flex flex-1 flex-col gap-4 rounded-2xl p-4 md:p-5', red ? 'items-start text-left md:items-start' : 'items-end text-right md:items-end', 'bg-white/[0.06] ring-1 ring-white/10 backdrop-blur-sm', isWin && 'ring-2 ring-amber-300/70 shadow-[0_0_40px_rgba(251,191,36,.35)]')}>
+    <div className={cn('relative flex flex-1 flex-col gap-4 rounded-2xl p-4 md:p-5', red ? 'items-start text-left md:items-start' : 'items-end text-right md:items-end', 'bg-white/[0.16] ring-1 ring-white/30 shadow-lg shadow-black/5 backdrop-blur-md', isWin && 'ring-2 ring-amber-300/70 shadow-[0_0_40px_rgba(251,191,36,.35)]')}>
       <div className={cn('flex w-full items-center gap-3', !red && 'flex-row-reverse')}>
         <div className="relative">
           {team ? <Avatar name={team.team_name} size="xl" ring={isWin ? 'gold' : red ? 'red' : 'blue'} /> : <span className="grid size-16 place-items-center rounded-2xl border border-dashed border-white/30 text-white/50" aria-hidden>?</span>}
           {isWin && <Crown className="absolute -right-2 -top-3 size-6 rotate-12 text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,.9)]" aria-label="Chiến thắng" />}
         </div>
         <div className="min-w-0">
-          <p className={cn('text-[11px] font-extrabold uppercase tracking-[0.25em]', red ? 'text-red-300' : 'text-sky-300')}>{red ? 'Đội Đỏ' : 'Đội Xanh'}</p>
+          <p className={cn('text-[11px] font-extrabold uppercase tracking-[0.25em]', red ? 'text-rose-100' : 'text-cyan-100')}>{red ? 'Đội Đỏ' : 'Đội Xanh'}</p>
           <p className="font-display truncate text-xl font-extrabold md:text-2xl">{team?.team_name || 'Chờ đội'}</p>
-          {team?.university && <p className="truncate text-xs text-white/60">{team.university}</p>}
+          {team?.university && <p className="truncate text-xs text-white/80">{team.university}</p>}
         </div>
       </div>
       <div className={cn('flex w-full items-end gap-4', !red && 'flex-row-reverse')}>
@@ -99,13 +99,13 @@ function TeamPanel({ match, side, won }: { match: any; side: 'team_a' | 'team_b'
         <div className="pb-2">
           <div className={cn('flex gap-1.5', !red && 'justify-end')} aria-hidden>
             {Array.from({ length: need }, (_, i) => (
-              <span key={i} className={cn('h-2.5 w-7 rounded-full transition-all', i < score ? (red ? 'bg-red-400 shadow-[0_0_10px_rgba(248,113,113,.9)]' : 'bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,.9)]') : 'bg-white/20')} />
+              <span key={i} className={cn('h-2.5 w-7 rounded-full transition-all', i < score ? (red ? 'bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,.9)]' : 'bg-sky-500 shadow-[0_0_10px_rgba(14,165,233,.9)]') : 'bg-white/35')} />
             ))}
           </div>
-          <p className="mt-1 text-[11px] text-white/60">{need - score > 0 ? `Cần thêm ${need - score} hiệp thắng` : 'Đủ hiệp thắng'}</p>
+          <p className="mt-1 text-[11px] text-white/85">{need - score > 0 ? `Cần thêm ${need - score} hiệp thắng` : 'Đủ hiệp thắng'}</p>
         </div>
       </div>
-      {isWin ? <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/25 px-3 py-1 text-xs font-bold text-amber-200 ring-1 ring-amber-300/40"><Trophy className="size-3.5" />Chiến thắng</span>
+      {isWin ? <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-300 px-3 py-1 text-xs font-bold text-amber-950 ring-1 ring-amber-100"><Trophy className="size-3.5" />Chiến thắng</span>
         : state && <span className={cn('inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ring-1', state.cls)}>{state.icon}{state.text}</span>}
     </div>
   )
@@ -124,8 +124,8 @@ function RoundTrack({ match }: { match: any }) {
         const live = !r && n === current && match.status !== 'COMPLETED'
         return (
           <li key={n} title={r ? `Hiệp ${n}: ${r.winner_name}` : `Hiệp ${n}`} className={cn('flex h-9 min-w-9 items-center justify-center rounded-xl px-3 text-xs font-extrabold tabular-nums ring-1 transition-all',
-            r ? (r.winner === 'team_a' ? 'bg-red-500 text-white ring-red-300/60 shadow-[0_0_14px_rgba(239,68,68,.55)]' : 'bg-sky-500 text-white ring-sky-300/60 shadow-[0_0_14px_rgba(14,165,233,.55)]')
-              : live ? 'animate-live bg-white/20 text-white ring-white/60' : 'bg-white/[0.07] text-white/40 ring-white/10')}>
+            r ? (r.winner === 'team_a' ? 'bg-rose-500 text-white ring-white/70 shadow-[0_0_14px_rgba(244,63,94,.6)]' : 'bg-sky-500 text-white ring-white/70 shadow-[0_0_14px_rgba(14,165,233,.6)]')
+              : live ? 'animate-live bg-white/35 text-white ring-white/80' : 'bg-white/20 text-white/80 ring-white/25')}>
             {r ? <span className="flex items-center gap-1"><Check className="size-3.5" />H{n}</span> : `H${n}`}
           </li>
         )
@@ -143,18 +143,18 @@ function Scoreboard({ match }: { match: any }) {
     <div className="relative space-y-4">
       <RoundBanner round={match.current_round_idx || 1} matchId={match.match_id} />
       {match.status === 'COMPLETED' && match.winner_name && <VictoryBanner name={match.winner_name} />}
-      <section className="aurora relative overflow-hidden rounded-3xl p-4 text-white shadow-xl md:p-6" style={{ backgroundImage: 'linear-gradient(120deg,#1e1b4b,#3b0764,#0c4a6e,#4c0519,#1e1b4b)' }} aria-label="Bảng tỉ số">
-        <div className="pointer-events-none absolute -left-20 top-1/2 size-72 -translate-y-1/2 rounded-full bg-red-500/25 blur-3xl aurora-blob" aria-hidden />
-        <div className="pointer-events-none absolute -right-20 top-1/2 size-72 -translate-y-1/2 rounded-full bg-sky-500/25 blur-3xl aurora-blob-slow" aria-hidden />
+      <section className="aurora relative overflow-hidden rounded-3xl p-4 text-white shadow-xl shadow-indigo-500/25 md:p-6" style={{ backgroundImage: 'linear-gradient(120deg,#6366f1,#8b5cf6,#0ea5e9,#14b8a6,#ec4899,#6366f1)' }} aria-label="Bảng tỉ số">
+        <div className="pointer-events-none absolute -left-20 top-1/2 size-72 -translate-y-1/2 rounded-full bg-rose-300/40 blur-3xl aurora-blob" aria-hidden />
+        <div className="pointer-events-none absolute -right-20 top-1/2 size-72 -translate-y-1/2 rounded-full bg-cyan-200/40 blur-3xl aurora-blob-slow" aria-hidden />
         <div className="aurora-dots pointer-events-none absolute inset-0" aria-hidden />
         <div className="relative space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.25em] text-white/70"><Swords className="size-4" />{match.round_name || 'Trận đấu'}{match.title ? ` · ${match.title}` : ''}</p>
+            <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.25em] text-white/90"><Swords className="size-4" />{match.round_name || 'Trận đấu'}{match.title ? ` · ${match.title}` : ''}</p>
             <div className="flex flex-wrap items-center gap-2 text-xs">
-              {live ? <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 font-bold text-emerald-200 ring-1 ring-emerald-300/40"><span className="animate-live size-2 rounded-full bg-emerald-400" aria-hidden />ĐANG ĐẤU</span>
-                : <span className="rounded-full bg-white/10 px-3 py-1 font-semibold ring-1 ring-white/15"><StatusBadge status={match.status} /></span>}
-              {match.status !== 'COMPLETED' && match.round_status && <span className="rounded-full bg-white/10 px-1 py-0.5 ring-1 ring-white/15"><StatusBadge status={match.round_status} /></span>}
-              {ends > now && <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-400/20 px-3 py-1 font-semibold text-sky-100 ring-1 ring-sky-300/30"><Clock className="size-3.5" />Hiệp kế sau {countdown(Math.ceil((ends - now) / 1000))}</span>}
+              {live ? <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 font-bold text-emerald-700 ring-1 ring-white"><span className="animate-live size-2 rounded-full bg-emerald-400" aria-hidden />ĐANG ĐẤU</span>
+                : <span className="rounded-full bg-white/90 px-1 py-0.5 ring-1 ring-white"><StatusBadge status={match.status} /></span>}
+              {match.status !== 'COMPLETED' && match.round_status && <span className="rounded-full bg-white/90 px-1 py-0.5 ring-1 ring-white"><StatusBadge status={match.round_status} /></span>}
+              {ends > now && <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 font-semibold text-sky-700 ring-1 ring-white"><Clock className="size-3.5" />Hiệp kế sau {countdown(Math.ceil((ends - now) / 1000))}</span>}
             </div>
           </div>
           <div className="flex flex-col items-stretch gap-3 md:grid md:grid-cols-[1fr_auto_1fr] md:items-center md:gap-5">
@@ -164,8 +164,8 @@ function Scoreboard({ match }: { match: any }) {
                 <span className={cn('absolute inset-0 rounded-full bg-white/10', live && 'animate-ping')} aria-hidden />
                 <span className="relative grid size-16 place-items-center rounded-full bg-gradient-to-br from-fuchsia-500 via-violet-500 to-sky-500 shadow-lg ring-4 ring-white/20"><span className="font-display text-2xl font-black">VS</span></span>
               </div>
-              <span className="rounded-full bg-white/10 px-3 py-0.5 text-[11px] font-bold tracking-wider ring-1 ring-white/15">BO{match.max_rounds || 5}</span>
-              <span className="text-[11px] text-white/60">Hiệp {match.current_round_idx || 1}/{match.max_rounds || 5}</span>
+              <span className="rounded-full bg-white/25 px-3 py-0.5 text-[11px] font-bold tracking-wider ring-1 ring-white/40">BO{match.max_rounds || 5}</span>
+              <span className="text-[11px] text-white/85">Hiệp {match.current_round_idx || 1}/{match.max_rounds || 5}</span>
             </div>
             <TeamPanel match={match} side="team_b" won={won} />
           </div>
