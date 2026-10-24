@@ -69,7 +69,8 @@ export async function apiRequest<T = any>(
       response = await fetch(url, { ...options, headers })
       break
     } catch (error) {
-      if (attempt >= 3 || options.signal?.aborted || !(error instanceof TypeError)) throw error
+      const offline = typeof navigator !== 'undefined' && navigator.onLine === false
+      if (attempt >= 3 || offline || options.signal?.aborted || !(error instanceof TypeError)) throw error
       await new Promise((r) => setTimeout(r, 600 * 2 ** attempt))
     }
   }

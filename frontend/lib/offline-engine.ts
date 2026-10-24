@@ -1,5 +1,7 @@
 'use client'
 
+import { arenaApi } from './api-client'
+
 /**
  * Máy chấm offline: chạy engine thật (Pyodide trong Web Worker) khi mất mạng.
  * Lần đầu cần mạng để tải Pyodide (~10 MB); sau đó service worker giữ lại để dùng offline.
@@ -35,9 +37,41 @@ function getWorker() {
     const detail = event?.message ? `: ${event.message}` : ''
     pending.forEach((job) => { window.clearTimeout(job.timer); job.reject(new Error(`Không khởi động được máy chấm offline${detail}. Hãy tải lại trang (Ctrl+F5) rồi thử lại.`)) })
     pending.clear()
-    worker?.terminate(); worker = null
+    worker?.terminate(); worker = null; booted = null
   }
   return worker
+}
+
+// Khởi động Pyodide (tải/giải nén ~14 MB) có thể mất cả phút trên máy yếu: tách khỏi thời gian chạy bot,
+// để giới hạn "bot chạy quá lâu" chỉ tính phần chạy bot thật.
+let booted: Promise<void> | null = null
+function boot(): Promise<void> {
+  booted = booted || call<{ version: string }>('prepare', {}, 180_000).then(
+    (r) => { set({ status: 'ready', version: r.version }) },
+    (e) => { booted = null; set({ status: 'error', error: e instanceof Error ? e.message : String(e) }); throw e },
+  )
+  return booted
+}
+
+// File cần cho chạy offline: tải trước qua service worker khi còn mạng để lúc mất mạng vẫn có sẵn.
+const OFFLINE_FILES = [
+  '/offline/worker.js', '/offline/engine/manifest.json', '/offline/engine/board.py', '/offline/engine/board_rules.py', '/offline/engine/rules.py',
+  '/offline/pyodide/pyodide.js', '/offline/pyodide/pyodide.asm.js', '/offline/pyodide/pyodide.asm.wasm', '/offline/pyodide/python_stdlib.zip', '/offline/pyodide/pyodide-lock.json',
+]
+let warming = false
+/** Lặng lẽ tải sẵn gói offline vào bộ nhớ đệm (không khởi động Pyodide, không tốn CPU). */
+export function warmOfflineCache() {
+  if (warming || typeof window === 'undefined' || !navigator.onLine || !('serviceWorker' in navigator)) return
+  warming = true
+  void navigator.serviceWorker.ready.then(async () => {
+    // Cả file giao diện đã tải trước khi service worker kịp hoạt động (CSS/JS của trang), để mở lại lúc offline không vỡ giao diện.
+    const assets = performance.getEntriesByType('resource').map((e) => e.name).filter((u) => u.startsWith(location.origin + '/_next/static/'))
+    // Phiên đăng nhập chỉ được hỏi lúc mở trang (có thể trước khi service worker hoạt động): hỏi lại để có bản lưu offline.
+    try { await arenaApi.getSession() } catch { /* bỏ qua */ }
+    for (const url of [...OFFLINE_FILES, ...new Set(assets)]) {
+      try { await fetch(url, { credentials: 'omit' }) } catch { warming = false; return }
+    }
+  }).catch(() => { warming = false })
 }
 
 function call<T>(kind: 'prepare' | 'validate' | 'practice', payload: object = {}, timeoutMs = 60_000): Promise<T> {
@@ -46,7 +80,7 @@ function call<T>(kind: 'prepare' | 'validate' | 'practice', payload: object = {}
     const timer = window.setTimeout(() => {
       // Bot chạy vô hạn: dừng hẳn worker rồi tạo lại ở lần sau.
       pending.delete(id)
-      worker?.terminate(); worker = null
+      worker?.terminate(); worker = null; booted = null
       reject(new Error('Bot chạy quá lâu trên máy (có thể bị vòng lặp vô hạn).'))
     }, timeoutMs)
     pending.set(id, { resolve, reject, timer })
@@ -61,15 +95,16 @@ export const offlineEngine = {
   async prepare() {
     if (state.status === 'loading') return
     set({ status: 'loading' })
-    try {
-      const r = await call<{ version: string }>('prepare', {}, 180_000)
-      set({ status: 'ready', version: r.version })
-    } catch (e) {
-      set({ status: 'error', error: e instanceof Error ? e.message : String(e) })
-    }
+    try { await boot() } catch { /* trạng thái lỗi đã được ghi */ }
   },
-  validate: (code: string, language: string, ruleId?: string) => call<any>('validate', { code, language, rule_id: ruleId }, 20_000),
-  practice: (code: string, language: string, boss: string, ruleId: string) => call<any>('practice', { code, language, boss, rule_id: ruleId }, 90_000),
+  async validate(code: string, language: string, ruleId?: string) {
+    await boot()
+    return call<any>('validate', { code, language, rule_id: ruleId }, 20_000)
+  },
+  async practice(code: string, language: string, boss: string, ruleId: string) {
+    await boot()
+    return call<any>('practice', { code, language, boss, rule_id: ruleId }, 90_000)
+  },
 }
 
 /** Lỗi do mất mạng/không tới được máy chủ → nên chuyển sang chạy offline. */

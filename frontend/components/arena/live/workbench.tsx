@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic'
 import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { Bot, CloudOff, Download, FileCode2, GitBranch, HardDrive, ShieldCheck, Swords } from 'lucide-react'
-import { isBusyError, isNetworkError, offlineEngine } from '@/lib/offline-engine'
+import { isBusyError, isNetworkError, offlineEngine, warmOfflineCache } from '@/lib/offline-engine'
 import { useOnline } from '@/lib/use-online'
 import { arenaApi } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
@@ -111,6 +111,12 @@ export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSu
   const lineCount = code ? code.split('\n').length : 0
   const online = useOnline()
   const offline = useSyncExternalStore(offlineEngine.subscribe, offlineEngine.get, offlineEngine.server)
+  // Còn mạng thì tải sẵn gói offline ở chế độ nền, để lỡ mất mạng vẫn kiểm tra mã và đấu thử được ngay.
+  useEffect(() => {
+    if (!online) return
+    const t = window.setTimeout(warmOfflineCache, 4000)
+    return () => window.clearTimeout(t)
+  }, [online])
   // Chạy trên máy không cần đăng nhập; khi mất mạng phiên có thể chưa tải được.
   const canUse = role !== 'GUEST' || !online
 

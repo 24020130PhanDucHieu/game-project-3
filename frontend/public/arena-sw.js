@@ -1,8 +1,9 @@
 /* Service worker: giữ giao diện, engine offline và Pyodide trong bộ nhớ đệm để mất mạng vẫn mở trang, kiểm tra mã và đấu thử boss. */
-const VERSION = 'arena-offline-v3'
+const VERSION = 'arena-offline-v4'
 const SHELL = `${VERSION}-shell`
 const STATIC = `${VERSION}-static`
 const PYODIDE = 'https://cdn.jsdelivr.net/pyodide/'
+const API = `${VERSION}-api`
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(SHELL).then((c) => c.addAll(['/', '/offline/worker.js', '/offline/engine/manifest.json'])).catch(() => undefined))
@@ -39,13 +40,40 @@ async function networkFirst(request, name) {
   }
 }
 
+// Dữ liệu API (GET) luôn lấy từ máy chủ; bản lưu chỉ dùng khi mất mạng, để tải lại trang lúc offline vẫn vào được trận
+// và luyện tập. Khóa lưu gắn với phiên đăng nhập nên mỗi tài khoản chỉ thấy dữ liệu của mình.
+async function apiKey(request) {
+  const auth = request.headers.get('authorization') || ''
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(auth))
+  const user = [...new Uint8Array(digest)].slice(0, 8).map((b) => b.toString(16).padStart(2, '0')).join('')
+  const url = new URL(request.url)
+  url.searchParams.set('__arena_user', user)
+  return url.href
+}
+
+async function apiNetworkFirst(request) {
+  const key = await apiKey(request)
+  try {
+    const response = await fetch(request)
+    if (response.ok && response.type !== 'opaque') (await caches.open(API)).put(key, response.clone())
+    return response
+  } catch (error) {
+    const cached = await caches.match(key)
+    if (cached) return cached
+    throw error
+  }
+}
+
+const API_SKIP = /\/api\/(auth\/|time|.*snapshots\/file)/
+
 self.addEventListener('fetch', (event) => {
   const request = event.request
   if (request.method !== 'GET') return
   const url = new URL(request.url)
   if (url.href.startsWith(PYODIDE)) { event.respondWith(cacheFirst(request, STATIC)); return }
+  if (url.pathname.startsWith('/api/') && !API_SKIP.test(url.pathname)) { event.respondWith(apiNetworkFirst(request)); return }
   if (url.origin !== self.location.origin) return
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/')) return // dữ liệu thật luôn đi qua mạng
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/ws/')) return
   if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/offline/pyodide/')) { event.respondWith(cacheFirst(request, STATIC)); return }
   if (request.mode === 'navigate' || url.pathname.startsWith('/offline/') || /\.(png|svg|jpg|ico|woff2?)$/.test(url.pathname)) {
     event.respondWith(networkFirst(request, SHELL))
