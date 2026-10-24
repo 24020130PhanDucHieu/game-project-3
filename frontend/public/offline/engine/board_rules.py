@@ -142,5 +142,6 @@ def initial_board(rule_id, seed='validation'):
     return {side: [{"id": f"{prefix}_{i}", "col": i, "row": row,
                     "type": kind, "alive": True,
                     **({"steps_left": 5} if kind == "JOKER" else {})} for i, kind in enumerate(
-                        list(reversed(pattern)) if side == 'team_b' and combination_bits(rule_id) & 1 else pattern)]
+                        # Xanh đặt đối xứng tâm với Đỏ: quân Đỏ ở cột i và quân Xanh ở cột 8-i cùng loại.
+                        list(reversed(pattern)) if side == 'team_b' else pattern)]
             for side, prefix, row in (("team_a", "r", 7), ("team_b", "b", 1))}

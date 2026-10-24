@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -17,6 +18,8 @@ import (
 func (a *HTTPBotRunnerAdapter) Monitor(ctx context.Context) map[string]interface{} {
 	nodes := make([]map[string]interface{}, len(a.workers))
 	var wg sync.WaitGroup
+	// IP công khai của từng máy chấm (cùng thứ tự WORKER_URLS); gateway vẫn gọi qua địa chỉ nội bộ cho nhanh và an toàn.
+	publicHosts := strings.Split(os.Getenv("WORKER_PUBLIC_HOSTS"), ",")
 	for i, address := range a.workers {
 		wg.Add(1)
 		go func(i int, address string) {
@@ -46,6 +49,9 @@ func (a *HTTPBotRunnerAdapter) Monitor(ctx context.Context) map[string]interface
 			u, err := url.Parse(address)
 			if err == nil {
 				node["host"] = u.Host
+				if i < len(publicHosts) && strings.TrimSpace(publicHosts[i]) != "" {
+					node["public_ip"] = strings.TrimSpace(publicHosts[i])
+				}
 				u.Path, u.RawQuery, u.Fragment, u.User = "/health", "", "", nil
 				req, reqErr := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 				if reqErr == nil {

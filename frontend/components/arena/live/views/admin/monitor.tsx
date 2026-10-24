@@ -115,7 +115,7 @@ export function MonitorTab({ onGo }: { onGo: Go }) {
           <DataTable head={['Máy', 'Trạng thái', 'Đang chạy / Sức chứa', 'Đã chạy', 'Lỗi', 'Trung bình', 'Thành công']}>
             {nodes.map((n, i) => (
               <tr key={i}>
-                <td className="px-3 py-2.5 font-medium">{n.name}<span className="block font-mono text-xs text-muted-foreground">{n.host}{/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(n.host || '') ? ' · IP nội bộ VPC' : /^(127\.|localhost)/.test(n.host || '') ? ' · cùng máy với gateway' : ''}</span></td>
+                <td className="px-3 py-2.5 font-medium">{n.name}{n.public_ip && <span className="ml-2 rounded bg-primary/10 px-1.5 py-0.5 font-mono text-xs text-primary">{n.public_ip}</span>}<span className="block font-mono text-xs text-muted-foreground">{n.public_ip ? 'gọi qua ' : ''}{n.host}{/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(n.host || '') ? ' · IP nội bộ VPC' : /^(127\.|localhost)/.test(n.host || '') ? ' · cùng máy với gateway' : ''}</span></td>
                 <td className="px-3 py-2.5"><StatusBadge status={n.status === 'UNREACHABLE' ? 'UNAVAILABLE' : n.status === 'HEALTHY' || n.status === 'READY' ? 'READY' : n.status} label={n.status} /></td>
                 <td className="px-3 py-2.5 tabular-nums">{n.active}/{n.capacity}</td>
                 <td className="px-3 py-2.5 tabular-nums">{n.finished}</td>

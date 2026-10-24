@@ -20,6 +20,7 @@ import (
 	"project-tuan3/internal/config"
 	httpHandler "project-tuan3/internal/handler/http"
 	wsHandler "project-tuan3/internal/handler/websocket"
+	"project-tuan3/internal/humancheck"
 	"project-tuan3/internal/mailer"
 	"project-tuan3/internal/middleware"
 	"project-tuan3/internal/observability"
@@ -100,6 +101,9 @@ func main() {
 	aHandler.DatabaseReady = qualifierStore.Ready
 	aHandler.Records = qualifierStore
 	aHandler.Mailer = mailer.FromEnv()
+	human := humancheck.FromEnv()
+	aHandler.Human, mHandler.Human = human, human
+	log.Printf("Human check (ô 'Tôi không phải robot'): required=%v, độ khó %d bit", human.Required(), human.Difficulty())
 	if !aHandler.Mailer.Configured() {
 		log.Println("[Mailer] Chưa cấu hình SMTP_USER/SMTP_PASSWORD — khôi phục mật khẩu qua email bị tắt")
 	}
@@ -278,6 +282,7 @@ func main() {
 		api.POST("/logout", mHandler.Logout)
 		api.POST("/bots/validate", requireSession(sessions, false, false), mHandler.ValidateCode)
 		api.POST("/teams/login", mHandler.TeamLogin)
+		api.GET("/auth/human-challenge", aHandler.HumanChallenge)
 		api.POST("/tournaments/:id/matches/:matchId/login", mHandler.Login)
 		api.POST("/tournaments/:id/matches/:matchId/select", optionalSession(sessions), mHandler.SelectTeamMatch)
 		api.POST("/tournaments/:id/matches/:matchId/auth", mHandler.Auth)

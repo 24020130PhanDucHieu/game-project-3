@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
+import { HumanCheck, type HumanProof } from './human-check'
 
 export type AuthModalMode = 'login' | 'register' | 'forgot'
 
@@ -47,6 +48,12 @@ export function AuthModal({
   const [forgotLoading, setForgotLoading] = useState(false)
   const [forgotMsg, setForgotMsg] = useState<string | null>(null)
 
+  // Ô "Tôi không phải robot": mỗi lời giải dùng một lần nên tích lại sau mỗi lần gửi.
+  const [proof, setProof] = useState<HumanProof | null>(null)
+  const [proofKey, setProofKey] = useState(0)
+  const spendProof = () => setProofKey((k) => k + 1)
+  useEffect(() => { setProofKey((k) => k + 1) }, [mode, open])
+
   if (!open) return null
 
   async function handleLogin(e: React.FormEvent) {
@@ -55,13 +62,19 @@ export function AuthModal({
     setLoginLoading(true)
 
     const userClean = loginUser.trim().toUpperCase()
+    const organizer = asOrganizer || userClean === 'ADMIN' || userClean === 'BTC'
+    if (!organizer && !proof) {
+      setLoginError('Hãy tích ô “Tôi không phải robot” trước khi đăng nhập.')
+      setLoginLoading(false)
+      return
+    }
     try {
-      if (asOrganizer || userClean === 'ADMIN' || userClean === 'BTC') {
+      if (organizer) {
         const res = await arenaApi.loginAdmin(loginPass, loginUser.trim())
         onLoginSuccess?.('admin', res.display_name || 'Ban Tổ Chức (Admin)', res.judge || 'ADMIN')
         onClose()
       } else {
-        const res = await arenaApi.loginTeam(loginUser.trim(), loginPass)
+        const res = await arenaApi.loginTeam(loginUser.trim(), loginPass, proof)
         onLoginSuccess?.(
           'team',
           res.team_name || loginUser.trim(),
@@ -72,6 +85,7 @@ export function AuthModal({
     } catch (err: any) {
       setLoginError(err?.message || 'Tên đăng nhập hoặc mật khẩu không chính xác.')
     } finally {
+      if (!organizer) spendProof()
       setLoginLoading(false)
     }
   }
@@ -85,6 +99,10 @@ export function AuthModal({
       setRegError('Mật khẩu phải từ 6 ký tự trở lên.')
       return
     }
+    if (!proof) {
+      setRegError('Hãy tích ô “Tôi không phải robot” trước khi đăng ký.')
+      return
+    }
 
     setRegLoading(true)
     try {
@@ -93,6 +111,7 @@ export function AuthModal({
         team_name: regName.trim(),
         password: regPass,
         email: regEmail.trim(),
+        ...proof,
       })
       setRegSuccess(`Đăng ký thành công đội "${regName}"! Bạn có thể đăng nhập ngay.`)
       setTimeout(() => {
@@ -103,6 +122,7 @@ export function AuthModal({
     } catch (err: any) {
       setRegError(err?.message || 'Không thể đăng ký đội. Vui lòng thử lại.')
     } finally {
+      spendProof()
       setRegLoading(false)
     }
   }
@@ -132,7 +152,7 @@ export function AuthModal({
                   htmlFor="inp-login-user"
                   className="text-[13.5px] font-semibold text-foreground"
                 >
-                  {asOrganizer ? 'Tên đăng nhập giám khảo' : 'Tên đăng nhập hoặc MSSV'}
+                  {asOrganizer ? 'Tên đăng nhập giám khảo' : 'Mã sinh viên hoặc email'}
                 </label>
                 <div className="flex h-12 items-center rounded-xl border border-input bg-card px-3.5 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
                   <input
@@ -141,7 +161,8 @@ export function AuthModal({
                     required
                     value={loginUser}
                     onChange={(e) => setLoginUser(e.target.value)}
-                    placeholder={asOrganizer ? 'VD: gk.lan (hoặc admin)' : 'Mã sinh viên'}
+                    autoComplete="username"
+                    placeholder={asOrganizer ? 'VD: gk.lan (hoặc admin)' : 'VD: 24020001 hoặc ten@gmail.com'}
                     className="w-full border-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
                   />
                 </div>
@@ -189,6 +210,8 @@ export function AuthModal({
                 </div>
               </div>
 
+              {!asOrganizer && <HumanCheck value={proof} onChange={setProof} resetKey={proofKey} />}
+
               <label className="flex cursor-pointer items-center gap-2 text-[13px] font-medium text-muted-foreground">
                 <input type="checkbox" className="accent-primary" checked={asOrganizer} onChange={(e) => setAsOrganizer(e.target.checked)} />
                 Đăng nhập Ban tổ chức / Giám khảo
@@ -227,7 +250,7 @@ export function AuthModal({
 
             {/* Disclaimer Footer Note matching Image 3 */}
             <p className="mt-6 text-center text-xs leading-relaxed text-muted-foreground">
-              Đội thi đăng nhập bằng Mã sinh viên (MSSV) và mật khẩu đã tạo. Ban Tổ
+              Đội thi đăng nhập bằng Mã sinh viên (MSSV) hoặc email đã đăng ký, cùng mật khẩu đã tạo. Ban Tổ
               Chức sử dụng tài khoản Quản trị viên.
             </p>
           </div>
@@ -324,8 +347,10 @@ export function AuthModal({
                     className="w-full border-none bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
                   />
                 </div>
-                <p className="text-[11px] text-muted-foreground">Mã khôi phục mật khẩu sẽ được gửi tới email này.</p>
+                <p className="text-[11px] text-muted-foreground">Dùng để đăng nhập thay cho MSSV và nhận mã khôi phục mật khẩu. Mỗi email chỉ gắn với một đội.</p>
               </div>
+
+              <HumanCheck value={proof} onChange={setProof} resetKey={proofKey} />
 
               <button
                 type="submit"
@@ -376,14 +401,16 @@ export function AuthModal({
             <form
               onSubmit={async (e) => {
                 e.preventDefault()
+                if (!proof) { setForgotMsg('Hãy tích ô “Tôi không phải robot” trước khi gửi yêu cầu.'); return }
                 setForgotLoading(true)
                 setForgotMsg(null)
                 try {
-                  const response = await arenaApi.forgotPassword(forgotSid.trim(), forgotEmail.trim()) as { message?: string }
+                  const response = await arenaApi.forgotPassword(forgotSid.trim(), forgotEmail.trim(), proof) as { message?: string }
                   setForgotMsg(response.message || 'Vui lòng liên hệ ban tổ chức để xác minh danh tính.')
                 } catch (error) {
                   setForgotMsg(error instanceof Error ? error.message : 'Không gửi được yêu cầu.')
                 } finally {
+                  spendProof()
                   setForgotLoading(false)
                 }
               }}
@@ -422,6 +449,8 @@ export function AuthModal({
                 </div>
                 <p className="text-[11px] text-muted-foreground">Chúng tôi gửi mã khôi phục (hiệu lực 15 phút) tới email này nếu khớp với tài khoản.</p>
               </div>
+
+              <HumanCheck value={proof} onChange={setProof} resetKey={proofKey} />
 
               <button
                 type="submit"

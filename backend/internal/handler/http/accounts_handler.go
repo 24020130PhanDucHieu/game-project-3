@@ -18,6 +18,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"project-tuan3/internal/auth"
+	"project-tuan3/internal/humancheck"
 	"project-tuan3/internal/mailer"
 	"project-tuan3/internal/repository"
 	"project-tuan3/internal/service"
@@ -26,6 +27,7 @@ import (
 var adminMonitorStartTime = time.Now()
 
 type AccountsHandler struct {
+	Human            *humancheck.Guard
 	Store            *repository.Accounts
 	Service          *service.TournamentService
 	WorkerReady      func(context.Context) error
@@ -239,6 +241,8 @@ func (h *AccountsHandler) Register(c *gin.Context) {
 		TeamName  string `json:"team_name"`
 		Password  string `json:"password"`
 		Email     string `json:"email"`
+		Challenge string `json:"human_challenge"`
+		Solution  string `json:"human_solution"`
 	}
 	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 4096)
 	if c.ShouldBindJSON(&req) != nil {
@@ -255,10 +259,21 @@ func (h *AccountsHandler) Register(c *gin.Context) {
 		c.JSON(400, gin.H{"detail": "Vui lòng nhập email hợp lệ để có thể khôi phục mật khẩu."})
 		return
 	}
+	if err := h.Human.Check(req.Challenge, req.Solution); err != nil {
+		c.JSON(400, gin.H{"detail": err.Error(), "human_check": true})
+		return
+	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if err := h.ImportLegacy(); err != nil {
 		c.JSON(503, gin.H{"detail": "Chưa thể đọc danh sách tài khoản."})
+		return
+	}
+	if taken, err := h.Store.EmailTaken(req.Email, req.StudentID); err != nil {
+		c.JSON(503, gin.H{"detail": "Không thể kiểm tra email. Vui lòng thử lại."})
+		return
+	} else if taken {
+		c.JSON(409, gin.H{"detail": repository.ErrEmailTaken.Error()})
 		return
 	}
 	if err := h.Store.Create(req.StudentID, req.TeamName, req.Password); err != nil {
@@ -464,6 +479,8 @@ func (h *AccountsHandler) ForgotPassword(c *gin.Context) {
 	var req struct {
 		StudentID string `json:"student_id"`
 		Email     string `json:"email"`
+		Challenge string `json:"human_challenge"`
+		Solution  string `json:"human_solution"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil || strings.TrimSpace(req.StudentID) == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": "Vui lòng nhập Mã sinh viên của bạn."})
@@ -481,6 +498,10 @@ func (h *AccountsHandler) ForgotPassword(c *gin.Context) {
 	}
 	if !validEmail(req.Email) {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": "Vui lòng nhập email đã đăng ký của đội."})
+		return
+	}
+	if err := h.Human.Check(req.Challenge, req.Solution); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error(), "human_check": true})
 		return
 	}
 	if h.Mailer == nil || !h.Mailer.Configured() {
@@ -581,10 +602,23 @@ func (h *AccountsHandler) TeamEmail(c *gin.Context) {
 		return
 	}
 	if err := h.Store.SetEmail(session.StudentID, req.Email); err != nil {
+		if errors.Is(err, repository.ErrEmailTaken) {
+			c.JSON(http.StatusConflict, gin.H{"detail": err.Error()})
+			return
+		}
 		c.JSON(http.StatusServiceUnavailable, gin.H{"detail": "Chưa lưu được email."})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "has_email": true, "email_masked": maskEmail(strings.ToLower(strings.TrimSpace(req.Email)))})
+}
+
+// HumanChallenge phát thử thách cho ô "Tôi không phải robot".
+func (h *AccountsHandler) HumanChallenge(c *gin.Context) {
+	c.Header("Cache-Control", "no-store")
+	if h.Human == nil {
+		h.Human = humancheck.FromEnv()
+	}
+	c.JSON(http.StatusOK, gin.H{"challenge": h.Human.Issue(), "difficulty": h.Human.Difficulty(), "required": h.Human.Required()})
 }
 
 func (h *AccountsHandler) ResetPassword(c *gin.Context) {

@@ -255,7 +255,72 @@ func (s *Accounts) Create(id, name, password string) error {
 	}
 	return s.save(Account{StudentID: id, TeamName: strings.TrimSpace(name), Hash: string(hash), Secret: sealed, CreatedAt: time.Now().UTC()}, true)
 }
-// SetEmail lưu email dùng để khôi phục mật khẩu (đã kiểm tra định dạng ở handler).
+
+var ErrEmailTaken = errors.New("Email này đã được một đội khác sử dụng. Mỗi email chỉ gắn với một đội.")
+
+func normalEmail(email string) string { return strings.ToLower(strings.TrimSpace(email)) }
+
+// idsByEmail trả các MSSV (chưa xóa) đang dùng email này. Cần giữ s.mu.
+func (s *Accounts) idsByEmail(email string) ([]string, error) {
+	email = normalEmail(email)
+	if email == "" {
+		return nil, nil
+	}
+	var ids []string
+	if s.db != nil {
+		rows, err := s.db.Query(`SELECT student_id FROM arena_accounts WHERE lower(data->>'email') = $1 AND COALESCE(data->>'deleted', 'false') <> 'true'`, email)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var id string
+			if err := rows.Scan(&id); err != nil {
+				return nil, err
+			}
+			ids = append(ids, id)
+		}
+		return ids, rows.Err()
+	}
+	for id, a := range s.items {
+		if !a.Deleted && normalEmail(a.Email) == email {
+			ids = append(ids, id)
+		}
+	}
+	return ids, nil
+}
+
+// IDByEmail tìm MSSV để đăng nhập bằng email; email trùng nhiều đội thì không cho đăng nhập bằng email.
+func (s *Accounts) IDByEmail(email string) (string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	ids, err := s.idsByEmail(email)
+	if err != nil {
+		return "", err
+	}
+	if len(ids) != 1 {
+		return "", ErrAccountMissing
+	}
+	return ids[0], nil
+}
+
+// EmailTaken cho biết email đã thuộc một đội khác (bỏ qua chính MSSV except).
+func (s *Accounts) EmailTaken(email, except string) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	ids, err := s.idsByEmail(email)
+	if err != nil {
+		return false, err
+	}
+	for _, id := range ids {
+		if id != accountID(except) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// SetEmail lưu email dùng để khôi phục mật khẩu và đăng nhập (đã kiểm tra định dạng ở handler).
 func (s *Accounts) SetEmail(id, email string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -266,7 +331,16 @@ func (s *Accounts) SetEmail(id, email string) error {
 	if a.Deleted {
 		return ErrAccountMissing
 	}
-	a.Email = strings.ToLower(strings.TrimSpace(email))
+	others, err := s.idsByEmail(email)
+	if err != nil {
+		return err
+	}
+	for _, other := range others {
+		if other != a.StudentID {
+			return ErrEmailTaken
+		}
+	}
+	a.Email = normalEmail(email)
 	return s.save(a, false)
 }
 

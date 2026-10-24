@@ -98,12 +98,17 @@ export async function apiRequest<T = any>(
 
 export const arenaApi = {
   // --- AUTH ---
-  async loginTeam(studentId: string, password: string) {
+  async humanChallenge() {
+    return apiRequest<{ challenge: string; difficulty: number; required: boolean }>('/auth/human-challenge')
+  },
+
+  /** `login` là MSSV hoặc email đã đăng ký của đội. */
+  async loginTeam(login: string, password: string, proof?: { human_challenge: string; human_solution: string } | null) {
     const res = await apiRequest<{ session_token: string; team?: { team_name?: string; student_id?: string } }>(
       '/teams/login',
       {
         method: 'POST',
-        body: JSON.stringify({ username: studentId, student_id: studentId, password }),
+        body: JSON.stringify({ username: login, student_id: login, password, ...(proof || {}) }),
       },
     )
     if (!res.session_token) throw new Error('Máy chủ không trả phiên đăng nhập hợp lệ.')
@@ -128,6 +133,8 @@ export const arenaApi = {
     contact_email?: string
     email?: string
     github_url?: string
+    human_challenge?: string
+    human_solution?: string
   }) {
     return apiRequest('/teams/register', {
       method: 'POST',
@@ -156,10 +163,10 @@ export const arenaApi = {
     }>('/session', { cache: 'no-store' })
   },
 
-  async forgotPassword(studentId: string, email: string) {
+  async forgotPassword(studentId: string, email: string, proof?: { human_challenge: string; human_solution: string } | null) {
     return apiRequest('/accounts/forgot-password', {
       method: 'POST',
-      body: JSON.stringify({ student_id: studentId, email }),
+      body: JSON.stringify({ student_id: studentId, email, ...(proof || {}) }),
     })
   },
 

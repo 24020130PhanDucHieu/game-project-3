@@ -27,6 +27,25 @@ EVOLVE_CYCLE = {
 }
 
 
+MAX_PLIES = 2000  # chốt an toàn; trận thật kết thúc sớm hơn rất nhiều
+
+
+def stalemate_winner(pieces, targets, names, seed):
+    """Bàn cờ kẹt: nhiều quân sống hơn thắng; bằng nhau thì quân gần căn cứ đối thủ hơn thắng; vẫn bằng thì bốc thăm theo seed."""
+    def score(side):
+        alive = [p for p in pieces[side] if p["alive"]]
+        col, row = targets[side]
+        return len(alive), -min((abs(p["col"] - col) + abs(p["row"] - row) for p in alive), default=99)
+    a, b = score("team_a"), score("team_b")
+    if a != b:
+        side = "team_a" if a > b else "team_b"
+        how = "còn nhiều quân hơn" if a[0] != b[0] else "có quân gần căn cứ đối thủ hơn"
+    else:
+        side = "team_a" if int(hashlib.sha256(f"{seed}:stalemate".encode()).hexdigest(), 16) % 2 == 0 else "team_b"
+        how = "bốc thăm đã lưu (hai bên ngang nhau)"
+    return side, f"Bàn cờ bế tắc, không bên nào còn nước đi. Đội {names[side]} thắng vì {how}."
+
+
 def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1,
                    stage_rule="STAGE_1_STANDARD", tie_seed=None, reuse_sandbox=False,
                    record_replay=True):
@@ -61,6 +80,7 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
     first = "team_a" if round_num % 2 else "team_b"
     order = (first, "team_b" if first == "team_a" else "team_a")
     winner, reason = None, ""
+    passes = 0  # số lượt bỏ liên tiếp của cả hai bên; 2 nghĩa là bàn cờ đã kẹt vĩnh viễn
 
     def alive(side):
         return [p for p in pieces[side] if p["alive"]]
@@ -111,6 +131,11 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
             snapshot(reason, winner)
         for ply in itertools.count():
             if winner:
+                break
+            if passes >= 2 or ply >= MAX_PLIES:
+                # Không bên nào còn nước đi (trạng thái không đổi nữa): phân xử ngay để trận luôn kết thúc.
+                winner, reason = stalemate_winner(pieces, targets, names, tie_seed)
+                snapshot(reason, winner)
                 break
             side = order[ply % 2]
             opponent = "team_b" if side == "team_a" else "team_a"
@@ -167,16 +192,20 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                 for candidate in candidates:
                     col, row = candidate["col"], candidate["row"]
                     options = [(col, row + direction), (col + horizontal, row), (col + horizontal, row + direction)]
+                    # Chỉ đi vào ô trống: quân không tự lao vào quân địch, chỉ tấn công khi thắng (khối ở trên).
                     options = [cell for cell in options if all(0 <= x < 9 for x in cell)
                                and cell not in obstacles_set
-                               and not any((p["col"], p["row"]) == cell for p in own if p is not candidate)]
+                               and not any((p["col"], p["row"]) == cell for p in own if p is not candidate)
+                               and not any((p["col"], p["row"]) == cell for p in enemy)]
                     if options:
                         attacker = candidate
                         destination = min(options, key=lambda cell: abs(cell[0] - targets[side][0]) + abs(cell[1] - targets[side][1]))
                         break
             clash = None
             log = f"Đội {names[side]} không có ô di chuyển hợp lệ, bỏ lượt."
+            passes = 0 if attacker else passes + 1
             if attacker:
+                origin = (attacker["col"], attacker["row"])
                 if attacker["type"] == "JOKER":
                     attacker["steps_left"] = attacker.get("steps_left", 5) - 1
 
@@ -225,15 +254,22 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                     clash = {"type": "TRAP", "col": destination[0], "row": destination[1], "side": colors[side], "log": log}
                 elif defender and attacker["alive"] and defender["alive"]:
                     outcome = GameRulesEngine.check_clash(attacker["type"], defender["type"], reverse)
-                    winning_side = side if outcome == 1 else opponent
-                    losing_piece = defender if outcome == 1 else attacker
-                    winning_piece = attacker if outcome == 1 else defender
-                    losing_piece["alive"] = False
-                    log = f"Đội {names[winning_side]} ({winning_piece['type']}) thắng va chạm với ({losing_piece['type']}) tại [{destination[0]},{destination[1]}]."
                     if outcome == 0:
-                        log += " Cùng loại: quân phòng thủ thắng."
-                    clash = {"type": "CLASH", "col": destination[0], "row": destination[1], "winner": colors[winning_side],
-                             "winner_type": winning_piece["type"], "loser_type": losing_piece["type"], "log": log}
+                        # Cùng loại không ăn được nhau: hai quân còn nguyên, quân tấn công lùi về ô cũ.
+                        attacker["col"], attacker["row"] = origin
+                        log = f"Quân ({attacker['type']}) của Đội {names[side]} gặp quân cùng loại tại [{destination[0]},{destination[1]}]: hòa, không quân nào bị loại, quân tấn công lùi về [{origin[0]},{origin[1]}]."
+                        clash = {"type": "CLASH", "col": destination[0], "row": destination[1], "winner": None, "draw": True,
+                                 "winner_type": attacker["type"], "loser_type": defender["type"], "log": log}
+                    else:
+                        winning_side = side if outcome == 1 else opponent
+                        losing_piece = defender if outcome == 1 else attacker
+                        winning_piece = attacker if outcome == 1 else defender
+                        losing_piece["alive"] = False
+                        if outcome == -1:
+                            attacker["col"], attacker["row"] = destination  # quân tấn công bị loại tại ô va chạm
+                        log = f"Đội {names[winning_side]} ({winning_piece['type']}) thắng va chạm với ({losing_piece['type']}) tại [{destination[0]},{destination[1]}]."
+                        clash = {"type": "CLASH", "col": destination[0], "row": destination[1], "winner": colors[winning_side],
+                                 "winner_type": winning_piece["type"], "loser_type": losing_piece["type"], "log": log}
             for possible_winner in (side, opponent):
                 opposing = "team_b" if possible_winner == "team_a" else "team_a"
                 if not alive(opposing):

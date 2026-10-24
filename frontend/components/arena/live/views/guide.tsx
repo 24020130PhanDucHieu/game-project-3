@@ -75,7 +75,7 @@ export function GuideView() {
           <Card title="Luật cơ bản">
             <ul className="list-inside list-disc space-y-2 text-sm text-muted-foreground">
               <li>Bàn cờ 9×9. Mỗi bên có 9 quân: 3 Búa, 3 Bao, 3 Kéo. Hai bên đi luân phiên.</li>
-              <li>Búa thắng Kéo, Kéo thắng Bao, Bao thắng Búa. Cùng loại va chạm thì ưu tiên quân phòng thủ.</li>
+              <li>Búa thắng Kéo, Kéo thắng Bao, Bao thắng Búa. Quân chỉ ăn được quân mà nó khắc; cùng loại thì hòa, không quân nào bị loại. Quân không tự đi vào ô có quân địch. Nếu cả hai bên đều hết nước đi, đội còn nhiều quân hơn (rồi đến đội có quân gần căn cứ đối thủ hơn) thắng.</li>
               <li>Thắng hiệp khi chiếm cứ điểm đối phương hoặc tiêu diệt hết quân đối phương.</li>
               <li>Bot lỗi, trả nước đi không hợp lệ hoặc quá thời gian sẽ bị xử thua hiệp đó.</li>
               <li>Bot chỉ chọn <code className="rounded bg-muted px-1">ROCK</code>, <code className="rounded bg-muted px-1">PAPER</code> hoặc <code className="rounded bg-muted px-1">SCISSORS</code>; engine tự chọn quân và di chuyển.</li>

@@ -33,7 +33,8 @@ export function reachable(step: any, piece: PieceInfo | null, reverse = false): 
   const walls = new Set(asCells(step?.obstacles || step?.mystery_tiles?.obstacles).map(([c, r]) => `${c}:${r}`))
   const own = (piece.side === 'red' ? step?.red_pieces : step?.blue_pieces) || []
   const enemy = (piece.side === 'red' ? step?.blue_pieces : step?.red_pieces) || []
-  const occupied = new Set(own.filter((p: any) => p.alive !== false && p.id !== piece.id).map((p: any) => `${p.col}:${p.row}`))
+  // Ô có quân mình hoặc quân địch đều không đi vào được; quân địch chỉ bị tấn công khi mình khắc nó.
+  const occupied = new Set([...own.filter((p: any) => p.id !== piece.id), ...enemy].filter((p: any) => p.alive !== false).map((p: any) => `${p.col}:${p.row}`))
   const dir = piece.side === 'red' ? -1 : 1
   const hor = piece.side === 'red' ? 1 : -1
   const moves = ([[piece.col, piece.row + dir], [piece.col + hor, piece.row], [piece.col + hor, piece.row + dir]] as Cell[])

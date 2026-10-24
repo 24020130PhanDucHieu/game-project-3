@@ -26,13 +26,18 @@ def run():
             registration.locator("input").nth(1).fill("Next Portal Team")
             registration.locator("input").nth(2).fill("verification-password")
             registration.locator("input").nth(3).fill("portal-team@example.com")
+            page.get_by_role("checkbox", name="Tôi không phải robot").click()
+            expect(page.get_by_text("Đã xác minh bạn không phải robot")).to_be_visible(timeout=20000)
             with page.expect_response(lambda response: "/api/teams/register" in response.url) as registered:
                 registration.get_by_role("button", name="Hoàn tất đăng ký").click()
             assert registered.value.ok, registered.value.text()
 
             expect(page.get_by_role("heading", name="Đăng nhập")).to_be_visible()
-            page.locator("#inp-login-user").fill("29971111")
+            # Đăng nhập bằng email đã đăng ký (thay cho MSSV).
+            page.locator("#inp-login-user").fill("Portal-Team@example.com")
             page.locator("#inp-login-pass").fill("verification-password")
+            page.get_by_role("checkbox", name="Tôi không phải robot").click()
+            expect(page.get_by_text("Đã xác minh bạn không phải robot")).to_be_visible(timeout=20000)
             with page.expect_response(lambda response: "/api/teams/login" in response.url) as logged_in:
                 page.locator("form").first.get_by_role("button", name="Đăng nhập").click()
             assert logged_in.value.ok, logged_in.value.text()

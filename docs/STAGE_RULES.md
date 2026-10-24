@@ -10,7 +10,7 @@ Tích độc lập một, hai hoặc cả ba luật. Không tích ô nào: luậ
 | Bit 2: Đảo tương khắc | Búa thắng Bao, Bao thắng Kéo, Kéo thắng Búa trong mọi lượt. |
 | Bit 4: Sương mù | Bot không nhận loại quân và nước chọn đối phương. Bàn đội thi hiện quân đối thủ thành `?`; API cũng che dữ liệu đối thủ trong các bước và nhật ký. Khách bị che cả hai bên; Admin xem đầy đủ. |
 
-ID mới là `COMBO_0` đến `COMBO_7`, cộng các bit đã tích: `COMBO_5` = trộn quân + sương mù, `COMBO_7` = cả ba. Các preset cũ vẫn được thực thi đúng cho giải đã lưu. Vòng đã khóa giữ nguyên luật. Cùng loại va chạm vẫn ưu tiên quân phòng thủ. Không giới hạn số nước; thắng bằng chiếm cứ điểm hoặc hết quân đối phương. Bot lỗi/quá thời gian vẫn bị xử thua.
+ID mới là `COMBO_0` đến `COMBO_31`, cộng các bit đã tích: 1 trộn quân, 2 đảo tương khắc, 4 sương mù, 8 ô bí ẩn, 16 chướng ngại ngẫu nhiên. Ví dụ `COMBO_5` = trộn quân + sương mù, `COMBO_7` = ba luật đầu. Các preset cũ vẫn được thực thi đúng cho giải đã lưu. Vòng đã khóa giữ nguyên luật. Quân cùng loại không ăn được nhau (hòa); quân chỉ tấn công khi khắc quân địch. Không giới hạn số nước; thắng bằng chiếm cứ điểm hoặc hết quân đối phương. Bot lỗi/quá thời gian vẫn bị xử thua.
 
 ## Bàn live và phát lại
 

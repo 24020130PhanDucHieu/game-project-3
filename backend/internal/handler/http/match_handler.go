@@ -13,11 +13,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"project-tuan3/internal/auth"
+	"project-tuan3/internal/humancheck"
 	"project-tuan3/internal/repository"
 	"project-tuan3/internal/service"
 )
 
 type MatchHandler struct {
+	Human       *humancheck.Guard
 	Accounts    *repository.Accounts
 	Judges      *repository.Judges
 	AccountSync func() error
@@ -200,8 +202,23 @@ func (h *MatchHandler) TeamLogin(c *gin.Context) {
 	}
 	password, _ := req["password"].(string)
 	if strings.TrimSpace(username) == "" || password == "" || isAdminUsername(username) {
-		c.JSON(http.StatusBadRequest, gin.H{"detail": "Enter a team student ID and access code"})
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Nhập Mã sinh viên hoặc email cùng mật khẩu của đội."})
 		return
+	}
+	challenge, _ := req["human_challenge"].(string)
+	solution, _ := req["human_solution"].(string)
+	if err := h.Human.Check(challenge, solution); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error(), "human_check": true})
+		return
+	}
+	// Đăng nhập bằng email: đổi sang MSSV của đội đã đăng ký email đó.
+	if strings.Contains(username, "@") && h.Accounts != nil {
+		id, err := h.Accounts.IDByEmail(username)
+		if err != nil {
+			c.JSON(401, gin.H{"detail": "Email hoặc mật khẩu không đúng. Nếu đội chưa có email, hãy đăng nhập bằng Mã sinh viên."})
+			return
+		}
+		username = id
 	}
 	preferredTournament, _ := req["tournament_id"].(string)
 	originalPassword := password

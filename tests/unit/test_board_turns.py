@@ -63,7 +63,7 @@ class BoardRulesTests(unittest.TestCase):
         for rule in rules:
             self.assertTrue(BotRunner.validate_bot_code(code, 'PYTHON', rule)['is_valid'], rule)
 
-    def test_actual_clashes_follow_each_rule_and_defender_wins_same_type(self):
+    def test_actual_clashes_follow_each_rule_and_same_type_never_captures(self):
         rules = ('STAGE_1_STANDARD', 'STAGE_2_MUTATED', 'RULE_REVERSE', 'RULE_FOG',
                  'RULE_MUTATED_FOG', 'STAGE_3_REVERSE_FOG', 'STAGE_4_FINALS')
         standard_wins = {('ROCK','SCISSORS'), ('SCISSORS','PAPER'), ('PAPER','ROCK')}
@@ -90,8 +90,10 @@ class BoardRulesTests(unittest.TestCase):
                                 reverse = (rule == 'RULE_REVERSE' or rule == 'STAGE_3_REVERSE_FOG' and step['cycle'] % 2 == 1
                                            or rule == 'STAGE_4_FINALS' and step['cycle'] % 3 == 0)
                                 if winner == loser:
+                                    # Cùng loại: hòa, không ai bị loại.
                                     equal_clashes += 1
-                                    self.assertEqual(clash['winner'], 'blue' if step['active_side'] == 'team_a' else 'red')
+                                    self.assertTrue(clash.get('draw'))
+                                    self.assertIsNone(clash['winner'])
                                 else:
                                     self.assertEqual((winner, loser) in standard_wins, not reverse)
                             final = result['board_steps'][-1]
@@ -99,9 +101,9 @@ class BoardRulesTests(unittest.TestCase):
                             own = final['red_pieces' if red_won else 'blue_pieces']
                             enemy = final['blue_pieces' if red_won else 'red_pieces']
                             target = (8, 0) if red_won else (0, 8)
-                            self.assertTrue(not any(p['alive'] for p in enemy) or any(p['alive'] and (p['col'],p['row']) == target for p in own))
+                            self.assertTrue(not any(p['alive'] for p in enemy) or any(p['alive'] and (p['col'],p['row']) == target for p in own)
+                                            or 'bế tắc' in result['win_reason'])
         self.assertGreater(clashes, 0)
-        self.assertGreater(equal_clashes, 0)
 
     def test_new_presets_reach_bot_state_and_initial_board(self):
         for rule in ('STAGE_1_STANDARD', 'STAGE_2_MUTATED', 'RULE_REVERSE', 'RULE_FOG', 'RULE_MUTATED_FOG', 'STAGE_3_REVERSE_FOG', 'STAGE_4_FINALS'):
