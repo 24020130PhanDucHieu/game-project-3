@@ -24,7 +24,7 @@ export type RtcSnapshot = {
   error: string
 }
 
-type ViewEntry = { pc: RTCPeerConnection; stream: MediaStream | null; live: boolean; retries: number; pending: RTCIceCandidateInit[] }
+type ViewEntry = { pc: RTCPeerConnection; stream: MediaStream | null; live: boolean; retries: number; pending: RTCIceCandidateInit[]; frames: number; advancedAt: number; fresh: boolean }
 type PubEntry = { pc: RTCPeerConnection; pending: RTCIceCandidateInit[] }
 
 function iceServers(): RTCIceServer[] {
@@ -48,6 +48,7 @@ export class RtcRoom {
   private destroyed = false
   private attempts = 0
   private timer: number | undefined
+  private watchdog: number | undefined
 
   constructor(private tournamentId: string, private matchId: string, private onChange: () => void) {}
 
@@ -60,13 +61,14 @@ export class RtcRoom {
       error: this.error,
       remotes: [...this.peers.values()].filter((p) => this.views.has(p.id)).map((peer) => {
         const v = this.views.get(peer.id)!
-        return { peer, stream: v.stream, live: v.live, state: v.pc.connectionState }
+        return { peer, stream: v.stream, live: v.live && v.fresh, state: v.pc.connectionState }
       }),
     }
   }
 
   connect() {
     if (this.destroyed || this.ws) return
+    if (!this.watchdog) this.watchdog = window.setInterval(() => void this.checkFrames(), 1500)
     const token = getSessionToken()
     if (!token) { this.error = 'Cần đăng nhập để dùng webcam.'; this.emit(); return }
     this.status = 'connecting'
@@ -98,6 +100,7 @@ export class RtcRoom {
   destroy() {
     this.destroyed = true
     window.clearTimeout(this.timer)
+    window.clearInterval(this.watchdog)
     const ws = this.ws
     this.ws = null
     ws?.close()
@@ -113,6 +116,25 @@ export class RtcRoom {
   }
 
   // ---------------------------------------------------------------- nội bộ
+  /**
+   * Bên phát tắt camera (hoặc camera bị ứng dụng khác chiếm) thì track bên nhận không tự "mute" ngay,
+   * nên ô hình cứ đứng ở khung cuối. Đếm số khung hình đã giải mã: không tăng trong 4 giây là không còn hình.
+   */
+  private async checkFrames() {
+    let changed = false
+    for (const v of this.views.values()) {
+      const receiver = v.pc.getReceivers().find((r) => r.track.kind === 'video')
+      if (!receiver || v.pc.connectionState !== 'connected') continue
+      let frames = -1
+      try { (await receiver.getStats()).forEach((r) => { if (r.type === 'inbound-rtp' && r.kind === 'video') frames = r.framesDecoded ?? r.framesReceived ?? -1 }) } catch { continue }
+      const now = Date.now()
+      if (frames !== v.frames) { v.frames = frames; v.advancedAt = now }
+      const fresh = frames > 0 && now - v.advancedAt < 4000
+      if (fresh !== v.fresh) { v.fresh = fresh; changed = true }
+    }
+    if (changed) this.emit()
+  }
+
   private emit() { this.onChange() }
   private send(message: object) { if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(message)) }
 
@@ -180,7 +202,7 @@ export class RtcRoom {
 
   private async startView(peer: PeerInfo) {
     const pc = new RTCPeerConnection({ iceServers: iceServers() })
-    const entry: ViewEntry = { pc, stream: null, live: false, retries: 0, pending: [] }
+    const entry: ViewEntry = { pc, stream: null, live: false, retries: 0, pending: [], frames: -1, advancedAt: 0, fresh: false }
     this.views.set(peer.id, entry)
     pc.addTransceiver('video', { direction: 'recvonly' })
     pc.addTransceiver('audio', { direction: 'recvonly' })

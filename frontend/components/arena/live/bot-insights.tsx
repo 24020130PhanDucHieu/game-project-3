@@ -121,8 +121,8 @@ export function DiffViewer({ left, right }: { left: { label: string; code: strin
 }
 
 /** Biểu đồ đường SVG thuần (không thêm thư viện), dùng cho ELO theo lượt. */
-export function LineChart({ points, height = 140, label }: { points: { x: string; y: number }[]; height?: number; label: string }) {
-  if (points.length < 2) return <EmptyState title="Chưa đủ dữ liệu để vẽ biểu đồ" hint="Cần ít nhất hai lượt đã chấm." />
+export function LineChart({ points, height = 140, label, emptyHint = 'Cần ít nhất hai lượt đã chấm.', gradientId = 'elo-fill' }: { points: { x: string; y: number }[]; height?: number; label: string; emptyHint?: string; gradientId?: string }) {
+  if (points.length < 2) return <EmptyState title="Chưa đủ dữ liệu để vẽ biểu đồ" hint={emptyHint} />
   const w = 560
   const pad = 28
   const ys = points.map((p) => p.y)
@@ -136,11 +136,11 @@ export function LineChart({ points, height = 140, label }: { points: { x: string
   return (
     <figure>
       <svg viewBox={`0 0 ${w} ${height}`} className="w-full" role="img" aria-label={label}>
-        <defs><linearGradient id="elo-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="var(--primary)" stopOpacity="0.35" /><stop offset="100%" stopColor="var(--primary)" stopOpacity="0" /></linearGradient></defs>
+        <defs><linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stopColor="var(--primary)" stopOpacity="0.35" /><stop offset="100%" stopColor="var(--primary)" stopOpacity="0" /></linearGradient></defs>
         {[min, (min + max) / 2, max].map((v) => (
           <g key={v}><line x1={pad} x2={w - pad} y1={sy(v)} y2={sy(v)} stroke="var(--border)" strokeDasharray="3 4" /><text x={4} y={sy(v) + 4} fontSize="10" fill="var(--muted-foreground)">{Math.round(v)}</text></g>
         ))}
-        <path d={area} fill="url(#elo-fill)" />
+        <path d={area} fill={`url(#${gradientId})`} />
         <path d={d} fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
         {points.map((p, i) => <circle key={i} cx={sx(i)} cy={sy(p.y)} r="3.5" fill="var(--card)" stroke="var(--primary)" strokeWidth="2"><title>{`${p.x}: ${p.y.toFixed(1)}`}</title></circle>)}
         {points.map((p, i) => (points.length <= 12 || i % Math.ceil(points.length / 12) === 0) && <text key={`t${i}`} x={sx(i)} y={height - 8} fontSize="10" textAnchor="middle" fill="var(--muted-foreground)">{p.x}</text>)}

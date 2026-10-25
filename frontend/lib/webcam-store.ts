@@ -41,6 +41,9 @@ async function grabFrame(stream: MediaStream): Promise<CanvasImageSource | null>
   if (track && Capture) {
     try { return await new Capture(track).grabFrame() } catch { /* dùng cách dự phòng */ }
   }
+  // Ô xem trước camera của chính mình đang hiện trên màn hình: dùng nó nếu đã có hình (luôn được giải mã).
+  const preview = document.querySelector<HTMLVideoElement>('video[data-self-cam]')
+  if (preview && preview.srcObject === stream && preview.readyState >= 2 && preview.videoWidth > 8) return preview
   if (!snapVideo) {
     // Phải nằm trong khung nhìn: trình duyệt ngừng giải mã video ở ngoài màn hình (sẽ chụp ra ảnh đen).
     snapVideo = document.createElement('video')
@@ -57,7 +60,7 @@ async function grabFrame(stream: MediaStream): Promise<CanvasImageSource | null>
     const timer = window.setTimeout(resolve, 1500)
     v.requestVideoFrameCallback?.(() => { window.clearTimeout(timer); resolve() })
   })
-  return snapVideo.videoWidth ? snapVideo : null
+  return snapVideo.videoWidth > 8 ? snapVideo : null
 }
 
 async function captureOnce() {

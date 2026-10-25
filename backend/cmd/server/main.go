@@ -146,13 +146,16 @@ func main() {
 	// 4. WebSocket Hub for Live Stream
 	wsHub := wsHandler.NewHub()
 	go wsHub.Run()
+	certHandler := &httpHandler.CertificateHandler{Service: tournamentService, Accounts: accounts, Store: qualifierStore}
 	tournamentService.OnRoundEvent = func(tournamentID, matchID, eventType string) {
 		httpHandler.InvalidateDerived()
 		wsHub.BroadcastTournamentJSON(tournamentID, matchID, gin.H{"type": eventType, "tournament_id": tournamentID, "match_id": matchID, "action": "play-round"})
+		certHandler.IssueAsync(tournamentID)
 	}
 	tournamentService.StartRoundTransitions(func(tournamentID, matchID string) {
 		httpHandler.InvalidateDerived()
 		wsHub.BroadcastTournamentJSON(tournamentID, matchID, gin.H{"type": "TOURNAMENT_UPDATED", "tournament_id": tournamentID, "match_id": matchID, "action": "next-round"})
+		certHandler.IssueAsync(tournamentID)
 	})
 
 	// 5. Gin HTTP Engine
@@ -314,7 +317,12 @@ func main() {
 		api.POST("/tournaments/:id/matches/:matchId/next-round", matchAdmin, mHandler.NextRound)
 		api.POST("/tournaments/:id/matches/:matchId/demo-fill", matchAdmin, mHandler.DemoFill)
 		api.POST("/tournaments/:id/matches/:matchId/reset", matchAdmin, mHandler.Reset)
-		api.POST("/tournaments/:id/matches/:matchId/correction", matchAdmin, tHandler.CorrectMatch)
+		api.POST("/tournaments/:id/matches/:matchId/correction", matchAdmin, tHandler.CorrectMatch, func(c *gin.Context) {
+			// sửa kết quả có thể chốt chung kết: cấp giấy chứng nhận như khi đánh xong
+			if c.Writer.Status() == http.StatusOK {
+				certHandler.IssueAsync(c.Param("id"))
+			}
+		})
 		api.GET("/tournaments/:id/matches/:matchId/submissions", matchSession, mHandler.GetSubmissions)
 		api.GET("/tournaments/:id/matches/:matchId/replay/:roundNumber", mHandler.GetRoundReplay)
 		api.POST("/tournaments/:id/practice-match", requireSession(sessions, false, false), mHandler.PracticeMatch)
@@ -326,6 +334,8 @@ func main() {
 		api.POST("/accounts/reset-password", aHandler.ResetPassword)
 		api.POST("/teams/password", requireSession(sessions, false, false), aHandler.ChangePassword)
 		api.GET("/notifications", optionalSession(sessions), aHandler.GetNotifications)
+		api.GET("/certificates", requireSession(sessions, false, false), certHandler.List)
+		api.PUT("/tournaments/:id/certificates", adminOnly, certHandler.Save)
 		api.POST("/notifications/read", optionalSession(sessions), aHandler.ReadNotification)
 		api.POST("/admin/notifications", adminOnly, aHandler.AdminBroadcastNotification)
 		api.GET("/admin/audit-logs", adminOnly, aHandler.ListAdminAuditLogs)
@@ -335,6 +345,7 @@ func main() {
 		api.POST("/tournaments/:id/disqualify-team", adminOnly, tHandler.DisqualifyTeam)
 		api.GET("/matches/history", mHandler.GetMatchHistory)
 		api.GET("/ranking", tHandler.GetRanking)
+		api.GET("/ranking/elo-history", tHandler.GetEloHistory)
 		api.GET("/tournament/rule", tHandler.GetRule)
 		api.POST("/tournament/rule/set", adminOnly, tHandler.SetRule)
 	}

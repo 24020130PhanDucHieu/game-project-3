@@ -107,6 +107,13 @@ export async function apiRequest<T = any>(
 // API SERVICE METHODS
 // =============================================================================
 
+/** Một trận làm đổi ELO giải chính của đội. */
+export type MainEloEvent = {
+  tournament_id: string; tournament_name: string; match_id: string; round_name: string; at: number
+  opponent_id: string; opponent_name: string; result: 'win' | 'loss'; score: string
+  before: number; after: number; delta: number; expected: number
+}
+
 export const arenaApi = {
   // --- AUTH ---
   async humanChallenge() {
@@ -541,6 +548,18 @@ export const arenaApi = {
     return apiRequest('/admin/database/optimize', {
       method: 'POST',
     })
+  },
+
+  async getMainEloHistory(studentId: string) {
+    return apiRequest<{ student_id: string; team_name?: string; start: number; rating: number; played: number; wins: number; k_factor?: number; events: MainEloEvent[] }>(`/ranking/elo-history?student_id=${encodeURIComponent(studentId)}`)
+  },
+
+  async getCertificates(tournamentId?: string) {
+    return apiRequest<{ items: import('./certificate').CertificateData[] }>(`/certificates${tournamentId ? `?tournament_id=${encodeURIComponent(tournamentId)}` : ''}`)
+  },
+
+  async saveCertificates(tournamentId: string, body: { org: string; signer: string; date: string }) {
+    return apiRequest<{ items: import('./certificate').CertificateData[]; notified: number }>(`/tournaments/${encodeURIComponent(tournamentId)}/certificates`, { method: 'PUT', body: JSON.stringify(body) })
   },
 
   async broadcastNotification(payload: { title: string; message: string; link_tab?: string }) {

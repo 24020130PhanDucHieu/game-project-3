@@ -5,7 +5,8 @@ import { Award, BarChart3, GitCompare } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { useResource } from '@/lib/cache'
 import { decodeRule, sameStudent, stamp } from '@/lib/format'
-import { Card, EmptyState, Select, Tabs } from './ui'
+import { cn } from '@/lib/utils'
+import { Badge, Card, DataTable, EmptyState, Select, Tabs } from './ui'
 import { useLive } from './context'
 import { DiffViewer, LineChart, RatioBars } from './bot-insights'
 import { BadgeStrip } from './challenges'
@@ -20,6 +21,13 @@ export function BotAnalytics({ teamName }: { teamName?: string }) {
   const detail = useResource<any>(qualifierId ? `q:detail:${scope}:${qualifierId}` : null, () => arenaApi.getQualifier(qualifierId), { ttl: 10_000 })
   const scrims = useResource('scrim:list', () => arenaApi.getScrimmages(), { ttl: 15_000 })
   const sid = session.student_id
+  const mainElo = useResource(sid ? `elo:main:${sid}` : null, () => arenaApi.getMainEloHistory(sid!), { ttl: 20_000, refreshMs: 30_000 })
+
+  const mainPoints = useMemo(() => {
+    const events = mainElo.data?.events || []
+    if (!events.length) return []
+    return [{ x: 'Đầu', y: events[0].before }, ...events.map((e, i) => ({ x: `T${i + 1}`, y: e.after }))]
+  }, [mainElo.data])
 
   const eloPoints = useMemo(() => {
     const jobs = (detail.data?.results || []).filter((j: any) => j.status === 'DONE').sort((a: any, b: any) => a.round - b.round)
@@ -99,10 +107,32 @@ export function BotAnalytics({ teamName }: { teamName?: string }) {
       </Card>
       <Card icon={<BarChart3 />} title="Phân tích bot" action={<Tabs value={tab} onChange={setTab} tabs={[{ id: 'stats', label: 'Thống kê', icon: <BarChart3 className="size-4" /> }, { id: 'diff', label: 'So sánh phiên bản', icon: <GitCompare className="size-4" /> }]} />}>
         {tab === 'stats' ? (
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-6 lg:grid-cols-2 [&>*]:min-w-0">
             <div className="lg:col-span-2">
               <p className="mb-2 text-xs font-semibold text-muted-foreground">ELO vòng loại theo từng lượt</p>
               <LineChart points={eloPoints} label="Biểu đồ ELO theo lượt vòng loại" />
+            </div>
+            <div className="lg:col-span-2">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs font-semibold text-muted-foreground">ELO giải chính theo từng trận <span className="font-normal">· tính riêng, mọi đội bắt đầu từ 1200, không lấy ELO vòng loại</span></p>
+                {mainElo.data && <Badge tone="accent">ELO hiện tại {Math.round(mainElo.data.rating)} · {mainElo.data.wins}/{mainElo.data.played} trận thắng</Badge>}
+              </div>
+              <LineChart points={mainPoints} label="Biểu đồ ELO theo từng trận giải chính" gradientId="elo-main-fill" emptyHint="ELO giải chính có sau khi đội đấu xong trận đầu tiên của giải." />
+              {!!mainElo.data?.events.length && (
+                <div className="mt-3">
+                  <DataTable head={['Trận', 'Đối thủ', 'Kết quả', 'Tỉ số hiệp', 'ELO']}>
+                    {[...mainElo.data.events].reverse().slice(0, 8).map((e) => (
+                      <tr key={e.tournament_id + e.match_id}>
+                        <td className="px-3 py-2"><span className="block font-medium">{e.round_name || e.match_id}</span><span className="block text-[11px] text-muted-foreground">{e.tournament_name}</span></td>
+                        <td className="px-3 py-2">{e.opponent_name}</td>
+                        <td className="px-3 py-2"><Badge tone={e.result === 'win' ? 'success' : 'danger'}>{e.result === 'win' ? 'Thắng' : 'Thua'}</Badge></td>
+                        <td className="px-3 py-2 tabular-nums">{e.score}</td>
+                        <td className="px-3 py-2 tabular-nums"><span className="font-semibold">{Math.round(e.after)}</span> <span className={cn('text-xs font-semibold', e.delta >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>{e.delta >= 0 ? '+' : ''}{e.delta.toFixed(1)}</span></td>
+                      </tr>
+                    ))}
+                  </DataTable>
+                </div>
+              )}
             </div>
             <div><p className="mb-2 text-xs font-semibold text-muted-foreground">Tỉ lệ thắng theo luật (trận + giao hữu)</p><RatioBars rows={byRule} /></div>
             <div><p className="mb-2 text-xs font-semibold text-muted-foreground">Theo đối thủ</p><RatioBars rows={byOpponent} /></div>

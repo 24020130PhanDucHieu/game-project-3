@@ -114,8 +114,8 @@ function GlobalRanking() {
       )}
       {!q && ranking.data && <Podium rows={ranking.data.slice(0, 3)} />}
       <Card
-        title="Bảng xếp hạng toàn hệ thống"
-        subtitle="ELO cộng từ kết quả các trận Bo5 đã hoàn tất ở mọi giải"
+        title="Bảng xếp hạng giải chính"
+        subtitle="ELO tính theo từng trận Bo5 đã kết thúc ở giải chính (K=32). Mọi đội bắt đầu từ 1200, độc lập với ELO vòng loại"
         action={<div className="relative"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tìm đội hoặc MSSV" aria-label="Tìm đội" className="w-56 rounded-xl border border-input bg-background py-2 pl-9 pr-3 text-sm" /></div>}
       >
         {ranking.loading ? <SkeletonRows rows={8} /> : slice.length ? (
@@ -207,7 +207,7 @@ export function RankingView() {
   return (
     <div className="space-y-6">
       <SectionTitle eyebrow="Thành tích" title="Xếp hạng">
-        <Tabs value={mode} onChange={setMode} tabs={[{ id: 'global', label: 'Toàn hệ thống', icon: <Globe2 className="size-4" /> }, { id: 'qualifier', label: 'Vòng loại', icon: <Flag className="size-4" /> }]} />
+        <Tabs value={mode} onChange={setMode} tabs={[{ id: 'global', label: 'Giải chính', icon: <Globe2 className="size-4" /> }, { id: 'qualifier', label: 'Vòng loại', icon: <Flag className="size-4" /> }]} />
       </SectionTitle>
       {mode === 'global' ? <GlobalRanking /> : <QualifierRanking />}
     </div>

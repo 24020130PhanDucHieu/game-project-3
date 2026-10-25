@@ -13,6 +13,7 @@ import { BotAnalytics } from '../profile-insights'
 import { PasswordCard, TeamEmailCard } from '../email-card'
 import { BadgeStrip } from '../challenges'
 import { ScoreHistoryTable, scoreRows } from '../qualifier-extras'
+import { CertificateVault } from '../certificate-vault'
 
 const VIEWS: ViewId[] = ['profile', 'overview', 'bracket', 'ranking', 'match', 'qualifier', 'guide', 'admin']
 
@@ -41,6 +42,9 @@ export function NotificationList({ limit, onOpenItem }: { limit?: number; onOpen
     onOpenItem?.()
     const tab = String(n.link_tab || '').replace(/^tab-/, '') as ViewId
     if (VIEWS.includes(tab)) navigate(tab)
+    // Thông báo trỏ tới một mục trong trang (vd. kho giấy chứng nhận): cuộn tới mục đó sau khi trang hiện ra.
+    const section = n.link_data?.section
+    if (section) window.setTimeout(() => document.getElementById(String(section))?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 500)
   }
   return (
     <div className="space-y-3">
@@ -173,6 +177,7 @@ export function ProfileView() {
         </>
       )}
 
+      {own && <CertificateVault />}
       {own && <div className="grid gap-6 xl:grid-cols-2"><TeamEmailCard /><PasswordCard /></div>}
       {own && <BotAnalytics teamName={profile.data?.team_name} />}
       {own && <ProfileScoreHistory />}

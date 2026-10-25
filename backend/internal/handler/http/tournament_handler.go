@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math"
 	"net/http"
 	"sort"
@@ -325,123 +326,47 @@ func (h *TournamentHandler) GetRanking(c *gin.Context) {
 	}
 	version := derivedVersion()
 	allTournaments := h.service.GetAllTournaments()
-	// Track stats per student across all tournaments
-	type teamStats struct {
-		BotName       string
-		StudentID     string
-		Language      string
-		ELO           int
-		MatchesPlayed int
-		Wins          int
-		SourceAt      float64
-	}
-	statsMap := make(map[string]*teamStats)
-
+	// ELO giải chính: tính chuẩn từ các trận đã kết thúc, mọi đội bắt đầu từ 1200 (độc lập với ELO vòng loại).
+	elo := ComputeMainElo(allTournaments)
+	// Ngôn ngữ lấy theo lần ghi danh giải gần nhất của đội.
+	langAt := map[string]float64{}
+	lang := map[string]string{}
 	for _, tRaw := range allTournaments {
 		t, ok := tRaw.(map[string]interface{})
 		if !ok {
 			continue
 		}
-		// Seed base ELO from team registration
+		at, _ := t["created_at"].(float64)
 		teams, _ := t["teams"].([]interface{})
 		for _, tmRaw := range teams {
 			tm, ok := tmRaw.(map[string]interface{})
 			if !ok {
 				continue
 			}
-			studentID, _ := tm["student_id"].(string)
-			studentID = strings.ToUpper(strings.TrimSpace(studentID))
-			if studentID == "" {
-				continue
-			}
-			at, _ := t["created_at"].(float64)
-			if existing, exists := statsMap[studentID]; !exists || at > existing.SourceAt {
-				teamName, _ := tm["team_name"].(string)
-				lang, _ := tm["language"].(string)
-				if lang == "" {
-					lang = "PYTHON"
-				}
-				elo := 1200
-				if e, ok := tm["elo"].(float64); ok {
-					elo = int(e)
-				}
-				played, wins := 0, 0
-				if existing != nil {
-					played, wins = existing.MatchesPlayed, existing.Wins
-				}
-				statsMap[studentID] = &teamStats{
-					BotName:   teamName,
-					StudentID: studentID,
-					Language:  lang,
-					ELO:       elo,
-					SourceAt:  at, MatchesPlayed: played, Wins: wins,
-				}
-			}
-		}
-
-		// Compute actual match results from completed matches
-		matches, ok := t["matches"].(map[string]interface{})
-		if !ok {
-			continue
-		}
-		for _, mRaw := range matches {
-			m, ok := mRaw.(map[string]interface{})
-			if !ok {
-				continue
-			}
-			if m["status"] != "COMPLETED" || (m["winner"] != "team_a" && m["winner"] != "team_b") {
-				continue
-			}
-			// This match has been played - count participation and wins
-			winnerSide, _ := m["winner"].(string)
-			for _, side := range []string{"team_a", "team_b"} {
-				if team, ok := m[side].(map[string]interface{}); ok {
-					sid, _ := team["student_id"].(string)
-					sid = strings.ToUpper(strings.TrimSpace(sid))
-					tname, _ := team["team_name"].(string)
-					if sid == "" {
-						continue
-					}
-					st, exists := statsMap[sid]
-					if !exists {
-						st = &teamStats{
-							BotName:   tname,
-							StudentID: sid,
-							Language:  "PYTHON",
-							ELO:       1200,
-						}
-						statsMap[sid] = st
-					}
-					st.MatchesPlayed++
-					if winnerSide == side {
-						st.Wins++
-					}
-				}
+			sid := strings.ToUpper(strings.TrimSpace(fmt.Sprint(tm["student_id"])))
+			if l, _ := tm["language"].(string); l != "" && at >= langAt[sid] {
+				lang[sid], langAt[sid] = l, at
 			}
 		}
 	}
 
 	var rankList []map[string]interface{}
-	for _, st := range statsMap {
+	for _, st := range elo {
 		winRate := 0.0
-		if st.MatchesPlayed > 0 {
-			winRate = math.Round((float64(st.Wins)/float64(st.MatchesPlayed)*100.0)*10) / 10
+		if st.Played > 0 {
+			winRate = math.Round((float64(st.Wins)/float64(st.Played)*100.0)*10) / 10
 		}
-		losses := st.MatchesPlayed - st.Wins
-		if losses < 0 {
-			losses = 0
-		}
-		currentElo := st.ELO + (st.Wins * 30) - (losses * 15)
-		if currentElo < 800 {
-			currentElo = 800
+		language := lang[st.StudentID]
+		if language == "" {
+			language = "PYTHON"
 		}
 		rankList = append(rankList, map[string]interface{}{
-			"bot_name":       st.BotName,
+			"bot_name":       st.TeamName,
 			"student_id":     st.StudentID,
-			"language":       st.Language,
+			"language":       language,
 			"active_version": "v1.0.0",
-			"elo_score":      currentElo,
-			"matches_played": st.MatchesPlayed,
+			"elo_score":      int(math.Round(st.Rating)),
+			"matches_played": st.Played,
 			"wins":           st.Wins,
 			"win_rate":       winRate,
 		})
@@ -575,4 +500,23 @@ func (h *TournamentHandler) DisqualifyTeam(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, res)
+}
+
+// GetEloHistory: GET /api/ranking/elo-history?student_id= — ELO giải chính của một đội sau từng trận (công khai như kết quả trận).
+func (h *TournamentHandler) GetEloHistory(c *gin.Context) {
+	sid := strings.ToUpper(strings.TrimSpace(c.Query("student_id")))
+	if sid == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Thiếu mã sinh viên."})
+		return
+	}
+	team, ok := ComputeMainElo(h.service.GetAllTournaments())[sid]
+	if !ok {
+		c.JSON(http.StatusOK, gin.H{"student_id": sid, "start": mainEloStart, "rating": mainEloStart, "played": 0, "wins": 0, "events": []EloEvent{}})
+		return
+	}
+	events := team.History
+	if events == nil {
+		events = []EloEvent{}
+	}
+	c.JSON(http.StatusOK, gin.H{"student_id": sid, "team_name": team.TeamName, "start": mainEloStart, "rating": round1(team.Rating), "played": team.Played, "wins": team.Wins, "k_factor": mainEloK, "events": events})
 }

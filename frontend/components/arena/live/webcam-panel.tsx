@@ -38,7 +38,7 @@ function VideoTile({ stream, label, sub, tone, mirror, muted = true, live, place
   const ring = { red: 'ring-red-500/60', blue: 'ring-blue-500/60', gold: 'ring-amber-400/70', primary: 'ring-primary/60' }[tone ?? 'primary']
   return (
     <div ref={box} className={cn('group relative aspect-video overflow-hidden rounded-xl bg-black/60 ring-2', ring)}>
-      <video ref={video} playsInline autoPlay muted={muted || !sound} className={cn('size-full object-cover', mirror && '-scale-x-100', !showVideo && 'hidden')} />
+      <video ref={video} data-self-cam={mirror ? '' : undefined} playsInline autoPlay muted={muted || !sound} className={cn('size-full object-cover', mirror && '-scale-x-100', !showVideo && 'hidden')} />
       {!showVideo && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-card to-background p-3 text-center">
           {locked ? <Lock className="size-6 text-muted-foreground" aria-hidden /> : <Avatar name={label} size="lg" />}
