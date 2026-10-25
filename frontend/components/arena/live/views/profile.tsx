@@ -129,7 +129,7 @@ export function ProfileView() {
             </div>
           </Card>
 
-          <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_1fr] [&>*]:min-w-0">
             <Card title={canEdit ? 'Thông tin đội' : 'Giới thiệu'}>
               <form onSubmit={(e) => void save(e)} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -178,7 +178,7 @@ export function ProfileView() {
       )}
 
       {own && <CertificateVault />}
-      {own && <div className="grid gap-6 xl:grid-cols-2"><TeamEmailCard /><PasswordCard /></div>}
+      {own && <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 [&>*]:min-w-0"><TeamEmailCard /><PasswordCard /></div>}
       {own && <BotAnalytics teamName={profile.data?.team_name} />}
       {own && <ProfileScoreHistory />}
       {!own && sid && profile.data && <Card icon={<Award />} title="Huy hiệu thử thách"><BadgeStrip studentId={sid} /></Card>}

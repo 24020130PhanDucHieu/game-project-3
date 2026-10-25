@@ -64,7 +64,7 @@ export function NotifyTab() {
   const [message, setMessage] = useState('')
   const [link, setLink] = useState('')
   return (
-    <div className="grid gap-6 xl:grid-cols-2">
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 [&>*]:min-w-0">
       <Card title="Phát thông báo" subtitle="Gửi tới tất cả người dùng (kể cả khách)" action={<Megaphone className="size-4 text-muted-foreground" />}>
         <div className="space-y-3">
           <Field label="Tiêu đề" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} />

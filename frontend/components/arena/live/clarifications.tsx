@@ -68,7 +68,7 @@ export function TeamClarifications() {
   const [question, setQuestion] = useState(() => intents.takeClarificationDraft())
   const list = useResource(`clar:${scope}:${page}`, () => arenaApi.getClarifications({ page }), { ttl: 10_000, refreshMs: 30_000 })
   return (
-    <div className="grid gap-6 xl:grid-cols-[1fr_1.5fr]">
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_1.5fr] [&>*]:min-w-0">
       <Card title="Gửi câu hỏi cho Ban tổ chức" subtitle="Hỏi về luật, kỹ thuật, lịch thi hoặc báo sự cố. Câu trả lời riêng chỉ đội bạn thấy; câu trả lời chung được công khai và ẩn tên mã sinh viên.">
         {role === 'TEAM' ? (
           <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); void run(() => arenaApi.askClarification({ topic, question, tournament_id: tournamentId }), 'Đã gửi câu hỏi. BTC sẽ trả lời sớm.', () => { setQuestion(''); invalidate('clar:') }) }}>

@@ -75,7 +75,7 @@ export function BracketView() {
       )}
 
       {t && (
-        <div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.4fr_1fr] [&>*]:min-w-0">
           <Card icon={<CalendarClock />} title="Luật và lịch từng vòng" subtitle="Luật chỉ hiện sau giờ công bố; mỗi hiệp vẫn phải nộp bot mới">
             {tournament.loading ? <SkeletonRows rows={3} /> : rounds.length ? (
               <DataTable head={['Vòng', 'Cửa sổ nộp / thi đấu', 'Luật áp dụng']}>

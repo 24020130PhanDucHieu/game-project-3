@@ -24,7 +24,7 @@ export function JudgesTab() {
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1fr_1.4fr]">
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_1.4fr] [&>*]:min-w-0">
       <Card title="Thêm giám khảo" subtitle="Mỗi người một tài khoản để nhật ký ghi đúng người thao tác. Tài khoản chủ dùng khi khẩn cấp.">
         <form className="space-y-3" onSubmit={(e) => {
           e.preventDefault()

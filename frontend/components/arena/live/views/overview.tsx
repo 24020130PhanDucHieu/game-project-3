@@ -117,7 +117,7 @@ export function OverviewView() {
         </div>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.5fr_1fr] [&>*]:min-w-0">
         <div className="space-y-6">
           <Card icon={<Swords />} title="Trận đang chờ / đang đấu" subtitle="Bấm để vào xem diễn biến">
             {tournament.loading ? <SkeletonRows rows={3} /> : live.length ? (

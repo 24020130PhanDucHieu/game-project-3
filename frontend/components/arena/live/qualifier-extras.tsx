@@ -127,7 +127,7 @@ export function TeamSubmissionsOverlay({ qid, team, onClose }: { qid: string; te
   return (
     <Overlay title={`Bài nộp · ${team.team_name}`} subtitle={`MSSV ${team.student_id} · ${history.length} bản`} onClose={onClose}>
       {detail.loading ? <SkeletonRows rows={5} /> : detail.error ? <ErrorNote message={detail.error.message} /> : (
-        <div className="grid gap-6 xl:grid-cols-2">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 [&>*]:min-w-0">
           <Card title="Lịch sử mã nguồn">
             {history.length ? (
               <ol className="space-y-2">

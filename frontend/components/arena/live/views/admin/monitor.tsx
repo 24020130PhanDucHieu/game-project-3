@@ -82,7 +82,7 @@ export function MonitorTab({ onGo }: { onGo: Go }) {
         )}
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 [&>*]:min-w-0">
         <Card title="Gửi email" action={<StatusBadge status={data.mail?.configured ? 'READY' : 'UNAVAILABLE'} label={data.mail?.configured ? 'Đã cấu hình SMTP' : 'Chưa cấu hình'} />}>
           <p className="text-sm text-muted-foreground">{data.mail?.configured ? 'Đội quên mật khẩu sẽ nhận mã khôi phục qua email đã đăng ký.' : 'Chưa đặt SMTP_USER / SMTP_PASSWORD trên server — đội quên mật khẩu chưa nhận được mã qua email. Xem docs/EMAIL_SETUP.md.'}</p>
         </Card>
