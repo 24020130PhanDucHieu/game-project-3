@@ -2,7 +2,7 @@
 
 import { AiLauncher } from './ai-assistant'
 import { useEffect, useRef, useState } from 'react'
-import { BookOpen, Bell, Flag, LayoutDashboard, LogIn, LogOut, Medal, Menu, Monitor, Moon, Network, RefreshCw, Shield, Sun, Swords, UserPlus, UserRound, Wifi, WifiOff, X, type LucideIcon } from 'lucide-react'
+import { BookOpen, Bell, BrainCircuit, Flag, LayoutDashboard, LogIn, LogOut, Medal, Menu, Monitor, Moon, Network, RefreshCw, Shield, Sun, Swords, UserPlus, UserRound, Wifi, WifiOff, X, type LucideIcon } from 'lucide-react'
 import { AuthModal } from '../modals/auth-modal'
 import { invalidate } from '@/lib/cache'
 import { useTheme, type ThemeMode } from '@/lib/theme'
@@ -15,6 +15,7 @@ import { BracketView } from './views/bracket'
 import { RankingView } from './views/ranking'
 import { MatchView } from './views/match'
 import { QualifierView } from './views/qualifier'
+import { AiCupView } from './views/ai-cup'
 import { GuideView } from './views/guide'
 import { AdminView } from './views/admin'
 import { AlertsToggle, AlertsWatcher } from './alerts'
@@ -27,6 +28,7 @@ const NAV: { id: ViewId; label: string; icon: LucideIcon; adminOnly?: boolean }[
   { id: 'ranking', label: 'Xếp hạng', icon: Medal },
   { id: 'match', label: 'Trận đấu', icon: Swords },
   { id: 'qualifier', label: 'Vòng loại', icon: Flag },
+  { id: 'aicup', label: 'Giải AI', icon: BrainCircuit },
   { id: 'guide', label: 'Hướng dẫn thi đấu', icon: BookOpen },
   { id: 'admin', label: 'Quản trị Admin', icon: Shield, adminOnly: true },
 ]
@@ -97,7 +99,7 @@ function SidebarBody({ onPick }: { onPick: () => void }) {
               className={cn('flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm transition-colors', active ? 'bg-gradient-to-r from-primary/25 to-transparent font-bold text-foreground shadow-[inset_3px_0_0_var(--primary)]' : 'text-muted-foreground hover:bg-muted/70 hover:text-foreground')}>
               <Icon className={cn('size-[18px] shrink-0', active && 'text-primary')} aria-hidden />
               <span className="min-w-0 flex-1 truncate">{item.label}</span>
-              {item.id === 'qualifier' && outbox.length > 0 && <Badge tone="warning">{outbox.length}</Badge>}
+              {(item.id === 'qualifier' || item.id === 'aicup') && outbox.length > 0 && <Badge tone="warning">{outbox.length}</Badge>}
               {item.adminOnly && <Badge tone="accent">ADMIN</Badge>}
             </button>
           )
@@ -125,7 +127,12 @@ function Topbar({ onMenu }: { onMenu: () => void }) {
       <div className="md:hidden"><Brand /></div>
       {showTournament && tournaments.data?.length ? (
         <Select aria-label="Chọn giải đấu" value={tournamentId} onChange={(e) => setTournamentId(e.target.value)} className="w-full min-w-48 max-w-72 md:w-auto md:flex-none">
-          {tournaments.data.map((t) => <option key={t.tournament_id} value={t.tournament_id}>{t.name}</option>)}
+          {tournaments.data.some((t) => t.track === 'AI') ? (
+            <>
+              <optgroup label="Giải thường">{tournaments.data.filter((t) => t.track !== 'AI').map((t) => <option key={t.tournament_id} value={t.tournament_id}>{t.name}</option>)}</optgroup>
+              <optgroup label="Giải AI">{tournaments.data.filter((t) => t.track === 'AI').map((t) => <option key={t.tournament_id} value={t.tournament_id}>{t.name}</option>)}</optgroup>
+            </>
+          ) : tournaments.data.map((t) => <option key={t.tournament_id} value={t.tournament_id}>{t.name}</option>)}
         </Select>
       ) : null}
       <div className="ml-auto flex items-center gap-1.5">
@@ -196,6 +203,7 @@ export function Shell() {
           {view === 'ranking' && <RankingView />}
           {view === 'match' && <MatchView />}
           {view === 'qualifier' && <QualifierView />}
+          {view === 'aicup' && <AiCupView />}
           {view === 'guide' && <GuideView />}
           {view === 'admin' && <AdminView />}
         </main>

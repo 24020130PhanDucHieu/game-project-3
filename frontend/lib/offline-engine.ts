@@ -55,7 +55,7 @@ function boot(): Promise<void> {
 
 // File cần cho chạy offline: tải trước qua service worker khi còn mạng để lúc mất mạng vẫn có sẵn.
 const OFFLINE_FILES = [
-  '/offline/worker.js', '/offline/engine/manifest.json', '/offline/engine/board.py', '/offline/engine/board_rules.py', '/offline/engine/rules.py',
+  '/offline/worker.js', '/offline/engine/manifest.json', '/offline/engine/board.py', '/offline/engine/board_rules.py', '/offline/engine/rules.py', '/offline/engine/aicup/opponents.py', '/offline/engine/aicup/suite.py',
   '/offline/pyodide/pyodide.js', '/offline/pyodide/pyodide.asm.js', '/offline/pyodide/pyodide.asm.wasm', '/offline/pyodide/python_stdlib.zip', '/offline/pyodide/pyodide-lock.json',
 ]
 let warming = false
@@ -74,7 +74,7 @@ export function warmOfflineCache() {
   }).catch(() => { warming = false })
 }
 
-function call<T>(kind: 'prepare' | 'validate' | 'practice', payload: object = {}, timeoutMs = 60_000): Promise<T> {
+function call<T>(kind: 'prepare' | 'validate' | 'practice' | 'ai-check', payload: object = {}, timeoutMs = 60_000): Promise<T> {
   const id = ++seq
   return new Promise<T>((resolve, reject) => {
     const timer = window.setTimeout(() => {
@@ -100,6 +100,11 @@ export const offlineEngine = {
   async validate(code: string, language: string, ruleId?: string) {
     await boot()
     return call<any>('validate', { code, language, rule_id: ruleId }, 20_000)
+  },
+  /** Giải AI: chấm thử mô hình trên bộ đối thủ công khai ngay trên máy (cùng hạt giống nên sát điểm công khai thật). */
+  async aiCheck(code: string, publicSeed: string, roundsPerMatch: number, instances: number) {
+    await boot()
+    return call<{ public_score: number; families_public: Record<string, number>; errors: string[]; elapsed_ms: number }>('ai-check', { code, language: 'PYTHON', public_seed: publicSeed, rounds_per_match: roundsPerMatch, instances }, 120_000)
   },
   async practice(code: string, language: string, boss: string, ruleId: string) {
     await boot()

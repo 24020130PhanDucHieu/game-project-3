@@ -86,6 +86,9 @@ func (s *Service) EnqueueSubmission(id, sid, code, language, requestID string, g
 	if e.Status != "OPEN" || received >= e.Deadline {
 		return Submission{}, reject("Đã hết hạn hoặc bài nộp đã bị khóa.")
 	}
+	if e.Kind == KindAI && language != "PYTHON" {
+		return Submission{}, reject("Giải AI chỉ nhận mô hình viết bằng Python.")
+	}
 	account, err := s.Accounts.Get(sid)
 	if err != nil {
 		return Submission{}, err

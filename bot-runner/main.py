@@ -78,6 +78,18 @@ def mutate_tournament(req: MutateRequest):
             from app.engine.board import simulate_board
             result = simulate_board(p.get("code_a") or "", p.get("code_b") or "", p.get("language_a") or "PYTHON", p.get("language_b") or "PYTHON", 1 if p.get("first") == 1 else 2, "STAGE_1_STANDARD", p.get("seed"), reuse_sandbox=True, record_replay=False)
             return {key: result[key] for key in ("winner_side", "win_reason", "final_red_alive", "final_blue_alive", "first_side", "bot_errors")}
+        elif action == "ai-suite":
+            # Giải AI: chấm một mô hình Python trên bộ đề đọc đối thủ + bàn cờ (xem app/aicup/suite.py).
+            from app.aicup.suite import run_suite
+            if (p.get("language") or "PYTHON") != "PYTHON":
+                raise ValueError("Giải AI chỉ nhận mô hình Python.")
+            clamp = lambda value, low, high, default: max(low, min(high, int(value if value is not None else default)))
+            return run_suite(p.get("code") or "", str(p.get("secret_seed") or ""), str(p.get("public_seed") or ""), clamp(p.get("round"), 1, 1000, 1),
+                             total=clamp(p.get("rounds_per_match"), 30, 300, 150), instances=clamp(p.get("instances"), 1, 4, 2),
+                             board_games=clamp(p.get("board_games"), 0, 18, 9))
+        elif action == "ai-dataset":
+            from app.aicup.suite import build_dataset
+            return build_dataset(str(p.get("public_seed") or ""), max(1, min(20, int(p.get("matches") or 6))), max(30, min(300, int(p.get("rounds_per_match") or 150))))
         elif action == "import-qualified":
             tournament = stateless_db.tournaments[t_id]
             event_id = p.get("qualifier_id")

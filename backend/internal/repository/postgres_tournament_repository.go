@@ -156,7 +156,9 @@ func (r *PostgresTournamentRepository) GetList() []model.TournamentSummary {
 		createdAt, _ := t["created_at"].(float64)
 		status, _ := t["status"].(string)
 		champion, _ := t["champion"].(string)
+		track, _ := t["track"].(string)
 		list = append(list, model.TournamentSummary{
+			Track:        track,
 			TournamentID: id,
 			Name:         name,
 			NumTeams:     numTeams,

@@ -173,6 +173,19 @@ func main() {
 	wsHub := wsHandler.NewHub()
 	go wsHub.Run()
 	certHandler := &httpHandler.CertificateHandler{Service: tournamentService, Accounts: accounts, Store: qualifierStore}
+	// Giải AI: báo cáo kỹ thuật, Giải Kỹ thuật, huy hiệu riêng.
+	aiReports := &httpHandler.AIReportHandler{Service: tournamentService, Store: qualifierStore, Accounts: accounts,
+		AuditLog: func(actor, action string, details map[string]interface{}) { _ = accounts.LogAdminAction(actor, action, "", "", details) }}
+	aiReports.OnPublish = func(tid string) {
+		go func() {
+			aiReports.NotifyPublished(tid)
+			if _, err := certHandler.Issue(tid); err != nil {
+				log.Printf("[AICup] issue certificates %s: %v", tid, err)
+			}
+		}()
+	}
+	certHandler.TechWinner = aiReports.TechWinner
+	aiCup := &httpHandler.AICupHandler{Service: qualifierService, Tournaments: tournamentService, Tech: aiReports.TechWinner}
 	// Trợ lý hỏi đáp luật bằng AI: chỉ trả lời từ tài liệu luật, cấu hình giải trong database và hỏi đáp công khai của BTC.
 	aiKB, err := ai.LoadKB()
 	if err != nil {
@@ -362,6 +375,20 @@ func main() {
 		api.POST("/admin/similarity/review", adminOnly, simHandler.Review)
 		matchSession := requireSession(sessions, false, true)
 		matchAdmin := requireSession(sessions, true, true)
+		// Giải AI: đề bài, dữ liệu mẫu, bảng điểm công khai/riêng tư, khai báo kỹ thuật (đăng ký/nộp/chạy dùng route /qualifiers)
+		api.GET("/ai-badges/:sid", aiCup.Badges)
+		api.GET("/ai-main/:tid/report", optionalSession(sessions), aiReports.Mine)
+		api.PUT("/ai-main/:tid/report", requireSession(sessions, false, false), aiReports.Save)
+		api.GET("/ai-main/:tid/scoreboard", aiReports.Scoreboard)
+		api.GET("/ai-main/:tid/reports", adminOnly, aiReports.AdminList)
+		api.PUT("/ai-main/:tid/reports/:sid/score", adminOnly, aiReports.Score)
+		api.PUT("/ai-main/:tid/report-config", adminOnly, aiReports.Config)
+		api.GET("/ai-cup/events", aiCup.Events)
+		api.GET("/ai-cup/:qid/problem", aiCup.Problem)
+		api.GET("/ai-cup/:qid/dataset", aiCup.Dataset)
+		api.GET("/ai-cup/:qid/leaderboard", optionalSession(sessions), aiCup.Leaderboard)
+		api.GET("/ai-cup/:qid/mine", requireSession(sessions, false, false), aiCup.Mine)
+		api.PUT("/ai-cup/:qid/model-card", requireSession(sessions, false, false), aiCup.ModelCard)
 		api.GET("/qualifiers", qHandler.List)
 		api.POST("/qualifiers", adminOnly, qHandler.Configure)
 		api.GET("/qualifiers/:qid", qHandler.Detail)

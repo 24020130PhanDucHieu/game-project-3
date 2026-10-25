@@ -17,7 +17,7 @@ const SUGGESTIONS = [
   'ELO giải chính được tính thế nào?',
 ]
 
-const VIEW_BY_LINK: Record<string, ViewId> = { 'view/match': 'match', 'view/bracket': 'bracket', 'view/profile': 'profile', 'view/ranking': 'ranking', 'view/qualifier': 'qualifier' }
+const VIEW_BY_LINK: Record<string, ViewId> = { 'view/match': 'match', 'view/bracket': 'bracket', 'view/profile': 'profile', 'view/ranking': 'ranking', 'view/qualifier': 'qualifier', 'view/aicup': 'aicup' }
 
 export function useAi() {
   return useSyncExternalStore(aiStore.subscribe, aiStore.get, aiStore.server)

@@ -58,6 +58,12 @@ var golden = []struct{ q, want string }{
 	{"giấy chứng nhận ở đâu", "quy-trinh#giay-chung-nhan"},
 	{"tại sao tôi không nộp được bài trong trận", "cau-hoi-thuong-gap#toi-khong-nop-duoc-bai-trong-tran"},
 	{"nộp bài qua git được không", "cau-hoi-thuong-gap#co-the-nop-qua-git-khong"},
+	{"Giải AI là gì, khác giải thường chỗ nào", "giai-ai#giai-ai-la-gi"},
+	{"vòng loại AI chấm điểm thế nào, mỗi lượt đấu bao nhiêu trận", "giai-ai#vong-loai-ai-cham-diem-the-nao"},
+	{"bảng riêng tư khi nào mở, chênh lệch là gì", "giai-ai#bang-cong-khai-va-bang-rieng-tu"},
+	{"mô hình AI có nhớ biến giữa các lần gọi không", "giai-ai#viet-mo-hinh-cho-giai-ai"},
+	{"báo cáo kỹ thuật chấm bao nhiêu tiêu chí", "giai-ai#giai-chinh-ai-va-bao-cao-ky-thuat"},
+	{"huy hiệu Giải AI gồm những gì", "giai-ai#elo-va-huy-hieu-giai-ai"},
 }
 
 func TestGoldenSearch(t *testing.T) {
@@ -81,7 +87,7 @@ func TestGoldenSearch(t *testing.T) {
 // Câu ngoài phạm vi cuộc thi phải ra rỗng để trợ lý chuyển cho ban tổ chức thay vì bịa.
 func TestOutOfScopeFindsNothing(t *testing.T) {
 	kb, _ := LoadKB()
-	for _, q := range []string{"thời tiết hôm nay thế nào", "giá bitcoin", "cách nấu phở bò", "ai là tổng thống Mỹ", "xin chào", ""} {
+	for _, q := range []string{"thời tiết hôm nay thế nào", "bitcoin hôm nay thế nào", "cách nấu phở bò", "ai là tổng thống Mỹ", "xin chào", ""} {
 		if hits := kb.Search(q, 5); len(hits) != 0 {
 			t.Errorf("%q: không được tìm thấy gì, có %v", q, hits[0].ID)
 		}

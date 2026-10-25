@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Activity, FileSpreadsheet, Flag, LockKeyhole, Megaphone, MessageCircleQuestion, MonitorPlay, ScanSearch, ScrollText, ShieldCheck, Trophy, Users } from 'lucide-react'
+import { Activity, BrainCircuit, FileSpreadsheet, Flag, LockKeyhole, Megaphone, MessageCircleQuestion, MonitorPlay, ScanSearch, ScrollText, ShieldCheck, Trophy, Users } from 'lucide-react'
 import { Card, EmptyState, SectionTitle, Tabs } from '../ui'
 import { useLive } from '../context'
 import { MonitorTab } from './admin/monitor'
@@ -16,7 +16,7 @@ import { AntiCheatTab } from './admin/anticheat'
 import { SecurityCard } from './admin/security'
 import { Button } from '../ui'
 
-type AdminTab = 'monitor' | 'tournament' | 'qualifier' | 'accounts' | 'notify' | 'logs' | 'judges' | 'clar' | 'io' | 'cheat' | 'security'
+type AdminTab = 'monitor' | 'tournament' | 'qualifier' | 'accounts' | 'notify' | 'logs' | 'judges' | 'clar' | 'io' | 'cheat' | 'security' | 'aicup'
 
 export function AdminView() {
   const { role, session } = useLive()
@@ -35,6 +35,7 @@ export function AdminView() {
           { id: 'monitor', label: 'Giám sát', icon: <Activity className="size-4" /> },
           { id: 'tournament', label: 'Giải & Đội', icon: <Trophy className="size-4" /> },
           { id: 'qualifier', label: 'Vòng loại', icon: <Flag className="size-4" /> },
+          { id: 'aicup', label: 'Giải AI', icon: <BrainCircuit className="size-4" /> },
           { id: 'accounts', label: 'Tài khoản', icon: <Users className="size-4" /> },
           { id: 'io', label: 'Nhập/Xuất', icon: <FileSpreadsheet className="size-4" /> },
           { id: 'notify', label: 'Thông báo', icon: <Megaphone className="size-4" /> },
@@ -48,6 +49,7 @@ export function AdminView() {
       {tab === 'monitor' && <MonitorTab onGo={setTab} />}
       {tab === 'tournament' && <TournamentTab />}
       {tab === 'qualifier' && <QualifierAdminTab />}
+      {tab === 'aicup' && <QualifierAdminTab ai />}
       {tab === 'accounts' && <AccountsTab />}
       {tab === 'notify' && <NotifyTab />}
       {tab === 'logs' && <LogsTab />}

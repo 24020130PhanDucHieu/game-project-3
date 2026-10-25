@@ -411,6 +411,50 @@ export const arenaApi = {
     })
   },
 
+  // --- GIẢI AI ---
+  async getAiCupEvents() {
+    return apiRequest<any[]>('/ai-cup/events', { cache: 'no-store' })
+  },
+  async getAiCupProblem(qid: string) {
+    return apiRequest<any>(`/ai-cup/${encodeURIComponent(qid)}/problem`, { cache: 'no-store' })
+  },
+  aiCupDatasetUrl(qid: string) {
+    return `${getApiBaseUrl()}/api/ai-cup/${encodeURIComponent(qid)}/dataset`
+  },
+  async getAiCupLeaderboard(qid: string, board: 'public' | 'private') {
+    return apiRequest<any>(`/ai-cup/${encodeURIComponent(qid)}/leaderboard?board=${board}`, { cache: 'no-store' })
+  },
+  async getAiCupMine(qid: string, studentId = '') {
+    const q = studentId ? `?student_id=${encodeURIComponent(studentId)}` : ''
+    return apiRequest<any>(`/ai-cup/${encodeURIComponent(qid)}/mine${q}`, { cache: 'no-store' })
+  },
+  async saveAiModelCard(qid: string, payload: { technique: string; model_card: string }) {
+    return apiRequest(`/ai-cup/${encodeURIComponent(qid)}/model-card`, { method: 'PUT', body: JSON.stringify(payload) })
+  },
+
+  // Giải chính AI: báo cáo kỹ thuật, chấm rubric, huy hiệu
+  async getAiMainReport(tid: string) {
+    return apiRequest<any>(`/ai-main/${encodeURIComponent(tid)}/report`, { cache: 'no-store' })
+  },
+  async saveAiMainReport(tid: string, payload: { summary: string; repo_url: string }) {
+    return apiRequest(`/ai-main/${encodeURIComponent(tid)}/report`, { method: 'PUT', body: JSON.stringify(payload) })
+  },
+  async getAiMainScoreboard(tid: string) {
+    return apiRequest<any>(`/ai-main/${encodeURIComponent(tid)}/scoreboard`, { cache: 'no-store' })
+  },
+  async getAiMainReports(tid: string) {
+    return apiRequest<any>(`/ai-main/${encodeURIComponent(tid)}/reports`, { cache: 'no-store' })
+  },
+  async scoreAiMainReport(tid: string, sid: string, payload: { scores: number[]; comment: string }) {
+    return apiRequest(`/ai-main/${encodeURIComponent(tid)}/reports/${encodeURIComponent(sid)}/score`, { method: 'PUT', body: JSON.stringify(payload) })
+  },
+  async configAiMainReport(tid: string, payload: { deadline: number; published: boolean }) {
+    return apiRequest(`/ai-main/${encodeURIComponent(tid)}/report-config`, { method: 'PUT', body: JSON.stringify(payload) })
+  },
+  async getAiBadges(sid: string) {
+    return apiRequest<{ student_id: string; items: { id: string; name: string; desc: string; tone: string; source: string }[] }>(`/ai-badges/${encodeURIComponent(sid)}`, { cache: 'no-store' })
+  },
+
   // --- QUALIFIERS ---
   async getQualifiers() {
     return apiRequest<any[]>('/qualifiers', { cache: 'no-store' })
@@ -556,8 +600,8 @@ export const arenaApi = {
     })
   },
 
-  async getMainEloHistory(studentId: string) {
-    return apiRequest<{ student_id: string; team_name?: string; start: number; rating: number; played: number; wins: number; k_factor?: number; events: MainEloEvent[] }>(`/ranking/elo-history?student_id=${encodeURIComponent(studentId)}`)
+  async getMainEloHistory(studentId: string, track: '' | 'ai' = '') {
+    return apiRequest<{ student_id: string; team_name?: string; start: number; rating: number; played: number; wins: number; k_factor?: number; events: MainEloEvent[] }>(`/ranking/elo-history?student_id=${encodeURIComponent(studentId)}${track ? `&track=${track}` : ''}`)
   },
 
   async askAi(question: string, tournamentId?: string) {
@@ -718,8 +762,8 @@ export const arenaApi = {
   },
 
   // --- RANKING & GITHUB ---
-  async getRanking() {
-    return apiRequest<any[]>('/ranking', { cache: 'no-store' })
+  async getRanking(track: '' | 'ai' = '') {
+    return apiRequest<any[]>(`/ranking${track ? `?track=${track}` : ''}`, { cache: 'no-store' })
   },
 
   async fetchGitHub(url: string, branch = 'main', filePath = 'bot.py') {

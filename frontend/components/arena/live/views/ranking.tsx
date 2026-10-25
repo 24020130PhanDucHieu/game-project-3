@@ -52,7 +52,7 @@ const PILLAR = [
   { h: 'h-24 md:h-28', grad: 'from-orange-200/80 via-orange-400/45 to-orange-700/20', edge: 'ring-orange-300/60', glow: 'shadow-[0_0_40px_-12px_rgba(251,146,60,.6)]', delay: '0.45s' },
 ]
 
-export function Podium({ rows }: { rows: any[] }) {
+export function Podium({ rows, value, unit = 'ELO', sub }: { rows: any[]; value?: (row: any) => string | number; unit?: string; sub?: (row: any) => string }) {
   if (rows.length < 3) return null
   // Thứ tự hiển thị: hạng 2 – hạng 1 – hạng 3.
   const order = [{ row: rows[1], place: 2 }, { row: rows[0], place: 1 }, { row: rows[2], place: 3 }]
@@ -72,10 +72,10 @@ export function Podium({ rows }: { rows: any[] }) {
                 <p className="font-display mt-2 max-w-full truncate text-sm font-extrabold md:text-lg">{name}</p>
                 <p className="text-[11px] text-muted-foreground">{row.student_id}</p>
                 <div className="mt-1.5 flex items-center gap-1.5">
-                  <span className="gradient-text font-display text-xl font-black tabular-nums md:text-2xl">{row.elo_score ?? Math.round(row.elo)}</span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">ELO</span>
+                  <span className="gradient-text font-display text-xl font-black tabular-nums md:text-2xl">{value ? value(row) : (row.elo_score ?? Math.round(row.elo))}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{unit}</span>
                 </div>
-                <p className="mb-2 mt-0.5 rounded-full bg-muted/70 px-2.5 py-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground">{row.wins ?? 0} thắng / {row.matches_played ?? row.played ?? 0} trận</p>
+                <p className="mb-2 mt-0.5 rounded-full bg-muted/70 px-2.5 py-0.5 text-[11px] font-semibold tabular-nums text-muted-foreground">{sub ? sub(row) : `${row.wins ?? 0} thắng / ${row.matches_played ?? row.played ?? 0} trận`}</p>
               </div>
               <div className={cn('podium-pillar podium-shine relative flex w-full items-start justify-center overflow-hidden rounded-t-2xl bg-gradient-to-b ring-1 backdrop-blur-sm', style.h, style.grad, style.edge, style.glow)} style={{ animationDelay: style.delay }} aria-label={`Hạng ${place}`}>
                 <span className="font-display pointer-events-none absolute -bottom-4 select-none text-[7rem] font-black leading-none text-white/20 md:text-[9rem]" aria-hidden>{place}</span>

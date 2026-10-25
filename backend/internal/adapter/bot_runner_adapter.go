@@ -129,6 +129,8 @@ func formatActionDetail(action string, params map[string]interface{}) string {
 			return "Trận đấu vòng loại (Mã: " + seed + ")"
 		}
 		return "Trận đấu vòng loại song song"
+	case "ai-suite":
+		return "Chấm mô hình Giải AI"
 	case "validate-code":
 		if lang, ok := params["language"].(string); ok && lang != "" {
 			return "Kiểm duyệt cú pháp & sandbox (" + lang + ")"
@@ -176,7 +178,7 @@ func (a *HTTPBotRunnerAdapter) Mutate(currentTournament interface{}, action stri
 			return nil, acquireErr
 		}
 		tried[index] = true
-		if action == "qualifier-game" {
+		if action == "qualifier-game" || action == "ai-suite" {
 			a.poolMu.Lock()
 			a.qualifierGames[index]++
 			a.poolMu.Unlock()

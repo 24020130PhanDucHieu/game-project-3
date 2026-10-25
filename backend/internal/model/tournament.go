@@ -7,6 +7,8 @@ type TournamentSummary struct {
 	CreatedAt    float64 `json:"created_at,omitempty"`
 	Status       string  `json:"status,omitempty"`
 	Champion     string  `json:"champion,omitempty"`
+	// Track là "AI" cho giải chính của Giải AI; rỗng cho giải thường.
+	Track string `json:"track,omitempty"`
 }
 
 type Tournament struct {

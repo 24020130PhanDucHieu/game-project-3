@@ -14,6 +14,9 @@ const publicDir = join(here, '..', 'public', 'offline')
 const source = join(here, '..', '..', 'bot-runner', 'app', 'engine')
 const target = join(publicDir, 'engine')
 const files = ['board.py', 'board_rules.py', 'rules.py']
+// Giải AI: chỉ gửi phần công khai (đối thủ công khai + vòng chấm). Các nhóm đối thủ ẩn (hidden.py) không bao giờ xuống trình duyệt.
+const aicupSource = join(here, '..', '..', 'bot-runner', 'app', 'aicup')
+const aicupFiles = ['opponents.py', 'suite.py']
 
 if (existsSync(source)) {
   mkdirSync(target, { recursive: true })
@@ -22,8 +25,13 @@ if (existsSync(source)) {
     copyFileSync(join(source, file), join(target, file))
     hash.update(readFileSync(join(source, file)))
   }
-  writeFileSync(join(target, 'manifest.json'), JSON.stringify({ files, version: hash.digest('hex').slice(0, 12) }, null, 2) + '\n')
-  console.log('[offline-engine] Đã đồng bộ', files.join(', '))
+  mkdirSync(join(target, 'aicup'), { recursive: true })
+  for (const file of aicupFiles) {
+    copyFileSync(join(aicupSource, file), join(target, 'aicup', file))
+    hash.update(readFileSync(join(aicupSource, file)))
+  }
+  writeFileSync(join(target, 'manifest.json'), JSON.stringify({ files, aicup: aicupFiles, version: hash.digest('hex').slice(0, 12) }, null, 2) + '\n')
+  console.log('[offline-engine] Đã đồng bộ', [...files, ...aicupFiles.map((f) => 'aicup/' + f)].join(', '))
 } else {
   console.log('[offline-engine] Không thấy bot-runner, dùng bản engine đã có trong public/offline.')
 }

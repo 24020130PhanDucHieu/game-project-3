@@ -4,5 +4,9 @@
     "board_rules.py",
     "rules.py"
   ],
-  "version": "d88c5462aeef"
+  "aicup": [
+    "opponents.py",
+    "suite.py"
+  ],
+  "version": "e069bd0092da"
 }

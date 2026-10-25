@@ -206,6 +206,10 @@ async function boot() {
   fs.writeFile('/arena/app/models/schemas.py', SCHEMAS)
   fs.writeFile('/arena/app/sandbox/runner.py', SHIM)
   for (const file of manifest.files) fs.writeFile('/arena/app/engine/' + file, await (await fetch('./engine/' + file)).text())
+  // Giải AI: bộ đối thủ công khai + vòng chấm (không có các nhóm đối thủ ẩn).
+  try { fs.mkdir('/arena/app/aicup') } catch { /* đã có */ }
+  fs.writeFile('/arena/app/aicup/__init__.py', '')
+  for (const file of manifest.aicup || []) fs.writeFile('/arena/app/aicup/' + file, await (await fetch('./engine/aicup/' + file)).text())
   py.runPython('import sys; sys.path.insert(0, "/arena"); from app.engine.board import simulate_board; from app.sandbox.runner import validate_ast, run_bot')
   return py
 }
@@ -236,6 +240,16 @@ if problem is None:
         out["is_valid"] = False
         out["error_message"] = "Lỗi khi chạy thử: " + str(exc)
 json.dumps(out)`)
+    } else if (kind === 'ai-check') {
+      result = py.runPython(`
+import json
+from app.aicup.suite import run_public_check
+def _run(code, state):
+    try:
+        return run_bot(code, state), None
+    except Exception as exc:
+        return None, "Runtime Error: " + str(exc)
+json.dumps(run_public_check(job["code"], str(job["public_seed"]), _run, total=int(job.get("rounds_per_match") or 150), instances=int(job.get("instances") or 2)))`)
     } else {
       const [name, bossCode] = BOSSES[payload.boss] || BOSSES.RANDOM
       py.globals.set('boss_code', bossCode)

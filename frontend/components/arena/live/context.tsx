@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'
 import { ConfirmDialog } from './ui'
 
 export type Role = 'GUEST' | 'TEAM' | 'ADMIN'
-export type ViewId = 'profile' | 'overview' | 'bracket' | 'ranking' | 'match' | 'qualifier' | 'guide' | 'admin'
+export type ViewId = 'profile' | 'overview' | 'bracket' | 'ranking' | 'match' | 'qualifier' | 'aicup' | 'guide' | 'admin'
 export type Session = { role: Role; student_id?: string; team_name?: string; tournament_id?: string; match_id?: string; judge?: string; display_name?: string; owner?: boolean }
 export type Toast = { id: number; tone: 'success' | 'error' | 'info'; text: string }
 
@@ -35,6 +35,10 @@ type Live = {
   qualifiers: Resource<any[]>
   qualifierId: string
   setQualifierId: (id: string) => void
+  /** Vòng loại của Giải AI (tách riêng khỏi vòng loại thường). */
+  aiEvents: Resource<any[]>
+  aiEventId: string
+  setAiEventId: (id: string) => void
   notifications: Resource<{ notifications: any[]; unread_count: number }>
   capabilities: Resource<{ languages: string[] }>
   socketOpen: boolean
@@ -70,6 +74,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   const [tournamentId, setTournamentIdState] = useState('')
   const [matchId, setMatchId] = useState('')
   const [qualifierId, setQualifierId] = useState('')
+  const [aiEventId, setAiEventId] = useState('')
   const [socketOpen, setSocketOpen] = useState(false)
   const [busy, setBusy] = useState(false)
   const [toasts, setToasts] = useState<Toast[]>([])
@@ -131,6 +136,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
 
   const tournaments = useResource<any[]>('tl', () => arenaApi.getTournamentList().then((r) => (Array.isArray(r) ? r : [])), { refreshMs: 60_000 })
   const qualifiers = useResource<any[]>('ql', () => arenaApi.getQualifiers().then((r) => (Array.isArray(r) ? r : [])), { refreshMs: 30_000 })
+  const aiEvents = useResource<any[]>('ql:ai', () => arenaApi.getAiCupEvents().then((r) => (Array.isArray(r) ? r : [])), { refreshMs: 30_000 })
   const capabilities = useResource<{ languages: string[] }>('cap', () => arenaApi.getCapabilities(), { ttl: 300_000 })
   const notifications = useResource<{ notifications: any[]; unread_count: number }>(
     `nt:${scope}`,
@@ -144,7 +150,10 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     if (!list?.length) return
     if (!tournamentId || !list.some((t) => t.tournament_id === tournamentId)) {
       const own = session.tournament_id && list.some((t) => t.tournament_id === session.tournament_id) ? session.tournament_id : ''
-      setTournamentIdState(own || list.find((t) => t.status === 'RUNNING')?.tournament_id || list[0].tournament_id)
+      // Mặc định chọn giải thường; giải chính của Giải AI được mở từ tab Giải AI hoặc bộ chọn giải.
+      const regular = list.filter((t) => t.track !== 'AI')
+      const pool = regular.length ? regular : list
+      setTournamentIdState(own || pool.find((t) => t.status === 'RUNNING')?.tournament_id || pool[0].tournament_id)
     }
   }, [tournaments.data, tournamentId, session.tournament_id])
   // Phiên trận mới (vào phòng trận khác giải) thì chuyển sang đúng giải đó.
@@ -161,6 +170,12 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     if (!list?.length) return
     if (!qualifierId || !list.some((q) => q.id === qualifierId)) setQualifierId(list[0].id)
   }, [qualifiers.data, qualifierId])
+
+  useEffect(() => {
+    const list = aiEvents.data
+    if (!list?.length) return
+    if (!aiEventId || !list.some((q) => q.id === aiEventId)) setAiEventId(list[0].id)
+  }, [aiEvents.data, aiEventId])
 
   const setTournamentId = useCallback((id: string) => {
     setTournamentIdState(id)
@@ -312,7 +327,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   const value: Live = {
     view, navigate: setView, session, role, scope, refreshSession,
     tournaments, tournamentId, setTournamentId, tournament, matchId, setMatchId,
-    qualifiers, qualifierId, setQualifierId, notifications, capabilities, socketOpen, busy,
+    qualifiers, qualifierId, setQualifierId, aiEvents, aiEventId, setAiEventId, notifications, capabilities, socketOpen, busy,
     run, toast, confirm, enterMatch, ownMatches,
     openAuth: (mode) => setAuthRequest({ mode }), authRequest, closeAuth: () => setAuthRequest(null),
     logout, outbox, flushOutbox,

@@ -76,10 +76,17 @@ func (h *QualifierHandler) Register(c *gin.Context) {
 
 func qualifierError(c *gin.Context, err error) { c.JSON(400, gin.H{"detail": err.Error()}) }
 func (h *QualifierHandler) List(c *gin.Context) {
-	items, err := h.Service.Events()
+	all, err := h.Service.Events()
 	if err != nil {
 		qualifierError(c, err)
 		return
+	}
+	// Vòng loại của Giải AI có tab riêng (/ai-cup/events); không lẫn vào danh sách vòng loại thường.
+	items := make([]qualifier.Event, 0, len(all))
+	for _, e := range all {
+		if e.Kind != qualifier.KindAI {
+			items = append(items, e)
+		}
 	}
 	c.JSON(200, items)
 }
@@ -126,6 +133,9 @@ func (h *QualifierHandler) Detail(c *gin.Context) {
 			qualifierError(c, err)
 			return
 		}
+		if e.Kind == qualifier.KindAI && session.Role != "ADMIN" && !qualifier.PrivateVisible(e) {
+			participant.AIPrivate, participant.AIReading, participant.AIBoard = 0, 0, 0
+		}
 		response["participant"] = participant
 		records, err := h.Service.Store.List("submission:" + id + ":" + sid + ":")
 		if err != nil {
@@ -143,10 +153,13 @@ func (h *QualifierHandler) Detail(c *gin.Context) {
 		}
 		sort.Slice(history, func(i, j int) bool { return history[i].At > history[j].At })
 		response["history"] = history
-		jobs, err := h.Service.Store.ListMetadata("job:"+id+":", sid)
-		if err != nil {
-			qualifierError(c, err)
-			return
+		jobs := map[string]json.RawMessage{}
+		if e.Kind != qualifier.KindAI { // kết quả từng lượt của Giải AI đi qua /ai-cup/:qid/mine để che phần riêng tư
+			jobs, err = h.Service.Store.ListMetadata("job:"+id+":", sid)
+			if err != nil {
+				qualifierError(c, err)
+				return
+			}
 		}
 		results := []qualifier.Job{}
 		for _, raw := range jobs {
@@ -499,7 +512,7 @@ func (h *QualifierHandler) Teams(c *gin.Context) {
 		if filter != "" && filter != status {
 			continue
 		}
-		items = append(items, gin.H{"student_id": p.SID, "team_name": p.Name, "test_bot": p.TestBot, "status": status, "elo": p.Elo, "wins": p.Wins, "played": p.Played, "submitted_at": p.SubmittedAt, "banned": p.Banned, "ban_reason": p.BanReason})
+		items = append(items, gin.H{"student_id": p.SID, "team_name": p.Name, "test_bot": p.TestBot, "status": status, "elo": p.Elo, "wins": p.Wins, "played": p.Played, "submitted_at": p.SubmittedAt, "banned": p.Banned, "ban_reason": p.BanReason, "ai_rounds": p.AIRounds, "ai_public": p.AIPublic, "ai_private": p.AIPrivate, "technique": p.Technique})
 	}
 	sort.Slice(items, func(i, j int) bool { return items[i]["student_id"].(string) < items[j]["student_id"].(string) })
 	page := qualifierPage(c)
@@ -525,6 +538,16 @@ func qualifierPage(c *gin.Context) int {
 	return page
 }
 func (h *QualifierHandler) Ranking(c *gin.Context) {
+	if e, err := h.Service.Event(c.Param("qid")); err == nil && e.Kind == qualifier.KindAI {
+		// Giải AI: luôn trả bảng công khai ở route chung để không lộ thứ hạng riêng tư.
+		_, rows, err := h.Service.AILeaderboard(e.ID, false, false)
+		if err != nil {
+			qualifierError(c, err)
+			return
+		}
+		c.JSON(200, gin.H{"items": rows, "total": len(rows), "page": 1, "page_size": len(rows)})
+		return
+	}
 	people, err := h.Service.Ranked(c.Param("qid"))
 	if err != nil {
 		qualifierError(c, err)

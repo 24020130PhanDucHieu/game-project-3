@@ -55,7 +55,7 @@ function serverReason(e: unknown) {
   return `không kết nối được${e instanceof Error && e.message ? ` (${e.message})` : ''}`
 }
 
-export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSubmit, submitting, submitDisabledReason, extra, practice = true, renderActions }: {
+export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSubmit, submitting, submitDisabledReason, extra, practice = true, renderActions, templates, pythonOnly }: {
   draftKey: string
   ruleId?: string
   withExplanation?: boolean
@@ -67,6 +67,10 @@ export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSu
   practice?: boolean
   /** Nút bổ sung dùng mã đang soạn (giao hữu, thử thách...). */
   renderActions?: (value: WorkbenchValue) => ReactNode
+  /** Mã mẫu riêng của cuộc thi (thay cho nút "Nạp mã mẫu" mặc định). */
+  templates?: { id: string; label: string; code: string }[]
+  /** Cuộc thi chỉ nhận Python (Giải AI). */
+  pythonOnly?: boolean
 }) {
   const { run, capabilities, toast, role } = useLive()
   const storageKey = `arena.draft.${draftKey}`
@@ -88,7 +92,7 @@ export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSu
     try {
       const saved = JSON.parse(localStorage.getItem(storageKey) || 'null')
       setCode(saved?.code || '')
-      setLanguage(saved?.language === 'CPP' ? 'CPP' : 'PYTHON')
+      setLanguage(!pythonOnly && saved?.language === 'CPP' ? 'CPP' : 'PYTHON')
       setExplanation(saved?.explanation || '')
     } catch {
       setCode('')
@@ -105,7 +109,7 @@ export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSu
     return () => window.clearTimeout(timer)
   }, [storageKey, code, language, explanation])
 
-  const languages = capabilities.data?.languages?.length ? capabilities.data.languages : ['PYTHON', 'CPP']
+  const languages = pythonOnly ? ['PYTHON'] : capabilities.data?.languages?.length ? capabilities.data.languages : ['PYTHON', 'CPP']
   const bytes = useMemo(() => new Blob([code]).size, [code])
   const tooLarge = bytes > MAX_BYTES
   const lineCount = code ? code.split('\n').length : 0
@@ -174,7 +178,9 @@ export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSu
           {languages.includes('CPP') && <option value="CPP">C++ (WASI)</option>}
         </Select>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="secondary" onClick={() => { setCode(language === 'CPP' ? CPP_TEMPLATE : PY_TEMPLATE); setCommit(undefined) }}><FileCode2 className="size-3.5" />Nạp mã mẫu</Button>
+          {templates?.length ? templates.map((t) => (
+            <Button key={t.id} size="sm" variant="secondary" data-testid={`template-${t.id}`} onClick={() => { setCode(t.code); setLanguage('PYTHON'); setCommit(undefined); setValidation(null) }}><FileCode2 className="size-3.5" />{t.label}</Button>
+          )) : <Button size="sm" variant="secondary" onClick={() => { setCode(language === 'CPP' ? CPP_TEMPLATE : PY_TEMPLATE); setCommit(undefined) }}><FileCode2 className="size-3.5" />Nạp mã mẫu</Button>}
           <Button size="sm" variant="secondary" onClick={() => setGitOpen((v) => !v)} aria-expanded={gitOpen}><GitBranch className="size-3.5" />Lấy từ GitHub</Button>
         </div>
       </div>

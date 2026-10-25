@@ -36,6 +36,8 @@ type Event struct {
 	Target         string  `json:"target,omitempty"`
 	GitMode        bool    `json:"git_mode"`
 	GitTemplateURL string  `json:"git_template_url,omitempty"`
+	// Kind rỗng là vòng loại thường (ghép cặp + ELO); "AI" là vòng loại Giải AI (chấm mô hình trên bộ đề ẩn).
+	Kind string `json:"kind,omitempty"`
 }
 type Participant struct {
 	Pending       int      `json:"pending_submissions,omitempty"`
@@ -57,6 +59,14 @@ type Participant struct {
 	SubmittedAt   float64  `json:"submitted_at"`
 	GitRepoURL    string   `json:"git_repo_url,omitempty"`
 	GitCommitHash string   `json:"git_commit_hash,omitempty"`
+	// Giải AI: điểm trung bình các lượt đã chấm và khai báo kỹ thuật của đội.
+	AIRounds  int     `json:"ai_rounds,omitempty"`
+	AIPublic  float64 `json:"ai_public,omitempty"`
+	AIPrivate float64 `json:"ai_private,omitempty"`
+	AIReading float64 `json:"ai_reading,omitempty"`
+	AIBoard   float64 `json:"ai_board,omitempty"`
+	Technique string  `json:"technique,omitempty"`
+	ModelCard string  `json:"model_card,omitempty"`
 }
 type Submission struct {
 	Status        string  `json:"status,omitempty"`
@@ -85,6 +95,8 @@ type Job struct {
 	BeforeB  float64 `json:"before_b"`
 	AfterA   float64 `json:"after_a"`
 	AfterB   float64 `json:"after_b"`
+	// Giải AI: kết quả chấm một mô hình (A) trong một lượt.
+	AI *AIResult `json:"ai,omitempty"`
 }
 type Service struct {
 	Store      *repository.QualifierRecords
@@ -170,7 +182,12 @@ func (s *Service) Configure(id string, req Event) (Event, error) {
 	if strings.TrimSpace(req.Name) == "" || len(req.Name) > 200 || req.Deadline <= now() || req.Rounds < 1 || req.Rounds > 100 || (req.TopK != 8 && req.TopK != 16 && req.TopK != 32) {
 		return Event{}, errors.New("Đặt tên, hạn nộp trong tương lai, 1–100 vòng và top 8/16/32.")
 	}
+	kind := ""
+	if req.Kind == KindAI {
+		kind = KindAI
+	}
 	e := Event{
+		Kind:           kind,
 		ID:             uniqueID(),
 		Name:           strings.TrimSpace(req.Name),
 		Deadline:       req.Deadline,
@@ -367,6 +384,11 @@ func (s *Service) Ranked(id string) ([]Participant, error) {
 		if p.LockedID != "" && !p.Banned {
 			list = append(list, p)
 		}
+	}
+	if event.Kind == KindAI {
+		// Giải AI xếp theo điểm riêng tư trung bình các lượt, không dùng ELO.
+		sortAIParticipants(list, event.Seed, true)
+		return list, nil
 	}
 	strength := func(p Participant) float64 {
 		total := 0.0

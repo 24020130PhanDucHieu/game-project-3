@@ -45,6 +45,8 @@ type CertificateHandler struct {
 	Service  *service.TournamentService
 	Accounts *repository.Accounts
 	Store    CertificateStore
+	// TechWinner trả đội nhận Giải Kỹ thuật của giải chính AI (chỉ sau khi điểm báo cáo được công bố).
+	TechWinner func(tid string) (teamName, studentID string, score float64, ok bool)
 }
 
 func certKey(tid string) string { return "certcfg:" + tid }
@@ -136,7 +138,7 @@ func (h *CertificateHandler) Issue(tid string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	items := placementsOf(t)
+	items := h.allPlacements(tid, t)
 	if len(items) == 0 {
 		return 0, nil
 	}
@@ -158,7 +160,7 @@ func (h *CertificateHandler) Issue(tid string) (int, error) {
 			Message:     "Chúc mừng đội " + p.TeamName + " đạt " + p.Place + " tại " + name + ". Xem và tải giấy chứng nhận trong Hồ sơ đội.",
 			LinkTab:     "profile",
 			LinkData:    map[string]interface{}{"tournament_id": tid, "section": "certificates"},
-			DedupKey:    "cert:" + tid + ":" + strings.ToUpper(p.StudentID),
+			DedupKey:    certDedup(tid, p),
 		})
 		if err != nil {
 			return sent, err
@@ -177,8 +179,26 @@ func (h *CertificateHandler) IssueAsync(tid string) {
 	}()
 }
 
-func (h *CertificateHandler) build(tid string, t map[string]interface{}) []Certificate {
+// allPlacements: hạng ở sơ đồ và, với giải chính AI, cả Giải Kỹ thuật (khi đã công bố).
+func (h *CertificateHandler) allPlacements(tid string, t map[string]interface{}) []placement {
 	items := placementsOf(t)
+	if tournamentTrack(t) == "AI" && h.TechWinner != nil {
+		if name, sid, _, ok := h.TechWinner(tid); ok {
+			items = append(items, placement{Place: aiTechAwardName, TeamName: name, StudentID: sid, Rank: 1})
+		}
+	}
+	return items
+}
+
+func certDedup(tid string, p placement) string {
+	if p.Place == aiTechAwardName {
+		return "cert:tech:" + tid + ":" + strings.ToUpper(p.StudentID)
+	}
+	return "cert:" + tid + ":" + strings.ToUpper(p.StudentID)
+}
+
+func (h *CertificateHandler) build(tid string, t map[string]interface{}) []Certificate {
+	items := h.allPlacements(tid, t)
 	if len(items) == 0 {
 		return nil
 	}
@@ -257,7 +277,7 @@ func (h *CertificateHandler) Save(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"detail": "Không tìm thấy giải."})
 		return
 	}
-	if len(placementsOf(t)) == 0 {
+	if len(h.allPlacements(tid, t)) == 0 {
 		c.JSON(http.StatusConflict, gin.H{"detail": "Chung kết chưa có kết quả nên chưa cấp giấy chứng nhận."})
 		return
 	}

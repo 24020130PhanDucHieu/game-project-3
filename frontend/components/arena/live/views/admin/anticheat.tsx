@@ -35,14 +35,14 @@ function PairDetail({ source, id, pair, onDone }: { source: 'qualifier' | 'tourn
 }
 
 export function AntiCheatTab() {
-  const { qualifiers, tournaments, qualifierId, tournamentId } = useLive()
+  const { qualifiers, aiEvents, tournaments, qualifierId, tournamentId } = useLive()
   const [source, setSource] = useState<'qualifier' | 'tournament'>('qualifier')
   const [id, setId] = useState('')
   const [min, setMin] = useState(0.7)
   const [open, setOpen] = useState('')
   useEffect(() => { setId(source === 'qualifier' ? qualifierId : tournamentId); setOpen('') }, [source, qualifierId, tournamentId])
   const report = useResource<any>(id ? `sim:${source}:${id}:${min}` : null, () => arenaApi.getSimilarity(source, id, min), { ttl: 30_000 })
-  const options = source === 'qualifier' ? (qualifiers.data || []).map((q) => [q.id, q.name]) : (tournaments.data || []).map((t) => [t.tournament_id, t.name])
+  const options = source === 'qualifier' ? [...(qualifiers.data || []).map((q) => [q.id, q.name]), ...(aiEvents.data || []).map((q) => [q.id, `[Giải AI] ${q.name}`])] : (tournaments.data || []).map((t) => [t.tournament_id, t.name])
 
   return (
     <Card title="Chống gian lận — độ giống mã nguồn" subtitle="So sánh bài hợp lệ mới nhất của các đội (vòng loại) hoặc bài hiện tại trong các trận (giải chính)." action={<ScanSearch className="size-4 text-muted-foreground" />}>

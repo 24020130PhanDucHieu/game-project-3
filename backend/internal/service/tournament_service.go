@@ -167,7 +167,8 @@ func (s *TournamentService) DeleteTournament(id string) error {
 	return s.repo.SaveToDisk()
 }
 
-func (s *TournamentService) CreateTournament(name string, numTeams int) (map[string]interface{}, error) {
+// CreateTournament tạo giải mới; track "AI" đánh dấu giải chính của Giải AI (xếp hạng, ELO tách riêng giải thường).
+func (s *TournamentService) CreateTournament(name string, numTeams int, track string) (map[string]interface{}, error) {
 	if numTeams <= 0 {
 		numTeams = 8
 	}
@@ -191,6 +192,9 @@ func (s *TournamentService) CreateTournament(name string, numTeams int) (map[str
 	if !ok || tID == "" {
 		return nil, errors.New("giải đấu thiếu tournament_id")
 	}
+	if track == "AI" {
+		newTournament["track"] = "AI"
+	}
 
 	if err := s.repo.Save(tID, newTournament); err != nil {
 		return nil, err
@@ -211,6 +215,9 @@ func (s *TournamentService) MutateTournament(tournamentID, action string, params
 	}
 	if !found {
 		return nil, fmt.Errorf("%w có ID: %s", repository.ErrTournamentNotFound, tournamentID)
+	}
+	if track, _ := current["track"].(string); track == "AI" && (action == "add-team" || action == "quick-fill") {
+		return nil, errors.New("Giải chính AI chỉ nhận đội đã qua vòng loại AI. Hãy chốt đội từ vòng loại AI.")
 	}
 	receiptKey, receiptDigest := "", ""
 	receipts, _ := current["_submission_receipts"].(map[string]interface{})

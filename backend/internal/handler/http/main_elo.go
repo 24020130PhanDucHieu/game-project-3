@@ -32,6 +32,32 @@ type EloEvent struct {
 	Expected       float64 `json:"expected"` // xác suất thắng dự kiến trước trận
 }
 
+// tournamentTrack: "AI" cho giải chính của Giải AI, rỗng cho giải thường.
+func tournamentTrack(t map[string]interface{}) string {
+	if s, _ := t["track"].(string); s == "AI" {
+		return "AI"
+	}
+	return ""
+}
+
+// filterTrack giữ lại các giải thuộc đúng một đường đua, để ELO/xếp hạng của Giải AI và giải thường không lẫn nhau.
+func filterTrack(all map[string]interface{}, track string) map[string]interface{} {
+	out := make(map[string]interface{}, len(all))
+	for id, raw := range all {
+		if t, ok := raw.(map[string]interface{}); ok && tournamentTrack(t) == track {
+			out[id] = raw
+		}
+	}
+	return out
+}
+
+func trackParam(c interface{ Query(string) string }) string {
+	if strings.EqualFold(strings.TrimSpace(c.Query("track")), "ai") {
+		return "AI"
+	}
+	return ""
+}
+
 type MainEloTeam struct {
 	StudentID string
 	TeamName  string

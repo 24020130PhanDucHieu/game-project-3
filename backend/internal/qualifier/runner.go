@@ -180,6 +180,9 @@ func (s *Service) play(id string, job Job, people map[string]Participant) error 
 	return fmt.Errorf("Trận %s lỗi sau 3 lần thử: %v", job.ID, last)
 }
 func (s *Service) run(id string) error {
+	if e, err := s.Event(id); err == nil && e.Kind == KindAI {
+		return s.runAI(id)
+	}
 	workers := 2
 	if value, err := strconv.Atoi(os.Getenv("QUALIFIER_WORKERS")); err == nil && value >= 1 && value <= 32 {
 		workers = value

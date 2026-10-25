@@ -270,7 +270,11 @@ func (h *TournamentHandler) Create(c *gin.Context) {
 		numTeams = int(nt)
 	}
 
-	res, err := h.service.CreateTournament(name, numTeams)
+	track := ""
+	if t, _ := req["track"].(string); strings.EqualFold(strings.TrimSpace(t), "AI") {
+		track = "AI"
+	}
+	res, err := h.service.CreateTournament(name, numTeams, track)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
 		return
@@ -320,12 +324,14 @@ func (h *TournamentHandler) SetStageSchedule(c *gin.Context) {
 }
 
 func (h *TournamentHandler) GetRanking(c *gin.Context) {
-	if cached, ok := derivedGet("ranking"); ok {
+	track := trackParam(c)
+	cacheKey := "ranking" + map[bool]string{false: "", true: ":ai"}[track == "AI"]
+	if cached, ok := derivedGet(cacheKey); ok {
 		c.JSON(http.StatusOK, cached)
 		return
 	}
 	version := derivedVersion()
-	allTournaments := h.service.GetAllTournaments()
+	allTournaments := filterTrack(h.service.GetAllTournaments(), track)
 	// ELO giải chính: tính chuẩn từ các trận đã kết thúc, mọi đội bắt đầu từ 1200 (độc lập với ELO vòng loại).
 	elo := ComputeMainElo(allTournaments)
 	// Ngôn ngữ lấy theo lần ghi danh giải gần nhất của đội.
@@ -400,7 +406,7 @@ func (h *TournamentHandler) GetRanking(c *gin.Context) {
 		rankList = []map[string]interface{}{}
 	}
 
-	derivedSet("ranking", version, rankList)
+	derivedSet(cacheKey, version, rankList)
 	c.JSON(http.StatusOK, rankList)
 }
 
@@ -509,7 +515,7 @@ func (h *TournamentHandler) GetEloHistory(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": "Thiếu mã sinh viên."})
 		return
 	}
-	team, ok := ComputeMainElo(h.service.GetAllTournaments())[sid]
+	team, ok := ComputeMainElo(filterTrack(h.service.GetAllTournaments(), trackParam(c)))[sid]
 	if !ok {
 		c.JSON(http.StatusOK, gin.H{"student_id": sid, "start": mainEloStart, "rating": mainEloStart, "played": 0, "wins": 0, "events": []EloEvent{}})
 		return
