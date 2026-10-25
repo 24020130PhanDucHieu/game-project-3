@@ -114,6 +114,12 @@ export function AdminAiBank() {
     <Card icon={<Library />} title="Kho đề Giải AI" subtitle="Đề học từ thế cờ do máy sinh từ engine bàn cờ. Admin bốc ngẫu nhiên từ kho khi ra đề; có thể thêm đề mới và bật/tắt đề."
       action={<Button size="sm" onClick={() => setForm({ draft: blank(), editing: false })} data-testid="bank-add"><Plus className="size-4" />Thêm đề</Button>}>
       <div className="space-y-4">
+        {!form && (
+          <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-3">
+            <Button onClick={() => setForm({ draft: blank(), editing: false })} data-testid="bank-add-body"><Plus className="size-4" />Thêm đề mới vào kho</Button>
+            <p className="text-xs text-muted-foreground">Chọn mẫu đề, chỉnh luật bàn cờ và tham số, bấm “Thử đề” để đo rồi lưu. Cũng có thể bấm biểu tượng nhân bản ở một đề có sẵn để sửa từ đó.</p>
+          </div>
+        )}
         {form && <EntryForm key={form.draft.id + String(form.editing)} initial={form.draft} editing={form.editing} templates={templates} onClose={() => setForm(null)} />}
         {bank.loading && !bank.data ? <SkeletonRows rows={5} /> : bank.error && !bank.data ? <ErrorNote message={bank.error.message} onRetry={() => void bank.reload()} /> : !entries.length ? <EmptyState title="Kho đề trống" /> : (
           <DataTable head={['Đề', 'Mẫu', 'Luật', 'Độ khó', 'Thẻ', 'Nguồn', 'Trạng thái', '']}>

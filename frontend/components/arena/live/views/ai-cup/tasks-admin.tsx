@@ -31,6 +31,11 @@ export function AdminAiTasks({ event }: { event: any }) {
           </fieldset>
           <Button disabled={busy || locked || !open} onClick={() => void run(() => arenaApi.rollAiCupTasks(event.id, filters()), 'Đã bốc bộ đề mới', reload)} data-testid="tasks-roll"><Dices className="size-4" />{list.length ? 'Bốc lại cả bộ' : 'Ra đề ngẫu nhiên'}</Button>
         </div>
+        {!locked && list.length > 0 && (
+          <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-900 dark:text-amber-100" data-testid="tasks-unlocked-note">
+            Đề mới được bốc, <strong>các đội chưa thấy</strong> (chỉ ban tổ chức xem được). Bấm <strong>Khóa & công bố đề</strong> bên dưới để các đội thấy đề và nộp bài.
+          </p>
+        )}
         {tasks.loading && !tasks.data ? <SkeletonRows rows={4} /> : tasks.error && !tasks.data ? <ErrorNote message={tasks.error.message} onRetry={() => void tasks.reload()} /> : !list.length ? (
           <EmptyState icon={<Dices className="size-6" />} title="Chưa có đề" hint="Bấm “Ra đề ngẫu nhiên” để bốc từ kho đề." />
         ) : (
@@ -52,7 +57,7 @@ export function AdminAiTasks({ event }: { event: any }) {
         <div className="flex flex-wrap gap-2">
           {locked
             ? <Button variant="secondary" disabled={busy || !open} onClick={() => void run(() => arenaApi.lockAiCupTasks(event.id, false), 'Đã mở khóa bộ đề', reload)} data-testid="tasks-unlock"><LockOpen className="size-4" />Mở khóa đề</Button>
-            : <Button disabled={busy || !open || list.length !== event.task_count} onClick={async () => { if (await confirm({ title: 'Khóa bộ đề?', message: 'Các đội sẽ thấy đề, tải dữ liệu và nộp bài. Chỉ mở khóa lại được khi chưa có đội nào nộp.', confirmLabel: 'Khóa đề' })) void run(() => arenaApi.lockAiCupTasks(event.id, true), 'Đã khóa bộ đề', reload) }} data-testid="tasks-lock"><Lock className="size-4" />Khóa đề</Button>}
+            : <Button disabled={busy || !open || list.length !== event.task_count} onClick={async () => { if (await confirm({ title: 'Khóa bộ đề?', message: 'Các đội sẽ thấy đề, tải dữ liệu và nộp bài. Chỉ mở khóa lại được khi chưa có đội nào nộp.', confirmLabel: 'Khóa đề' })) void run(() => arenaApi.lockAiCupTasks(event.id, true), 'Đã khóa bộ đề', reload) }} data-testid="tasks-lock"><Lock className="size-4" />Khóa & công bố đề</Button>}
         </div>
       </div>
     </Card>

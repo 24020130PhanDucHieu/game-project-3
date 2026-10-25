@@ -69,7 +69,7 @@ export function AiCupView() {
   const list = aiEvents.data
   const event0 = list?.find((q) => q.id === aiEventId)
   const detail = useResource<any>(aiEventId ? `q:ai:detail:${scope}:${aiEventId}` : null, () => arenaApi.getQualifier(aiEventId), { ttl: 5_000, refreshMs: event0?.status === 'RUNNING' ? 8_000 : 20_000 })
-  const problem = useResource<any>(aiEventId ? `q:ai:problem:${aiEventId}` : null, () => arenaApi.getAiCupProblem(aiEventId), { ttl: 60_000 })
+  const problem = useResource<any>(aiEventId ? `q:ai:problem:${aiEventId}` : null, () => arenaApi.getAiCupProblem(aiEventId), { ttl: 60_000, refreshMs: event0?.mode === 'TASKS' && !event0?.tasks_locked ? 10_000 : undefined })
   const mine = useResource<any>(aiEventId && role !== 'GUEST' ? `q:ai:mine:${scope}:${aiEventId}` : null, () => arenaApi.getAiCupMine(aiEventId), { ttl: 5_000, refreshMs: event0?.status === 'RUNNING' ? 8_000 : 20_000 })
   const event = detail.data?.event ?? event0
   const participant = detail.data?.participant
