@@ -71,7 +71,7 @@ var rateState = struct {
 }{clients: make(map[string]rateEntry)}
 
 func isHeavyPath(path string) bool {
-	for _, suffix := range []string{"/bots/validate", "/bots/practice", "/practice-match", "/scrimmages", "/attempt", "/submissions", "/submit", "/code"} {
+	for _, suffix := range []string{"/bots/validate", "/bots/practice", "/practice-match", "/scrimmages", "/attempt", "/submissions", "/submit", "/code", "/ai/ask"} {
 		if strings.HasSuffix(path, suffix) {
 			return true
 		}

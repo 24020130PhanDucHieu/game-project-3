@@ -8,6 +8,7 @@ import { relative, stamp, type Tone } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Avatar, Badge, Button, Card, EmptyState, ErrorNote, Pagination, Select, SkeletonRows, Tabs, TextArea } from './ui'
 import { useLive } from './context'
+import { intents } from '@/lib/ui-intents'
 
 export const CLAR_TOPICS: Record<string, string> = { RULES: 'Luật thi đấu', TECH: 'Kỹ thuật / nộp bài', SCHEDULE: 'Lịch thi', INCIDENT: 'Sự cố', OTHER: 'Khác' }
 const STATUS: Record<string, { label: string; tone: Tone }> = {
@@ -63,7 +64,8 @@ export function TeamClarifications() {
   const { role, run, busy, tournamentId, scope, openAuth } = useLive()
   const [page, setPage] = useState(1)
   const [topic, setTopic] = useState('RULES')
-  const [question, setQuestion] = useState('')
+  // Câu hỏi soạn sẵn khi chuyển từ trợ lý AI sang “Hỏi ban tổ chức”.
+  const [question, setQuestion] = useState(() => intents.takeClarificationDraft())
   const list = useResource(`clar:${scope}:${page}`, () => arenaApi.getClarifications({ page }), { ttl: 10_000, refreshMs: 30_000 })
   return (
     <div className="grid gap-6 xl:grid-cols-[1fr_1.5fr]">

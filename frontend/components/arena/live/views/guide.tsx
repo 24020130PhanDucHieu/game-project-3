@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, type ReactNode } from 'react'
-import { Activity, BookOpen, Check, Copy, Cpu, FileCode2, Flag, HelpCircle, ListOrdered, Lock, MessageCircleQuestion, Scale, WifiOff } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Activity, BookOpen, Check, Copy, Cpu, FileCode2, Flag, HelpCircle, ListOrdered, Lock, MessageCircleQuestion, Scale, Sparkles, WifiOff } from 'lucide-react'
 import { decodeRule, ruleBits, shortTime } from '@/lib/format'
 import { Badge, Button, Card, DataTable, SectionTitle, Tabs } from '../ui'
 import { useLive } from '../context'
@@ -9,8 +9,10 @@ import { CPP_TEMPLATE, PY_TEMPLATE } from '../workbench'
 import { TeamClarifications } from '../clarifications'
 import { SystemStatusCard } from '../system-status'
 import { PrivacyPolicy } from '../privacy-policy'
+import { AiAssistantCard } from '../ai-assistant'
+import { intents, type GuideSection } from '@/lib/ui-intents'
 
-type Section = 'flow' | 'rules' | 'bot' | 'qualifier' | 'offline' | 'faq' | 'ask' | 'privacy' | 'status'
+type Section = GuideSection
 
 function Code({ children }: { children: string }) {
   const [copied, setCopied] = useState(false)
@@ -38,7 +40,9 @@ function Steps({ items }: { items: { title: string; body: ReactNode }[] }) {
 }
 
 export function GuideView() {
-  const [section, setSection] = useState<Section>('flow')
+  const [section, setSection] = useState<Section>(() => intents.takeGuideSection() || 'flow')
+  // Trợ lý AI và thông báo có thể mở thẳng một mục (kèm câu hỏi soạn sẵn cho BTC).
+  useEffect(() => intents.onGuide((s) => { setSection(s); intents.takeGuideSection() }), [])
   const { capabilities, tournament } = useLive()
   const languages = capabilities.data?.languages
   const published = Object.entries(tournament.data?.stage_rules || {}).sort((a, b) => Number(a[0]) - Number(b[0]))
@@ -55,6 +59,7 @@ export function GuideView() {
           { id: 'qualifier', label: 'Vòng loại', icon: <Flag className="size-4" /> },
           { id: 'offline', label: 'Mất mạng', icon: <WifiOff className="size-4" /> },
           { id: 'faq', label: 'Câu hỏi thường gặp', icon: <HelpCircle className="size-4" /> },
+          { id: 'assistant', label: 'Trợ lý AI', icon: <Sparkles className="size-4" /> },
           { id: 'ask', label: 'Hỏi BTC', icon: <MessageCircleQuestion className="size-4" /> },
           { id: 'privacy', label: 'Dữ liệu cá nhân', icon: <Lock className="size-4" /> },
           { id: 'status', label: 'Trạng thái hệ thống', icon: <Activity className="size-4" /> },
@@ -171,6 +176,7 @@ export function GuideView() {
         </Card>
       )}
 
+      {section === 'assistant' && <AiAssistantCard />}
       {section === 'ask' && <TeamClarifications />}
       {section === 'privacy' && <PrivacyPolicy />}
       {section === 'status' && <SystemStatusCard />}
@@ -182,7 +188,7 @@ export function GuideView() {
               ['Tôi không nộp được bài trong trận?', 'Kiểm tra: đã “Vào phòng trận” chưa, luật vòng đã công bố chưa, cửa sổ vòng còn mở không, và hiệp có đang chạy/nghỉ không. Giao diện hiển thị lý do ngay dưới nút Nộp.'],
               ['Vì sao tôi không thấy mã của đối thủ?', 'Mã nguồn riêng chỉ đội sở hữu và ban tổ chức xem được; replay che thông tin đối thủ theo luật sương mù.'],
               ['Đấu thử có tính điểm không?', 'Không. Đấu thử với boss (trong tab Nộp bot) không ghi vào giải, bài nộp, lịch sử hay ELO.'],
-              ['Bảng xếp hạng tính thế nào?', 'Xếp hạng toàn hệ thống dựa trên các trận Bo5 đã hoàn tất (hiệp lẻ không tính). Xếp hạng vòng loại dùng ELO sau mỗi lượt ghép cặp.'],
+              ['Bảng xếp hạng tính thế nào?', 'Tab Giải chính tính ELO từ các trận Bo5 đã hoàn tất ở giải chính (hiệp lẻ không tính), mọi đội bắt đầu từ 1200. Tab Vòng loại dùng ELO sau mỗi lượt ghép cặp của vòng loại. Hai bảng độc lập nhau.'],
               ['Có thể nộp qua Git không?', 'Có thể lấy mã từ một repo GitHub công khai vào ô soạn thảo; một số vòng loại yêu cầu bắt buộc kèm commit. Hệ thống chưa tự nhận bài qua webhook.'],
               ['Ai sửa kết quả khi có sự cố?', 'Chỉ ban tổ chức, qua thao tác có ghi nhật ký và có thể hoàn tác.'],
             ].map(([q, a]) => (

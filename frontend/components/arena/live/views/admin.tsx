@@ -10,6 +10,7 @@ import { QualifierAdminTab } from './admin/qualifier-admin'
 import { AccountsTab, LogsTab, NotifyTab } from './admin/accounts-notify-logs'
 import { JudgesTab } from './admin/judges'
 import { AdminClarifications } from '../clarifications'
+import { AiAdminCard } from '../ai-admin'
 import { ImportExportTab } from './admin/import-export'
 import { AntiCheatTab } from './admin/anticheat'
 import { Button } from '../ui'
@@ -49,7 +50,7 @@ export function AdminView() {
       {tab === 'notify' && <NotifyTab />}
       {tab === 'logs' && <LogsTab />}
       {tab === 'judges' && <JudgesTab />}
-      {tab === 'clar' && <AdminClarifications />}
+      {tab === 'clar' && <div className="space-y-6"><AiAdminCard /><AdminClarifications /></div>}
       {tab === 'io' && <ImportExportTab />}
       {tab === 'cheat' && <AntiCheatTab />}
     </div>

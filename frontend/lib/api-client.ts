@@ -114,6 +114,12 @@ export type MainEloEvent = {
   before: number; after: number; delta: number; expected: number
 }
 
+/** Nguồn dẫn của một câu trả lời AI: đoạn trích nguyên văn từ tài liệu hoặc dữ liệu thật của giải. */
+export type AiSource = { id: string; title: string; quote: string; link: string }
+export type AiAnswer = { answer: string; needs_human: boolean; sources: AiSource[]; remaining: number; cached: boolean }
+export type AiLogEntry = { id: string; at: number; student_id: string; team_name: string; role: string; question: string; answer: string; needs_human: boolean; reason?: string; source_ids?: string[]; tools?: string[]; tokens: number; cached: boolean }
+export type AiSettings = { enabled: boolean; per_team: number; daily_tokens: number }
+
 export const arenaApi = {
   // --- AUTH ---
   async humanChallenge() {
@@ -552,6 +558,26 @@ export const arenaApi = {
 
   async getMainEloHistory(studentId: string) {
     return apiRequest<{ student_id: string; team_name?: string; start: number; rating: number; played: number; wins: number; k_factor?: number; events: MainEloEvent[] }>(`/ranking/elo-history?student_id=${encodeURIComponent(studentId)}`)
+  },
+
+  async askAi(question: string, tournamentId?: string) {
+    return apiRequest<AiAnswer>('/ai/ask', { method: 'POST', body: JSON.stringify({ question, tournament_id: tournamentId || '' }) })
+  },
+
+  async getAiUsage() {
+    return apiRequest<{ available: boolean; used: number; limit: number; remaining: number }>('/ai/usage')
+  },
+
+  async getAiSettings() {
+    return apiRequest<{ available: boolean; settings: AiSettings; tokens_today: number; asked_today: number; needs_human_today: number; model: string; kb_version: string }>('/ai/settings')
+  },
+
+  async saveAiSettings(body: AiSettings) {
+    return apiRequest<{ settings: AiSettings }>('/ai/settings', { method: 'PUT', body: JSON.stringify(body) })
+  },
+
+  async getAiLog(onlyHuman = false) {
+    return apiRequest<{ items: AiLogEntry[] }>(`/ai/log?days=3${onlyHuman ? '&only=human' : ''}`)
   },
 
   async getCertificates(tournamentId?: string) {

@@ -1,5 +1,6 @@
 'use client'
 
+import { AiLauncher } from './ai-assistant'
 import { useEffect, useRef, useState } from 'react'
 import { BookOpen, Bell, Flag, LayoutDashboard, LogIn, LogOut, Medal, Menu, Monitor, Moon, Network, RefreshCw, Shield, Sun, Swords, UserPlus, UserRound, Wifi, WifiOff, X, type LucideIcon } from 'lucide-react'
 import { AuthModal } from '../modals/auth-modal'
@@ -198,6 +199,7 @@ export function Shell() {
           {view === 'guide' && <GuideView />}
           {view === 'admin' && <AdminView />}
         </main>
+        <AiLauncher />
       </div>
       <AlertsWatcher />
       {stage && <StageView onExit={() => { history.replaceState(null, '', window.location.pathname + window.location.search); setStage(false) }} />}

@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"project-tuan3/internal/adapter"
+	"project-tuan3/internal/ai"
 	"project-tuan3/internal/auth"
 	"project-tuan3/internal/config"
 	httpHandler "project-tuan3/internal/handler/http"
@@ -147,6 +149,37 @@ func main() {
 	wsHub := wsHandler.NewHub()
 	go wsHub.Run()
 	certHandler := &httpHandler.CertificateHandler{Service: tournamentService, Accounts: accounts, Store: qualifierStore}
+	// Trợ lý hỏi đáp luật bằng AI: chỉ trả lời từ tài liệu luật, cấu hình giải trong database và hỏi đáp công khai của BTC.
+	aiKB, err := ai.LoadKB()
+	if err != nil {
+		log.Fatalf("Could not load AI knowledge base: %v", err)
+	}
+	aiKey := os.Getenv("ANTHROPIC_API_KEY")
+	aiModel := os.Getenv("AI_MODEL")
+	if aiModel == "" {
+		aiModel = "claude-haiku-5-5"
+	}
+	aiDefaults := ai.DefaultSettings()
+	if n, convErr := strconv.Atoi(os.Getenv("AI_DAILY_PER_TEAM")); convErr == nil && n > 0 {
+		aiDefaults.PerTeam = n
+	}
+	if n, convErr := strconv.Atoi(os.Getenv("AI_DAILY_BUDGET")); convErr == nil && n > 0 {
+		aiDefaults.DailyTokens = n
+	}
+	aiHandler := &httpHandler.AIHandler{
+		KB:        aiKB,
+		Quota:     &ai.Manager{Store: qualifierStore, Defaults: aiDefaults},
+		Available: aiKey != "" && os.Getenv("AI_ENABLED") != "0",
+		Audit: func(actor, action string, details map[string]interface{}) {
+			_ = accounts.LogAdminAction(actor, action, "", "", details)
+		},
+	}
+	aiHandler.Agent = &ai.Agent{
+		C:        ai.NewClient(os.Getenv("ANTHROPIC_BASE_URL"), aiKey),
+		Model:    aiModel,
+		MaxTurns: 4,
+		Tools:    &ai.Toolbox{KB: aiKB, Data: httpHandler.NewAIData(tournamentService, clarHandler), Now: time.Now},
+	}
 	tournamentService.OnRoundEvent = func(tournamentID, matchID, eventType string) {
 		httpHandler.InvalidateDerived()
 		wsHub.BroadcastTournamentJSON(tournamentID, matchID, gin.H{"type": eventType, "tournament_id": tournamentID, "match_id": matchID, "action": "play-round"})
@@ -256,6 +289,11 @@ func main() {
 		api.POST("/admin/judges", adminOnly, jHandler.Create)
 		api.POST("/admin/judges/:username/:action", adminOnly, jHandler.Action)
 		api.GET("/clarifications", optionalSession(sessions), clarHandler.List)
+		api.POST("/ai/ask", requireSession(sessions, false, false), aiHandler.Ask)
+		api.GET("/ai/usage", requireSession(sessions, false, false), aiHandler.Usage)
+		api.GET("/ai/settings", adminOnly, aiHandler.Settings)
+		api.PUT("/ai/settings", adminOnly, aiHandler.SaveSettings)
+		api.GET("/ai/log", adminOnly, aiHandler.Log)
 		api.POST("/clarifications", requireSession(sessions, false, false), clarHandler.Ask)
 		api.POST("/admin/clarifications/:clarId/answer", adminOnly, clarHandler.Answer)
 		api.GET("/scrimmages", requireSession(sessions, false, false), scrimHandler.List)
