@@ -5,6 +5,7 @@ import { countdown, relative, shortTime, toDate } from '@/lib/format'
 import { Badge, Button, Card, EmptyState, ProgressBar, Skeleton, SkeletonCards, SkeletonRows, Stat, StatusBadge } from '../ui'
 import { useLive } from '../context'
 import { Billboard } from '../billboard'
+import { CurrentTournamentChip } from '../tournament-picker'
 import { MatchCard, historyWinner, useHistory, useNow, useRanking } from '../shared'
 
 function StageClock({ tournament }: { tournament: any }) {
@@ -84,6 +85,7 @@ export function OverviewView() {
   return (
     <div className="space-y-6">
       <Hero />
+      <CurrentTournamentChip />
 
       <Card>
         {tournaments.loading ? <Skeleton className="h-16 w-full" /> : !tournamentId ? (

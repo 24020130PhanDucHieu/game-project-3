@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, type ReactNode } from 'react'
-import { Activity, BookOpen, Check, Copy, Cpu, FileCode2, Flag, HelpCircle, ListOrdered, Lock, MessageCircleQuestion, Scale, WifiOff } from 'lucide-react'
+import { Activity, BookOpen, BrainCircuit, Check, Copy, Cpu, FileCode2, Flag, HelpCircle, ListOrdered, Lock, MessageCircleQuestion, Scale, WifiOff } from 'lucide-react'
 import { decodeRule, ruleBits, shortTime } from '@/lib/format'
 import { Badge, Button, Card, DataTable, SectionTitle, Tabs } from '../ui'
 import { useLive } from '../context'
@@ -56,6 +56,7 @@ export function GuideView() {
           { id: 'rules', label: 'Luật chơi', icon: <Scale className="size-4" /> },
           { id: 'bot', label: 'Viết bot', icon: <FileCode2 className="size-4" /> },
           { id: 'qualifier', label: 'Vòng loại', icon: <Flag className="size-4" /> },
+          { id: 'aicup', label: 'Giải AI', icon: <BrainCircuit className="size-4" /> },
           { id: 'offline', label: 'Mất mạng', icon: <WifiOff className="size-4" /> },
           { id: 'faq', label: 'Câu hỏi thường gặp', icon: <HelpCircle className="size-4" /> },
           { id: 'ask', label: 'Hỏi BTC', icon: <MessageCircleQuestion className="size-4" /> },
@@ -159,6 +160,31 @@ export function GuideView() {
         </Card>
       )}
 
+      {section === 'aicup' && (
+        <div className="space-y-6">
+          <Card title="Giải AI dành cho ai?" subtitle="Thi bằng mô hình học máy thay vì bot đấu cờ">
+            <p className="text-sm text-muted-foreground">Mỗi đề là một bài toán nhỏ về bàn cờ 9×9 (ví dụ: nhìn thế cờ rồi đoán bên nào sẽ thắng). Bạn viết một hàm Python <code className="rounded bg-muted px-1">solve(task)</code>: nó nhận dữ liệu có đáp án để học, rồi trả về dự đoán cho các thế cờ chưa thấy. Điểm mỗi đề từ 0 đến 100. Không cần cài thêm gì, chỉ cần trình duyệt.</p>
+          </Card>
+          <Card title="Các bước của một đội" subtitle="Làm lần lượt; tab Giải AI cũng nhắc bước tiếp theo">
+            <Steps items={[
+              { title: 'Đăng ký tham gia vòng loại AI', body: 'Vào tab Giải AI, bấm “Đăng ký tham gia”. Chỉ đăng ký được khi vòng loại còn mở.' },
+              { title: 'Xem đề và tải dữ liệu', body: 'Tab “Đề bài & dữ liệu” hiện đề sau khi ban tổ chức công bố. Tải dữ liệu từng đề (tệp JSON) để tự thử ở nhà nếu muốn.' },
+              { title: 'Chấm thử trên máy bạn', body: 'Tab “Nộp mô hình”: chọn đề rồi bấm “Chấm thử đề này”. Máy tự chia dữ liệu thành phần để học và phần để kiểm tra, rồi cho biết điểm ước lượng cùng hình minh họa thế cờ đoán đúng/sai. Chấm thử không tốn lượt nộp và dùng được cả khi mất mạng.' },
+              { title: 'Nộp mô hình và khai báo kỹ thuật', body: 'Bấm “Gửi mô hình tới hàng đợi”. Bản hợp lệ cuối cùng được giữ khi hết hạn. Nhớ khai báo kỹ thuật bạn dùng ở đầu trang nộp.' },
+              { title: 'Xem bảng điểm', body: 'Bảng công khai xem được ngay; bảng riêng tư là kết quả chính thức và chỉ mở khi vòng loại kết thúc.' },
+              { title: 'Giải chính và báo cáo kỹ thuật', body: 'Các đội đứng đầu vào giải chính. Các đội nộp thêm báo cáo kỹ thuật ngắn (200–6000 ký tự); giám khảo chấm và đội tốt nhất nhận Giải Kỹ thuật.' },
+            ]} />
+          </Card>
+          <Card title="Công cụ có sẵn" subtitle="Không có NumPy trong môi trường chấm">
+            <ul className="list-inside list-disc space-y-2 text-sm text-muted-foreground">
+              <li>Thư viện <code className="rounded bg-muted px-1">nnlite</code> huấn luyện mạng nơ-ron nhỏ ngay trong <code className="rounded bg-muted px-1">solve</code> (có lan truyền xuôi, lan truyền ngược và cập nhật trọng số).</li>
+              <li>Ba mã mẫu ở tab Nộp mô hình: dùng nnlite, tự viết xuôi/ngược, và bản tối giản.</li>
+              <li>Mỗi đề có giới hạn thời gian (vài giây) và mã tối đa 64 KB.</li>
+            </ul>
+          </Card>
+        </div>
+      )}
+
       {section === 'offline' && (
         <Card title="Mất mạng, mất điện và lỗi máy chấm">
           <div className="space-y-4 text-sm text-muted-foreground">
@@ -187,6 +213,9 @@ export function GuideView() {
               ['Đấu thử có tính điểm không?', 'Không. Đấu thử với boss (trong tab Nộp bot) không ghi vào giải, bài nộp, lịch sử hay ELO.'],
               ['Bảng xếp hạng tính thế nào?', 'Tab Giải chính tính ELO từ các trận Bo5 đã hoàn tất ở giải chính (hiệp lẻ không tính), mọi đội bắt đầu từ 1200. Tab Vòng loại dùng ELO sau mỗi lượt ghép cặp của vòng loại. Hai bảng độc lập nhau.'],
               ['Có thể nộp qua Git không?', 'Có thể lấy mã từ một repo GitHub công khai vào ô soạn thảo; một số vòng loại yêu cầu bắt buộc kèm commit. Hệ thống chưa tự nhận bài qua webhook.'],
+              ['Điểm công khai cao mà hạng thấp là sao?', 'Điểm công khai tính trên dữ liệu cố định nên dễ “học vẹt”. Hạng chính thức dựa trên bảng riêng tư với thế cờ mới. Hãy kiểm tra mô hình trên dữ liệu bạn tự tách ra, đừng chỉnh chỉ để đẹp số công khai.'],
+              ['Vì sao Giải AI không có NumPy?', 'Môi trường chấm là Python thuần để chạy nhanh và an toàn. Dùng thư viện nnlite có sẵn, hoặc huấn luyện ngoài máy rồi nhúng trọng số vào mã (tối đa 64 KB).'],
+              ['Có bắt buộc nộp báo cáo kỹ thuật không?', 'Báo cáo giúp bạn đủ điều kiện nhận Giải Kỹ thuật. Đội vào giải chính nên nộp trước hạn ban tổ chức đặt, ở tab Báo cáo kỹ thuật.'],
               ['Ai sửa kết quả khi có sự cố?', 'Chỉ ban tổ chức, qua thao tác có ghi nhật ký và có thể hoàn tác.'],
             ].map(([q, a]) => (
               <details key={q} className="group py-3"><summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold"><span className="flex items-center gap-2"><BookOpen className="size-4 text-primary" />{q}</span><span className="text-muted-foreground transition-transform group-open:rotate-45">+</span></summary><p className="mt-2 pl-6 text-sm text-muted-foreground">{a}</p></details>

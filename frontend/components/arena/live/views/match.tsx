@@ -10,6 +10,7 @@ import { Avatar, Badge, Button, Card, DataTable, EmptyState, ErrorNote, Field, S
 import { useLive } from '../context'
 import { BoardPlayer } from '../board'
 import { MatchCard, TeamLine, historyWinner, useHistory, useNow, winnerSide } from '../shared'
+import { CurrentTournamentChip } from '../tournament-picker'
 import { Workbench } from '../workbench'
 import { SyncStatusCard } from '../sync-status'
 import { enqueue, isRetryable, newSubmissionId } from '@/lib/outbox'
@@ -490,6 +491,7 @@ export function MatchView() {
       <SectionTitle eyebrow="Phòng thi đấu" title="Trận đấu">
         <Tabs tabs={tabs} value={tab} onChange={setTab} />
       </SectionTitle>
+      <CurrentTournamentChip />
 
       {tab === 'history' ? <HistoryPanel /> : tab === 'scrim' ? <ScrimmagePanel /> : (
         <>
@@ -507,7 +509,7 @@ export function MatchView() {
             </div>
           </Card>
 
-          {tournament.loading ? <SkeletonRows rows={5} /> : !t ? <EmptyState title="Chưa chọn giải đấu" hint="Chọn giải ở thanh trên cùng." /> : !match ? (
+          {tournament.loading ? <SkeletonRows rows={5} /> : !t ? <EmptyState title="Chưa chọn giải đấu" hint="Chọn giải ở tab Bảng đấu." /> : !match ? (
             matches.length ? (
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{matches.map(([id, m]) => <MatchCard key={id} id={id} match={m} onOpen={(mid) => void enterMatch(mid)} />)}</div>
             ) : <EmptyState title="Giải chưa có trận" hint="Ban tổ chức cần xếp lịch để tạo cặp đấu." />

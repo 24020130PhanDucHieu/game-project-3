@@ -15,6 +15,7 @@ import { ImportExportTab } from './admin/import-export'
 import { AntiCheatTab } from './admin/anticheat'
 import { SecurityCard } from './admin/security'
 import { Button } from '../ui'
+import { TournamentPicker } from '../tournament-picker'
 
 type AdminTab = 'monitor' | 'tournament' | 'qualifier' | 'accounts' | 'notify' | 'logs' | 'judges' | 'clar' | 'io' | 'cheat' | 'security' | 'aicup'
 
@@ -46,6 +47,7 @@ export function AdminView() {
           ...(session.owner ? [{ id: 'judges' as const, label: 'Giám khảo', icon: <ShieldCheck className="size-4" /> }] : []),
         ]}
       />
+      {['monitor', 'accounts', 'notify', 'logs', 'io', 'cheat'].includes(tab) && <TournamentPicker label="Giải thường đang quản lý" />}
       {tab === 'monitor' && <MonitorTab onGo={setTab} />}
       {tab === 'tournament' && <TournamentTab />}
       {tab === 'qualifier' && <QualifierAdminTab />}

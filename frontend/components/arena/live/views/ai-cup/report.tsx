@@ -5,7 +5,7 @@ import { Award, CalendarClock, FileText, Lock, Medal, Save, ShieldCheck } from '
 import { arenaApi } from '@/lib/api-client'
 import { invalidate, useResource } from '@/lib/cache'
 import { shortTime, sameStudent } from '@/lib/format'
-import { Badge, Button, Card, DataTable, EmptyState, Field, Select, SkeletonRows, TextArea } from '../../ui'
+import { Badge, Button, Card, DataTable, EmptyState, ErrorNote, Field, Select, SkeletonRows, TextArea } from '../../ui'
 import { useLive } from '../../context'
 import { RankBadge } from '../ranking'
 import { fmt, useAiTournaments } from './common'
@@ -51,6 +51,7 @@ function ReportForm({ tid, data, reload }: { tid: string; data: any; reload: () 
         <Field label="Liên kết kho mã (tùy chọn)" placeholder="https://github.com/…" value={repo} maxLength={300} disabled={closed} onChange={(e) => setRepo(e.target.value)} data-testid="ai-report-repo" />
         <div className="flex flex-wrap items-center gap-3">
           <Button disabled={closed || len < min} onClick={() => void run(() => arenaApi.saveAiMainReport(tid, { summary, repo_url: repo }), 'Đã lưu báo cáo kỹ thuật', () => { invalidate('ai:'); reload() })} data-testid="ai-report-save"><Save className="size-4" />Lưu báo cáo</Button>
+          {!closed && len < min && <span className="text-xs text-amber-700 dark:text-amber-300">Chưa lưu được: cần thêm {min - len} ký tự.</span>}
           {closed && <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><Lock className="size-3.5" />{cfg.published ? 'Điểm đã công bố nên báo cáo bị khóa.' : 'Đã hết hạn nộp báo cáo.'}</span>}
           {!closed && cfg.deadline > 0 && <span className="flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarClock className="size-3.5" />Hạn nộp {shortTime(cfg.deadline)}. Có thể sửa lại đến hạn.</span>}
         </div>
@@ -76,13 +77,14 @@ export function ReportTab() {
   const { list, id, setId, current } = useAiTournaments()
   const mine = useResource<any>(id ? `ai:report:${role}:${session.student_id || ''}:${id}` : null, () => arenaApi.getAiMainReport(id), { ttl: 5_000, refreshMs: 20_000 })
   const board = useResource<any>(id ? `ai:scoreboard:${id}` : null, () => arenaApi.getAiMainScoreboard(id), { ttl: 8_000, refreshMs: 20_000 })
+  if (mine.error && !mine.data && role === 'TEAM') return <ErrorNote message={mine.error.message} onRetry={() => void mine.reload()} />
   if (!list.length) return <Card><EmptyState icon={<FileText className="size-7" />} title="Chưa có giải chính AI" hint="Báo cáo kỹ thuật được nộp ở giải chính AI, sau khi vòng loại AI chốt đội." /></Card>
   const data = mine.data
   const criteria: any[] = data?.criteria || board.data?.criteria || []
   const rows: any[] = board.data?.items || []
   return (
     <div className="space-y-6">
-      {list.length > 1 && <Select aria-label="Chọn giải chính AI" value={id} onChange={(e) => setId(e.target.value)} className="w-72">{list.map((x) => <option key={x.tournament_id} value={x.tournament_id}>{x.name}</option>)}</Select>}
+      {list.length > 1 && <Select aria-label="Chọn giải chính AI" value={id} onChange={(e) => setId(e.target.value)} className="w-full sm:w-72">{list.map((x) => <option key={x.tournament_id} value={x.tournament_id}>{x.name}</option>)}</Select>}
       {data && criteria.length > 0 && <Rubric criteria={criteria} />}
       {role === 'TEAM' && data && (data.eligible ? <ReportForm tid={id} data={data} reload={() => void mine.reload()} /> : (
         <Card><EmptyState icon={<FileText className="size-6" />} title="Đội bạn không thi đấu ở giải chính AI này" hint={`Chỉ các đội được chốt từ vòng loại AI vào “${current?.name || 'giải chính AI'}” mới nộp báo cáo.`} /></Card>

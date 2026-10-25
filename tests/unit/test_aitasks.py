@@ -283,6 +283,13 @@ class TemplateFilesTests(unittest.TestCase):
         bad = taskcheck.check('def solve(task): return [0]', view, lambda code, task: [0])
         self.assertIn('đúng', bad['error'])
 
+    def test_diverged_regression_does_not_crash_grading(self):
+        from app.aitasks import metrics
+        preds, problem = metrics.clean_predictions('reg', [1e300, -1e300, 5.0], 3)
+        self.assertIsNone(problem)
+        self.assertEqual(metrics.score('r2', [1.0, 2.0, 3.0], preds), 0.0)
+        self.assertEqual(metrics.score('r2', [1.0, 2.0, 3.0], [1e308, -1e308, 1e308]), 0.0)
+
     def test_task_check_returns_visual_data_and_progress(self):
         from app.aitasks import taskcheck
         item = item_of('capture-standard')

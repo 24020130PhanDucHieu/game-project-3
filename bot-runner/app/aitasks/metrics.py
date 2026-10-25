@@ -20,7 +20,12 @@ def r2(y_true, y_pred):
     sst = sum((a - mean) ** 2 for a in y_true)
     if sst <= 0:
         return 0.0
-    sse = sum((a - b) ** 2 for a, b in zip(y_true, y_pred))
+    try:
+        sse = sum((a - b) ** 2 for a, b in zip(y_true, y_pred))
+    except OverflowError:  # mô hình phân kỳ cho dự đoán khổng lồ: coi là kém hơn đoán trung bình
+        return 0.0
+    if not math.isfinite(sse):
+        return 0.0
     return 100.0 * max(0.0, 1.0 - sse / sst)
 
 
@@ -45,7 +50,8 @@ def clean_predictions(kind, preds, n, n_classes=None):
                 return None, f"Dự đoán lớp phải là số nguyên từ 0 đến {n_classes - 1}."
             out.append(int(v))
         else:
-            out.append(float(v))
+            # Giá trị quá lớn (mô hình phân kỳ) làm tràn khi bình phương; kẹp về một khoảng rộng nhưng an toàn.
+            out.append(max(-1e9, min(1e9, float(v))))
     return out, None
 
 

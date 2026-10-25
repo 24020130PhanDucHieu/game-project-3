@@ -7,6 +7,7 @@ import { Badge, Button, Card, DataTable, EmptyState, SectionTitle, Skeleton, Ske
 import { useLive } from '../context'
 import { useNow } from '../shared'
 import { BracketTree } from '../bracket-tree'
+import { TournamentPicker } from '../tournament-picker'
 
 function WindowBadge({ window, now }: { window?: any; now: number }) {
   if (!window?.starts_at || !window?.ends_at) return <Badge>Chưa đặt lịch</Badge>
@@ -50,6 +51,8 @@ export function BracketView() {
         </div>
       </SectionTitle>
 
+      <TournamentPicker label="Chọn giải để xem" />
+
       {champion && (
         <div className="flex items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-4">
           <Trophy className="size-6 text-amber-500" aria-hidden />
@@ -60,7 +63,7 @@ export function BracketView() {
       {tournaments.loading || (tournamentId && tournament.loading) ? (
         <div className="grid gap-4 md:grid-cols-3">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-64 rounded-2xl" />)}</div>
       ) : !t ? (
-        <Card><EmptyState title="Chưa chọn giải đấu" hint="Chọn giải ở thanh trên cùng." /></Card>
+        <Card><EmptyState title="Chưa chọn giải đấu" hint="Chọn giải ở ô “Chọn giải để xem” phía trên." /></Card>
       ) : !rounds.length ? (
         <Card><EmptyState title="Giải chưa có sơ đồ nhánh" /></Card>
       ) : (

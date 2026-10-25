@@ -6,12 +6,14 @@ import { arenaApi } from '@/lib/api-client'
 import { invalidate, useResource } from '@/lib/cache'
 import { fromLocalInput, toLocalInput } from '@/lib/format'
 import { Badge, Button, Card, DataTable, EmptyState, ErrorNote, Field, Pagination, ProgressBar, Select, SkeletonRows, StatusBadge } from '../../ui'
+import { statusOf } from '@/lib/format'
 import { useLive } from '../../context'
 import { AdminScoreHistory, BanDialog, TeamSubmissionsOverlay } from '../../qualifier-extras'
 import { AdminAiBoard } from '../ai-cup/admin-board'
 import { AdminAiReports } from '../ai-cup/admin-reports'
 import { AdminAiBank } from '../ai-cup/bank-admin'
 import { AdminAiTasks } from '../ai-cup/tasks-admin'
+import { AdminAiSteps } from '../ai-cup/admin-steps'
 
 const FILTERS = [['', 'Tất cả'], ['NOT_SUBMITTED', 'Chưa nộp'], ['PENDING', 'Đang kiểm tra'], ['VALID', 'Hợp lệ'], ['INVALID', 'Không hợp lệ'], ['LOCKED', 'Đã khóa'], ['BANNED', 'Bị loại']]
 
@@ -37,7 +39,7 @@ function ConfigForm({ event, ai }: { event?: any; ai?: boolean }) {
         <Field label="Tên vòng loại" value={name} onChange={(e) => setName(e.target.value)} disabled={!editable} />
         <Field label="Hạn nộp bài (phải ở tương lai)" type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} disabled={!editable} />
         <Field label={ai ? 'Số lượt chấm (1–100)' : 'Số lượt ghép cặp (1–100)'} type="number" min={1} max={100} value={rounds} onChange={(e) => setRounds(e.target.value)} disabled={!editable} />
-        <Select label="Số đội vào giải chính" value={topK} onChange={(e) => setTopK(e.target.value)} disabled={!editable}><option value="8">Top 8</option><option value="16">Top 16</option><option value="32">Top 32</option></Select>
+        <Select label="Số đội vào giải chính" value={topK} onChange={(e) => setTopK(e.target.value)} disabled={!editable}><option value="8">8 đội đầu</option><option value="16">16 đội đầu</option><option value="32">32 đội đầu</option></Select>
       </div>
       {ai && (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -68,7 +70,9 @@ function Operations({ event, ai }: { event: any; ai?: boolean }) {
   const [botCount, setBotCount] = useState('20')
   const [reopenAt, setReopenAt] = useState('')
   const [reason, setReason] = useState('')
-  useEffect(() => setTarget(tournamentId), [tournamentId])
+  // Giải AI: chọn sẵn giải chính AI có đúng số chỗ; giải thường: giải đang chọn.
+  const suggested = tournaments.data?.find((t) => t.num_teams === event.top_k && (ai ? t.track === 'AI' : t.track !== 'AI'))?.tournament_id
+  useEffect(() => setTarget(ai ? suggested || '' : tournamentId), [tournamentId, ai, suggested])
   const id = event.id
   const act = (action: string, success: string, payload: Record<string, unknown> = {}) => run(() => arenaApi.qualifierAction(id, action, payload), success, () => { invalidate('q'); invalidate('ql'); invalidate('t:'); invalidate('tl') })
   const s = event.status
@@ -79,6 +83,15 @@ function Operations({ event, ai }: { event: any; ai?: boolean }) {
         <Button disabled={busy || !['LOCKED', 'PAUSED'].includes(s)} onClick={() => void act('start', 'Đã bắt đầu ghép cặp và chấm')}><Play className="size-4" />{ai ? 'Bắt đầu / tiếp tục chấm' : 'Bắt đầu / tiếp tục ghép cặp'}</Button>
         <Button variant="secondary" disabled={busy || s !== 'RUNNING'} onClick={() => void act('pause', 'Đã yêu cầu tạm dừng sau lượt hiện tại')}><Pause className="size-4" />Tạm dừng</Button>
       </div>
+      <p className="text-xs text-muted-foreground" data-testid="ops-hint">{({
+        OPEN: 'Đang nhận bài. Khi muốn dừng nhận bài, bấm “Khóa bài”.',
+        CLOSING: 'Sắp hết hạn nhận bài. Bấm “Khóa bài” để chốt ngay.',
+        LOCKED: 'Đã khóa bài. Bấm “Bắt đầu” để chạy chấm.',
+        PAUSED: 'Đang tạm dừng. Bấm “Bắt đầu / tiếp tục” để chạy tiếp.',
+        RUNNING: 'Đang chấm; khi xong trạng thái sẽ thành “Hoàn tất”. Có thể bấm “Tạm dừng”.',
+        FINISHED: 'Đã chấm xong. Có thể “Chốt đội” vào giải chính.',
+        PROMOTED: 'Đã chốt đội vào giải chính.',
+      } as Record<string, string>)[s] || ''}</p>
       {event.eligible < event.top_k && ['LOCKED', 'PAUSED'].includes(s) && <p className="text-xs text-amber-700 dark:text-amber-300">Mới có {event.eligible} đội đủ điều kiện, cần tối thiểu {event.top_k} để bắt đầu.</p>}
 
       <div className="grid gap-5 lg:grid-cols-2">
@@ -87,6 +100,7 @@ function Operations({ event, ai }: { event: any; ai?: boolean }) {
           <Field label="Hạn mới" type="datetime-local" value={reopenAt} onChange={(e) => setReopenAt(e.target.value)} />
           <Field label="Lý do" value={reason} onChange={(e) => setReason(e.target.value)} />
           <Button variant="secondary" disabled={busy || !reopenAt || reason.trim().length < 3 || !['OPEN', 'CLOSING', 'LOCKED'].includes(s)} onClick={() => void act('reopen', 'Đã gia hạn nộp bài', { deadline: fromLocalInput(reopenAt), reason })}>Gia hạn / mở lại</Button>
+          {!['OPEN', 'CLOSING', 'LOCKED'].includes(s) ? <p className="text-xs text-muted-foreground">Chỉ gia hạn được khi chưa bắt đầu chấm.</p> : (!reopenAt || reason.trim().length < 3) && <p className="text-xs text-muted-foreground">Chọn hạn mới và nhập lý do (ít nhất 3 ký tự) để bật nút.</p>}
         </div>
         <div className="space-y-3 rounded-xl border border-border p-4">
           <h4 className="text-sm font-semibold">Bot thử nghiệm</h4>
@@ -97,7 +111,7 @@ function Operations({ event, ai }: { event: any; ai?: boolean }) {
 
       <div className="space-y-3 rounded-xl border border-border p-4">
         <h4 className="flex items-center gap-2 text-sm font-semibold"><Trophy className="size-4 text-amber-500" />Chốt đội vào giải chính</h4>
-        <p className="text-xs text-muted-foreground">Chọn một giải còn trống có đúng {event.top_k} chỗ. Top {event.top_k} theo {ai ? 'điểm riêng tư' : 'ELO'} sẽ được ghi danh và xếp cặp.</p>
+        <p className="text-xs text-muted-foreground">Chọn một giải còn trống có đúng {event.top_k} chỗ. {event.top_k} đội đứng đầu theo {ai ? 'điểm riêng tư' : 'ELO'} sẽ được ghi danh và xếp cặp.</p>
         <div className="flex flex-wrap items-end gap-3">
           <Select label="Giải đích" className="min-w-64 flex-1" value={target} onChange={(e) => setTarget(e.target.value)}>
             <option value="">— Chọn giải —</option>
@@ -174,17 +188,24 @@ export function QualifierAdminTab({ ai }: { ai?: boolean }) {
 
   return (
     <div className="space-y-6">
-      <Card title={ai ? 'Vòng loại Giải AI' : 'Vòng loại'} action={<><Button size="sm" variant={creating ? 'secondary' : 'primary'} onClick={() => setCreating((v) => !v)}><Plus className="size-4" />{creating ? 'Đóng' : 'Tạo mới'}</Button></>}>
+      {ai && <AdminAiSteps event={live} />}
+      {ai && (
+        <details id="ai-step-bank" className="rounded-2xl border border-border bg-card/60 p-0 [&_summary]:cursor-pointer">
+          <summary className="px-5 py-3.5 text-sm font-semibold">Kho đề của Giải AI (bấm để mở: xem, bật/tắt, thêm đề mới)</summary>
+          <div className="p-3"><AdminAiBank /></div>
+        </details>
+      )}
+      <div id="ai-step-event"><Card title={ai ? 'Vòng loại Giải AI' : 'Vòng loại'} action={<><Button size="sm" variant={creating ? 'secondary' : 'primary'} onClick={() => setCreating((v) => !v)}><Plus className="size-4" />{creating ? 'Đóng' : 'Tạo mới'}</Button></>}>
         {creating ? <ConfigForm ai={ai} /> : qualifiers.data?.length ? (
           <Select aria-label="Chọn vòng loại" value={qualifierId} onChange={(e) => setQualifierId(e.target.value)}>
-            {qualifiers.data.map((q) => <option key={q.id} value={q.id}>{q.name} · {q.status}</option>)}
+            {qualifiers.data.map((q) => <option key={q.id} value={q.id}>{q.name} · {statusOf(q.status).label}</option>)}
           </Select>
         ) : <EmptyState icon={<Flag className="size-7" />} title={ai ? 'Chưa có vòng loại Giải AI' : 'Chưa có vòng loại'} action={<Button onClick={() => setCreating(true)} data-testid="open-create">{ai ? 'Tạo vòng loại AI' : 'Tạo vòng loại'}</Button>} />}
-      </Card>
+      </Card></div>
 
       {!creating && live && (
         <>
-          <Card title={live.name} action={<><StatusBadge status={live.status} /><Button size="sm" variant="danger" disabled={busy} onClick={async () => { if (await confirm({ title: `Xóa vòng loại “${live.name}”?`, message: 'Toàn bộ đội, bài nộp và kết quả của vòng loại sẽ bị xóa.', danger: true, confirmLabel: 'Xóa' })) void run(() => arenaApi.deleteQualifier(live.id), 'Đã xóa vòng loại', () => { invalidate('q'); invalidate('ql') }) }}><Trash2 className="size-4" /></Button></>}>
+          <Card title={live.name} action={<><StatusBadge status={live.status} /><Button size="sm" variant="danger" aria-label="Xóa vòng loại" disabled={busy} onClick={async () => { if (await confirm({ title: `Xóa vòng loại “${live.name}”?`, message: 'Toàn bộ đội, bài nộp và kết quả của vòng loại sẽ bị xóa.', danger: true, confirmLabel: 'Xóa' })) void run(() => arenaApi.deleteQualifier(live.id), 'Đã xóa vòng loại', () => { invalidate('q'); invalidate('ql') }) }}><Trash2 className="size-4" /></Button></>}>
             <div className="grid gap-4 sm:grid-cols-3 text-sm">
               <div><p className="text-xs text-muted-foreground">{ai ? 'Lượt chấm' : 'Lượt ghép cặp'}</p><p className="font-semibold tabular-nums">{live.applied_round ?? 0}/{live.rounds}</p></div>
               <div><p className="text-xs text-muted-foreground">Đội đủ điều kiện</p><p className="font-semibold tabular-nums">{live.eligible ?? 0} (top {live.top_k})</p></div>
@@ -193,15 +214,14 @@ export function QualifierAdminTab({ ai }: { ai?: boolean }) {
             {live.total > 0 && <div className="mt-4"><ProgressBar value={live.completed || 0} max={live.total} label="Tiến độ" /></div>}
             {live.error && <div className="mt-4"><ErrorNote message={live.error} /></div>}
           </Card>
-          {ai && live.mode === 'TASKS' && <AdminAiTasks event={live} />}
-          <Card title="Điều hành"><Operations event={live} ai={ai} /></Card>
+          {ai && live.mode === 'TASKS' && <div id="ai-step-tasks"><AdminAiTasks event={live} /></div>}
+          <div id="ai-step-ops"><Card title="Điều hành"><Operations event={live} ai={ai} /></Card></div>
           {live.status === 'OPEN' && <Card title="Cấu hình"><ConfigForm event={live} ai={ai} /></Card>}
           <Teams id={live.id} ai={ai} />
           {ai ? <AdminAiBoard qid={live.id} /> : <AdminScoreHistory qid={live.id} />}
-          {ai && <AdminAiReports />}
+          {ai && <div id="ai-step-main"><AdminAiReports /></div>}
         </>
       )}
-      {ai && <AdminAiBank />}
     </div>
   )
 }

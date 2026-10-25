@@ -4,7 +4,7 @@ import { Crown, ListOrdered, Network, Swords, Trophy } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { useResource } from '@/lib/cache'
 import { levelName, sameStudent } from '@/lib/format'
-import { Badge, Button, Card, DataTable, EmptyState, Select, Skeleton, SkeletonRows, StatusBadge } from '../../ui'
+import { Badge, Button, Card, DataTable, EmptyState, ErrorNote, Select, Skeleton, SkeletonRows, StatusBadge } from '../../ui'
 import { useLive } from '../../context'
 import { BracketTree } from '../../bracket-tree'
 import { RankBadge } from '../ranking'
@@ -15,7 +15,7 @@ function AiRanking({ mine }: { mine?: string }) {
   const rows = ranking.data || []
   return (
     <Card icon={<ListOrdered />} title="Xếp hạng ELO giải chính AI" subtitle="Tính riêng từ các trận Bo5 của Giải AI (K=32), mọi đội bắt đầu từ 1200, độc lập với giải thường và vòng loại">
-      {ranking.loading && !ranking.data ? <SkeletonRows rows={4} /> : rows.length ? (
+      {ranking.loading && !ranking.data ? <SkeletonRows rows={4} /> : ranking.error && !ranking.data ? <ErrorNote message={ranking.error.message} onRetry={() => void ranking.reload()} /> : rows.length ? (
         <DataTable head={['Hạng', 'Đội', 'ELO', 'Thắng / Trận']}>
           {rows.map((r, i) => (
             <tr key={r.student_id} data-testid="ai-elo-row" className={sameStudent(r.student_id, mine) ? '!bg-primary/10' : undefined}>
@@ -54,7 +54,7 @@ export function MainTab() {
   return (
     <div className="space-y-6">
       <Card icon={<Trophy />} title="Giải chính AI" subtitle="Loại trực tiếp Bo5: các đội đứng đầu vòng loại AI đấu bot của mình trên bàn cờ 9×9"
-        action={list.length > 1 ? <Select aria-label="Chọn giải chính AI" value={id} onChange={(e) => setId(e.target.value)} className="w-56">{list.map((x) => <option key={x.tournament_id} value={x.tournament_id}>{x.name}</option>)}</Select> : undefined}>
+        action={list.length > 1 ? <Select aria-label="Chọn giải chính AI" value={id} onChange={(e) => setId(e.target.value)} className="w-full sm:w-56">{list.map((x) => <option key={x.tournament_id} value={x.tournament_id}>{x.name}</option>)}</Select> : undefined}>
         {detail.loading && !t ? <Skeleton className="h-24 w-full rounded-xl" /> : (
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="min-w-0">

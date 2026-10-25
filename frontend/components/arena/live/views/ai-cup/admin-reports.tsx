@@ -11,7 +11,7 @@ import { fmt, useAiTournaments } from './common'
 import { AdminMainTasks } from './main-tasks-admin'
 
 function CreateMain({ onCreated }: { onCreated: (id: string) => void }) {
-  const { run, tournaments, setTournamentId, busy } = useLive()
+  const { run, tournaments, busy } = useLive()
   const [name, setName] = useState('')
   const [size, setSize] = useState('8')
   const [mode, setMode] = useState('TASK')
@@ -23,7 +23,7 @@ function CreateMain({ onCreated }: { onCreated: (id: string) => void }) {
         const id = created?.tournament_id || created?.tournament?.tournament_id
         invalidate('tl')
         await tournaments.reload()
-        if (id) { setTournamentId(id); onCreated(id) }
+        if (id) onCreated(id)
         setName('')
       }, `Đã tạo giải chính AI “${name.trim()}”`)
     }}>

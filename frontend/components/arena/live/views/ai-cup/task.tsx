@@ -64,7 +64,7 @@ export function TaskTab({ eventId, problem }: { eventId: string; problem: { data
               <p className="flex items-center gap-2 font-semibold"><EyeOff className="size-4" />Bảng riêng tư (mở khi vòng loại kết thúc)</p>
               <p className="mt-1 text-muted-foreground">Gồm bốn nhóm công khai với <em>tham số mới mỗi lượt</em> và thêm các nhóm đối thủ chưa từng công bố (có loại thay đổi sở thích giữa chừng, có loại thích ứng theo bạn). Mô hình chỉ ghi nhớ bộ công khai sẽ tụt hạng ở đây.</p>
             </div>
-            <p className="flex items-start gap-2 rounded-xl bg-primary/10 p-3 text-xs"><Scale className="mt-0.5 size-4 shrink-0 text-primary" />Cột “Chênh lệch” trên bảng cuối cho biết mô hình của bạn tốt trên bộ công khai hơn bộ ẩn bao nhiêu điểm. Chênh lệch lớn nghĩa là mô hình quá khớp (overfit).</p>
+            <p className="flex items-start gap-2 rounded-xl bg-primary/10 p-3 text-xs"><Scale className="mt-0.5 size-4 shrink-0 text-primary" />Cột “Chênh lệch” trên bảng cuối cho biết mô hình của bạn tốt trên bộ công khai hơn bộ ẩn bao nhiêu điểm. Chênh lệch lớn nghĩa là mô hình quá khớp, tức là “học vẹt” bộ công khai.</p>
           </div>
         </Card>
       </div>
@@ -127,7 +127,7 @@ function TasksTaskTab({ eventId, p }: { eventId: string; p: any }) {
           <p>Mỗi đề là một bài toán học máy nhỏ về bàn cờ (đoán bên thắng, đoán lá bài kế tiếp, đoán số quân, đoán nước đi có ăn quân...). Bạn nộp <strong>một tệp Python</strong> có hàm <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">solve(task)</code> dùng chung cho mọi đề: hàm nhận dữ liệu huấn luyện có nhãn và các thế cờ cần đoán, trả về danh sách dự đoán.</p>
           <p>Điểm mỗi đề trên thang 0–100. Điểm công khai tính trên một tập thế cờ cố định; điểm riêng tư (kết quả chính thức) tính trên thế cờ mới theo từng lượt. Ban tổ chức bốc ngẫu nhiên {p.task_count} đề từ kho; mỗi đề tối đa vài giây, tổng bộ đề tối đa {p.limits.suite_seconds} giây.</p>
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-amber-900 dark:text-amber-100">
-            <p className="flex items-center gap-2 font-semibold"><ShieldAlert className="size-4" />Quy tắc sandbox</p>
+            <p className="flex items-center gap-2 font-semibold"><ShieldAlert className="size-4" />Quy tắc môi trường chấm</p>
             <p className="mt-1">Python thuần: chỉ import {p.limits.modules.join(', ')}. Có thư viện <code className="font-mono text-xs">nnlite</code> với lan truyền xuôi/ngược và Adam/SGD để huấn luyện mạng nhỏ ngay trong <code className="font-mono text-xs">solve</code> (không có NumPy). Không dùng <code className="font-mono text-xs">class</code>, tên bắt đầu bằng gạch dưới (kể cả <code className="font-mono text-xs">for _ in</code>) bị cấm. Có thể huấn luyện ngoài máy rồi nhúng trọng số (mã ≤ {Math.round(p.limits.code_bytes / 1024)} KB).</p>
           </div>
         </div>

@@ -4,9 +4,9 @@
  * Ý định chuyển cảnh giữa các thành phần xa nhau (trợ lý AI → Hướng dẫn, trợ lý AI → form Hỏi BTC).
  * Giữ ngoài React để thành phần đích mở sau vẫn nhận được.
  */
-export type GuideSection = 'flow' | 'rules' | 'bot' | 'qualifier' | 'offline' | 'faq' | 'ask' | 'privacy' | 'status'
+export type GuideSection = 'flow' | 'rules' | 'bot' | 'qualifier' | 'aicup' | 'offline' | 'faq' | 'ask' | 'privacy' | 'status'
 
-const GUIDE: GuideSection[] = ['flow', 'rules', 'bot', 'qualifier', 'offline', 'faq', 'ask', 'privacy', 'status']
+const GUIDE: GuideSection[] = ['flow', 'rules', 'bot', 'qualifier', 'aicup', 'offline', 'faq', 'ask', 'privacy', 'status']
 let pending: GuideSection | null = null
 let draft = ''
 const listeners = new Set<(s: GuideSection) => void>()

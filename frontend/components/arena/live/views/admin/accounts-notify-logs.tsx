@@ -32,7 +32,7 @@ export function AccountsTab() {
   const slice = rows.slice((page - 1) * PAGE, page * PAGE)
 
   return (
-    <Card title={`Tài khoản đội (${accounts.data?.length ?? '…'})`} subtitle={tournamentId ? `Ghi danh vào: ${tournament.data?.name || tournamentId}` : 'Chọn giải ở thanh trên cùng để ghi danh'} action={<SearchBox value={q} onChange={setQ} placeholder="Tìm MSSV hoặc tên đội" />}>
+    <Card title={`Tài khoản đội (${accounts.data?.length ?? '…'})`} subtitle={tournamentId ? `Ghi danh vào: ${tournament.data?.name || tournamentId}` : 'Chọn giải ở ô “Giải thường đang quản lý” phía trên để ghi danh'} action={<SearchBox value={q} onChange={setQ} placeholder="Tìm MSSV hoặc tên đội" />}>
       {accounts.loading ? <SkeletonRows rows={8} /> : accounts.error && !accounts.data ? <ErrorNote message={accounts.error.message} onRetry={() => void accounts.reload()} /> : slice.length ? (
         <>
           <DataTable head={['MSSV', 'Tên đội', 'Mật khẩu', '']}>

@@ -7,7 +7,7 @@ import { AuthModal } from '../modals/auth-modal'
 import { invalidate } from '@/lib/cache'
 import { useTheme, type ThemeMode } from '@/lib/theme'
 import { cn } from '@/lib/utils'
-import { Avatar, Badge, Button, Select } from './ui'
+import { Avatar, Badge, Button } from './ui'
 import { useLive, type ViewId } from './context'
 import { ProfileView, NotificationList } from './views/profile'
 import { OverviewView } from './views/overview'
@@ -118,27 +118,17 @@ function SidebarBody({ onPick }: { onPick: () => void }) {
 }
 
 function Topbar({ onMenu }: { onMenu: () => void }) {
-  const { view, role, tournaments, tournamentId, setTournamentId, socketOpen, openAuth, busy, logout } = useLive()
+  const { view, role, tournamentId, socketOpen, openAuth, busy, logout } = useLive()
   const showTournament = TOURNAMENT_VIEWS.includes(view) || (view === 'admin')
   const [spinning, setSpinning] = useState(false)
   return (
     <header className="sticky top-0 z-30 flex flex-wrap items-center gap-3 border-b border-border bg-background/70 px-4 py-3 backdrop-blur-xl md:px-8">
       <Button variant="ghost" size="sm" className="md:hidden" aria-label="Mở menu" onClick={onMenu}><Menu className="size-5" /></Button>
       <div className="md:hidden"><Brand /></div>
-      {showTournament && tournaments.data?.length ? (
-        <Select aria-label="Chọn giải đấu" value={tournamentId} onChange={(e) => setTournamentId(e.target.value)} className="w-full min-w-48 max-w-72 md:w-auto md:flex-none">
-          {tournaments.data.some((t) => t.track === 'AI') ? (
-            <>
-              <optgroup label="Giải thường">{tournaments.data.filter((t) => t.track !== 'AI').map((t) => <option key={t.tournament_id} value={t.tournament_id}>{t.name}</option>)}</optgroup>
-              <optgroup label="Giải AI">{tournaments.data.filter((t) => t.track === 'AI').map((t) => <option key={t.tournament_id} value={t.tournament_id}>{t.name}</option>)}</optgroup>
-            </>
-          ) : tournaments.data.map((t) => <option key={t.tournament_id} value={t.tournament_id}>{t.name}</option>)}
-        </Select>
-      ) : null}
       <div className="ml-auto flex items-center gap-1.5">
         {showTournament && tournamentId && (
-          <span className={cn('hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold sm:flex', socketOpen ? 'border-emerald-500/30 text-emerald-700 dark:text-emerald-300' : 'border-amber-500/30 text-amber-700 dark:text-amber-300')} title={socketOpen ? 'Nhận cập nhật tức thời từ server' : 'Mất kết nối trực tiếp — dữ liệu được làm mới định kỳ'}>
-            {socketOpen ? <Wifi className="size-3.5" /> : <WifiOff className="size-3.5" />}{socketOpen ? 'Trực tiếp' : 'Định kỳ'}
+          <span className={cn('flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] font-semibold sm:px-2.5', socketOpen ? 'border-emerald-500/30 text-emerald-700 dark:text-emerald-300' : 'border-amber-500/30 text-amber-700 dark:text-amber-300')} title={socketOpen ? 'Nhận cập nhật tức thời từ server' : 'Mất kết nối trực tiếp — dữ liệu được làm mới định kỳ'}>
+            {socketOpen ? <Wifi className="size-3.5" /> : <WifiOff className="size-3.5" />}<span className="hidden sm:inline">{socketOpen ? 'Trực tiếp' : 'Định kỳ'}</span>
           </span>
         )}
         <Button variant="ghost" size="sm" aria-label="Làm mới dữ liệu" disabled={busy} onClick={() => { setSpinning(true); invalidate(''); window.setTimeout(() => setSpinning(false), 700) }}><RefreshCw className={cn('size-4', spinning && 'animate-spin')} /></Button>
@@ -188,8 +178,8 @@ export function Shell() {
       {drawer && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setDrawer(false)} />
-          <aside className="absolute inset-y-0 left-0 w-72 max-w-[85vw] border-r border-border bg-sidebar text-sidebar-foreground shadow-xl">
-            <button className="absolute right-3 top-5 text-muted-foreground" aria-label="Đóng menu" onClick={() => setDrawer(false)}><X className="size-5" /></button>
+          <aside role="dialog" aria-modal="true" aria-label="Menu điều hướng" className="absolute inset-y-0 left-0 w-72 max-w-[85vw] border-r border-border bg-sidebar text-sidebar-foreground shadow-xl">
+            <button className="absolute right-2 top-2 z-10 rounded-lg p-2 text-muted-foreground hover:bg-muted" autoFocus aria-label="Đóng menu" onClick={() => setDrawer(false)}><X className="size-5" /></button>
             <SidebarBody onPick={() => setDrawer(false)} />
           </aside>
         </div>

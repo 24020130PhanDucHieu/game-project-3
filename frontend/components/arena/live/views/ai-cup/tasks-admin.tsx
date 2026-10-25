@@ -59,6 +59,11 @@ export function AdminAiTasks({ event }: { event: any }) {
             ? <Button variant="secondary" disabled={busy || !open} onClick={() => void run(() => arenaApi.lockAiCupTasks(event.id, false), 'Đã mở khóa bộ đề', reload)} data-testid="tasks-unlock"><LockOpen className="size-4" />Mở khóa đề</Button>
             : <Button disabled={busy || !open || list.length !== event.task_count} onClick={async () => { if (await confirm({ title: 'Khóa bộ đề?', message: 'Các đội sẽ thấy đề, tải dữ liệu và nộp bài. Chỉ mở khóa lại được khi chưa có đội nào nộp.', confirmLabel: 'Khóa đề' })) void run(() => arenaApi.lockAiCupTasks(event.id, true), 'Đã khóa bộ đề', reload) }} data-testid="tasks-lock"><Lock className="size-4" />Khóa & công bố đề</Button>}
         </div>
+        {!locked && (!open || list.length !== event.task_count) && (
+          <p className="text-xs text-muted-foreground" data-testid="tasks-lock-reason">
+            {!open ? 'Vòng loại không còn nhận bài nên không đổi hay khóa đề được nữa.' : `Chưa khóa được: cần bốc đủ ${event.task_count} đề (hiện có ${list.length}).`}
+          </p>
+        )}
       </div>
     </Card>
   )

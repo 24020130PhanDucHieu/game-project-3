@@ -237,8 +237,8 @@ export function DataTable({ head, children, className }: { head: string[]; child
   return (
     <div className={cn('overflow-x-auto rounded-xl border border-border', className)}>
       <table className="w-full min-w-[520px] text-left text-sm">
-        <thead className="bg-muted/60 text-xs uppercase tracking-wide text-muted-foreground">
-          <tr>{head.map((h, i) => <th key={i} scope="col" className="px-3 py-2.5 font-semibold">{h}</th>)}</tr>
+        <thead className="bg-muted/60 text-xs tracking-wide text-muted-foreground">
+          <tr>{head.map((h, i) => <th key={i} scope="col" className="whitespace-nowrap px-3 py-2.5 font-semibold">{h}</th>)}</tr>
         </thead>
         <tbody className="divide-y divide-border [&>tr]:transition-colors [&>tr:hover]:bg-primary/[0.04] [&>tr:nth-child(even)]:bg-muted/25">{children}</tbody>
       </table>
@@ -255,17 +255,18 @@ export function ConfirmDialog({ open, title, message, confirmLabel = 'Xác nhậ
     if (!open) return
     const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onCancel() }
     window.addEventListener('keydown', onKey)
-    ref.current?.querySelector<HTMLButtonElement>('button[data-autofocus]')?.focus()
+    // Việc nguy hiểm (xóa...) thì đưa tiêu điểm vào “Hủy” để lỡ bấm Enter không xóa nhầm.
+    ref.current?.querySelector<HTMLButtonElement>(danger ? 'button[data-cancel]' : 'button[data-autofocus]')?.focus()
     return () => window.removeEventListener('keydown', onKey)
-  }, [open, onCancel])
+  }, [open, onCancel, danger])
   if (!open) return null
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onMouseDown={(e) => { if (e.target === e.currentTarget) onCancel() }}>
-      <div ref={ref} role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl">
+      <div ref={ref} role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message" className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-xl">
         <h3 id="confirm-title" className="text-base font-semibold">{title}</h3>
-        {message && <div className="mt-2 text-sm text-muted-foreground">{message}</div>}
+        {message && <div id="confirm-message" className="mt-2 text-sm text-muted-foreground">{message}</div>}
         <div className="mt-6 flex justify-end gap-2">
-          <Button variant="secondary" onClick={onCancel}>Hủy</Button>
+          <Button variant="secondary" data-cancel onClick={onCancel}>Hủy</Button>
           <Button data-autofocus variant={danger ? 'danger' : 'primary'} onClick={onConfirm}>{confirmLabel}</Button>
         </div>
       </div>

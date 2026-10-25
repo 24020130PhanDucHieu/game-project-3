@@ -173,7 +173,7 @@ export function TournamentTab() {
         <div className="flex flex-wrap items-end gap-3 p-4">
           <Select label="Giải đang quản lý" aria-label="Chọn giải" value={tournamentId} onChange={(e) => setTournamentId(e.target.value)} className="min-w-64 flex-1">
             {!tournaments.data?.length && <option value="">Chưa có giải</option>}
-            {tournaments.data?.map((x) => <option key={x.tournament_id} value={x.tournament_id}>{x.name} · {x.status}</option>)}
+            {tournaments.data?.filter((x) => x.track !== 'AI').map((x) => <option key={x.tournament_id} value={x.tournament_id}>{x.name} · {x.status}</option>)}
           </Select>
           <Button variant={creating ? 'secondary' : 'primary'} onClick={() => setCreating((v) => !v)} aria-expanded={creating}><Plus className="size-4" />{creating ? 'Đóng' : 'Tạo giải mới'}</Button>
           {tournamentId && <Button variant="danger" disabled={busy} onClick={async () => { if (await confirm({ title: `Xóa giải “${t?.name || tournamentId}”?`, message: 'Toàn bộ trận, bài nộp và kết quả của giải sẽ bị xóa vĩnh viễn.', danger: true, confirmLabel: 'Xóa giải' })) void run(async () => { await arenaApi.deleteTournament(tournamentId); setTournamentId('') }, 'Đã xóa giải', () => { invalidate('tl'); invalidate('t:') }) }}><Trash2 className="size-4" />Xóa</Button>}

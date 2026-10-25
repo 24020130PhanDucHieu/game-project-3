@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Ban, BookOpenCheck, BrainCircuit, CalendarClock, Check, ClipboardList, Cpu, FileText, Flag, ListOrdered, LogIn, Medal, Swords, Timer, Trophy, Users } from 'lucide-react'
+import { Ban, BookOpenCheck, BrainCircuit, CalendarClock, Check, CheckCircle2, Circle, ClipboardList, Cpu, FileText, Flag, ListChecks, ListOrdered, LogIn, Medal, Swords, Timer, Trophy, Users } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { invalidate, useResource } from '@/lib/cache'
 import { cn } from '@/lib/utils'
@@ -57,6 +57,30 @@ function HeroStat({ icon, label, value }: { icon: React.ReactNode; label: string
       <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground"><span className="text-primary">{icon}</span>{label}</p>
       <p className="font-display mt-0.5 text-lg font-extrabold tabular-nums">{value}</p>
     </div>
+  )
+}
+
+/** Bốn bước của một đội ở vòng loại AI, tự đánh dấu theo trạng thái thật; nút chính luôn dẫn tới bước chưa xong đầu tiên. */
+function TeamSteps({ tasksMode, tasksReady, declared, hasModel, locked, open, go }: { tasksMode: boolean; tasksReady: boolean; declared: boolean; hasModel: boolean; locked: boolean; open: boolean; go: (s: Section) => void }) {
+  const steps: { title: string; done: boolean; hint: string; to: Section; label: string; blocked?: boolean }[] = [
+    { title: 'Xem đề và tải dữ liệu', done: tasksReady, hint: tasksReady ? 'Đọc đề ở tab “Đề bài & dữ liệu”.' : 'Ban tổ chức chưa công bố bộ đề. Trang sẽ tự cập nhật khi có đề.', to: 'task', label: 'Xem đề', blocked: !tasksReady },
+    { title: 'Chấm thử rồi nộp mô hình', done: hasModel, hint: !tasksReady ? 'Chưa nộp được vì đề chưa công bố.' : hasModel ? 'Bạn đã có mô hình hợp lệ. Có thể nộp bản tốt hơn trước hạn.' : 'Ở tab “Nộp mô hình”: bấm “Chấm thử” để thử trên máy, rồi “Gửi mô hình”.', to: 'submit', label: 'Nộp mô hình', blocked: !tasksReady || !open },
+    { title: 'Khai báo kỹ thuật bạn dùng', done: declared, hint: declared ? 'Đã khai báo.' : 'Chọn kỹ thuật và mô tả ngắn ở đầu tab “Nộp mô hình” rồi bấm “Lưu khai báo”.', to: 'submit', label: 'Khai báo', blocked: !tasksReady },
+    { title: 'Theo dõi điểm và nộp báo cáo kỹ thuật', done: false, hint: locked ? 'Mô hình đã khóa. Xem bảng điểm; nếu vào giải chính hãy nộp báo cáo kỹ thuật.' : 'Sau hạn, bảng điểm chính thức mở. Đội vào giải chính nộp báo cáo kỹ thuật ở tab “Báo cáo kỹ thuật”.', to: 'board', label: 'Xem bảng điểm', blocked: false },
+  ]
+  const next = steps.find((s) => !s.done && !s.blocked) || steps.find((s) => !s.done)
+  return (
+    <Card icon={<ListChecks />} title="Việc của đội bạn" subtitle="Làm lần lượt; bước sáng là việc nên làm tiếp">
+      <ol className="space-y-2" data-testid="ai-team-steps">
+        {steps.map((s, i) => (
+          <li key={s.title} data-done={s.done ? '1' : '0'} className={cn('flex flex-wrap items-center gap-3 rounded-xl border p-3 text-sm', s === next ? 'border-primary/50 bg-primary/5' : 'border-border', s.done && 'opacity-70')}>
+            {s.done ? <CheckCircle2 className="size-5 shrink-0 text-emerald-600 dark:text-emerald-400" aria-label="Đã xong" /> : <Circle className={cn('size-5 shrink-0', s === next && 'text-primary')} aria-label="Chưa làm" />}
+            <div className="min-w-0 flex-1"><p className="font-semibold">{i + 1}. {s.title}</p><p className="text-xs text-muted-foreground">{s.hint}</p></div>
+            {!s.done && <Button size="sm" variant={s === next ? 'primary' : 'secondary'} disabled={s.blocked && s !== next} onClick={() => go(s.to)}>{s.label}</Button>}
+          </li>
+        ))}
+      </ol>
+    </Card>
   )
 }
 
@@ -124,7 +148,7 @@ export function AiCupView() {
               </div>
               <div className="flex flex-col items-end gap-2">
                 {list.length > 1 && (
-                  <Select aria-label="Chọn vòng loại AI" value={aiEventId} onChange={(e) => setAiEventId(e.target.value)} className="w-60">
+                  <Select aria-label="Chọn vòng loại AI" value={aiEventId} onChange={(e) => setAiEventId(e.target.value)} className="w-full sm:w-60">
                     {list.map((q) => <option key={q.id} value={q.id}>{q.name}</option>)}
                   </Select>
                 )}
@@ -135,7 +159,7 @@ export function AiCupView() {
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <HeroStat icon={<Swords className="size-3.5" />} label="Lượt đã chấm" value={`${event.applied_round ?? 0}/${rounds}`} />
               <HeroStat icon={<Users className="size-3.5" />} label="Mô hình đủ điều kiện" value={event.eligible ?? '—'} />
-              <HeroStat icon={<Medal className="size-3.5" />} label="Vào giải chính" value={`Top ${event.top_k}`} />
+              <HeroStat icon={<Medal className="size-3.5" />} label="Đội vào giải chính" value={`${event.top_k} đội đầu`} />
               <HeroStat icon={<Timer className="size-3.5" />} label="Lượt chấm đã xong" value={`${event.completed ?? 0}/${event.total ?? 0}`} />
             </div>
             {event.error && <ErrorNote message={event.error} />}
@@ -165,7 +189,7 @@ export function AiCupView() {
             ))}
           </div>
         ) : (
-          <Card><EmptyState icon={<Flag className="size-7" />} title="Bạn chưa đăng ký vòng loại AI này" hint="Đăng ký để nộp mô hình và được chấm trên bộ đề ẩn." action={<Button disabled={event.status !== 'OPEN'} data-testid="ai-register" onClick={() => void run(() => arenaApi.registerQualifier(aiEventId), 'Đã đăng ký vòng loại AI', () => invalidate('q'))}>Đăng ký tham gia</Button>} /></Card>
+          <Card><EmptyState icon={<Flag className="size-7" />} title="Bạn chưa đăng ký vòng loại AI này" hint="Đăng ký để nộp mô hình và được chấm trên bộ đề ẩn." action={<div className="space-y-2"><Button disabled={event.status !== 'OPEN'} data-testid="ai-register" onClick={() => void run(() => arenaApi.registerQualifier(aiEventId), 'Đã đăng ký vòng loại AI', () => invalidate('q'))}>Đăng ký tham gia</Button>{event.status !== 'OPEN' && <p className="text-xs text-muted-foreground">Vòng loại không còn nhận đăng ký.</p>}</div>} /></Card>
         )
       )}
 
@@ -173,14 +197,30 @@ export function AiCupView() {
 
       {event && section === 'overview' && (
         <div className="space-y-6">
+          {role === 'TEAM' && registered && !participant?.banned && (
+            <TeamSteps
+              tasksMode={problem.data?.mode === 'TASKS'}
+              tasksReady={problem.data?.mode !== 'TASKS' || !!problem.data?.tasks_locked}
+              declared={!!mine.data?.technique}
+              hasModel={!!(participant?.valid_id || participant?.locked_id)}
+              locked={!!participant?.locked_id}
+              open={open}
+              go={setSection}
+            />
+          )}
           <Card icon={<Cpu />} title="Giải AI vận hành thế nào" subtitle="Cùng cơ chế vòng loại → giải chính như giải thường, nhưng thi bằng mô hình học máy">
             <ol className="grid gap-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
-              {[
+              {(problem.data?.mode === 'TASKS' ? [
+                ['1. Đọc đề, tải dữ liệu', 'Mỗi đề là một bài toán học máy nhỏ về bàn cờ 9×9. Tải dữ liệu có đáp án của từng đề để học.'],
+                ['2. Huấn luyện & chấm thử', 'Viết hàm solve, bấm “Chấm thử” để thấy điểm ước lượng và thế cờ đoán đúng/sai ngay trên máy bạn.'],
+                ['3. Nộp trước hạn', 'Nộp Python thuần (tối đa 64 KB). Bản hợp lệ cuối cùng được khóa khi hết hạn.'],
+                ['4. Chấm trên thế cờ ẩn', `Máy chủ chấm ${rounds || 'nhiều'} lượt trên thế cờ bạn chưa từng thấy. ${event.top_k} đội đứng đầu vào giải chính (đấu loại trực tiếp, thắng 3 trong 5 hiệp) và nộp báo cáo kỹ thuật để giám khảo chấm (Giải Kỹ thuật).`],
+              ] : [
                 ['1. Đọc đề, tải dữ liệu', 'Hiểu bài toán đọc đối thủ oẳn tù tì, tải bộ dữ liệu huấn luyện công khai.'],
                 ['2. Huấn luyện & chấm thử', 'Tự xây mô hình, chấm thử trên máy bằng đúng bộ đối thủ công khai trước khi nộp.'],
                 ['3. Nộp trước hạn', 'Nộp Python thuần (≤ 64 KB). Bản hợp lệ cuối cùng được khóa khi hết hạn.'],
-                ['4. Chấm trên bộ ẩn', `Máy chủ chấm ${rounds || 'nhiều'} lượt trên bộ đề ẩn. Top ${event.top_k} vào giải chính loại trực tiếp Bo5, đồng thời nộp báo cáo kỹ thuật để giám khảo chấm (Giải Kỹ thuật).`],
-              ].map(([title, body]) => (
+                ['4. Chấm trên bộ ẩn', `Máy chủ chấm ${rounds || 'nhiều'} lượt trên bộ đề ẩn. ${event.top_k} đội đứng đầu vào giải chính (đấu loại trực tiếp, thắng 3 trong 5 hiệp) và nộp báo cáo kỹ thuật để giám khảo chấm (Giải Kỹ thuật).`],
+              ]).map(([title, body]) => (
                 <li key={title} className="rounded-xl border border-border p-4"><p className="font-semibold">{title}</p><p className="mt-1.5 text-muted-foreground">{body}</p></li>
               ))}
             </ol>
