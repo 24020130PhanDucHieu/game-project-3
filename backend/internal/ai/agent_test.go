@@ -35,7 +35,9 @@ func call(id, name string, in interface{}) Block {
 	return Block{Type: "tool_use", ID: id, Name: name, Input: raw}
 }
 
-func turn(blocks ...Block) Response { return Response{Content: blocks, Usage: Usage{InputTokens: 100, OutputTokens: 20}} }
+func turn(blocks ...Block) Response {
+	return Response{Content: blocks, Usage: Usage{InputTokens: 100, OutputTokens: 20}}
+}
 
 func submit(answer string, needsHuman bool, cites ...[2]string) Block {
 	cs := []map[string]string{}
@@ -163,8 +165,8 @@ func TestFabricationsAreRejected(t *testing.T) {
 			turn(submit("không rõ", true)),
 		}, "model_needs_human"},
 		"chỉ trả văn bản, không gọi công cụ": {[]Response{{Content: []Block{{Type: "text", Text: "Bàn cờ 9×9"}}}}, "no_tool_call"},
-		"hết số vòng mà chưa trả lời": {[]Response{turn(call("c1", "get_server_time", map[string]string{}))}, "max_turns"},
-		"citations rỗng":              {[]Response{turn(submit("Bàn cờ 9×9.", false))}, "no_valid_citation"},
+		"hết số vòng mà chưa trả lời":        {[]Response{turn(call("c1", "get_server_time", map[string]string{}))}, "max_turns"},
+		"citations rỗng":                     {[]Response{turn(submit("Bàn cờ 9×9.", false))}, "no_valid_citation"},
 	}
 	for name, c := range cases {
 		res, err := newAgent(t, &scripted{turns: c.turns}).Ask(context.Background(), "bàn cờ?", Identity{Role: "TEAM", StudentID: "A1"})
@@ -524,7 +526,9 @@ func TestRuleBitsMatchFrontend(t *testing.T) {
 	}
 }
 
-func itoa(n int) string { return strings.TrimSpace(strings.Join(strings.Fields(strings.Repeat(" ", 0)), "")) + intStr(n) }
+func itoa(n int) string {
+	return strings.TrimSpace(strings.Join(strings.Fields(strings.Repeat(" ", 0)), "")) + intStr(n)
+}
 func intStr(n int) string {
 	if n == 0 {
 		return "0"
@@ -534,4 +538,94 @@ func intStr(n int) string {
 		d = append([]byte{byte('0' + n%10)}, d...)
 	}
 	return string(d)
+}
+
+func TestRejectedAnswerGetsOneChanceToFix(t *testing.T) {
+	m := &scripted{turns: []Response{
+		turn(call("c1", "search_knowledge", map[string]string{"query": "bàn cờ"})),
+		// lần 1: trích dẫn diễn đạt lại (không nguyên văn) → bị bác kèm lý do
+		turn(submit("Bàn cờ có kích thước 9×9.", false, [2]string{boardID, "bàn cờ rộng chín nhân chín"})),
+		// lần 2: sửa lại, chép nguyên văn → được chấp nhận
+		turn(submit("Bàn cờ có kích thước 9×9.", false, [2]string{boardID, boardQuote})),
+	}}
+	res, err := newAgent(t, m).Ask(context.Background(), "bàn cờ bao nhiêu ô", Identity{Role: "TEAM", StudentID: "A1"})
+	if err != nil || res.NeedsHuman || len(res.Sources) != 1 {
+		t.Fatalf("lần sửa phải được chấp nhận: %+v %v", res, err)
+	}
+	if len(m.got) != 3 {
+		t.Fatalf("phải đúng 3 lần gọi model: %d", len(m.got))
+	}
+	// model phải nhận được lý do bị bác ở dạng kết quả công cụ lỗi, có trả lời cho đúng lời gọi submit_answer
+	last := m.got[2].Messages
+	blocks, _ := last[len(last)-1].Content.([]Block)
+	if len(blocks) != 1 || !blocks[0].IsError || blocks[0].ToolUseID != "s1" || !strings.Contains(blocks[0].Content, "NGUYÊN VĂN") {
+		t.Fatalf("thiếu phản hồi lý do bác: %+v", blocks)
+	}
+}
+
+func TestFixedAnswerStillMustPassEveryCheck(t *testing.T) {
+	// sửa xong vẫn bịa (con số 20 không có trong nguồn) → cuối cùng vẫn chuyển BTC
+	m := &scripted{turns: []Response{
+		turn(call("c1", "search_knowledge", map[string]string{"query": "bàn cờ"})),
+		turn(submit("Bàn cờ có kích thước 9×9.", false, [2]string{boardID, "diễn đạt lại"})),
+		turn(submit("Bàn cờ có kích thước 20×20.", false, [2]string{boardID, boardQuote})),
+	}}
+	res, _ := newAgent(t, m).Ask(context.Background(), "bàn cờ?", Identity{Role: "TEAM", StudentID: "A1"})
+	if !res.NeedsHuman || res.Answer != FallbackAnswer || !strings.HasPrefix(res.Reason, "number_not_in_source") {
+		t.Fatalf("%+v", res)
+	}
+	if res.Draft == "" {
+		t.Fatal("phải lưu câu nháp bị bác cho ban tổ chức xem")
+	}
+}
+
+func TestModelSaysUnknownIsNotRetried(t *testing.T) {
+	m := &scripted{turns: []Response{
+		turn(call("c1", "search_knowledge", map[string]string{"query": "quân rồng"})),
+		turn(submit("", true)),
+	}}
+	res, _ := newAgent(t, m).Ask(context.Background(), "quân rồng", Identity{Role: "TEAM", StudentID: "A1"})
+	if !res.NeedsHuman || res.Reason != "model_needs_human" || len(m.got) != 2 {
+		t.Fatalf("model tự nhận không biết thì không ép thử lại: %+v calls=%d", res, len(m.got))
+	}
+}
+
+func TestFillerWordsDoNotCauseRejection(t *testing.T) {
+	m := &scripted{turns: []Response{
+		turn(call("c1", "search_knowledge", map[string]string{"query": "bàn cờ"})),
+		turn(submit("Theo quy định trong tài liệu, kích thước bàn cờ là 9×9.", false, [2]string{boardID, boardQuote})),
+	}}
+	if res, _ := newAgent(t, m).Ask(context.Background(), "bàn cờ", Identity{Role: "TEAM", StudentID: "A1"}); res.NeedsHuman {
+		t.Fatalf("từ đệm không được làm câu đúng bị bác: %+v", res)
+	}
+}
+
+func TestQuoteWithEllipsisFragments(t *testing.T) {
+	src := "game_state gồm: remaining_cards (số quân còn lại), my_pieces và opponent_pieces, turn_number, history, target."
+	for q, want := range map[string]bool{
+		"game_state gồm: remaining_cards":                 true,
+		"game_state gồm ... turn_number, history, target": true,
+		"game_state gồm … opponent_pieces":                true,
+		"game_state gồm [...] history":                    true,
+		"game_state gồm ... trường không có thật":         false, // một đoạn sai là cả trích dẫn sai
+		"bàn cờ chín nhân chín":                           false,
+		"... ...":                                         false,
+		"abc":                                             false,
+		"my_pieces và opponent_pieces":                    true,
+		"GAME_STATE   gồm:\n remaining_cards":             true, // khác khoảng trắng/hoa thường vẫn nguyên văn
+	} {
+		if got := quoteInSource(q, src); got != want {
+			t.Errorf("%q: muốn %v có %v", q, want, got)
+		}
+	}
+}
+
+func TestLongVerbatimQuoteAccepted(t *testing.T) {
+	src := strings.Repeat("quân cờ đi từng nước một trên bàn cờ chín nhân chín. ", 14) // ~700 ký tự
+	if !quoteInSource(strings.TrimSpace(src), src) {
+		t.Fatal("đoạn dài chép nguyên văn phải được chấp nhận")
+	}
+	if quoteInSource(strings.Repeat(src, 3), strings.Repeat(src, 3)) {
+		t.Fatal("trích dẫn quá dài (hơn 900 ký tự) vẫn phải bị bác để tránh chép cả tài liệu")
+	}
 }

@@ -1,7 +1,6 @@
 package ai
 
 import (
-	"time"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -9,6 +8,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 // Máy chủ Gemini giả: ghi lại yêu cầu và trả về đúng kiểu phản hồi của Gemini (có id và thoughtSignature).

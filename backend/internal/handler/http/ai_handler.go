@@ -199,7 +199,7 @@ func (h *AIHandler) Ask(c *gin.Context) {
 		return
 	}
 	h.Quota.AddTokens(res.Usage.Total())
-	h.Quota.Log(ai.LogEntry{StudentID: qid, TeamName: who.TeamName, Role: s.Role, Question: question, Answer: truncateRunes(res.Answer, 300), NeedsHuman: res.NeedsHuman, Reason: res.Reason,
+	h.Quota.Log(ai.LogEntry{StudentID: qid, TeamName: who.TeamName, Role: s.Role, Question: question, Answer: truncateRunes(res.Answer, 300), NeedsHuman: res.NeedsHuman, Reason: res.Reason, Draft: res.Draft,
 		SourceIDs: sourceIDs(res.Sources), Tools: res.ToolsUsed, Tokens: res.Usage.Total()})
 	if res.Cacheable {
 		h.Quota.CachePut(key, ai.CachedAnswer{Answer: res.Answer, Sources: res.Sources})

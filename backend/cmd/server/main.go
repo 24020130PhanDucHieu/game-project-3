@@ -200,7 +200,7 @@ func main() {
 	aiHandler.Agent = &ai.Agent{
 		C:         aiClient,
 		Model:     aiModel,
-		MaxTurns:  4,
+		MaxTurns:  5,
 		MaxTokens: aiMaxTokens,
 		Tools:     &ai.Toolbox{KB: aiKB, Data: httpHandler.NewAIData(tournamentService, clarHandler), Now: time.Now},
 	}

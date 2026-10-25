@@ -52,7 +52,7 @@ function SourceChip({ s, close }: { s: NonNullable<AiMessage['sources']>[number]
       </button>
       {open && (
         <div className="space-y-2 border-t border-border px-2.5 py-2">
-          <p className="border-l-2 border-primary/50 pl-2 text-xs italic text-muted-foreground">“{s.quote}”</p>
+          <p className="max-h-40 overflow-y-auto border-l-2 border-primary/50 pl-2 text-xs italic text-muted-foreground">“{s.quote}”</p>
           <Button size="sm" variant="ghost" onClick={() => openSource(s.link)}>Mở mục này</Button>
         </div>
       )}

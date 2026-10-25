@@ -78,7 +78,7 @@ func Defs() []ToolDef {
 				"answer": strProp("Câu trả lời ngắn gọn bằng tiếng Việt, chỉ gồm thông tin có trong nguồn."),
 				"citations": map[string]interface{}{"type": "array", "description": "Các nguồn làm căn cứ cho câu trả lời.", "items": obj(map[string]interface{}{
 					"source_id": strProp("source_id do công cụ trả về trong lượt hỏi này"),
-					"quote":     strProp("Đoạn trích NGUYÊN VĂN, copy y nguyên từ text của nguồn (8 đến 300 ký tự), chứng minh ý bạn nêu"),
+					"quote":     strProp("Đoạn trích NGUYÊN VĂN, copy y nguyên từ text của nguồn (8 đến 300 ký tự), chứng minh ý bạn nêu. Cần nhiều đoạn thì chép từng đoạn nguyên văn, nối bằng ..."),
 				}, "source_id", "quote")},
 				"needs_human": map[string]interface{}{"type": "boolean", "description": "true nếu không có thông tin để trả lời chắc chắn"},
 			}, "answer", "citations", "needs_human")},

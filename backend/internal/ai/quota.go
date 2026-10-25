@@ -54,6 +54,7 @@ type LogEntry struct {
 	Answer     string   `json:"answer"`
 	NeedsHuman bool     `json:"needs_human"`
 	Reason     string   `json:"reason,omitempty"`
+	Draft      string   `json:"draft,omitempty"` // câu nháp model bị bác, chỉ ban tổ chức xem
 	SourceIDs  []string `json:"source_ids,omitempty"`
 	Tools      []string `json:"tools,omitempty"`
 	Tokens     int      `json:"tokens"`
@@ -109,7 +110,7 @@ func (m *Manager) read(key string) counter {
 }
 
 func teamKey(sid, day string) string { return "aiq:" + strings.ToUpper(sid) + ":" + day }
-func tokenKey(day string) string      { return "aitok:" + day }
+func tokenKey(day string) string     { return "aitok:" + day }
 
 // Reserve trừ trước một lượt của đội (chống gọi song song vượt hạn mức); trả về số lượt còn lại.
 func (m *Manager) Reserve(sid string) (int, error) {
