@@ -23,6 +23,7 @@ type AICupHandler struct {
 	Tech     func(tid string) (teamName, studentID string, score float64, ok bool)
 	mu       sync.Mutex
 	datasets map[string]json.RawMessage
+	taskData taskDataCache
 }
 
 type aiFamilyInfo struct {
@@ -67,6 +68,22 @@ func (h *AICupHandler) Events(c *gin.Context) {
 func (h *AICupHandler) Problem(c *gin.Context) {
 	e, ok := h.aiEvent(c)
 	if !ok {
+		return
+	}
+	if e.Mode == qualifier.ModeTasks {
+		list, locked, err := h.Service.PublicTasks(e.ID, requestSession(c).Role == "ADMIN")
+		if err != nil {
+			c.JSON(503, gin.H{"detail": "Chưa đọc được bộ đề. Hãy thử lại."})
+			return
+		}
+		techniques := []gin.H{}
+		for id, label := range qualifier.AITechniques {
+			techniques = append(techniques, gin.H{"id": id, "label": label})
+		}
+		sort.Slice(techniques, func(i, j int) bool { return techniques[i]["id"].(string) < techniques[j]["id"].(string) })
+		c.Header("Cache-Control", "no-store")
+		c.JSON(200, gin.H{"event": e, "mode": qualifier.ModeTasks, "tasks": list, "tasks_locked": locked, "task_count": e.TaskCount, "techniques": techniques,
+			"limits": gin.H{"code_bytes": 65536, "suite_seconds": 75, "language": "PYTHON", "modules": []string{"random", "math", "collections", "itertools", "re", "json", "heapq", "functools", "typing", "nnlite"}}})
 		return
 	}
 	techniques := []gin.H{}

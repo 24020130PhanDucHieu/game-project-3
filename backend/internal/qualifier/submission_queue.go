@@ -89,6 +89,9 @@ func (s *Service) EnqueueSubmission(id, sid, code, language, requestID string, g
 	if e.Kind == KindAI && language != "PYTHON" {
 		return Submission{}, reject("Giải AI chỉ nhận mô hình viết bằng Python.")
 	}
+	if isTasks(e) && !e.TasksLocked {
+		return Submission{}, reject("Ban tổ chức chưa khóa bộ đề nên chưa nhận bài.")
+	}
 	account, err := s.Accounts.Get(sid)
 	if err != nil {
 		return Submission{}, err
@@ -145,7 +148,7 @@ func (s *Service) processSubmission(key string) error {
 	if err = s.Store.Get(task.SubmissionKey, &sub); err != nil {
 		return err
 	}
-	result, engineErr := s.Engine.Mutate(nil, "validate-code", map[string]interface{}{"code_content": sub.Code, "language": sub.Language})
+	result, engineErr := s.validateSubmission(task.Event, sub)
 	valid, hasVerdict := result["is_valid"].(bool)
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -234,4 +237,25 @@ func (s *Service) runSubmissionQueue() {
 		close(queue)
 		wg.Wait()
 	}
+}
+
+// validateSubmission chọn cách kiểm tra theo chế độ vòng loại: đề từ kho kiểm tra hàm solve trên mỗi dạng đề của bộ đề; còn lại kiểm tra decide_move.
+func (s *Service) validateSubmission(eventID string, sub Submission) (map[string]interface{}, error) {
+	if e, err := s.Event(eventID); err == nil && isTasks(e) {
+		items, err := s.taskItems(eventID)
+		if err != nil || len(items) == 0 {
+			return nil, errors.New("chưa có bộ đề")
+		}
+		for _, item := range distinctTemplateItems(items) {
+			result, err := s.Engine.Mutate(nil, "validate-task-code", map[string]interface{}{"code": sub.Code, "item": item})
+			if err != nil {
+				return nil, err
+			}
+			if ok, _ := result["is_valid"].(bool); !ok {
+				return map[string]interface{}{"is_valid": false, "error_message": result["error_message"]}, nil
+			}
+		}
+		return map[string]interface{}{"is_valid": true}, nil
+	}
+	return s.Engine.Mutate(nil, "validate-code", map[string]interface{}{"code_content": sub.Code, "language": sub.Language})
 }

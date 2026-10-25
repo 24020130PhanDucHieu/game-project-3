@@ -64,6 +64,9 @@ var golden = []struct{ q, want string }{
 	{"mô hình AI có nhớ biến giữa các lần gọi không", "giai-ai#viet-mo-hinh-cho-giai-ai"},
 	{"báo cáo kỹ thuật chấm bao nhiêu tiêu chí", "giai-ai#giai-chinh-ai-va-bao-cao-ky-thuat"},
 	{"huy hiệu Giải AI gồm những gì", "giai-ai#elo-va-huy-hieu-giai-ai"},
+	{"kho đề Giải AI gồm những loại đề nào, admin bốc ngẫu nhiên thế nào", "giai-ai#kho-de-hoc-tu-the-co"},
+	{"mỗi hiệp giải chính AI bốc đề thế nào, ai điểm cao hơn thắng hiệp", "giai-ai#hiep-de-ml-o-giai-chinh-ai"},
+	{"hàm solve nhận tham số gì, có dùng nnlite lan truyền ngược được không", "giai-ai#nop-mo-hinh-cho-kho-de"},
 }
 
 func TestGoldenSearch(t *testing.T) {

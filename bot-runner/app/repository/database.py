@@ -1234,7 +1234,12 @@ def decide_move(game_state):
         if not isinstance(explanation, str) or len(explanation) > 2000:
             raise ValueError("Giải thích không hợp lệ hoặc quá 2.000 ký tự.")
         from app.engine.board_rules import match_rule
-        val_res = BotRunner.validate_bot_code(code, language, match_rule(tourn, match))
+        if tourn.get("round_mode") == "TASK":
+            # Giải chính AI hiệp đề ML: mã phải có hàm solve(task), kiểm tra trên đề mini của hiệp.
+            from app.aitasks import rounds as task_rounds
+            val_res = task_rounds.validate_submission(code, language, tourn, match)
+        else:
+            val_res = BotRunner.validate_bot_code(code, language, match_rule(tourn, match))
 
         # Tạo submission ID và bản ghi lịch sử bài nộp chuẩn Kaggle
         sub_id = f"sub_{uuid.uuid4().hex[:8]}"
@@ -1313,6 +1318,7 @@ def decide_move(game_state):
         if not team_a or not team_b:
             raise ValueError("Trận đấu chưa đủ 2 đội.")
             
+        task_mode = tourn.get("round_mode") == "TASK"
         py_tpl = (
             "# -*- coding: utf-8 -*-\n"
             "import random\n"
@@ -1321,9 +1327,13 @@ def decide_move(game_state):
             "    avail = [c for c, count in cards.items() if count > 0]\n"
             "    return random.choice(avail) if avail else 'ROCK'\n"
         )
+        if task_mode:
+            from app.aitasks.reference import NAIVE_CODE
+            py_tpl = NAIVE_CODE
         for side, team in (("team_a", team_a), ("team_b", team_b)):
-            code = team.get("current_code") or py_tpl
-            language = team.get("current_lang", "PYTHON") if team.get("current_code") else "PYTHON"
+            keep = team.get("current_code") and (not task_mode or "def solve" in team.get("current_code", ""))
+            code = team.get("current_code") if keep else py_tpl
+            language = team.get("current_lang", "PYTHON") if keep else "PYTHON"
             team["authenticated"] = True
             self.update_match_code(tournament_id, match_id, side, code, language)
         ready = match["all_teams_ready"]
@@ -1569,6 +1579,8 @@ def decide_move(game_state):
                 sub["is_locked"] = True
 
         r_num = match["current_round_idx"]
+        if tourn.get("round_mode") == "TASK":
+            return self._finish_task_round(tourn, match, team_a, team_b, r_num, sub_a_id, sub_b_id)
         from app.engine.board_rules import match_rule
         stage_rule = match_rule(tourn, match)
 
@@ -1700,6 +1712,30 @@ def decide_move(game_state):
             "system_logs": system_logs,
             "message": f"Hoàn thành Round {r_num}!" if not is_completed else f"Trận đấu đã kết thúc! {match['winner_name']} giành chiến thắng tiến vào vòng trong."
         }
+
+    def _finish_task_round(self, tourn, match, team_a, team_b, r_num, sub_a_id, sub_b_id):
+        """Hiệp đề ML của giải chính AI: chấm hai mô hình trên cùng một đề, điểm riêng tư cao hơn thắng hiệp."""
+        from app.aitasks import finish_round, rounds as task_rounds
+        try:
+            res = task_rounds.play(tourn, match, team_a, team_b, r_num)
+        except Exception:
+            match["battle_running"] = False
+            raise
+        round_record, bot_logs, system_logs = finish_round.build_record(res, team_a, team_b, r_num, sub_a_id, sub_b_id)
+        match["rounds_history"].append(round_record)
+        match["battle_running"] = False
+        is_completed = False
+        if team_a["rounds_won"] >= 3 or team_b["rounds_won"] >= 3 or r_num >= match["max_rounds"]:
+            is_completed = True
+            self.complete_bracket_match(tourn, match)
+        else:
+            match["status"] = "IN_PROGRESS"
+            match["round_status"] = "ROUND_FINISHED"
+            match["intermission_ends_at"] = time.time() + 5.0
+        self.save_tournaments_to_file()
+        return {"status": "SUCCESS", "round_record": round_record, "match": match, "is_completed": is_completed, "winner": res["winner_side"], "winner_name": round_record["winner_name"],
+                "reason": res["win_reason"], "win_reason": res["win_reason"], "board_steps": [], "move_logs": [], "bot_logs": bot_logs, "system_logs": system_logs,
+                "message": f"Hoàn thành hiệp {r_num}!" if not is_completed else f"Trận đấu đã kết thúc! {match['winner_name']} giành chiến thắng tiến vào vòng trong."}
 
     def get_tournament_teams_overview(self, tournament_id: str) -> List[dict]:
         tourn = self.tournaments.get(tournament_id)

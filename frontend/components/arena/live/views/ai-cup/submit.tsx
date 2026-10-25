@@ -13,6 +13,7 @@ import { Workbench } from '../../workbench'
 import { SyncStatusCard } from '../../sync-status'
 import { CodeViewer } from '../../replay-viewer'
 import { AI_TEMPLATES } from './templates'
+import { TASK_TEMPLATES } from './task-templates'
 import { FAMILY_NAME, ScoreBar, fmt } from './common'
 
 type Check = { public_score: number; families_public: Record<string, number>; errors: string[]; elapsed_ms: number }
@@ -57,12 +58,15 @@ function CheckResult({ check }: { check: Check }) {
 }
 
 export function SubmitTab({ eventId, event, problem, detail, mine, blocked, onMineChange }: { eventId: string; event: any; problem: any; detail: any; mine: any; blocked: string; onMineChange: () => void }) {
+  const tasksMode = problem?.mode === 'TASKS'
   const { session, outbox, toast } = useLive()
   const [submitting, setSubmitting] = useState(false)
   const [check, setCheck] = useState<Check | null>(null)
   const [checking, setChecking] = useState(false)
   const [checkError, setCheckError] = useState('')
   const [viewing, setViewing] = useState<any>(null)
+  const [taskIndex, setTaskIndex] = useState('1')
+  const [taskCheck, setTaskCheck] = useState<{ n: number; name: string; score: number; error: string | null; elapsed_ms: number; n_val: number; n_train: number } | null>(null)
   const history: any[] = detail.data?.history || []
   const participant = detail.data?.participant
   const pending = outbox.filter((o) => o.kind !== 'match' && o.qualifierId === eventId)
@@ -94,6 +98,18 @@ export function SubmitTab({ eventId, event, problem, detail, mine, blocked, onMi
     } finally { setChecking(false) }
   }
 
+  async function localTaskCheck(code: string) {
+    const n = Number(taskIndex)
+    setChecking(true); setCheckError(''); setTaskCheck(null)
+    try {
+      const data = await arenaApi.getAiCupTaskData(eventId, n)
+      const result = await offlineEngine.taskCheck(code, data)
+      setTaskCheck({ n, name: problem.tasks?.[n - 1]?.name || `Đề ${n}`, ...result })
+    } catch (e) {
+      setCheckError(e instanceof Error ? e.message : 'Không chấm thử được')
+    } finally { setChecking(false) }
+  }
+
   const editableCard = ['OPEN', 'CLOSING', 'LOCKED'].includes(event.status)
   return (
     <div className="space-y-6">
@@ -105,9 +121,18 @@ export function SubmitTab({ eventId, event, problem, detail, mine, blocked, onMi
           submitting={submitting}
           submitDisabledReason={blocked}
           onSubmit={submit}
-          templates={AI_TEMPLATES}
+          templates={tasksMode ? TASK_TEMPLATES : AI_TEMPLATES}
           pythonOnly
-          renderActions={(value) => (
+          practice={!tasksMode}
+          hideValidate={tasksMode}
+          renderActions={(value) => tasksMode ? (
+            <>
+              <Select value={taskIndex} onChange={(e) => setTaskIndex(e.target.value)} aria-label="Chọn đề để chấm thử" className="w-56">
+                {(problem.tasks || []).map((t: any, i: number) => <option key={i} value={String(i + 1)}>{`Đề ${i + 1}: ${t.name}`}</option>)}
+              </Select>
+              <Button variant="secondary" loading={checking} disabled={!value.code.trim() || !problem.tasks?.length} onClick={() => void localTaskCheck(value.code)} data-testid="ai-task-check"><FlaskConical className="size-4" />Chấm thử đề này (trên máy)</Button>
+            </>
+          ) : (
             <Button variant="secondary" loading={checking} disabled={!value.code.trim()} onClick={() => void localCheck(value.code)} data-testid="ai-local-check"><FlaskConical className="size-4" />Chấm thử trên bộ công khai (trên máy)</Button>
           )}
           extra={
@@ -115,6 +140,14 @@ export function SubmitTab({ eventId, event, problem, detail, mine, blocked, onMi
               {checking && <p className="text-xs text-muted-foreground" role="status">Đang chấm trên máy bạn. Lần đầu khởi động máy chấm có thể mất khoảng một phút…</p>}
               {checkError && <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300" data-testid="ai-check-error">{checkError}</p>}
               {check && <CheckResult check={check} />}
+              {taskCheck && (
+                <div data-testid="ai-task-check-result" className="space-y-2 rounded-xl border border-border bg-muted/30 p-4">
+                  <p className="text-xs text-muted-foreground">Đề {taskCheck.n}: {taskCheck.name} · huấn luyện trên {taskCheck.n_train} mẫu, kiểm tra {taskCheck.n_val} mẫu để riêng ra từ dữ liệu bạn tải</p>
+                  <p className="font-display text-3xl font-black tabular-nums" data-testid="ai-task-check-score">{fmt(taskCheck.score)}</p>
+                  <p className="text-xs text-muted-foreground">{(taskCheck.elapsed_ms / 1000).toFixed(1)} giây trên máy bạn · đây là ước lượng; điểm thật tính trên thế cờ ẩn của máy chấm</p>
+                  {taskCheck.error && <p className="text-xs text-amber-700 dark:text-amber-300">{taskCheck.error}</p>}
+                </div>
+              )}
               <SyncStatusCard draftKey={draftKey} pending={pending} serverLoading={detail.loading}
                 server={history[0] ? { id: history[0].id, code: history[0].code, language: history[0].language, at: Number(history[0].at), valid: history[0].valid } : null} />
             </div>

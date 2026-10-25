@@ -8,5 +8,10 @@
     "opponents.py",
     "suite.py"
   ],
-  "version": "e069bd0092da"
+  "aitasks": [
+    "metrics.py",
+    "nnlite.py",
+    "taskcheck.py"
+  ],
+  "version": "d84c5690fb79"
 }

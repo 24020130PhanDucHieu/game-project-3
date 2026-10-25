@@ -19,6 +19,8 @@ import { chatStore } from '@/lib/chat-store'
 import { ScrimmagePanel } from '../scrimmage'
 import { CodeViewer, ReplayViewer } from '../replay-viewer'
 import { RoundLog } from '../round-log'
+import { RoundTaskCard, RoundTaskCheckResult, TaskRoundResult, useRoundTaskCheck } from './ai-cup/task-round'
+import { TASK_TEMPLATES } from './ai-cup/task-templates'
 
 type MatchTab = 'live' | 'chat' | 'records' | 'submit' | 'history' | 'control' | 'scrim'
 
@@ -28,6 +30,9 @@ function RuleLine({ tournament, match, now }: { tournament: any; match: any; now
   const window = tournament.stage_schedule?.[level]
   const decoded = decodeRule(rule?.rule_id || tournament.stage_rule)
   const chips = [...decoded.active, ...decoded.extra]
+  if (tournament.round_mode === 'TASK') {
+    return <div className="flex flex-wrap items-center gap-2 text-xs"><Badge tone="accent">Hiệp đề ML từ kho</Badge>{match.current_task && <Badge tone="info">{match.current_task.name}</Badge>}</div>
+  }
   return (
     <div className="flex flex-wrap items-center gap-2 text-xs">
       {rule?.hidden ? <Badge tone="warning">Luật chưa công bố · {shortTime(rule.publish_at)}</Badge> : chips.length ? chips.map((c) => <Badge key={c} tone="accent">{c}</Badge>) : <Badge>Luật chuẩn</Badge>}
@@ -222,9 +227,9 @@ function RoundsPanel({ tournamentId, matchId, match }: { tournamentId: string; m
         <>
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card/60 px-4 py-3">
             <p className="text-sm"><span className="text-muted-foreground">Hiệp {data.round_number}:</span> <strong>{data.winner_name}</strong> <span className="text-muted-foreground">— {data.win_reason}</span></p>
-            <div className="flex flex-wrap gap-1.5">{decodeRule(data.stage_rule).active.map((c) => <Badge key={c} tone="accent">{c}</Badge>)}</div>
+            <div className="flex flex-wrap gap-1.5">{data.round_kind === 'TASK' ? <Badge tone="accent">Đề ML</Badge> : decodeRule(data.stage_rule).active.map((c) => <Badge key={c} tone="accent">{c}</Badge>)}</div>
           </div>
-          <BoardPlayer steps={data.board_steps || []} autoPlay={selected !== null} size="lg" redName={data.team_a_name || match.team_a?.team_name} blueName={data.team_b_name || match.team_b?.team_name} />
+          {data.round_kind === 'TASK' ? <TaskRoundResult data={data} redName={data.team_a_name || match.team_a?.team_name || 'Đội Đỏ'} blueName={data.team_b_name || match.team_b?.team_name || 'Đội Xanh'} /> : <BoardPlayer steps={data.board_steps || []} autoPlay={selected !== null} size="lg" redName={data.team_a_name || match.team_a?.team_name} blueName={data.team_b_name || match.team_b?.team_name} />}
           <RoundLog logs={logs} redName={data.team_a_name || match.team_a?.team_name || 'Đội Đỏ'} blueName={data.team_b_name || match.team_b?.team_name || 'Đội Xanh'} defaultOpen={false} />
         </>
       )}
@@ -309,6 +314,7 @@ function SubmitPanel({ tournamentId, matchId, match, tournament }: { tournamentI
   else if (window?.ends_at && now > window.ends_at * 1000) blocked = 'Cửa sổ nộp bài của vòng đã đóng.'
   else if (['BATTLE_RUNNING', 'ROUND_FINISHED'].includes(match.round_status)) blocked = 'Hiệp đang chạy / nghỉ giữa hiệp — chờ hiệp kế tiếp để nộp bot mới.'
   const [submitting, setSubmitting] = useState(false)
+  const taskCheck = useRoundTaskCheck(tournamentId, matchId)
   const pending = outbox.filter((o) => o.kind === 'match' && o.matchId === matchId)
   const round = match.current_round_idx || 1
   const subs = useResource<any[]>(inRoom ? `subs:${scope}:${tournamentId}:${matchId}` : null, () => arenaApi.getSubmissions(tournamentId, matchId).then((r: any) => (Array.isArray(r) ? r : [])), { ttl: 5_000, refreshMs: 15_000 })
@@ -322,13 +328,20 @@ function SubmitPanel({ tournamentId, matchId, match, tournament }: { tournamentI
     )
   }
   const ruleId = rule?.hidden ? undefined : rule?.rule_id || tournament.stage_rule
+  const taskMode = tournament.round_mode === 'TASK'
   return (
     <div className="space-y-5">
+      {taskMode && <RoundTaskCard tournamentId={tournamentId} matchId={matchId} task={match.current_task} round={match.current_round_idx || 1} canDownload />}
       <Card title={`Nộp bot — Hiệp ${match.current_round_idx || 1}`} subtitle="Mỗi hiệp cần một bài nộp mới; bài hợp lệ cuối cùng được khóa khi ban tổ chức khai hỏa.">
         <Workbench
           draftKey={`match:${tournamentId}:${matchId}:${session.student_id}:${match.current_round_idx || 1}`}
-          ruleId={ruleId}
+          ruleId={taskMode ? undefined : ruleId}
           withExplanation
+          templates={taskMode ? TASK_TEMPLATES : undefined}
+          pythonOnly={taskMode}
+          practice={!taskMode}
+          hideValidate={taskMode}
+          renderActions={taskMode ? (value) => <Button variant="secondary" loading={taskCheck.busy} disabled={!value.code.trim() || !match.current_task} onClick={() => void taskCheck.run(value.code)} data-testid="round-task-check">Chấm thử đề của hiệp (trên máy)</Button> : undefined}
           submitLabel="Nộp bài chính thức"
           submitting={submitting}
           submitDisabledReason={blocked}
@@ -354,8 +367,8 @@ function SubmitPanel({ tournamentId, matchId, match, tournament }: { tournamentI
               setSubmitting(false)
             }
           }}
-          extra={<SyncStatusCard draftKey={`match:${tournamentId}:${matchId}:${session.student_id}:${round}`} pending={pending} serverLoading={subs.loading}
-            server={latest ? { id: latest.submission_id, code: latest.code, language: latest.language, at: Number(latest.submitted_at), valid: latest.validation_status ? !/INVALID|ERROR/.test(latest.validation_status) : undefined } : null} />}
+          extra={<><RoundTaskCheckResult state={taskCheck} /><SyncStatusCard draftKey={`match:${tournamentId}:${matchId}:${session.student_id}:${round}`} pending={pending} serverLoading={subs.loading}
+            server={latest ? { id: latest.submission_id, code: latest.code, language: latest.language, at: Number(latest.submitted_at), valid: latest.validation_status ? !/INVALID|ERROR/.test(latest.validation_status) : undefined } : null} /></>}
         />
       </Card>
       <SubmissionHistory tournamentId={tournamentId} matchId={matchId} enabled match={match} />
@@ -511,7 +524,8 @@ export function MatchView() {
               <Card title={match.title || matchId} subtitle={match.round_name} action={<RuleLine tournament={t} match={match} now={now} />}>
                 <Scoreboard match={match} />
               </Card>
-              <Card title="Sân đấu" subtitle="Bàn cờ do server thực thi — chọn hiệp, tua từng bước, đổi giao diện hoặc xem 3D điện ảnh">
+              {t.round_mode === 'TASK' && match.current_task && match.status !== 'COMPLETED' && <RoundTaskCard tournamentId={tournamentId} matchId={matchId} task={match.current_task} round={match.current_round_idx || 1} canDownload={own || role === 'ADMIN'} />}
+              <Card title={t.round_mode === 'TASK' ? 'Kết quả các hiệp' : 'Sân đấu'} subtitle={t.round_mode === 'TASK' ? 'Mỗi hiệp một đề học máy: hai đội cùng giải, điểm cao hơn thắng hiệp' : 'Bàn cờ do server thực thi — chọn hiệp, tua từng bước, đổi giao diện hoặc xem 3D điện ảnh'}>
                 <RoundsPanel tournamentId={tournamentId} matchId={matchId} match={match} />
               </Card>
               <WebcamPanel tournamentId={tournamentId} matchId={matchId} />

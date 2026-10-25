@@ -38,6 +38,10 @@ type Event struct {
 	GitTemplateURL string  `json:"git_template_url,omitempty"`
 	// Kind rỗng là vòng loại thường (ghép cặp + ELO); "AI" là vòng loại Giải AI (chấm mô hình trên bộ đề ẩn).
 	Kind string `json:"kind,omitempty"`
+	// Mode "TASKS": đề bốc từ kho học-từ-thế-cờ (thay cho đề đọc đối thủ oẳn tù tì). TasksLocked: BTC đã khóa bộ đề.
+	Mode        string `json:"mode,omitempty"`
+	TasksLocked bool   `json:"tasks_locked,omitempty"`
+	TaskCount   int    `json:"task_count,omitempty"`
 }
 type Participant struct {
 	Pending       int      `json:"pending_submissions,omitempty"`
@@ -107,6 +111,7 @@ type Service struct {
 	running    map[string]bool
 	validating sync.Map
 	OnUpdate   func(string)
+	Bank       BankSource
 }
 
 func New(store *repository.QualifierRecords, accounts *repository.Accounts, tournament *service.TournamentService, engine adapter.BotRunnerAdapter) *Service {
@@ -182,12 +187,23 @@ func (s *Service) Configure(id string, req Event) (Event, error) {
 	if strings.TrimSpace(req.Name) == "" || len(req.Name) > 200 || req.Deadline <= now() || req.Rounds < 1 || req.Rounds > 100 || (req.TopK != 8 && req.TopK != 16 && req.TopK != 32) {
 		return Event{}, errors.New("Đặt tên, hạn nộp trong tương lai, 1–100 vòng và top 8/16/32.")
 	}
-	kind := ""
+	kind, mode, taskCount := "", "", 0
 	if req.Kind == KindAI {
 		kind = KindAI
+		if strings.EqualFold(req.Mode, ModeTasks) {
+			mode, taskCount = ModeTasks, req.TaskCount
+			if taskCount == 0 {
+				taskCount = 6
+			}
+			if taskCount < 3 || taskCount > 8 {
+				return Event{}, errors.New("Số đề của vòng loại từ 3 đến 8.")
+			}
+		}
 	}
 	e := Event{
 		Kind:           kind,
+		Mode:           mode,
+		TaskCount:      taskCount,
 		ID:             uniqueID(),
 		Name:           strings.TrimSpace(req.Name),
 		Deadline:       req.Deadline,
@@ -213,6 +229,9 @@ func (s *Service) Configure(id string, req Event) (Event, error) {
 		e.TopK = req.TopK
 		e.GitMode = req.GitMode
 		e.GitTemplateURL = strings.TrimSpace(req.GitTemplateURL)
+		if isTasks(e) && !e.TasksLocked && req.TaskCount >= 3 && req.TaskCount <= 8 {
+			e.TaskCount = req.TaskCount
+		}
 	}
 	return e, s.Store.Batch(map[string]interface{}{metaKey(e.ID): e})
 }
@@ -317,6 +336,10 @@ func (s *Service) Start(id string) error {
 	if (e.Status != "LOCKED" && e.Status != "PAUSED") || e.Eligible < e.TopK {
 		s.mu.Unlock()
 		return errors.New("Cần khóa ít nhất K bot hợp lệ trước khi chạy; chỉ tiếp tục vòng đang tạm dừng.")
+	}
+	if isTasks(e) && !e.TasksLocked {
+		s.mu.Unlock()
+		return errors.New("BTC cần bốc và khóa bộ đề trước khi chạy.")
 	}
 	e.Status = "RUNNING"
 	e.PauseRequested = false

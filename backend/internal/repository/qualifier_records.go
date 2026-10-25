@@ -387,11 +387,11 @@ func (s *QualifierRecords) DeleteQualifier(id string) error {
 		return s.failed
 	}
 	if s.db != nil {
-		_, err := s.db.Exec(`DELETE FROM arena_qualifier_records WHERE key=$1 OR key LIKE $2 OR key LIKE $3 OR key LIKE $4`,
-			"event:"+id, "participant:"+id+":%", "submission:"+id+":%", "job:"+id+":%")
+		_, err := s.db.Exec(`DELETE FROM arena_qualifier_records WHERE key=$1 OR key LIKE $2 OR key LIKE $3 OR key LIKE $4 OR key=$5`,
+			"event:"+id, "participant:"+id+":%", "submission:"+id+":%", "job:"+id+":%", "aitasks:"+id)
 		return err
 	}
-	prefixes := []string{"event:" + id, "participant:" + id + ":", "submission:" + id + ":", "job:" + id + ":"}
+	prefixes := []string{"event:" + id, "participant:" + id + ":", "submission:" + id + ":", "job:" + id + ":", "aitasks:" + id}
 	for key := range s.items {
 		matches := false
 		for _, prefix := range prefixes {
@@ -407,5 +407,26 @@ func (s *QualifierRecords) DeleteQualifier(id string) error {
 			_ = os.Remove(file)
 		}
 	}
+	return nil
+}
+
+// DeleteKey xóa đúng một bản ghi (dùng cho kho đề của Giải AI).
+func (s *QualifierRecords) DeleteKey(key string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.views = map[string]qualifierView{}
+	if s.failed != nil {
+		return s.failed
+	}
+	if s.db != nil {
+		_, err := s.db.Exec(`DELETE FROM arena_qualifier_records WHERE key=$1`, key)
+		return err
+	}
+	if _, ok := s.items[key]; !ok {
+		return nil
+	}
+	delete(s.items, key)
+	sum := sha256.Sum256([]byte(key))
+	_ = os.Remove(filepath.Join(s.dir, hex.EncodeToString(sum[:])+".record"))
 	return nil
 }

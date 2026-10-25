@@ -168,7 +168,7 @@ func (s *TournamentService) DeleteTournament(id string) error {
 }
 
 // CreateTournament tạo giải mới; track "AI" đánh dấu giải chính của Giải AI (xếp hạng, ELO tách riêng giải thường).
-func (s *TournamentService) CreateTournament(name string, numTeams int, track string) (map[string]interface{}, error) {
+func (s *TournamentService) CreateTournament(name string, numTeams int, track, mode string) (map[string]interface{}, error) {
 	if numTeams <= 0 {
 		numTeams = 8
 	}
@@ -194,6 +194,11 @@ func (s *TournamentService) CreateTournament(name string, numTeams int, track st
 	}
 	if track == "AI" {
 		newTournament["track"] = "AI"
+		// Giải chính AI chế độ "TASK": mỗi hiệp bốc một đề học máy từ kho thay cho ván bàn cờ; kế hoạch đề do BTC bốc và khóa.
+		if mode == "TASK" {
+			newTournament["round_mode"] = "TASK"
+			newTournament["ai_task_plan"] = map[string]interface{}{"locked": false, "levels": map[string]interface{}{}}
+		}
 	}
 
 	if err := s.repo.Save(tID, newTournament); err != nil {
@@ -218,6 +223,11 @@ func (s *TournamentService) MutateTournament(tournamentID, action string, params
 	}
 	if track, _ := current["track"].(string); track == "AI" && (action == "add-team" || action == "quick-fill") {
 		return nil, errors.New("Giải chính AI chỉ nhận đội đã qua vòng loại AI. Hãy chốt đội từ vòng loại AI.")
+	}
+	if current["round_mode"] == "TASK" && (action == "submit-code" || action == "submit-draft" || action == "play-round" || action == "demo-fill") {
+		if plan, _ := current["ai_task_plan"].(map[string]interface{}); plan == nil || plan["locked"] != true {
+			return nil, errors.New("Ban tổ chức chưa khóa bộ đề của giải chính AI nên chưa nộp bài hay khai hỏa được.")
+		}
 	}
 	receiptKey, receiptDigest := "", ""
 	receipts, _ := current["_submission_receipts"].(map[string]interface{})
@@ -353,3 +363,29 @@ func (s *TournamentService) MutateTournament(tournamentID, action string, params
 
 	return res, nil
 }
+
+// UpdateTournament cho phép sửa một giải ngay ở máy chủ (không qua máy chấm), dưới cùng khóa với mọi thao tác ghi khác.
+func (s *TournamentService) UpdateTournament(id string, apply func(t map[string]interface{}) error) (map[string]interface{}, error) {
+	unlock := s.lockTournament(id)
+	defer unlock()
+	current, found, err := s.repo.GetByID(id)
+	if err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, fmt.Errorf("%w có ID: %s", repository.ErrTournamentNotFound, id)
+	}
+	if err := apply(current); err != nil {
+		return nil, err
+	}
+	if err := s.repo.Save(id, current); err != nil {
+		return nil, err
+	}
+	if err := s.repo.SaveToDisk(); err != nil {
+		return nil, err
+	}
+	return current, nil
+}
+
+// Engine cho phép các handler gọi một action không gắn giải (sinh đề, dữ liệu) với cùng giới hạn đồng thời.
+func (s *TournamentService) Engine() adapter.BotRunnerAdapter { return s.adapter }

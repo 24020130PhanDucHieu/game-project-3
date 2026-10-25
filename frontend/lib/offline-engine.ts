@@ -55,7 +55,7 @@ function boot(): Promise<void> {
 
 // File cần cho chạy offline: tải trước qua service worker khi còn mạng để lúc mất mạng vẫn có sẵn.
 const OFFLINE_FILES = [
-  '/offline/worker.js', '/offline/engine/manifest.json', '/offline/engine/board.py', '/offline/engine/board_rules.py', '/offline/engine/rules.py', '/offline/engine/aicup/opponents.py', '/offline/engine/aicup/suite.py',
+  '/offline/worker.js', '/offline/engine/manifest.json', '/offline/engine/board.py', '/offline/engine/board_rules.py', '/offline/engine/rules.py', '/offline/engine/aicup/opponents.py', '/offline/engine/aicup/suite.py', '/offline/engine/aitasks/metrics.py', '/offline/engine/aitasks/nnlite.py', '/offline/engine/aitasks/taskcheck.py',
   '/offline/pyodide/pyodide.js', '/offline/pyodide/pyodide.asm.js', '/offline/pyodide/pyodide.asm.wasm', '/offline/pyodide/python_stdlib.zip', '/offline/pyodide/pyodide-lock.json',
 ]
 let warming = false
@@ -74,7 +74,7 @@ export function warmOfflineCache() {
   }).catch(() => { warming = false })
 }
 
-function call<T>(kind: 'prepare' | 'validate' | 'practice' | 'ai-check', payload: object = {}, timeoutMs = 60_000): Promise<T> {
+function call<T>(kind: 'prepare' | 'validate' | 'practice' | 'ai-check' | 'task-check', payload: object = {}, timeoutMs = 60_000): Promise<T> {
   const id = ++seq
   return new Promise<T>((resolve, reject) => {
     const timer = window.setTimeout(() => {
@@ -105,6 +105,11 @@ export const offlineEngine = {
   async aiCheck(code: string, publicSeed: string, roundsPerMatch: number, instances: number) {
     await boot()
     return call<{ public_score: number; families_public: Record<string, number>; errors: string[]; elapsed_ms: number }>('ai-check', { code, language: 'PYTHON', public_seed: publicSeed, rounds_per_match: roundsPerMatch, instances }, 120_000)
+  },
+  /** Giải AI, đề học từ thế cờ: chia 80/20 tập huấn luyện đã tải rồi chạy solve ngay trên máy. */
+  async taskCheck(code: string, task: { kind: string; meta: any; train: { X: any[]; y: number[] } }) {
+    await boot()
+    return call<{ score: number; error: string | null; n_val: number; n_train: number; elapsed_ms: number }>('task-check', { code, language: 'PYTHON', task }, 180_000)
   },
   async practice(code: string, language: string, boss: string, ruleId: string) {
     await boot()

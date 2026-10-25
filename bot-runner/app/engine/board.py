@@ -48,7 +48,9 @@ def stalemate_winner(pieces, targets, names, seed):
 
 def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1,
                    stage_rule="STAGE_1_STANDARD", tie_seed=None, reuse_sandbox=False,
-                   record_replay=True):
+                   record_replay=True, policies=None, trace=None):
+    """policies: {'team_a': fn(state)->card, ...} chạy ngay trong tiến trình (sinh dữ liệu cho Giải AI), thay cho bot trong sandbox.
+    trace: fn(event) gọi sau mỗi nước đi với {'ply','side','state','move','clash','alive','pieces'}; không đổi luật chơi."""
     tie_seed = tie_seed or secrets.token_hex(16)
     initial_rules = board_rules(stage_rule, seed=tie_seed)
     pieces = initial_board(stage_rule, seed=tie_seed)
@@ -160,7 +162,7 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                      "obstacles": [list(c) for c in obstacles_list],
                      "rules": dict(active_rules)}
             try:
-                move, error = (wasi_processes[side].decide(state) if side in wasi_processes
+                move, error = (policies[side](state), None) if policies and side in policies else (wasi_processes[side].decide(state) if side in wasi_processes
                                else BotRunner.run_cpp_binary(executables[side], state) if languages[side] == "CPP"
                                else python_processes[side].decide(state) if side in python_processes
                                else BotRunner.run_python_code(codes[side], state))
@@ -279,6 +281,9 @@ def simulate_board(code_a, code_b, lang_a="PYTHON", lang_b="PYTHON", round_num=1
                     winner, reason = possible_winner, f"Đội {names[possible_winner]} thắng: chiếm căn cứ đối thủ."
                     clash = {"type": "GOAL", "side": colors[possible_winner], "col": targets[possible_winner][0], "row": targets[possible_winner][1], "log": reason}
                     break
+            if trace:
+                trace({"ply": ply, "side": side, "state": state, "move": move, "clash": clash, "pieces": pieces,
+                       "alive": (len(alive("team_a")), len(alive("team_b"))), "winner": winner})
             snapshot(log + (" " + reason if winner else ""), side, clash, cycle)
         return {"winner_side": winner, "win_reason": reason, "board_steps": steps,
                 "final_red_alive": len(alive("team_a")), "final_blue_alive": len(alive("team_b")),

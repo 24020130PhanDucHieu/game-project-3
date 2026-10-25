@@ -432,6 +432,52 @@ export const arenaApi = {
     return apiRequest(`/ai-cup/${encodeURIComponent(qid)}/model-card`, { method: 'PUT', body: JSON.stringify(payload) })
   },
 
+  // Giải AI: kho đề học từ thế cờ, bốc đề, dữ liệu từng đề
+  async getAiBank() {
+    return apiRequest<{ entries: any[]; templates: { id: string; name: string; kind: string }[]; policies: string[] }>('/ai-bank', { cache: 'no-store' })
+  },
+  async createAiBankEntry(entry: Record<string, unknown>) {
+    return apiRequest<{ entry: any }>('/ai-bank', { method: 'POST', body: JSON.stringify(entry) })
+  },
+  async updateAiBankEntry(id: string, patch: Record<string, unknown>) {
+    return apiRequest(`/ai-bank/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(patch) })
+  },
+  async deleteAiBankEntry(id: string) {
+    return apiRequest(`/ai-bank/${encodeURIComponent(id)}`, { method: 'DELETE' })
+  },
+  async probeAiBankEntry(entry: Record<string, unknown>) {
+    return apiRequest<any>('/ai-bank/probe', { method: 'POST', body: JSON.stringify(entry) })
+  },
+  async getAiCupTasks(qid: string) {
+    return apiRequest<{ tasks: any[]; locked: boolean; count: number }>(`/ai-cup/${encodeURIComponent(qid)}/tasks`, { cache: 'no-store' })
+  },
+  async getAiCupTaskData(qid: string, n: number) {
+    return apiRequest<{ kind: string; meta: any; train: { X: any[]; y: number[] } }>(`/ai-cup/${encodeURIComponent(qid)}/tasks/${n}/data`)
+  },
+  aiCupTaskDataUrl(qid: string, n: number) {
+    return `${getApiBaseUrl()}/api/ai-cup/${encodeURIComponent(qid)}/tasks/${n}/data`
+  },
+  async rollAiCupTasks(qid: string, payload: { tags?: string[]; difficulties?: number[]; index?: number } = {}) {
+    return apiRequest<{ tasks: any[]; locked: boolean }>(`/ai-cup/${encodeURIComponent(qid)}/tasks/roll`, { method: 'POST', body: JSON.stringify(payload) })
+  },
+  async lockAiCupTasks(qid: string, lock: boolean) {
+    return apiRequest(`/ai-cup/${encodeURIComponent(qid)}/tasks/${lock ? 'lock' : 'unlock'}`, { method: 'POST' })
+  },
+
+  // Giải chính AI chế độ hiệp đề ML
+  async getAiMainTasks(tid: string) {
+    return apiRequest<{ locked: boolean; levels: Record<string, any[]>; level_count: number; rounds: number }>(`/ai-main/${encodeURIComponent(tid)}/tasks`, { cache: 'no-store' })
+  },
+  async rollAiMainTasks(tid: string, payload: { tags?: string[]; difficulties?: number[]; level?: number; index?: number } = {}) {
+    return apiRequest<any>(`/ai-main/${encodeURIComponent(tid)}/tasks/roll`, { method: 'POST', body: JSON.stringify(payload) })
+  },
+  async lockAiMainTasks(tid: string, lock: boolean) {
+    return apiRequest<any>(`/ai-main/${encodeURIComponent(tid)}/tasks/${lock ? 'lock' : 'unlock'}`, { method: 'POST' })
+  },
+  async getAiMainMatchTask(tid: string, mid: string) {
+    return apiRequest<{ kind: string; meta: any; train: { X: any[]; y: number[] } }>(`/ai-main/${encodeURIComponent(tid)}/matches/${encodeURIComponent(mid)}/task`)
+  },
+
   // Giải chính AI: báo cáo kỹ thuật, chấm rubric, huy hiệu
   async getAiMainReport(tid: string) {
     return apiRequest<any>(`/ai-main/${encodeURIComponent(tid)}/report`, { cache: 'no-store' })

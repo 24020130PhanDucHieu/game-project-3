@@ -186,6 +186,9 @@ func main() {
 	}
 	certHandler.TechWinner = aiReports.TechWinner
 	aiCup := &httpHandler.AICupHandler{Service: qualifierService, Tournaments: tournamentService, Tech: aiReports.TechWinner}
+	aiBank := &httpHandler.AIBankHandler{Store: qualifierStore, Engine: botRunnerAdapter}
+	qualifierService.Bank = aiBank
+	aiMainTasks := &httpHandler.AIMainTaskHandler{Service: tournamentService, Bank: aiBank}
 	// Trợ lý hỏi đáp luật bằng AI: chỉ trả lời từ tài liệu luật, cấu hình giải trong database và hỏi đáp công khai của BTC.
 	aiKB, err := ai.LoadKB()
 	if err != nil {
@@ -377,12 +380,27 @@ func main() {
 		matchAdmin := requireSession(sessions, true, true)
 		// Giải AI: đề bài, dữ liệu mẫu, bảng điểm công khai/riêng tư, khai báo kỹ thuật (đăng ký/nộp/chạy dùng route /qualifiers)
 		api.GET("/ai-badges/:sid", aiCup.Badges)
+		api.GET("/ai-main/:tid/tasks", adminOnly, aiMainTasks.Tasks)
+		api.POST("/ai-main/:tid/tasks/roll", adminOnly, aiMainTasks.Roll)
+		api.POST("/ai-main/:tid/tasks/lock", adminOnly, aiMainTasks.Lock)
+		api.POST("/ai-main/:tid/tasks/unlock", adminOnly, aiMainTasks.Unlock)
+		api.GET("/ai-main/:tid/matches/:mid/task", requireSession(sessions, false, false), aiMainTasks.MatchTask)
 		api.GET("/ai-main/:tid/report", optionalSession(sessions), aiReports.Mine)
 		api.PUT("/ai-main/:tid/report", requireSession(sessions, false, false), aiReports.Save)
 		api.GET("/ai-main/:tid/scoreboard", aiReports.Scoreboard)
 		api.GET("/ai-main/:tid/reports", adminOnly, aiReports.AdminList)
 		api.PUT("/ai-main/:tid/reports/:sid/score", adminOnly, aiReports.Score)
 		api.PUT("/ai-main/:tid/report-config", adminOnly, aiReports.Config)
+		api.GET("/ai-bank", adminOnly, aiBank.List)
+		api.POST("/ai-bank", adminOnly, aiBank.Create)
+		api.POST("/ai-bank/probe", adminOnly, aiBank.Probe)
+		api.PUT("/ai-bank/:id", adminOnly, aiBank.Update)
+		api.DELETE("/ai-bank/:id", adminOnly, aiBank.Delete)
+		api.GET("/ai-cup/:qid/tasks", optionalSession(sessions), aiCup.Tasks)
+		api.GET("/ai-cup/:qid/tasks/:n/data", aiCup.TaskData)
+		api.POST("/ai-cup/:qid/tasks/roll", adminOnly, aiCup.RollTasks)
+		api.POST("/ai-cup/:qid/tasks/lock", adminOnly, aiCup.LockTasks)
+		api.POST("/ai-cup/:qid/tasks/unlock", adminOnly, aiCup.UnlockTasks)
 		api.GET("/ai-cup/events", aiCup.Events)
 		api.GET("/ai-cup/:qid/problem", aiCup.Problem)
 		api.GET("/ai-cup/:qid/dataset", aiCup.Dataset)

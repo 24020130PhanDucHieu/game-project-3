@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { BookOpenCheck, Brain, Check, Copy, Download, EyeOff, Gauge, Layers, Scale, ShieldAlert, Sparkles } from 'lucide-react'
+import { BookOpenCheck, Brain, Check, Copy, Download, EyeOff, Gauge, Layers, Lock, Scale, ShieldAlert, Sparkles } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { Badge, Button, Card, EmptyState, Skeleton } from '../../ui'
 import { AI_TEMPLATES } from './templates'
+import { TASK_TEMPLATES } from './task-templates'
 import { FAMILY_NAME } from './common'
 
-function CopyCode({ code }: { code: string }) {
+export function CopyCode({ code }: { code: string }) {
   const [done, setDone] = useState(false)
   return (
     <div className="relative">
@@ -21,6 +22,7 @@ function CopyCode({ code }: { code: string }) {
 
 export function TaskTab({ eventId, problem }: { eventId: string; problem: { data?: any; loading: boolean } }) {
   const p = problem.data
+  if (p?.mode === 'TASKS') return <TasksTaskTab eventId={eventId} p={p} />
   if (problem.loading && !p) return <Skeleton className="h-72 w-full rounded-3xl" />
   if (!p) return <Card><EmptyState title="Chưa tải được đề bài" hint="Hãy làm mới trang hoặc thử lại sau ít phút." /></Card>
   const readingPct = Math.round(p.weights.reading * 100)
@@ -108,6 +110,41 @@ export function TaskTab({ eventId, problem }: { eventId: string; problem: { data
           ))}
         </ul>
         <p className="mt-4 text-xs text-muted-foreground">Chỉ được dùng các thư viện: {p.limits.modules.join(', ')}. Mã tối đa {Math.round(p.limits.code_bytes / 1024)} KB. Không có NumPy trong lúc chấm, nên cần suy luận bằng Python thuần.</p>
+      </Card>
+    </div>
+  )
+}
+
+
+const DIFFICULTY = ['', 'Dễ', 'Vừa', 'Khó']
+
+function TasksTaskTab({ eventId, p }: { eventId: string; p: any }) {
+  const tasks: any[] = p.tasks || []
+  return (
+    <div className="space-y-6">
+      <Card icon={<BookOpenCheck />} title="Đề bài: học từ thế cờ" subtitle="Máy sinh thế cờ từ chính engine bàn cờ 9×9 rồi gán nhãn theo kết quả ván thật; bạn viết hàm đoán nhãn cho thế cờ chưa thấy">
+        <div className="space-y-4 text-sm leading-relaxed">
+          <p>Mỗi đề là một bài toán học máy nhỏ về bàn cờ (đoán bên thắng, đoán lá bài kế tiếp, đoán số quân, đoán nước đi có ăn quân...). Bạn nộp <strong>một tệp Python</strong> có hàm <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">solve(task)</code> dùng chung cho mọi đề: hàm nhận dữ liệu huấn luyện có nhãn và các thế cờ cần đoán, trả về danh sách dự đoán.</p>
+          <p>Điểm mỗi đề trên thang 0–100. Điểm công khai tính trên một tập thế cờ cố định; điểm riêng tư (kết quả chính thức) tính trên thế cờ mới theo từng lượt. Ban tổ chức bốc ngẫu nhiên {p.task_count} đề từ kho; mỗi đề tối đa vài giây, tổng bộ đề tối đa {p.limits.suite_seconds} giây.</p>
+          <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-amber-900 dark:text-amber-100">
+            <p className="flex items-center gap-2 font-semibold"><ShieldAlert className="size-4" />Quy tắc sandbox</p>
+            <p className="mt-1">Python thuần: chỉ import {p.limits.modules.join(', ')}. Có thư viện <code className="font-mono text-xs">nnlite</code> với lan truyền xuôi/ngược và Adam/SGD để huấn luyện mạng nhỏ ngay trong <code className="font-mono text-xs">solve</code> (không có NumPy). Không dùng <code className="font-mono text-xs">class</code>, tên bắt đầu bằng gạch dưới (kể cả <code className="font-mono text-xs">for _ in</code>) bị cấm. Có thể huấn luyện ngoài máy rồi nhúng trọng số (mã ≤ {Math.round(p.limits.code_bytes / 1024)} KB).</p>
+          </div>
+        </div>
+      </Card>
+      {!p.tasks_locked && !tasks.length ? (
+        <Card><EmptyState icon={<Lock className="size-6" />} title="Ban tổ chức chưa công bố bộ đề" hint="Bộ đề được bốc ngẫu nhiên từ kho và khóa trước khi nhận bài. Hãy quay lại sau." /></Card>
+      ) : tasks.map((t, i) => (
+        <Card key={i} icon={<Brain />} title={`Đề ${i + 1}: ${t.name}`} subtitle={`${t.title} · luật ${t.rule_id} · ${t.n_train} mẫu huấn luyện · ${t.time_s} giây`}
+          action={<Badge tone={t.difficulty === 1 ? 'success' : t.difficulty === 2 ? 'info' : 'warning'}>{DIFFICULTY[t.difficulty]}</Badge>}>
+          <div className="space-y-3">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground" data-testid="task-statement">{t.statement}</p>
+            <a href={arenaApi.aiCupTaskDataUrl(eventId, i + 1)} download className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90" data-testid={`task-data-${i + 1}`}><Download className="size-4" />Tải dữ liệu huấn luyện đề {i + 1} (JSON)</a>
+          </div>
+        </Card>
+      ))}
+      <Card icon={<Sparkles />} title="Mã mẫu" subtitle="Nạp bằng nút ở tab Nộp mô hình hoặc chép ở đây">
+        <div className="space-y-5">{TASK_TEMPLATES.map((t) => <div key={t.id}><p className="mb-2 text-sm font-semibold">{t.label}</p><CopyCode code={t.code} /></div>)}</div>
       </Card>
     </div>
   )

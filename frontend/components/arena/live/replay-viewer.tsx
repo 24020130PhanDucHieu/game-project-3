@@ -12,6 +12,7 @@ import { useLive } from './context'
 import { BoardPlayer } from './board'
 import { SnapshotPanel } from './snapshot-panel'
 import { RoundLog } from './round-log'
+import { TaskRoundResult } from './views/ai-cup/task-round'
 
 const CodeEditor = dynamic(() => import('./code-editor'), { ssr: false, loading: () => <Skeleton className="h-[60vh] w-full rounded-xl" /> })
 
@@ -78,13 +79,15 @@ export function ReplayViewer({ tournamentId, matchId, match, round, onClose, onR
     >
       {replay.loading ? <SkeletonRows rows={6} /> : replay.error && !data ? <ErrorNote message={replay.error.message} onRetry={() => void replay.reload()} /> : data && (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(320px,1fr)]">
-          <BoardPlayer steps={data.board_steps || []} autoPlay size="xl" redName={data.team_a_name || match.team_a?.team_name} blueName={data.team_b_name || match.team_b?.team_name} />
+          {data.round_kind === 'TASK'
+            ? <TaskRoundResult data={data} redName={data.team_a_name || match.team_a?.team_name || 'Đội Đỏ'} blueName={data.team_b_name || match.team_b?.team_name || 'Đội Xanh'} />
+            : <BoardPlayer steps={data.board_steps || []} autoPlay size="xl" redName={data.team_a_name || match.team_a?.team_name} blueName={data.team_b_name || match.team_b?.team_name} />}
           <div className="space-y-4">
             <div className="rounded-2xl border border-border bg-card/70 p-4">
               <p className="text-xs text-muted-foreground">Kết quả hiệp {data.round_number}</p>
               <p className="font-display mt-1 text-xl font-extrabold">{data.winner_name}</p>
               <p className="text-sm text-muted-foreground">{data.win_reason}</p>
-              <div className="mt-2 flex flex-wrap gap-1.5">{decodeRule(data.stage_rule).active.map((c) => <Badge key={c} tone="accent">{c}</Badge>)}</div>
+              <div className="mt-2 flex flex-wrap gap-1.5">{data.round_kind === 'TASK' ? <Badge tone="accent">Đề ML</Badge> : decodeRule(data.stage_rule).active.map((c) => <Badge key={c} tone="accent">{c}</Badge>)}</div>
             </div>
             <SnapshotPanel tournamentId={tournamentId} matchId={matchId} round={round} redName={data.team_a_name || match.team_a?.team_name || 'Đội Đỏ'} blueName={data.team_b_name || match.team_b?.team_name || 'Đội Xanh'} />
             <RoundLog logs={logs} redName={data.team_a_name || match.team_a?.team_name || 'Đội Đỏ'} blueName={data.team_b_name || match.team_b?.team_name || 'Đội Xanh'} defaultOpen maxHeight="max-h-80" />

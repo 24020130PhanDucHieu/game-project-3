@@ -190,7 +190,7 @@ export function AiCupView() {
             {role === 'TEAM' && <Button variant="secondary" onClick={() => setSection('submit')}><ClipboardList className="size-4" />Nộp mô hình</Button>}
             <Button variant="secondary" onClick={() => setSection('board')}><ListOrdered className="size-4" />Xem bảng điểm</Button>
           </div>
-          {role === 'TEAM' && <MyResults mine={mine.data} />}
+          {role === 'TEAM' && <MyResults mine={mine.data} tasks={problem.data?.mode === 'TASKS' ? problem.data.tasks || [] : undefined} />}
           {role === 'TEAM' && session.student_id && <AiBadges sid={session.student_id} />}
         </div>
       )}
@@ -199,7 +199,7 @@ export function AiCupView() {
       {event && section === 'submit' && role === 'TEAM' && problem.data && (
         <SubmitTab eventId={aiEventId} event={event} problem={problem.data} detail={detail} mine={mine.data} blocked={blocked} onMineChange={() => void mine.reload()} />
       )}
-      {event && section === 'board' && <BoardTab eventId={aiEventId} event={event} mine={mine.data} mineId={session.student_id} />}
+      {event && section === 'board' && <BoardTab eventId={aiEventId} event={event} mine={mine.data} mineId={session.student_id} tasks={problem.data?.mode === 'TASKS' ? problem.data.tasks || [] : undefined} />}
       {event && section === 'main' && <MainTab />}
       {event && section === 'report' && <ReportTab />}
     </div>

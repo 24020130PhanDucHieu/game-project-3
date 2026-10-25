@@ -11,7 +11,9 @@ import (
 
 // aiEngine chấm giả: điểm của mô hình suy ra từ mã ("score=NN"), điểm riêng tư thấp hơn công khai 10 điểm.
 type aiEngine struct {
-	calls   atomic.Int64
+	rolls    atomic.Int64
+	lastRoll map[string]interface{}
+	calls    atomic.Int64
 	failing atomic.Bool
 	garbage atomic.Bool
 }
@@ -19,6 +21,9 @@ type aiEngine struct {
 func (e *aiEngine) Mutate(_ interface{}, action string, params map[string]interface{}) (map[string]interface{}, error) {
 	if e.failing.Load() {
 		return nil, errors.New("worker unavailable")
+	}
+	if handled, result := e.taskAction(action, params); handled {
+		return result, nil
 	}
 	if action != "ai-suite" {
 		return map[string]interface{}{"is_valid": true}, nil

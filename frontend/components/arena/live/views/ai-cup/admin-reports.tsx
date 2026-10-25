@@ -8,25 +8,28 @@ import { fromLocalInput, shortTime, toLocalInput } from '@/lib/format'
 import { Badge, Button, Card, DataTable, EmptyState, ErrorNote, Field, Select, SkeletonRows, TextArea } from '../../ui'
 import { useLive } from '../../context'
 import { fmt, useAiTournaments } from './common'
+import { AdminMainTasks } from './main-tasks-admin'
 
-function CreateMain() {
+function CreateMain({ onCreated }: { onCreated: (id: string) => void }) {
   const { run, tournaments, setTournamentId, busy } = useLive()
   const [name, setName] = useState('')
   const [size, setSize] = useState('8')
+  const [mode, setMode] = useState('TASK')
   return (
-    <form className="grid gap-3 sm:grid-cols-[2fr_1fr_auto] sm:items-end" onSubmit={(e) => {
+    <form className="grid gap-3 sm:grid-cols-[2fr_1fr_1.4fr_auto] sm:items-end" onSubmit={(e) => {
       e.preventDefault()
       void run(async () => {
-        const created: any = await arenaApi.createTournament({ name: name.trim(), num_teams: Number(size), track: 'AI' })
+        const created: any = await arenaApi.createTournament({ name: name.trim(), num_teams: Number(size), track: 'AI', mode: mode === 'TASK' ? 'TASK' : '' })
         const id = created?.tournament_id || created?.tournament?.tournament_id
         invalidate('tl')
         await tournaments.reload()
-        if (id) setTournamentId(id)
+        if (id) { setTournamentId(id); onCreated(id) }
         setName('')
       }, `Đã tạo giải chính AI “${name.trim()}”`)
     }}>
       <Field label="Tên giải chính AI" value={name} maxLength={120} onChange={(e) => setName(e.target.value)} data-testid="ai-main-create-name" />
       <Select label="Số đội (bằng Top K)" value={size} onChange={(e) => setSize(e.target.value)}>{[4, 8, 16, 32].map((n) => <option key={n} value={n}>{n} đội</option>)}</Select>
+      <Select label="Dạng hiệp đấu" value={mode} onChange={(e) => setMode(e.target.value)}><option value="TASK">Đề ML bốc từ kho</option><option value="BOARD">Bàn cờ 9×9</option></Select>
       <Button type="submit" disabled={busy || !name.trim()} data-testid="ai-main-create"><Plus className="size-4" />Tạo giải chính AI</Button>
     </form>
   )
@@ -64,6 +67,7 @@ function ScoreForm({ tid, row, criteria, locked, onDone }: { tid: string; row: a
 export function AdminAiReports() {
   const { run, confirm, busy } = useLive()
   const { list, id, setId } = useAiTournaments()
+  const detail = useResource<any>(id ? `t:ai:admin-detail:${id}` : null, () => arenaApi.getTournament(id), { ttl: 8_000 })
   const data = useResource<any>(id ? `ai:admin-reports:${id}` : null, () => arenaApi.getAiMainReports(id), { ttl: 5_000, refreshMs: 15_000 })
   const [deadline, setDeadline] = useState('')
   const [open, setOpen] = useState('')
@@ -75,10 +79,11 @@ export function AdminAiReports() {
   return (
     <Card icon={<Trophy />} title="Giải chính AI và báo cáo kỹ thuật" subtitle="Tạo giải chính cho Top K của vòng loại AI, đặt hạn báo cáo, chấm rubric và công bố điểm">
       <div className="space-y-6">
-        <CreateMain />
+        <CreateMain onCreated={setId} />
         {!list.length ? <EmptyState title="Chưa có giải chính AI" hint="Tạo giải chính rồi dùng “Chốt đội” ở vòng loại AI để nạp Top K vào giải." /> : (
           <div className="space-y-5">
             <Select label="Giải chính AI" value={id} onChange={(e) => setId(e.target.value)} className="max-w-md">{list.map((x) => <option key={x.tournament_id} value={x.tournament_id}>{x.name}</option>)}</Select>
+            {detail.data?.round_mode === 'TASK' && <AdminMainTasks tid={id} />}
             {data.loading && !data.data ? <SkeletonRows rows={4} /> : data.error && !data.data ? <ErrorNote message={data.error.message} onRetry={() => void data.reload()} /> : (
               <>
                 <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border p-4">

@@ -17,3 +17,12 @@ Giải chính AI là loại trực tiếp Bo5 như giải thường, chỉ nhậ
 
 ## ELO và huy hiệu Giải AI
 ELO giải chính AI tính riêng từ các trận Bo5 của giải chính AI với K bằng 32, mọi đội bắt đầu từ 1200, độc lập với ELO giải thường và với điểm vòng loại AI. Huy hiệu Giải AI tính từ kết quả thật gồm hoàn thành vòng loại, đọc được đối thủ (điểm đọc đối thủ ở bộ ẩn từ 70), mô hình khái quát, vào giải chính, vô địch, á quân, đồng hạng ba và Giải Kỹ thuật.
+
+## Kho đề học từ thế cờ
+Vòng loại AI có thể dùng kho đề thay cho đề oẳn tù tì. Kho gồm các đề học máy về bàn cờ 9x9: đoán bên thắng từ thế cờ, đoán lá bài bên đi sẽ ra, đoán số nước còn lại, đoán chênh lệch số quân và đoán lượt này có ăn quân không. Dữ liệu do máy sinh từ chính engine bàn cờ, nhãn lấy từ ván thật. Ban tổ chức bốc ngẫu nhiên các đề từ kho, xem trước, bốc lại rồi khóa đề; đội chỉ nộp bài sau khi đề được khóa và chỉ thấy đề khi đã khóa. Admin cũng thêm đề mới vào kho bằng cách chọn mẫu đề và chỉnh thông số, và có nút Thử đề để đo tốc độ.
+
+## Nộp mô hình cho kho đề
+Đội nộp một tệp Python có hàm solve(task) dùng chung cho mọi đề. Hàm nhận dữ liệu huấn luyện có nhãn và các thế cờ cần đoán, trả về danh sách dự đoán đúng thứ tự. Có thư viện nnlite để huấn luyện mạng nơ-ron nhỏ ngay trong solve với lan truyền xuôi, lan truyền ngược và cập nhật trọng số bằng SGD hoặc Adam; sandbox không có NumPy và không cho dùng class. Mỗi đề tính điểm từ 0 đến 100 và điểm riêng tư là kết quả chính thức; có nút chấm thử từng đề ngay trên máy bạn.
+
+## Hiệp đề ML ở giải chính AI
+Giải chính AI có thể chạy theo hiệp đề ML: mỗi hiệp của trận Bo5 là một đề học máy bốc từ kho thay cho ván bàn cờ. Ban tổ chức bốc đề cho từng hiệp của từng vòng, vòng sau khó hơn, rồi khóa đề trước khi các đội nộp bài. Ở mỗi hiệp hai đội cùng nộp hàm solve cho đề của hiệp đó, máy chấm trên thế cờ ẩn và đội có điểm cao hơn thắng hiệp; hòa điểm thì bốc thăm đã lưu. Đội chỉ thấy đề của hiệp hiện tại, tải được dữ liệu huấn luyện của hiệp và chấm thử ngay trên máy.

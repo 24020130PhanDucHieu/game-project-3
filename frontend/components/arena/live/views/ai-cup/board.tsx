@@ -11,7 +11,7 @@ import { useLive } from '../../context'
 import { Podium, RankBadge, SummaryStat } from '../ranking'
 import { FAMILY_NAME, ScoreBar, TECH_SHORT, fmt } from './common'
 
-function Board({ eventId, which, mineId }: { eventId: string; which: 'public' | 'private'; mineId?: string }) {
+function Board({ eventId, which, mineId, tasksMode }: { eventId: string; which: 'public' | 'private'; mineId?: string; tasksMode?: boolean }) {
   const board = useResource<any>(`q:ai:board:${which}:${eventId}`, () => arenaApi.getAiCupLeaderboard(eventId, which), { ttl: 8_000, refreshMs: 15_000 })
   const items: any[] = board.data?.items || []
   if (board.loading && !board.data) return <Card><SkeletonRows rows={6} /></Card>
@@ -35,8 +35,8 @@ function Board({ eventId, which, mineId }: { eventId: string; which: 'public' | 
         <SummaryStat icon={<Flame className="size-5" />} label="Lượt đã chấm" value={`${board.data?.applied_round ?? 0}/${board.data?.rounds ?? '—'}`} />
       </div>
       {items.length >= 3 && <Podium rows={items.slice(0, 3)} value={(r) => fmt(r.score)} unit="điểm" sub={(r) => `${r.rounds} lượt${r.technique ? ` · ${TECH_SHORT[r.technique] || r.technique}` : ''}`} />}
-      <Card icon={<ListOrdered />} title={priv ? 'Bảng riêng tư (kết quả chính thức)' : 'Bảng công khai'} subtitle={priv ? 'Xếp theo điểm riêng tư trung bình: 60% đọc đối thủ ở bộ ẩn + 40% bàn cờ' : 'Xếp theo điểm trên bộ đối thủ công khai; chưa phải kết quả chính thức'}>
-        <DataTable head={priv ? ['Hạng', 'Đội', 'Điểm riêng tư', 'Đọc đối thủ (ẩn)', 'Bàn cờ', 'Công khai', 'Chênh lệch', 'Kỹ thuật'] : ['Hạng', 'Đội', 'Điểm công khai', 'Số lượt', 'Kỹ thuật']}>
+      <Card icon={<ListOrdered />} title={priv ? 'Bảng riêng tư (kết quả chính thức)' : 'Bảng công khai'} subtitle={priv ? (tasksMode ? 'Xếp theo điểm riêng tư trung bình các lượt: trung bình các đề, mỗi lượt dùng thế cờ mới' : 'Xếp theo điểm riêng tư trung bình: 60% đọc đối thủ ở bộ ẩn + 40% bàn cờ') : 'Xếp theo điểm trên bộ đối thủ công khai; chưa phải kết quả chính thức'}>
+        <DataTable head={priv ? (tasksMode ? ['Hạng', 'Đội', 'Điểm riêng tư', 'Công khai', 'Chênh lệch', 'Kỹ thuật'] : ['Hạng', 'Đội', 'Điểm riêng tư', 'Đọc đối thủ (ẩn)', 'Bàn cờ', 'Công khai', 'Chênh lệch', 'Kỹ thuật']) : ['Hạng', 'Đội', 'Điểm công khai', 'Số lượt', 'Kỹ thuật']}>
           {items.map((r) => (
             <tr key={r.student_id} data-testid="ai-board-row" className={cn(r.rank === 1 && 'bg-gradient-to-r from-amber-400/15 to-transparent', r.rank === 2 && 'bg-gradient-to-r from-slate-300/15 to-transparent', r.rank === 3 && 'bg-gradient-to-r from-orange-400/15 to-transparent', sameStudent(r.student_id, mineId) && '!bg-primary/10')}>
               <td className="w-14 px-3 py-2"><RankBadge rank={r.rank} /></td>
@@ -44,8 +44,7 @@ function Board({ eventId, which, mineId }: { eventId: string; which: 'public' | 
               {priv ? (
                 <>
                   <td className="px-3 py-2.5 font-semibold tabular-nums">{fmt(r.private)}</td>
-                  <td className="px-3 py-2.5 tabular-nums">{fmt(r.reading)}</td>
-                  <td className="px-3 py-2.5 tabular-nums">{fmt(r.board)}</td>
+                  {!tasksMode && <><td className="px-3 py-2.5 tabular-nums">{fmt(r.reading)}</td><td className="px-3 py-2.5 tabular-nums">{fmt(r.board)}</td></>}
                   <td className="px-3 py-2.5 tabular-nums">{fmt(r.public)}</td>
                   <td className={cn('px-3 py-2.5 tabular-nums', Number(r.gap) > 8 ? 'font-semibold text-orange-600 dark:text-orange-400' : 'text-muted-foreground')} title="Công khai trừ đọc đối thủ ở bộ ẩn: lớn nghĩa là quá khớp bộ công khai">{Number(r.gap) > 0 ? '+' : ''}{fmt(r.gap)}</td>
                 </>
@@ -64,7 +63,15 @@ function Board({ eventId, which, mineId }: { eventId: string; which: 'public' | 
   )
 }
 
-export function MyResults({ mine }: { mine: any }) {
+/** Nhãn thanh điểm: đề từ kho có khóa t1, t2... ứng với tên đề; đề oẳn tù tì dùng tên nhóm đối thủ. */
+function taskLabel(key: string, tasks?: any[]) {
+  const m = /^t(\d+)$/.exec(key)
+  if (tasks && m) return `Đề ${m[1]}: ${tasks[Number(m[1]) - 1]?.name || ''}`.trim()
+  return FAMILY_NAME[key] || key
+}
+
+export function MyResults({ mine, tasks }: { mine: any; tasks?: any[] }) {
+  const tasksMode = !!tasks
   if (!mine?.registered) return null
   const rounds: any[] = mine.rounds || []
   const reveal = !!mine.private_visible
@@ -73,12 +80,12 @@ export function MyResults({ mine }: { mine: any }) {
       {mine.banned && <p className="mb-3 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-300">Đội đã bị loại khỏi vòng loại{mine.ban_reason ? `: ${mine.ban_reason}` : '.'}</p>}
       {!rounds.length ? <EmptyState title="Chưa có lượt nào được chấm" hint={mine.locked ? 'Mô hình của bạn đã khóa và đang chờ tới lượt chấm.' : 'Hãy nộp mô hình hợp lệ trước hạn để được chấm.'} /> : (
         <div className="space-y-4">
-          <DataTable head={reveal ? ['Lượt', 'Công khai', 'Đọc đối thủ (ẩn)', 'Bàn cờ', 'Điểm riêng tư', 'Thời gian chấm'] : ['Lượt', 'Điểm công khai', 'Thời gian chấm']}>
+          <DataTable head={reveal ? (tasksMode ? ['Lượt', 'Công khai', 'Điểm riêng tư', 'Thời gian chấm'] : ['Lượt', 'Công khai', 'Đọc đối thủ (ẩn)', 'Bàn cờ', 'Điểm riêng tư', 'Thời gian chấm']) : ['Lượt', 'Điểm công khai', 'Thời gian chấm']}>
             {rounds.map((r) => (
               <tr key={r.round} data-testid="ai-my-round">
                 <td className="px-3 py-2.5 tabular-nums">#{r.round}</td>
                 <td className="px-3 py-2.5 font-semibold tabular-nums">{fmt(r.public)}</td>
-                {reveal && <><td className="px-3 py-2.5 tabular-nums">{fmt(r.reading)}</td><td className="px-3 py-2.5 tabular-nums">{fmt(r.board)}</td><td className="px-3 py-2.5 font-semibold tabular-nums">{fmt(r.private)}</td></>}
+                {reveal && (tasksMode ? <td className="px-3 py-2.5 font-semibold tabular-nums">{fmt(r.private)}</td> : <><td className="px-3 py-2.5 tabular-nums">{fmt(r.reading)}</td><td className="px-3 py-2.5 tabular-nums">{fmt(r.board)}</td><td className="px-3 py-2.5 font-semibold tabular-nums">{fmt(r.private)}</td></>)}
                 <td className="px-3 py-2.5 text-xs text-muted-foreground">{r.elapsed_ms ? `${(r.elapsed_ms / 1000).toFixed(1)} giây` : '—'}</td>
               </tr>
             ))}
@@ -90,11 +97,11 @@ export function MyResults({ mine }: { mine: any }) {
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-3 rounded-xl border border-border p-3">
               <p className="text-xs font-semibold text-muted-foreground">Bộ công khai · lượt gần nhất</p>
-              {Object.entries(rounds[rounds.length - 1].families_public || {}).map(([k, v]) => <ScoreBar key={k} label={FAMILY_NAME[k] || k} value={v as number} />)}
+              {Object.entries(rounds[rounds.length - 1].families_public || {}).map(([k, v]) => <ScoreBar key={k} label={taskLabel(k, tasks)} value={v as number} />)}
             </div>
             <div className="space-y-3 rounded-xl border border-border p-3">
               <p className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">{!reveal && <EyeOff className="size-3.5" />}Bộ ẩn · lượt gần nhất</p>
-              {reveal ? Object.entries(rounds[rounds.length - 1].families_private || {}).map(([k, v]) => <ScoreBar key={k} label={FAMILY_NAME[k] || k} value={v as number} />) : <p className="text-sm text-muted-foreground">Chi tiết từng nhóm đối thủ ẩn chỉ công bố khi kết thúc để không ai suy ngược đề.</p>}
+              {reveal ? Object.entries(rounds[rounds.length - 1].families_private || {}).map(([k, v]) => <ScoreBar key={k} label={taskLabel(k, tasks)} value={v as number} />) : <p className="text-sm text-muted-foreground">Chi tiết từng nhóm đối thủ ẩn chỉ công bố khi kết thúc để không ai suy ngược đề.</p>}
               {reveal && rounds[rounds.length - 1].bosses && Object.keys(rounds[rounds.length - 1].bosses).length > 0 && (
                 <div className="space-y-3 border-t border-border pt-3">{Object.entries(rounds[rounds.length - 1].bosses).map(([k, v]) => <ScoreBar key={k} label={`Bàn cờ · boss ${k}`} value={v as number} />)}</div>
               )}
@@ -106,14 +113,14 @@ export function MyResults({ mine }: { mine: any }) {
   )
 }
 
-export function BoardTab({ eventId, event, mine, mineId }: { eventId: string; event: any; mine: any; mineId?: string }) {
+export function BoardTab({ eventId, event, mine, mineId, tasks }: { eventId: string; event: any; mine: any; mineId?: string; tasks?: any[] }) {
   const finished = event.status === 'FINISHED' || event.status === 'PROMOTED'
   const [which, setWhich] = useState<'public' | 'private'>(finished ? 'private' : 'public')
   return (
     <div className="space-y-6">
       <Tabs<'public' | 'private'> value={which} onChange={setWhich} tabs={[{ id: 'public', label: 'Bảng công khai', icon: <ListOrdered className="size-4" /> }, { id: 'private', label: finished ? 'Bảng riêng tư (chính thức)' : 'Bảng riêng tư (chưa mở)', icon: finished ? <Trophy className="size-4" /> : <Lock className="size-4" /> }]} />
-      <Board eventId={eventId} which={which} mineId={mineId} />
-      <MyResults mine={mine} />
+      <Board eventId={eventId} which={which} mineId={mineId} tasksMode={!!tasks} />
+      <MyResults mine={mine} tasks={tasks} />
     </div>
   )
 }

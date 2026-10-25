@@ -71,6 +71,31 @@ def run_bot(code, state):
     if not isinstance(move, str) or move.upper() not in VALID: raise ValueError("Nước đi không hợp lệ: " + repr(move)[:40])
     return move.upper()
 
+# Đề học từ thế cờ (Giải AI): điểm vào solve, thêm nnlite và vài hàm dựng sẵn; cùng quy tắc với máy chấm.
+TASK_MODULES = SAFE_MODULES | {"nnlite"}
+TASK_NAMES = ("range","len","min","max","abs","sum","int","float","str","bool","list","dict","set","tuple","sorted","reversed","enumerate","zip","next","iter","any","all","map","filter","isinstance","type","round","pow","divmod","ord","chr","repr","Exception","ValueError","ZeroDivisionError","IndexError","KeyError","TypeError","OverflowError","StopIteration")
+
+def task_import(name, globals=None, locals=None, fromlist=(), level=0):
+    if level or (name not in TASK_MODULES and name != "collections.abc") or any(n.startswith("_") for n in (fromlist or ())):
+        raise ImportError("Import module bị cấm")
+    view = module_view(name)
+    return module_view("collections") if name == "collections.abc" and not fromlist else view
+
+def run_solve(code, task):
+    key = ("solve", code)
+    if key not in _compiled:
+        problem = validate_ast(code)
+        if problem: raise ValueError(problem)
+        _compiled[key] = compile(code, "<bot>", "exec")
+    safe = {n: getattr(builtins, n) for n in TASK_NAMES}
+    safe["__import__"] = task_import
+    safe["print"] = lambda *a, **k: None
+    scope = {"__name__": "__bot__", "__doc__": None, "__builtins__": safe, "random": module_view("random"), "math": module_view("math")}
+    exec(_compiled[key], scope, scope)
+    fn = scope.get("solve")
+    if not callable(fn): raise ValueError("Thiếu hàm solve(task)")
+    return fn(task)
+
 class BotRunner:
     @staticmethod
     def run_python_code(code_str, game_state, timeout=1.0):
@@ -207,10 +232,13 @@ async function boot() {
   fs.writeFile('/arena/app/sandbox/runner.py', SHIM)
   for (const file of manifest.files) fs.writeFile('/arena/app/engine/' + file, await (await fetch('./engine/' + file)).text())
   // Giải AI: bộ đối thủ công khai + vòng chấm (không có các nhóm đối thủ ẩn).
+  try { fs.mkdir('/arena/app/aitasks') } catch { /* đã có */ }
+  fs.writeFile('/arena/app/aitasks/__init__.py', '')
+  for (const file of manifest.aitasks || []) fs.writeFile('/arena/app/aitasks/' + file, await (await fetch('./engine/aitasks/' + file)).text())
   try { fs.mkdir('/arena/app/aicup') } catch { /* đã có */ }
   fs.writeFile('/arena/app/aicup/__init__.py', '')
   for (const file of manifest.aicup || []) fs.writeFile('/arena/app/aicup/' + file, await (await fetch('./engine/aicup/' + file)).text())
-  py.runPython('import sys; sys.path.insert(0, "/arena"); from app.engine.board import simulate_board; from app.sandbox.runner import validate_ast, run_bot')
+  py.runPython('import sys; sys.path.insert(0, "/arena"); from app.engine.board import simulate_board; import sys as _s; _s.path.insert(0, "/arena/app/aitasks"); from app.sandbox.runner import validate_ast, run_bot, run_solve')
   return py
 }
 
@@ -240,6 +268,11 @@ if problem is None:
         out["is_valid"] = False
         out["error_message"] = "Lỗi khi chạy thử: " + str(exc)
 json.dumps(out)`)
+    } else if (kind === 'task-check') {
+      result = py.runPython(`
+import json
+from app.aitasks.taskcheck import check
+json.dumps(check(job["code"], job["task"], run_solve))`)
     } else if (kind === 'ai-check') {
       result = py.runPython(`
 import json

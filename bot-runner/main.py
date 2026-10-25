@@ -38,6 +38,27 @@ class StatelessDatabase(Database):
     def save_tournaments_to_file(self):
         pass # NO-OP
 
+def ai_task_action(action, p):
+    """Giải AI, đề học từ thế cờ: kho đề, bốc đề, dữ liệu, chấm. Mọi thông số từ Go đều được chuẩn hóa lại và bị chặn trần."""
+    from app.aitasks import catalog, data as task_data, probe as task_probe, roll as task_roll, runner as task_runner
+    if action == "ai-task-bank":
+        return {"entries": catalog.all_entries(p.get("custom"), p.get("disabled"))}
+    if action == "ai-task-probe":
+        return task_probe.probe(p.get("entry"), run_reference=bool(p.get("reference", True)))
+    if action == "ai-task-roll":
+        entries = catalog.all_entries(p.get("custom"), p.get("disabled"))
+        plan = task_roll.roll(entries, max(1, min(30, int(p.get("count") or 5))), str(p.get("seed") or ""), p.get("tags"), p.get("difficulties"), p.get("exclude"), bool(p.get("ramp", True)))
+        return {"plan": plan, "public": task_roll.public_plan(plan)}
+    if action == "ai-task-public":
+        return {"public": task_roll.public_plan([catalog.normalize_item(it) for it in (p.get("items") or [])][:30])}
+    if action == "ai-task-data":
+        return task_data.team_view(catalog.normalize_item(p.get("item")))
+    items = [catalog.normalize_item(it) for it in (p.get("items") or [p.get("item")])][:12]
+    if action == "validate-task-code":
+        return task_runner.validate_code(p.get("code") or "", items[0])
+    return task_runner.run_items(p.get("code") or "", items, max(1, min(1000, int(p.get("round") or 1))))
+
+
 class MutateRequest(BaseModel):
     tournament: Optional[dict] = None
     action: str
@@ -90,6 +111,8 @@ def mutate_tournament(req: MutateRequest):
         elif action == "ai-dataset":
             from app.aicup.suite import build_dataset
             return build_dataset(str(p.get("public_seed") or ""), max(1, min(20, int(p.get("matches") or 6))), max(30, min(300, int(p.get("rounds_per_match") or 150))))
+        elif action in {"ai-task-bank", "ai-task-probe", "ai-task-roll", "ai-task-public", "ai-task-data", "ai-task-suite", "validate-task-code"}:
+            return ai_task_action(action, p)
         elif action == "import-qualified":
             tournament = stateless_db.tournaments[t_id]
             event_id = p.get("qualifier_id")

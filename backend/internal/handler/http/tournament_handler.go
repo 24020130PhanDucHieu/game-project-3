@@ -87,6 +87,8 @@ func redactTournament(value map[string]interface{}, session auth.Session) map[st
 		copyTournament["correction_token"] = service.CorrectionToken(value)
 	} else {
 		delete(copyTournament, "incident_log")
+		// Kế hoạch đề (kèm hạt giống) chỉ ban tổ chức xem; đội chỉ thấy đề của hiệp hiện tại qua match.current_task.
+		delete(copyTournament, "ai_task_plan")
 	}
 	if session.Role != "ADMIN" {
 		rules, _ := copyTournament["stage_rules"].(map[string]interface{})
@@ -117,6 +119,9 @@ func redactTournament(value map[string]interface{}, session auth.Session) map[st
 		}
 		if session.Role != "ADMIN" {
 			delete(match, "tie_break_seed")
+		}
+		if spec := currentTaskSpec(value, match); spec != nil {
+			match["current_task"] = spec
 		}
 		ownsMatch := false
 		for _, side := range []string{"team_a", "team_b"} {
@@ -274,7 +279,11 @@ func (h *TournamentHandler) Create(c *gin.Context) {
 	if t, _ := req["track"].(string); strings.EqualFold(strings.TrimSpace(t), "AI") {
 		track = "AI"
 	}
-	res, err := h.service.CreateTournament(name, numTeams, track)
+	mode := ""
+	if m, _ := req["mode"].(string); strings.EqualFold(strings.TrimSpace(m), "TASK") {
+		mode = "TASK"
+	}
+	res, err := h.service.CreateTournament(name, numTeams, track, mode)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": err.Error()})
 		return
@@ -525,4 +534,24 @@ func (h *TournamentHandler) GetEloHistory(c *gin.Context) {
 		events = []EloEvent{}
 	}
 	c.JSON(http.StatusOK, gin.H{"student_id": sid, "team_name": team.TeamName, "start": mainEloStart, "rating": round1(team.Rating), "played": team.Played, "wins": team.Wins, "k_factor": mainEloK, "events": events})
+}
+
+// currentTaskSpec trả phần công khai (không hạt giống) của đề ở hiệp hiện tại của một trận, nếu giải dùng hiệp đề ML và đã khóa đề.
+func currentTaskSpec(tournament, match map[string]interface{}) map[string]interface{} {
+	if tournament["round_mode"] != "TASK" {
+		return nil
+	}
+	plan, _ := tournament["ai_task_plan"].(map[string]interface{})
+	if plan == nil || plan["locked"] != true {
+		return nil
+	}
+	levels, _ := plan["levels"].(map[string]interface{})
+	items, _ := levels[strconv.Itoa(int(num(match["round_level"])))].([]interface{})
+	index := int(num(match["current_round_idx"])) - 1
+	if index < 0 || index >= len(items) {
+		return nil
+	}
+	entry, _ := items[index].(map[string]interface{})
+	spec, _ := entry["public"].(map[string]interface{})
+	return cloneJSONMap(spec)
 }

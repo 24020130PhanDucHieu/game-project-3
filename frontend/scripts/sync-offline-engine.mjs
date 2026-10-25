@@ -17,6 +17,9 @@ const files = ['board.py', 'board_rules.py', 'rules.py']
 // Giải AI: chỉ gửi phần công khai (đối thủ công khai + vòng chấm). Các nhóm đối thủ ẩn (hidden.py) không bao giờ xuống trình duyệt.
 const aicupSource = join(here, '..', '..', 'bot-runner', 'app', 'aicup')
 const aicupFiles = ['opponents.py', 'suite.py']
+// Đề học từ thế cờ: chỉ gửi thước đo, nnlite và bộ chấm thử; bộ sinh thế cờ (templates/data/policies) chỉ ở máy chấm.
+const aitasksSource = join(here, '..', '..', 'bot-runner', 'app', 'aitasks')
+const aitasksFiles = ['metrics.py', 'nnlite.py', 'taskcheck.py']
 
 if (existsSync(source)) {
   mkdirSync(target, { recursive: true })
@@ -30,8 +33,13 @@ if (existsSync(source)) {
     copyFileSync(join(aicupSource, file), join(target, 'aicup', file))
     hash.update(readFileSync(join(aicupSource, file)))
   }
-  writeFileSync(join(target, 'manifest.json'), JSON.stringify({ files, aicup: aicupFiles, version: hash.digest('hex').slice(0, 12) }, null, 2) + '\n')
-  console.log('[offline-engine] Đã đồng bộ', [...files, ...aicupFiles.map((f) => 'aicup/' + f)].join(', '))
+  mkdirSync(join(target, 'aitasks'), { recursive: true })
+  for (const file of aitasksFiles) {
+    copyFileSync(join(aitasksSource, file), join(target, 'aitasks', file))
+    hash.update(readFileSync(join(aitasksSource, file)))
+  }
+  writeFileSync(join(target, 'manifest.json'), JSON.stringify({ files, aicup: aicupFiles, aitasks: aitasksFiles, version: hash.digest('hex').slice(0, 12) }, null, 2) + '\n')
+  console.log('[offline-engine] Đã đồng bộ', [...files, ...aicupFiles.map((f) => 'aicup/' + f), ...aitasksFiles.map((f) => 'aitasks/' + f)].join(', '))
 } else {
   console.log('[offline-engine] Không thấy bot-runner, dùng bản engine đã có trong public/offline.')
 }

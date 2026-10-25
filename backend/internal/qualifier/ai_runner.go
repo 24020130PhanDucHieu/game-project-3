@@ -1,6 +1,7 @@
 package qualifier
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"sort"
@@ -34,6 +35,12 @@ func (s *Service) runAI(id string) error {
 			return err
 		}
 		round := e.AppliedRound + 1
+		var items []map[string]interface{}
+		if isTasks(e) {
+			if items, err = s.taskItems(id); err != nil || len(items) == 0 {
+				return errors.New("Chưa có bộ đề để chấm.")
+			}
+		}
 		people, err := s.ParticipantSummaries(id)
 		if err != nil {
 			return err
@@ -62,7 +69,7 @@ func (s *Service) runAI(id string) error {
 					if stopped.Load() {
 						return
 					}
-					if err := s.playAI(e, job); err != nil {
+					if err := s.playAI(e, job, items); err != nil {
 						stopped.Store(true)
 						failures <- err
 						return
@@ -162,7 +169,7 @@ func aiMap(value interface{}) map[string]float64 {
 
 // playAI chấm một mô hình trong một lượt. Lỗi hạ tầng được thử lại 3 lần rồi dừng cả vòng (giữ nguyên tiến độ);
 // lỗi của chính mô hình (mã không chạy được) chỉ tính 0 điểm cho đội đó chứ không làm hỏng vòng loại.
-func (s *Service) playAI(e Event, job Job) error {
+func (s *Service) playAI(e Event, job Job, items []map[string]interface{}) error {
 	if job.Status == "DONE" {
 		return nil
 	}
@@ -184,10 +191,16 @@ func (s *Service) playAI(e Event, job Job) error {
 		if err := s.Store.Batch(map[string]interface{}{job.ID: job}); err != nil {
 			return err
 		}
-		result, err := s.Engine.Mutate(nil, "ai-suite", map[string]interface{}{
-			"code": p.Code, "language": p.Language, "secret_seed": e.Seed, "public_seed": PublicSeed(e.ID), "round": job.Round,
-			"rounds_per_match": AIRoundsPerMatch, "instances": AIInstances, "board_games": AIBoardGames,
-		})
+		var result map[string]interface{}
+		var err error
+		if items != nil {
+			result, err = s.Engine.Mutate(nil, "ai-task-suite", map[string]interface{}{"code": p.Code, "items": items, "round": job.Round})
+		} else {
+			result, err = s.Engine.Mutate(nil, "ai-suite", map[string]interface{}{
+				"code": p.Code, "language": p.Language, "secret_seed": e.Seed, "public_seed": PublicSeed(e.ID), "round": job.Round,
+				"rounds_per_match": AIRoundsPerMatch, "instances": AIInstances, "board_games": AIBoardGames,
+			})
+		}
 		if err != nil {
 			last = err
 			continue
@@ -195,6 +208,45 @@ func (s *Service) playAI(e Event, job Job) error {
 		outcome := &AIResult{}
 		if failure, _ := result["error"].(string); failure != "" {
 			outcome.Failed = failure
+		} else if items != nil {
+			var okPublic, okPrivate bool
+			outcome.Public, okPublic = aiNumber(result["public_score"])
+			outcome.Private, okPrivate = aiNumber(result["private_score"])
+			outcome.Reading = outcome.Private
+			if !okPublic || !okPrivate {
+				last = fmt.Errorf("Máy chấm trả về điểm không hợp lệ.")
+				continue
+			}
+			outcome.FamiliesPublic, outcome.FamiliesPrivate = map[string]float64{}, map[string]float64{}
+			tasks, _ := result["tasks"].([]interface{})
+			for _, raw := range tasks {
+				row, _ := raw.(map[string]interface{})
+				n, _ := row["n"].(float64)
+				key := fmt.Sprintf("t%d", int(n)+1)
+				pub, ok1 := aiNumber(row["public"])
+				priv, ok2 := aiNumber(row["private"])
+				if !ok1 || !ok2 {
+					last = fmt.Errorf("Máy chấm trả về điểm đề không hợp lệ.")
+					continue
+				}
+				outcome.FamiliesPublic[key], outcome.FamiliesPrivate[key] = pub, priv
+			}
+			if len(outcome.FamiliesPublic) != len(items) {
+				continue
+			}
+			if elapsed, ok := result["elapsed_ms"].(float64); ok {
+				outcome.ElapsedMs = int(elapsed)
+			}
+			if list, ok := result["errors"].([]interface{}); ok {
+				for _, item := range list {
+					if note, ok := item.(string); ok && len(outcome.Notes) < 6 {
+						outcome.Notes = append(outcome.Notes, strings.TrimSpace(note))
+					}
+				}
+			}
+			if exceeded, _ := result["budget_exceeded"].(bool); exceeded {
+				outcome.Notes = append(outcome.Notes, "Mô hình chạy quá chậm: bộ đề bị cắt do hết thời gian chấm.")
+			}
 		} else {
 			var okPublic, okPrivate, okReading, okBoard bool
 			outcome.Public, okPublic = aiNumber(result["public_score"])

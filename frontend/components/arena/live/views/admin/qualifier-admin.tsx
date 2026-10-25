@@ -10,6 +10,8 @@ import { useLive } from '../../context'
 import { AdminScoreHistory, BanDialog, TeamSubmissionsOverlay } from '../../qualifier-extras'
 import { AdminAiBoard } from '../ai-cup/admin-board'
 import { AdminAiReports } from '../ai-cup/admin-reports'
+import { AdminAiBank } from '../ai-cup/bank-admin'
+import { AdminAiTasks } from '../ai-cup/tasks-admin'
 
 const FILTERS = [['', 'Tất cả'], ['NOT_SUBMITTED', 'Chưa nộp'], ['PENDING', 'Đang kiểm tra'], ['VALID', 'Hợp lệ'], ['INVALID', 'Không hợp lệ'], ['LOCKED', 'Đã khóa'], ['BANNED', 'Bị loại']]
 
@@ -21,10 +23,13 @@ function ConfigForm({ event, ai }: { event?: any; ai?: boolean }) {
   const [topK, setTopK] = useState('8')
   const [gitMode, setGitMode] = useState(false)
   const [template, setTemplate] = useState('')
+  const [mode, setMode] = useState('TASKS')
+  const [taskCount, setTaskCount] = useState('6')
   useEffect(() => {
+    setMode(event ? (event.mode === 'TASKS' ? 'TASKS' : 'RPS') : 'TASKS'); setTaskCount(String(event?.task_count || 6))
     setName(event?.name || ''); setDeadline(toLocalInput(event?.deadline)); setRounds(String(event?.rounds || 5)); setTopK(String(event?.top_k || 8)); setGitMode(!!event?.git_mode); setTemplate(event?.git_template_url || '')
   }, [event])
-  const payload = () => ({ name: name.trim(), deadline: fromLocalInput(deadline), rounds: Number(rounds), top_k: Number(topK), git_mode: ai ? false : gitMode, git_template_url: ai ? '' : template.trim(), ...(ai ? { kind: 'AI' } : {}) })
+  const payload = () => ({ name: name.trim(), deadline: fromLocalInput(deadline), rounds: Number(rounds), top_k: Number(topK), git_mode: ai ? false : gitMode, git_template_url: ai ? '' : template.trim(), ...(ai ? { kind: 'AI', mode: mode === 'TASKS' ? 'TASKS' : '', task_count: mode === 'TASKS' ? Number(taskCount) : 0 } : {}) })
   const editable = !event || event.status === 'OPEN'
   return (
     <div className="space-y-3">
@@ -34,6 +39,15 @@ function ConfigForm({ event, ai }: { event?: any; ai?: boolean }) {
         <Field label={ai ? 'Số lượt chấm (1–100)' : 'Số lượt ghép cặp (1–100)'} type="number" min={1} max={100} value={rounds} onChange={(e) => setRounds(e.target.value)} disabled={!editable} />
         <Select label="Số đội vào giải chính" value={topK} onChange={(e) => setTopK(e.target.value)} disabled={!editable}><option value="8">Top 8</option><option value="16">Top 16</option><option value="32">Top 32</option></Select>
       </div>
+      {ai && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Select label="Dạng đề của vòng loại" value={mode} onChange={(e) => setMode(e.target.value)} disabled={!editable || !!event} data-testid="ai-mode">
+            <option value="TASKS">Kho đề: học từ thế cờ (bốc ngẫu nhiên)</option>
+            <option value="RPS">Đọc đối thủ oẳn tù tì (đề cố định)</option>
+          </Select>
+          {mode === 'TASKS' && <Field label="Số đề bốc từ kho (3–8)" type="number" min={3} max={8} value={taskCount} disabled={!editable || event?.tasks_locked} onChange={(e) => setTaskCount(e.target.value)} data-testid="ai-task-count" />}
+        </div>
+      )}
       {!ai && <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="accent-primary" checked={gitMode} disabled={!editable} onChange={(e) => setGitMode(e.target.checked)} />Bắt buộc nộp bài kèm commit GitHub</label>}
       {!ai && gitMode && <Field label="Repo mẫu (tùy chọn)" value={template} onChange={(e) => setTemplate(e.target.value)} placeholder="https://github.com/…" disabled={!editable} />}
       {!editable && <p className="text-xs text-muted-foreground">Vòng loại đã khóa — không thể đổi cấu hình.</p>}
@@ -179,6 +193,7 @@ export function QualifierAdminTab({ ai }: { ai?: boolean }) {
             {live.total > 0 && <div className="mt-4"><ProgressBar value={live.completed || 0} max={live.total} label="Tiến độ" /></div>}
             {live.error && <div className="mt-4"><ErrorNote message={live.error} /></div>}
           </Card>
+          {ai && live.mode === 'TASKS' && <AdminAiTasks event={live} />}
           <Card title="Điều hành"><Operations event={live} ai={ai} /></Card>
           {live.status === 'OPEN' && <Card title="Cấu hình"><ConfigForm event={live} ai={ai} /></Card>}
           <Teams id={live.id} ai={ai} />
@@ -186,6 +201,7 @@ export function QualifierAdminTab({ ai }: { ai?: boolean }) {
           {ai && <AdminAiReports />}
         </>
       )}
+      {ai && <AdminAiBank />}
     </div>
   )
 }

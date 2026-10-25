@@ -55,7 +55,7 @@ function serverReason(e: unknown) {
   return `không kết nối được${e instanceof Error && e.message ? ` (${e.message})` : ''}`
 }
 
-export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSubmit, submitting, submitDisabledReason, extra, practice = true, renderActions, templates, pythonOnly }: {
+export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSubmit, submitting, submitDisabledReason, extra, practice = true, renderActions, templates, pythonOnly, hideValidate }: {
   draftKey: string
   ruleId?: string
   withExplanation?: boolean
@@ -71,6 +71,8 @@ export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSu
   templates?: { id: string; label: string; code: string }[]
   /** Cuộc thi chỉ nhận Python (Giải AI). */
   pythonOnly?: boolean
+  /** Ẩn nút "Kiểm tra mã" mặc định (kiểm tra theo hàm decide_move) khi cuộc thi dùng điểm vào khác. */
+  hideValidate?: boolean
 }) {
   const { run, capabilities, toast, role } = useLive()
   const storageKey = `arena.draft.${draftKey}`
@@ -241,7 +243,7 @@ export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSu
             onClick={() => void onSubmit({ code, language, explanation, commit })}
           ><Swords className="size-4" />{submitLabel || 'Nộp bài'}</Button>
         )}
-        <Button variant="secondary" loading={working === 'validate'} disabled={!canUse || !code.trim() || tooLarge} onClick={() => void validate()}><ShieldCheck className="size-4" />Kiểm tra mã</Button>
+        {!hideValidate && <Button variant="secondary" loading={working === 'validate'} disabled={!canUse || !code.trim() || tooLarge} onClick={() => void validate()}><ShieldCheck className="size-4" />Kiểm tra mã</Button>}
         {practice && (
           <>
             <Select value={boss} onChange={(e) => setBoss(e.target.value as typeof boss)} aria-label="Chọn boss" className="w-40">
