@@ -46,7 +46,7 @@ export function AiAdminCard() {
       {info.loading ? <SkeletonRows rows={3} /> : info.error && !d ? <ErrorNote message={info.error.message} onRetry={() => void info.reload()} /> : d && (
         <div className="space-y-5">
           {!d.available && (
-            <p className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-200"><AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />Máy chủ chưa có ANTHROPIC_API_KEY nên trợ lý chưa trả lời được. Đặt khóa trong file môi trường của máy chủ rồi khởi động lại dịch vụ.</p>
+            <p className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-200"><AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />Máy chủ chưa có khóa API nên trợ lý chưa trả lời được. Đặt GEMINI_API_KEY (Google) hoặc ANTHROPIC_API_KEY (Claude) trong file môi trường của máy chủ rồi khởi động lại dịch vụ.</p>
           )}
           <div className="grid gap-3 sm:grid-cols-4">
             {[

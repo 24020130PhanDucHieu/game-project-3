@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, type ReactNode } from 'react'
-import { Activity, BookOpen, Check, Copy, Cpu, FileCode2, Flag, HelpCircle, ListOrdered, Lock, MessageCircleQuestion, Scale, Sparkles, WifiOff } from 'lucide-react'
+import { Activity, BookOpen, Check, Copy, Cpu, FileCode2, Flag, HelpCircle, ListOrdered, Lock, MessageCircleQuestion, Scale, WifiOff } from 'lucide-react'
 import { decodeRule, ruleBits, shortTime } from '@/lib/format'
 import { Badge, Button, Card, DataTable, SectionTitle, Tabs } from '../ui'
 import { useLive } from '../context'
@@ -9,7 +9,6 @@ import { CPP_TEMPLATE, PY_TEMPLATE } from '../workbench'
 import { TeamClarifications } from '../clarifications'
 import { SystemStatusCard } from '../system-status'
 import { PrivacyPolicy } from '../privacy-policy'
-import { AiAssistantCard } from '../ai-assistant'
 import { intents, type GuideSection } from '@/lib/ui-intents'
 
 type Section = GuideSection
@@ -59,7 +58,6 @@ export function GuideView() {
           { id: 'qualifier', label: 'Vòng loại', icon: <Flag className="size-4" /> },
           { id: 'offline', label: 'Mất mạng', icon: <WifiOff className="size-4" /> },
           { id: 'faq', label: 'Câu hỏi thường gặp', icon: <HelpCircle className="size-4" /> },
-          { id: 'assistant', label: 'Trợ lý AI', icon: <Sparkles className="size-4" /> },
           { id: 'ask', label: 'Hỏi BTC', icon: <MessageCircleQuestion className="size-4" /> },
           { id: 'privacy', label: 'Dữ liệu cá nhân', icon: <Lock className="size-4" /> },
           { id: 'status', label: 'Trạng thái hệ thống', icon: <Activity className="size-4" /> },
@@ -176,7 +174,6 @@ export function GuideView() {
         </Card>
       )}
 
-      {section === 'assistant' && <AiAssistantCard />}
       {section === 'ask' && <TeamClarifications />}
       {section === 'privacy' && <PrivacyPolicy />}
       {section === 'status' && <SystemStatusCard />}

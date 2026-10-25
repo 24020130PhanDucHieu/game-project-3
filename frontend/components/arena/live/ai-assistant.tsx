@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { ChevronDown, FileText, Headset, Send, ShieldCheck, Sparkles, X } from 'lucide-react'
+import { ChevronDown, FileText, Headset, MessageCircle, RotateCcw, Send, ShieldCheck, Sparkles, X } from 'lucide-react'
 import { aiStore, type AiMessage } from '@/lib/ai-store'
 import { intents } from '@/lib/ui-intents'
 import { cn } from '@/lib/utils'
-import { Badge, Button, Card, EmptyState } from './ui'
+import { Button } from './ui'
 import { useLive, type ViewId } from './context'
 
 const SUGGESTIONS = [
@@ -24,7 +24,7 @@ export function useAi() {
 }
 
 /** Mở mục nguồn: mục Hướng dẫn hoặc trang tương ứng. */
-function useOpenSource() {
+function useOpenSource(close: () => void) {
   const { navigate } = useLive()
   return (link: string) => {
     if (link.startsWith('guide/')) {
@@ -32,12 +32,17 @@ function useOpenSource() {
       if (intents.isGuideSection(section)) intents.openGuide(section)
       navigate('guide')
     } else if (VIEW_BY_LINK[link]) navigate(VIEW_BY_LINK[link])
+    close()
   }
 }
 
-function SourceChip({ s }: { s: NonNullable<AiMessage['sources']>[number] }) {
+function Avatar() {
+  return <span className="grid size-8 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-inner" aria-hidden><Sparkles className="size-4" /></span>
+}
+
+function SourceChip({ s, close }: { s: NonNullable<AiMessage['sources']>[number]; close: () => void }) {
   const [open, setOpen] = useState(false)
-  const openSource = useOpenSource()
+  const openSource = useOpenSource(close)
   return (
     <div className="rounded-xl border border-border bg-card/70">
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left text-xs">
@@ -55,27 +60,36 @@ function SourceChip({ s }: { s: NonNullable<AiMessage['sources']>[number] }) {
   )
 }
 
-function Bubble({ m }: { m: AiMessage }) {
+function TypingDots() {
+  return (
+    <span className="inline-flex items-center gap-1 py-1" role="status" aria-label="Trợ lý đang tra cứu">
+      {[0, 1, 2].map((i) => <span key={i} className="size-1.5 animate-bounce rounded-full bg-muted-foreground/70" style={{ animationDelay: `${i * 150}ms` }} />)}
+    </span>
+  )
+}
+
+function Bubble({ m, close }: { m: AiMessage; close: () => void }) {
   const { navigate } = useLive()
   if (m.role === 'user') {
-    return <div className="flex justify-end"><p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md border border-primary/30 bg-primary/10 px-3 py-2 text-sm">{m.text}</p></div>
+    return <div className="flex justify-end"><p className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-br-md bg-gradient-to-br from-violet-500 to-fuchsia-600 px-3.5 py-2 text-sm text-white shadow-sm">{m.text}</p></div>
   }
   const askHuman = () => {
     intents.setClarificationDraft(m.question || '')
     intents.openGuide('ask')
     navigate('guide')
+    close()
   }
   return (
-    <div className="flex items-start gap-2">
-      <span className="grid size-7 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-inner" aria-hidden><Sparkles className="size-4" /></span>
+    <div className="flex items-end gap-2">
+      <Avatar />
       <div className="min-w-0 max-w-[88%] space-y-2">
-        <div className={cn('rounded-2xl rounded-tl-md border px-3 py-2 text-sm leading-snug', m.error ? 'border-red-500/30 bg-red-500/10' : m.needsHuman ? 'border-amber-500/30 bg-amber-500/10' : 'border-border bg-card')}>
-          {m.pending ? <span className="inline-flex items-center gap-2 text-muted-foreground"><span className="animate-live size-2 rounded-full bg-primary" />{m.text}</span> : <span className="whitespace-pre-wrap break-words">{m.text}</span>}
+        <div className={cn('rounded-2xl rounded-bl-md border px-3.5 py-2 text-sm leading-snug', m.error ? 'border-red-500/30 bg-red-500/10' : m.needsHuman ? 'border-amber-500/30 bg-amber-500/10' : 'border-border bg-card')}>
+          {m.pending ? <TypingDots /> : <span className="whitespace-pre-wrap break-words">{m.text}</span>}
         </div>
         {!m.pending && !!m.sources?.length && (
           <div className="space-y-1.5">
-            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground"><ShieldCheck className="size-3.5 text-emerald-500" aria-hidden />Căn cứ ({m.sources.length}) — bấm để xem đoạn trích nguyên văn</p>
-            {m.sources.map((s) => <SourceChip key={s.id} s={s} />)}
+            <p className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground"><ShieldCheck className="size-3.5 text-emerald-500" aria-hidden />Căn cứ ({m.sources.length}) — bấm để xem trích nguyên văn</p>
+            {m.sources.map((s) => <SourceChip key={s.id} s={s} close={close} />)}
           </div>
         )}
         {!m.pending && m.needsHuman && (
@@ -86,23 +100,18 @@ function Bubble({ m }: { m: AiMessage }) {
   )
 }
 
-/** Khung hỏi đáp: dùng trong tab Trợ lý của Hướng dẫn và trong ngăn nổi. */
-export function AiAssistantPanel({ compact = false }: { compact?: boolean }) {
-  const { role, tournamentId, scope } = useLive()
+function ChatWindow({ onClose }: { onClose: () => void }) {
+  const { tournamentId } = useLive()
   const st = useAi()
   const [text, setText] = useState('')
   const box = useRef<HTMLDivElement>(null)
-  const lastScope = useRef(scope)
-
-  useEffect(() => {
-    if (lastScope.current !== scope) { aiStore.reset(); lastScope.current = scope }
-    if (role !== 'GUEST') void aiStore.refreshUsage()
-  }, [role, scope])
+  const input = useRef<HTMLTextAreaElement>(null)
 
   useLayoutEffect(() => {
     const el = box.current
     if (el) el.scrollTop = el.scrollHeight
   }, [st.messages])
+  useEffect(() => { input.current?.focus() }, [])
 
   const out = st.remaining === 0
   const disabled = st.busy || out || st.available === false
@@ -112,25 +121,37 @@ export function AiAssistantPanel({ compact = false }: { compact?: boolean }) {
     void aiStore.ask(q, tournamentId)
   }
 
-  if (role === 'GUEST') return <EmptyState icon={<Sparkles className="size-6" />} title="Đăng nhập để hỏi trợ lý" hint="Trợ lý trả lời về luật và lịch thi dựa trên tài liệu chính thức." />
-
   return (
-    <div className="flex flex-col">
-      <div ref={box} data-testid="ai-list" className={cn('space-y-3 overflow-y-auto px-1 py-2', compact ? 'h-[min(24rem,50vh)]' : 'h-[min(28rem,55vh)]')} aria-live="polite">
-        {st.messages.length === 0 ? (
-          <div className="space-y-3 py-2">
-            <p className="text-sm text-muted-foreground">Mình trả lời về luật chơi, cách viết bot, lịch và trạng thái trận của đội bạn. Mình chỉ nói điều có trong tài liệu hoặc dữ liệu của giải, kèm nguồn; không có thì mình chuyển cho ban tổ chức.</p>
-            <div className="flex flex-wrap gap-2">
-              {SUGGESTIONS.map((s) => <button key={s} type="button" onClick={() => send(s)} disabled={disabled} className="rounded-full border border-border bg-card px-3 py-1.5 text-left text-xs transition-colors hover:border-primary/50 hover:bg-primary/5 disabled:opacity-50">{s}</button>)}
-            </div>
+    <div role="dialog" aria-label="Trợ lý hỏi đáp luật" className="animate-fade-up fixed inset-x-2 bottom-20 z-[60] flex h-[min(36rem,calc(100dvh-7rem))] flex-col overflow-hidden rounded-2xl border border-border bg-background shadow-2xl shadow-black/40 sm:inset-x-auto sm:right-4 sm:w-[24rem]">
+      <header className="flex items-center gap-3 bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-3 text-white">
+        <span className="grid size-10 shrink-0 place-items-center rounded-full bg-white/20 ring-2 ring-white/30" aria-hidden><Sparkles className="size-5" /></span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-bold">Trợ lý K69</p>
+          <p className="flex items-center gap-1.5 text-[11px] text-white/85"><span className="size-1.5 rounded-full bg-emerald-300" aria-hidden />Luôn dẫn nguồn · AI có thể sai</p>
+        </div>
+        <button type="button" onClick={() => aiStore.clear()} disabled={!st.messages.length || st.busy} aria-label="Cuộc trò chuyện mới" title="Cuộc trò chuyện mới" className="grid size-8 place-items-center rounded-full text-white/90 transition hover:bg-white/15 disabled:opacity-40"><RotateCcw className="size-4" /></button>
+        <button type="button" onClick={onClose} aria-label="Đóng trợ lý" className="grid size-8 place-items-center rounded-full text-white/90 transition hover:bg-white/15"><X className="size-5" /></button>
+      </header>
+
+      <div ref={box} data-testid="ai-list" className="flex-1 space-y-3 overflow-y-auto bg-gradient-to-b from-muted/30 to-transparent px-3 py-4" aria-live="polite">
+        <div className="flex items-end gap-2">
+          <Avatar />
+          <p className="max-w-[88%] rounded-2xl rounded-bl-md border border-border bg-card px-3.5 py-2 text-sm leading-snug">Chào bạn, mình là trợ lý K69. Mình trả lời về luật chơi, cách viết bot, lịch thi và trạng thái trận của đội bạn, chỉ dựa trên tài liệu và dữ liệu thật của giải. Điều gì mình không chắc, mình sẽ chuyển cho ban tổ chức.</p>
+        </div>
+        {st.messages.length === 0 && (
+          <div className="flex flex-wrap justify-end gap-2 pl-10">
+            {SUGGESTIONS.map((s) => <button key={s} type="button" onClick={() => send(s)} disabled={disabled} className="rounded-2xl border border-primary/40 bg-card px-3 py-1.5 text-left text-xs text-primary transition-colors hover:bg-primary/10 disabled:opacity-50">{s}</button>)}
           </div>
-        ) : st.messages.map((m) => <Bubble key={m.id} m={m} />)}
+        )}
+        {st.messages.map((m) => <Bubble key={m.id} m={m} close={onClose} />)}
       </div>
-      <form className="mt-2 border-t border-border pt-3" onSubmit={(e) => { e.preventDefault(); send(text) }}>
-        {st.available === false && <p role="alert" className="mb-2 rounded-lg bg-amber-500/10 px-3 py-1.5 text-xs text-amber-800 dark:text-amber-200">Trợ lý AI đang tắt hoặc chưa được cấu hình. Bạn vẫn có thể gửi câu hỏi cho ban tổ chức ở tab Hỏi BTC.</p>}
-        {out && st.available !== false && <p role="alert" className="mb-2 rounded-lg bg-amber-500/10 px-3 py-1.5 text-xs text-amber-800 dark:text-amber-200">Hôm nay đội bạn đã dùng hết lượt hỏi trợ lý. Hãy gửi câu hỏi cho ban tổ chức.</p>}
+
+      <form className="border-t border-border bg-card/60 p-3" onSubmit={(e) => { e.preventDefault(); send(text) }}>
+        {st.available === false && <p role="alert" className="mb-2 rounded-lg bg-amber-500/10 px-3 py-1.5 text-xs text-amber-800 dark:text-amber-200">Trợ lý đang tắt. Bạn vẫn gửi được câu hỏi cho ban tổ chức ở Hướng dẫn → Hỏi BTC.</p>}
+        {out && st.available !== false && <p role="alert" className="mb-2 rounded-lg bg-amber-500/10 px-3 py-1.5 text-xs text-amber-800 dark:text-amber-200">Hôm nay đội bạn đã dùng hết lượt hỏi. Hãy gửi câu hỏi cho ban tổ chức.</p>}
         <div className="flex items-end gap-2">
           <textarea
+            ref={input}
             aria-label="Câu hỏi cho trợ lý"
             data-testid="ai-input"
             rows={1}
@@ -139,63 +160,52 @@ export function AiAssistantPanel({ compact = false }: { compact?: boolean }) {
             disabled={disabled}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(text) } }}
-            placeholder="Hỏi về luật, lịch thi, cách viết bot…"
-            className="max-h-28 min-h-10 flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+            placeholder="Nhập câu hỏi…"
+            className="max-h-24 min-h-10 flex-1 resize-none rounded-2xl border border-border bg-background px-3.5 py-2 text-sm outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
           />
-          <Button type="submit" loading={st.busy} disabled={disabled || !text.trim()} aria-label="Gửi câu hỏi cho trợ lý"><Send className="size-4" />Hỏi</Button>
+          <button type="submit" disabled={disabled || !text.trim()} aria-label="Gửi câu hỏi cho trợ lý" className="grid size-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-md transition hover:brightness-110 disabled:opacity-50"><Send className="size-4" /></button>
         </div>
-        <p className="mt-1.5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
-          <span>AI có thể sai. Luật chính thức nằm ở các mục Hướng dẫn.</span>
-          {st.remaining !== null && st.limit !== null && <Badge tone={st.remaining > 3 ? 'neutral' : 'warning'}>Còn {st.remaining}/{st.limit} lượt hôm nay</Badge>}
+        <p className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
+          <span>AI có thể sai. Luật chính thức nằm ở Hướng dẫn.</span>
+          {st.remaining !== null && st.limit !== null && <span className={cn('font-medium', st.remaining <= 3 && 'text-amber-600 dark:text-amber-300')}>Còn {st.remaining}/{st.limit} lượt hôm nay</span>}
         </p>
       </form>
     </div>
   )
 }
 
-/** Thẻ dùng trong tab Trợ lý của Hướng dẫn. */
-export function AiAssistantCard() {
-  return (
-    <Card icon={<Sparkles />} title="Trợ lý hỏi đáp luật" subtitle="Chỉ trả lời từ tài liệu chính thức, cấu hình giải và hỏi đáp công khai của ban tổ chức; luôn kèm nguồn. Không có căn cứ thì chuyển cho ban tổ chức.">
-      <AiAssistantPanel />
-    </Card>
-  )
-}
-
-/** Nút nổi mở ngăn trợ lý trên mọi trang cho tài khoản đã đăng nhập. */
+/** Bong bóng chat tròn góc phải màn hình; bấm mở cửa sổ chat. Chỉ hiện cho tài khoản đã đăng nhập khi trợ lý đang bật. */
 export function AiLauncher() {
-  const { role, scope, view } = useLive()
+  const { role, scope } = useLive()
   const st = useAi()
   const [open, setOpen] = useState(false)
+  const [seen, setSeen] = useState(0)
   useEffect(() => { if (role !== 'GUEST') void aiStore.refreshUsage() }, [role, scope])
+  useEffect(() => { aiStore.resetOnScope(scope) }, [scope])
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
+  const replies = st.messages.filter((m) => m.role === 'ai' && !m.pending).length
+  useEffect(() => { if (open) setSeen(replies) }, [open, replies])
   if (role === 'GUEST' || st.available !== true) return null
-  if (view === 'guide') return null // Hướng dẫn đã có tab Trợ lý riêng
+  const unread = !open && replies > seen
   return (
     <>
-      {open && (
-        <div role="dialog" aria-label="Trợ lý hỏi đáp luật" className="animate-fade-up fixed bottom-20 right-4 z-[60] w-[min(26rem,calc(100vw-2rem))] rounded-2xl border border-border bg-background p-4 shadow-2xl">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <p className="flex items-center gap-2 text-sm font-bold"><span className="grid size-7 place-items-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white" aria-hidden><Sparkles className="size-4" /></span>Trợ lý hỏi đáp luật</p>
-            <Button size="sm" variant="ghost" aria-label="Đóng trợ lý" onClick={() => setOpen(false)}><X className="size-4" /></Button>
-          </div>
-          <AiAssistantPanel compact />
-        </div>
-      )}
+      {open && <ChatWindow onClose={() => setOpen(false)} />}
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? 'Đóng trợ lý hỏi đáp' : 'Mở trợ lý hỏi đáp luật'}
         aria-expanded={open}
+        title="Hỏi trợ lý"
         data-testid="ai-launcher"
-        className="fixed bottom-4 right-4 z-[60] inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-fuchsia-500/30 transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+        className="fixed bottom-4 right-4 z-[60] grid size-14 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-lg shadow-fuchsia-500/40 transition hover:scale-105 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
       >
-        <Sparkles className="size-4" aria-hidden />{open ? 'Đóng' : 'Hỏi trợ lý'}
+        {open ? <X className="size-6" aria-hidden /> : <MessageCircle className="size-6" aria-hidden />}
+        {unread && <span data-testid="ai-unread" className="absolute right-0.5 top-0.5 size-3.5 rounded-full bg-rose-500 ring-2 ring-background" aria-label="Có câu trả lời mới" />}
       </button>
     </>
   )

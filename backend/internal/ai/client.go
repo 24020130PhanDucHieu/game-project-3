@@ -25,6 +25,8 @@ type Block struct {
 	ToolUseID string          `json:"tool_use_id,omitempty"`
 	Content   string          `json:"content,omitempty"`
 	IsError   bool            `json:"is_error,omitempty"`
+	// Raw: phần gốc model trả về (Gemini cần gửi lại nguyên văn kèm thoughtSignature); không gửi cho Claude.
+	Raw json.RawMessage `json:"-"`
 }
 
 type Usage struct {
@@ -59,7 +61,7 @@ type APIError struct {
 	Body   string
 }
 
-func (e *APIError) Error() string { return fmt.Sprintf("anthropic %d: %s", e.Status, e.Body) }
+func (e *APIError) Error() string { return fmt.Sprintf("api %d: %s", e.Status, e.Body) }
 
 // Client gọi Anthropic Messages API. BaseURL cấu hình được để thử bằng máy chủ giả.
 type Client struct {

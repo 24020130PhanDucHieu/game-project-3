@@ -28,6 +28,7 @@ export type AiState = {
 const EMPTY: AiState = { messages: [], busy: false, available: null, remaining: null, limit: null }
 let state: AiState = EMPTY
 let seq = 0
+let lastScope: string | null = null
 const listeners = new Set<() => void>()
 
 function set(patch: Partial<AiState>) {
@@ -40,6 +41,14 @@ export const aiStore = {
   get: () => state,
   server: () => EMPTY,
   reset() { state = EMPTY; listeners.forEach((l) => l()) },
+  /** Xóa hội thoại, giữ thông tin hạn mức. */
+  clear() { set({ messages: [] }) },
+  /** Đổi tài khoản/phiên thì bỏ hội thoại của người trước. */
+  resetOnScope(scope: string) {
+    if (lastScope !== null && lastScope !== scope) state = { ...EMPTY }
+    lastScope = scope
+    listeners.forEach((l) => l())
+  },
 
   async refreshUsage() {
     try {

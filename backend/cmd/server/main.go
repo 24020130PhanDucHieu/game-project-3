@@ -154,10 +154,33 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not load AI knowledge base: %v", err)
 	}
-	aiKey := os.Getenv("ANTHROPIC_API_KEY")
-	aiModel := os.Getenv("AI_MODEL")
-	if aiModel == "" {
-		aiModel = "claude-haiku-5-5"
+	// Nhà cung cấp AI: AI_PROVIDER=gemini|claude; bỏ trống thì dùng bên nào có khóa (ưu tiên Gemini).
+	aiProvider := strings.ToLower(os.Getenv("AI_PROVIDER"))
+	if aiProvider == "" {
+		if os.Getenv("GEMINI_API_KEY") != "" {
+			aiProvider = "gemini"
+		} else {
+			aiProvider = "claude"
+		}
+	}
+	var aiClient ai.Completer
+	var aiKey, aiModel string
+	aiMaxTokens := 700
+	if aiProvider == "gemini" {
+		aiKey = os.Getenv("GEMINI_API_KEY")
+		aiModel = os.Getenv("AI_MODEL")
+		if aiModel == "" {
+			aiModel = "gemini-3.5-flash-lite"
+		}
+		aiClient = ai.NewGeminiClient(os.Getenv("GEMINI_BASE_URL"), aiKey)
+		aiMaxTokens = 1200 // mô hình Gemini tính cả token "suy nghĩ" vào giới hạn đầu ra
+	} else {
+		aiKey = os.Getenv("ANTHROPIC_API_KEY")
+		aiModel = os.Getenv("AI_MODEL")
+		if aiModel == "" {
+			aiModel = "claude-haiku-5-5"
+		}
+		aiClient = ai.NewClient(os.Getenv("ANTHROPIC_BASE_URL"), aiKey)
 	}
 	aiDefaults := ai.DefaultSettings()
 	if n, convErr := strconv.Atoi(os.Getenv("AI_DAILY_PER_TEAM")); convErr == nil && n > 0 {
@@ -175,10 +198,11 @@ func main() {
 		},
 	}
 	aiHandler.Agent = &ai.Agent{
-		C:        ai.NewClient(os.Getenv("ANTHROPIC_BASE_URL"), aiKey),
-		Model:    aiModel,
-		MaxTurns: 4,
-		Tools:    &ai.Toolbox{KB: aiKB, Data: httpHandler.NewAIData(tournamentService, clarHandler), Now: time.Now},
+		C:         aiClient,
+		Model:     aiModel,
+		MaxTurns:  4,
+		MaxTokens: aiMaxTokens,
+		Tools:     &ai.Toolbox{KB: aiKB, Data: httpHandler.NewAIData(tournamentService, clarHandler), Now: time.Now},
 	}
 	tournamentService.OnRoundEvent = func(tournamentID, matchID, eventType string) {
 		httpHandler.InvalidateDerived()

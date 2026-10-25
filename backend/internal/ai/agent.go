@@ -49,8 +49,9 @@ type Result struct {
 type Agent struct {
 	C        Completer
 	Tools    *Toolbox
-	Model    string
-	MaxTurns int // số vòng gọi model tối đa
+	Model     string
+	MaxTurns  int // số vòng gọi model tối đa
+	MaxTokens int // giới hạn token đầu ra mỗi vòng (mặc định 700)
 }
 
 type submitInput struct {
@@ -91,7 +92,11 @@ func (a *Agent) Ask(ctx context.Context, question string, who Identity) (Result,
 		if turn == turns { // vòng cuối buộc phải trả lời
 			choice = map[string]interface{}{"type": "tool", "name": SubmitTool}
 		}
-		resp, err := a.C.Complete(ctx, Request{Model: a.Model, MaxTokens: 700, System: systemPrompt, Tools: Defs(), ToolChoice: choice, Messages: messages})
+		maxTokens := a.MaxTokens
+		if maxTokens <= 0 {
+			maxTokens = 700
+		}
+		resp, err := a.C.Complete(ctx, Request{Model: a.Model, MaxTokens: maxTokens, System: systemPrompt, Tools: Defs(), ToolChoice: choice, Messages: messages})
 		if err != nil {
 			return Result{}, err
 		}
