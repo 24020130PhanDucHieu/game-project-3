@@ -6,7 +6,7 @@ import { useResource } from '@/lib/cache'
 import { levelName, sameStudent } from '@/lib/format'
 import { Badge, Button, Card, DataTable, EmptyState, Select, Skeleton, SkeletonRows, StatusBadge } from '../../ui'
 import { useLive } from '../../context'
-import { MatchCard } from '../../shared'
+import { BracketTree } from '../../bracket-tree'
 import { RankBadge } from '../ranking'
 import { useAiTournaments } from './common'
 
@@ -71,15 +71,11 @@ export function MainTab() {
         <Card><EmptyState icon={<Swords className="size-6" />} title="Chưa xếp lịch" hint="Các đội đã được chốt từ vòng loại AI; ban tổ chức sẽ xếp lịch thi đấu." /></Card>
       )}
 
-      {levels.map((level) => (
-        <Card key={level} title={levelName(t, level)} subtitle={`${matches.filter(([, m]) => Number(m.round_level) === level).length} trận`}>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {matches.filter(([, m]) => Number(m.round_level) === level).sort(([a], [b]) => a.localeCompare(b)).map(([mid, m]) => (
-              <MatchCard key={mid} id={mid} match={m} onOpen={(x) => open(x)} />
-            ))}
-          </div>
+      {levels.length > 0 && (
+        <Card icon={<Network />} title="Sơ đồ nhánh đấu" subtitle={`${levels.map((l) => levelName(t, l)).join(' → ')} · bấm vào một trận để vào phòng`}>
+          <BracketTree matches={t.matches} onOpen={(mid) => open(mid)} />
         </Card>
-      ))}
+      )}
       <AiRanking mine={session.student_id} />
     </div>
   )

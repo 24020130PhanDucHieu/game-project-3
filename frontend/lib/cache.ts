@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-type Entry = { data?: unknown; error?: Error; at: number; promise?: Promise<unknown> }
+type Entry = { data?: unknown; error?: Error; at: number; promise?: Promise<unknown>; startedAt?: number }
 
 const store = new Map<string, Entry>()
 const listeners = new Set<(key: string) => void>()
@@ -36,9 +36,10 @@ export function invalidate(prefix = '') {
 function load<T>(key: string, fetcher: () => Promise<T>, force: boolean, ttl: number): Promise<T> {
   const entry = store.get(key) ?? { at: 0 }
   store.set(key, entry)
-  if (entry.promise) return entry.promise as Promise<T>
+  // Yêu cầu đang bay quá 60 giây coi như treo: bỏ đi để lần tải sau không bị kẹt chờ mãi.
+  if (entry.promise && Date.now() - (entry.startedAt ?? 0) < 60_000) return entry.promise as Promise<T>
   if (!force && entry.data !== undefined && Date.now() - entry.at < ttl) return Promise.resolve(entry.data as T)
-  const promise = fetcher()
+  const promise: Promise<T> = fetcher()
     .then((data) => {
       entry.data = data
       entry.error = undefined
@@ -51,10 +52,11 @@ function load<T>(key: string, fetcher: () => Promise<T>, force: boolean, ttl: nu
       throw entry.error
     })
     .finally(() => {
-      entry.promise = undefined
+      if (entry.promise === promise) entry.promise = undefined
       notify(key)
     })
   entry.promise = promise
+  entry.startedAt = Date.now()
   return promise
 }
 

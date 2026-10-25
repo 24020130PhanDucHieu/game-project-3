@@ -61,16 +61,42 @@ export async function apiRequest<T = any>(
     headers.set('Authorization', `Bearer ${token}`)
   }
 
+  // Yêu cầu treo (mạng chập chờn, máy chủ quá tải) không được kẹt mãi: quá hạn thì hủy và báo lỗi để giao diện tự thử lại,
+  // thay vì để màn hình đứng đến khi người dùng bấm tải lại trang. Đọc dữ liệu 30 giây; ghi/chấm bài (có thể chạy lâu) 130 giây.
+  const isRead = !options.method || options.method.toUpperCase() === 'GET'
+  const limitMs = isRead ? 30_000 : 130_000
+  const controller = new AbortController()
+  let timedOut = false
+  const timer = setTimeout(() => { timedOut = true; controller.abort() }, limitMs)
+  const outer = options.signal
+  if (outer) {
+    if (outer.aborted) controller.abort()
+    else outer.addEventListener('abort', () => controller.abort(), { once: true })
+  }
+  try {
+    return await send()
+  } catch (error) {
+    if (timedOut) {
+      const e = new Error('Máy chủ phản hồi quá chậm. Hãy thử lại sau ít giây.') as Error & { status?: number }
+      e.status = 504
+      throw e
+    }
+    throw error
+  } finally {
+    clearTimeout(timer)
+  }
+
+  async function send(): Promise<T> {
   // Mạng chập chờn (Wi-Fi rớt, phần mềm diệt virus ngắt kết nối): thử lại vài lần trước khi báo lỗi.
   // Chỉ thử lại khi yêu cầu chưa tới được máy chủ (fetch ném TypeError), nên không gửi trùng.
   let response: Response | undefined
   for (let attempt = 0; ; attempt++) {
     try {
-      response = await fetch(url, { ...options, headers })
+      response = await fetch(url, { ...options, headers, signal: controller.signal })
       break
     } catch (error) {
       const offline = typeof navigator !== 'undefined' && navigator.onLine === false
-      if (attempt >= 3 || offline || options.signal?.aborted || !(error instanceof TypeError)) throw error
+      if (attempt >= 3 || offline || controller.signal.aborted || !(error instanceof TypeError)) throw error
       await new Promise((r) => setTimeout(r, 600 * 2 ** attempt))
     }
   }
@@ -101,6 +127,7 @@ export async function apiRequest<T = any>(
     return (await response.json()) as T
   }
   return (await response.text()) as unknown as T
+  }
 }
 
 // =============================================================================
