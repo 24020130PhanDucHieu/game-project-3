@@ -150,6 +150,13 @@ class Adam:
                 layer.b[j] -= self.lr * (mb[j] / c1) / (math.sqrt(vb[j] / c2) + self.eps)
 
 
+# Nhật ký mất mát từng vòng huấn luyện và móc báo tiến độ: chỉ để giao diện chấm thử trên máy vẽ đường học.
+# Là danh sách đột biến (không gán lại tên) vì sandbox chụp tên công khai của module một lần.
+FIT_LOG = []
+FIT_LOG_CAP = 1000
+PROGRESS = [None]
+
+
 class MLP:
     """Mạng nhiều lớp. sizes = [vào, ẩn..., ra]; task = "class" (ra = số lớp) hoặc "reg" (ra = 1)."""
 
@@ -207,6 +214,14 @@ class MLP:
                     self.backward(grad)
                 optimizer.step(self.layers, 1.0 / len(chunk))
             history.append(total / max(1, len(X)))
+            if len(FIT_LOG) < FIT_LOG_CAP:
+                FIT_LOG.append(history[-1])
+            hook = PROGRESS[0]
+            if hook is not None:
+                try:
+                    hook(len(FIT_LOG), history[-1])
+                except Exception:
+                    PROGRESS[0] = None
             if time_limit is not None and time.monotonic() - started > time_limit:
                 break
         return history

@@ -214,6 +214,8 @@ export function LiveProvider({ children }: { children: ReactNode }) {
         if (/round|result|complete|correction|reset|disqualify|swap/i.test(action)) {
           invalidate('rk')
           invalidate('mh')
+          invalidate('elo:main:')
+          invalidate('profile:')
         }
       }, 250)
     })
@@ -226,6 +228,30 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       setSocketOpen(false)
     }
   }, [tournamentId])
+
+  // Phòng chung: vòng loại, Giải AI, hỏi đáp, thông báo, thử đấu, thử thách... không thuộc một giải cụ thể.
+  // Máy chủ chỉ báo "khu vực nào vừa đổi"; màn hình đang mở tự tải lại đúng khu vực đó (không cần chuyển tab).
+  useEffect(() => {
+    const socket = createTournamentSocket('_global')
+    const pending = new Set<string>()
+    let timer: number | undefined
+    let first = true
+    const offStatus = socket.onStatus((open) => {
+      if (open && !first) ['q', 'ai:', 'clar:', 'nt:', 'scrim:', 'chal:', 'admin:', 'tl'].forEach((scope) => invalidate(scope))
+      if (open) first = false
+    })
+    const off = socket.subscribe((message: any) => {
+      if (message?.type !== 'RESOURCE_UPDATED' || !message.scope) return
+      pending.add(String(message.scope))
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        pending.forEach((scope) => { invalidate(scope); if (scope === 'q') invalidate('rk') })
+        pending.clear()
+      }, 300)
+    })
+    socket.connect()
+    return () => { window.clearTimeout(timer); off(); offStatus(); socket.destroy() }
+  }, [])
 
   const run: Live['run'] = useCallback(async (task, success, after) => {
     setBusy(true)

@@ -99,7 +99,7 @@ function EntryForm({ initial, editing, templates, onClose }: { initial: Draft; e
 
 export function AdminAiBank() {
   const { run, confirm, busy } = useLive()
-  const bank = useResource<any>('ai:bank', () => arenaApi.getAiBank(), { ttl: 10_000 })
+  const bank = useResource<any>('ai:bank', () => arenaApi.getAiBank(), { ttl: 10_000, refreshMs: 30_000 })
   const [form, setForm] = useState<{ draft: Draft; editing: boolean } | null>(null)
   const [probe, setProbe] = useState<{ id: string; result: any } | null>(null)
   const [probing, setProbing] = useState('')

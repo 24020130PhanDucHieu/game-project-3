@@ -283,6 +283,30 @@ class TemplateFilesTests(unittest.TestCase):
         bad = taskcheck.check('def solve(task): return [0]', view, lambda code, task: [0])
         self.assertIn('đúng', bad['error'])
 
+    def test_task_check_returns_visual_data_and_progress(self):
+        from app.aitasks import taskcheck
+        item = item_of('capture-standard')
+        view = D.team_view(item)
+        seen = []
+
+        def run(code, task):
+            sys.modules['nnlite'] = nnlite
+            scope = {}
+            exec(code, scope)
+            return scope['solve'](task)
+        result = taskcheck.check(REFERENCE_CODE, view, run, progress=lambda epoch, loss: seen.append((epoch, loss)))
+        n_val = result['n_val']
+        self.assertEqual(len(result['val_idx']), n_val)
+        self.assertEqual(len(result['y_true']), n_val)
+        self.assertEqual(len(result['preds']), n_val)
+        self.assertEqual(result['y_true'], [view['train']['y'][i] for i in result['val_idx']])
+        self.assertGreater(len(result['fit_log']), 1)
+        self.assertLess(result['fit_log'][-1], result['fit_log'][0], 'mất mát phải giảm khi huấn luyện')
+        self.assertTrue(seen, 'phải có tin tiến độ trong lúc huấn luyện')
+        self.assertIsNone(nnlite.PROGRESS[0], 'móc tiến độ phải được gỡ sau khi chấm')
+        plain = taskcheck.check('def solve(task): return [0] * len(task["test"]["X"])', view, lambda code, task: [0] * len(task['test']['X']))
+        self.assertEqual(plain['fit_log'], [])
+
 
 if __name__ == '__main__':
     unittest.main()

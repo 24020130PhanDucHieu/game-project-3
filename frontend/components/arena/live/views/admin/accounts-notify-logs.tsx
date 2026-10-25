@@ -20,7 +20,7 @@ function SearchBox({ value, onChange, placeholder }: { value: string; onChange: 
 
 export function AccountsTab() {
   const { tournamentId, tournament, run, confirm, busy } = useLive()
-  const accounts = useResource<any[]>('admin:accounts', () => arenaApi.getAdminAccounts().then((r) => (Array.isArray(r) ? r : [])), { ttl: 15_000 })
+  const accounts = useResource<any[]>('admin:accounts', () => arenaApi.getAdminAccounts().then((r) => (Array.isArray(r) ? r : [])), { ttl: 15_000, refreshMs: 30_000 })
   const [q, setQ] = useState('')
   const [page, setPage] = useState(1)
   useEffect(() => setPage(1), [q])

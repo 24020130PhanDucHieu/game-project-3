@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -43,6 +44,8 @@ type Hub struct {
 	register       chan *Client
 	unregister     chan *Client
 	matchBroadcast chan matchMessage
+	globalMu       sync.Mutex
+	globalPending  map[string]bool
 }
 
 type matchMessage struct {
@@ -101,6 +104,31 @@ func (h *Hub) BroadcastTournamentJSON(tournamentID, matchID string, v interface{
 	default:
 		log.Printf("[WS] Dropped match event for %s because the queue is full", matchID)
 	}
+}
+
+// GlobalRoom là phòng chung cho thay đổi không thuộc một giải cụ thể (vòng loại, Giải AI, hỏi đáp, thông báo...).
+const GlobalRoom = "_global"
+
+// BroadcastGlobal báo cho mọi máy đang nghe phòng chung biết khu vực dữ liệu nào vừa đổi; máy khách tự tải lại phần đó.
+//
+// Gộp theo khu vực: chấm điểm có thể báo hàng chục lần mỗi giây, nên mỗi khu vực chỉ phát tối đa một tin mỗi giây
+// (tin cuối cùng luôn được phát để không bỏ sót thay đổi).
+func (h *Hub) BroadcastGlobal(scope string) {
+	h.globalMu.Lock()
+	defer h.globalMu.Unlock()
+	if h.globalPending == nil {
+		h.globalPending = map[string]bool{}
+	}
+	if h.globalPending[scope] {
+		return
+	}
+	h.globalPending[scope] = true
+	time.AfterFunc(time.Second, func() {
+		h.globalMu.Lock()
+		delete(h.globalPending, scope)
+		h.globalMu.Unlock()
+		h.BroadcastTournamentJSON(GlobalRoom, "", map[string]interface{}{"type": "RESOURCE_UPDATED", "scope": scope})
+	})
 }
 
 func ServeWS(hub *Hub, c *gin.Context, allowedOrigins string) {

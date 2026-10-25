@@ -22,8 +22,11 @@ export class ArenaSocket {
   private ws: WebSocket | null = null
   private url: string
   private reconnectAttempts = 0
-  private maxReconnectAttempts = 10
   private reconnectTimer: any = null
+  private lastMessageAt = Date.now()
+  private sawHeartbeat = false
+  private watchdog: any = null
+  private wakeHandler = () => this.wake()
   private listeners: Set<WebSocketMessageHandler> = new Set()
   private statusListeners: Set<(open: boolean) => void> = new Set()
   private isDestroyed = false
@@ -35,43 +38,80 @@ export class ArenaSocket {
   connect() {
     if (this.isDestroyed || typeof window === 'undefined') return
 
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) return
+    if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null }
+    this.startWatching()
     try {
-      this.ws = new WebSocket(this.url)
+      const ws = new WebSocket(this.url)
+      this.ws = ws
 
-      this.ws.onopen = () => {
+      ws.onopen = () => {
         this.reconnectAttempts = 0
+        this.lastMessageAt = Date.now()
         this.statusListeners.forEach((listener) => listener(true))
       }
 
-      this.ws.onmessage = (event) => {
+      ws.onmessage = (event) => {
+        this.lastMessageAt = Date.now()
         try {
           const parsed = JSON.parse(event.data)
+          if (parsed && parsed.type === 'HEARTBEAT') { this.sawHeartbeat = true; return }
           this.listeners.forEach((listener) => listener(parsed))
         } catch {
           this.listeners.forEach((listener) => listener(event.data))
         }
       }
 
-      this.ws.onclose = () => {
+      ws.onclose = () => {
+        if (this.ws !== ws) return
         this.statusListeners.forEach((listener) => listener(false))
         this.scheduleReconnect()
       }
 
-      this.ws.onerror = () => {
-        if (this.ws) this.ws.close()
+      ws.onerror = () => {
+        ws.close()
       }
     } catch {
       this.scheduleReconnect()
     }
   }
 
+  /** Không bỏ cuộc: giãn dần tới 30 giây rồi thử mãi; quay lại tab hoặc có mạng thì nối ngay. */
   private scheduleReconnect() {
-    if (this.isDestroyed) return
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++
-      const delay = Math.min(1000 * Math.pow(1.5, this.reconnectAttempts), 15000)
-      this.reconnectTimer = setTimeout(() => this.connect(), delay)
+    if (this.isDestroyed || this.reconnectTimer) return
+    this.reconnectAttempts++
+    const delay = Math.min(1000 * Math.pow(1.5, Math.min(this.reconnectAttempts, 12)), 30000)
+    this.reconnectTimer = setTimeout(() => { this.reconnectTimer = null; this.connect() }, delay)
+  }
+
+  private wake() {
+    if (this.isDestroyed || (typeof document !== 'undefined' && document.visibilityState === 'hidden')) return
+    if (!this.ws || this.ws.readyState === WebSocket.CLOSED || this.ws.readyState === WebSocket.CLOSING) {
+      this.reconnectAttempts = 0
+      this.connect()
     }
+  }
+
+  /** Máy chủ ping mỗi 25 giây; im lặng quá 70 giây nghĩa là ổ đã chết ngầm (ngủ máy, đổi mạng) nên nối lại. */
+  private startWatching() {
+    if (this.watchdog || typeof window === 'undefined') return
+    window.addEventListener('online', this.wakeHandler)
+    window.addEventListener('focus', this.wakeHandler)
+    document.addEventListener('visibilitychange', this.wakeHandler)
+    this.watchdog = setInterval(() => {
+      if (this.sawHeartbeat && this.ws && this.ws.readyState === WebSocket.OPEN && Date.now() - this.lastMessageAt > 70_000 && document.visibilityState === 'visible') {
+        const dead = this.ws
+        this.ws = null
+        this.sawHeartbeat = false
+        dead.onclose = null
+        dead.close()
+        this.statusListeners.forEach((listener) => listener(false))
+        this.reconnectAttempts = 0
+        this.connect()
+      } else if (!this.ws) {
+        this.wake()
+      }
+    }, 15_000)
   }
 
   subscribe(handler: WebSocketMessageHandler): () => void {
@@ -98,6 +138,12 @@ export class ArenaSocket {
   destroy() {
     this.isDestroyed = true
     if (this.reconnectTimer) clearTimeout(this.reconnectTimer)
+    if (this.watchdog) clearInterval(this.watchdog)
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('online', this.wakeHandler)
+      window.removeEventListener('focus', this.wakeHandler)
+      document.removeEventListener('visibilitychange', this.wakeHandler)
+    }
     if (this.ws) {
       this.ws.onclose = null
       this.ws.close()

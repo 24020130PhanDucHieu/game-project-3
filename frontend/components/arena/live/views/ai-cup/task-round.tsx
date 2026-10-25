@@ -7,6 +7,7 @@ import { offlineEngine } from '@/lib/offline-engine'
 import { cn } from '@/lib/utils'
 import { Badge, Button, Card } from '../../ui'
 import { ScoreBar, fmt } from './common'
+import { CheckVisual, LossChart, visualFrom, type CheckVisualData } from './check-visual'
 
 const DIFFICULTY = ['', 'Dễ', 'Vừa', 'Khó']
 
@@ -14,12 +15,17 @@ const DIFFICULTY = ['', 'Dễ', 'Vừa', 'Khó']
 export function useRoundTaskCheck(tournamentId: string, matchId: string) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [result, setResult] = useState<{ score: number; error: string | null; elapsed_ms: number; n_val: number; n_train: number } | null>(null)
+  const [result, setResult] = useState<CheckVisualData | null>(null)
+  const [live, setLive] = useState<number[]>([])
   const run = async (code: string) => {
-    setBusy(true); setError(''); setResult(null)
-    try { setResult(await offlineEngine.taskCheck(code, await arenaApi.getAiMainMatchTask(tournamentId, matchId))) } catch (e) { setError(e instanceof Error ? e.message : 'Không chấm thử được') } finally { setBusy(false) }
+    setBusy(true); setError(''); setResult(null); setLive([])
+    try {
+      const data = await arenaApi.getAiMainMatchTask(tournamentId, matchId)
+      const res = await offlineEngine.taskCheck(code, data, (p) => setLive((old) => (old.length < 400 ? [...old, p.loss] : old)))
+      setResult(visualFrom(data, res))
+    } catch (e) { setError(e instanceof Error ? e.message : 'Không chấm thử được') } finally { setBusy(false) }
   }
-  return { busy, error, result, run }
+  return { busy, error, result, live, run }
 }
 
 export function RoundTaskCheckResult({ state }: { state: ReturnType<typeof useRoundTaskCheck> }) {
@@ -27,12 +33,14 @@ export function RoundTaskCheckResult({ state }: { state: ReturnType<typeof useRo
     <>
       {state.busy && <p className="text-xs text-muted-foreground" role="status">Đang chấm trên máy bạn. Lần đầu khởi động máy chấm có thể mất khoảng một phút…</p>}
       {state.error && <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300" data-testid="round-task-error">{state.error}</p>}
+      {state.busy && state.live.length > 1 && <LossChart points={state.live} live />}
       {state.result && (
-        <div className="rounded-xl border border-border bg-muted/30 p-3" data-testid="round-task-check-result">
-          <p className="text-xs text-muted-foreground">Ước lượng trên {state.result.n_val} mẫu để riêng ra từ dữ liệu huấn luyện ({state.result.n_train} mẫu còn lại dùng để học)</p>
-          <p className="font-display text-3xl font-black tabular-nums" data-testid="round-task-check-score">{fmt(state.result.score)}</p>
-          <p className="text-xs text-muted-foreground">{(state.result.elapsed_ms / 1000).toFixed(1)} giây trên máy bạn; điểm thật tính trên thế cờ ẩn của máy chấm.</p>
-          {state.result.error && <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">{state.result.error}</p>}
+        <div className="space-y-2 rounded-xl border border-border bg-muted/30 p-3" data-testid="round-task-check-result">
+          <p className="text-xs text-muted-foreground">Ước lượng trên {state.result.result.n_val} mẫu để riêng ra từ dữ liệu huấn luyện ({state.result.result.n_train} mẫu còn lại dùng để học)</p>
+          <span className="sr-only" data-testid="round-task-check-score">{fmt(state.result.result.score)}</span>
+          <CheckVisual data={state.result} />
+          <p className="text-xs text-muted-foreground">{(state.result.result.elapsed_ms / 1000).toFixed(1)} giây trên máy bạn; điểm thật tính trên thế cờ ẩn của máy chấm.</p>
+          {state.result.result.error && <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">{state.result.result.error}</p>}
         </div>
       )}
     </>

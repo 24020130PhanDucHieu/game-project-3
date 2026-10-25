@@ -20,7 +20,7 @@ const VIEWS: ViewId[] = ['profile', 'overview', 'bracket', 'ranking', 'match', '
 /** Lịch sử tính điểm vòng loại của đội (vòng loại đang chọn), xem ngay trong hồ sơ. */
 function ProfileScoreHistory() {
   const { qualifiers, qualifierId, setQualifierId, session, scope } = useLive()
-  const detail = useResource<any>(qualifierId ? `q:detail:${scope}:${qualifierId}` : null, () => arenaApi.getQualifier(qualifierId), { ttl: 15_000 })
+  const detail = useResource<any>(qualifierId ? `q:detail:${scope}:${qualifierId}` : null, () => arenaApi.getQualifier(qualifierId), { ttl: 15_000, refreshMs: 20_000 })
   if (!qualifiers.data?.length) return null
   return (
     <Card icon={<LineChart />} title="Lịch sử tính điểm" subtitle="ELO trước và sau từng trận vòng loại" action={qualifiers.data.length > 1 ? (
@@ -77,10 +77,10 @@ export function ProfileView() {
   const own = role === 'TEAM' && sameStudent(sid, session.student_id)
   const canEdit = own || role === 'ADMIN'
 
-  const profile = useResource<any>(sid ? `profile:${sid}` : null, () => arenaApi.getProfile(sid).then((r: any) => r.profile), { ttl: 30_000 })
+  const profile = useResource<any>(sid ? `profile:${sid}` : null, () => arenaApi.getProfile(sid).then((r: any) => r.profile), { ttl: 30_000, refreshMs: 60_000 })
   const ranking = useRanking()
   const history = useHistory()
-  const qualifier = useResource<any>(own && qualifierId ? `q:detail:${scope}:${qualifierId}` : null, () => arenaApi.getQualifier(qualifierId), { ttl: 10_000 })
+  const qualifier = useResource<any>(own && qualifierId ? `q:detail:${scope}:${qualifierId}` : null, () => arenaApi.getQualifier(qualifierId), { ttl: 10_000, refreshMs: 20_000 })
   const [form, setForm] = useState<any>(null)
   useEffect(() => setForm(profile.data ? { ...profile.data } : null), [profile.data])
 

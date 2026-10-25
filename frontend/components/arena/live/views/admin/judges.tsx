@@ -11,7 +11,7 @@ import { useLive } from '../../context'
 /** Quản lý tài khoản giám khảo — chỉ tài khoản chủ (ADMIN_PASSWORD) thấy mục này. */
 export function JudgesTab() {
   const { run, confirm, busy, session } = useLive()
-  const judges = useResource<any[]>('admin:judges', () => arenaApi.getJudges().then((r) => r.items || []), { ttl: 10_000 })
+  const judges = useResource<any[]>('admin:judges', () => arenaApi.getJudges().then((r) => r.items || []), { ttl: 10_000, refreshMs: 30_000 })
   const [form, setForm] = useState({ username: '', display_name: '', password: '', email: '' })
   const [resetFor, setResetFor] = useState('')
   const [resetPass, setResetPass] = useState('')

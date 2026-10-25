@@ -11,7 +11,13 @@ export type OfflineState = { status: 'idle' | 'loading' | 'ready' | 'error'; ver
 const KEY = 'arena.offline.ready'
 let worker: Worker | null = null
 let seq = 0
-const pending = new Map<number, { resolve: (v: any) => void; reject: (e: Error) => void; timer: number }>()
+const pending = new Map<number, { resolve: (v: any) => void; reject: (e: Error) => void; timer: number; onProgress?: (p: any) => void }>()
+
+/** Kết quả chấm thử một đề: điểm kèm dữ liệu để vẽ hình minh họa (chỉ số mẫu kiểm tra, nhãn thật, dự đoán, đường mất mát). */
+export type TaskCheckResult = {
+  score: number; error: string | null; n_val: number; n_train: number; elapsed_ms: number
+  val_idx?: number[]; y_true?: number[]; preds?: number[]; fit_log?: number[]
+}
 let state: OfflineState = { status: readReady() ? 'ready' : 'idle' }
 const listeners = new Set<() => void>()
 
@@ -26,9 +32,10 @@ function getWorker() {
   if (worker) return worker
   worker = new Worker('/offline/worker.js')
   worker.onmessage = (event) => {
-    const { id, ok, result, error } = event.data || {}
+    const { id, ok, result, error, progress } = event.data || {}
     const job = pending.get(id)
     if (!job) return
+    if (progress) { job.onProgress?.(progress); return } // tin tiến độ giữa chừng: không kết thúc yêu cầu
     window.clearTimeout(job.timer)
     pending.delete(id)
     ok ? job.resolve(result) : job.reject(new Error(error || 'Máy chấm offline gặp lỗi'))
@@ -74,7 +81,7 @@ export function warmOfflineCache() {
   }).catch(() => { warming = false })
 }
 
-function call<T>(kind: 'prepare' | 'validate' | 'practice' | 'ai-check' | 'task-check', payload: object = {}, timeoutMs = 60_000): Promise<T> {
+function call<T>(kind: 'prepare' | 'validate' | 'practice' | 'ai-check' | 'task-check', payload: object = {}, timeoutMs = 60_000, onProgress?: (p: any) => void): Promise<T> {
   const id = ++seq
   return new Promise<T>((resolve, reject) => {
     const timer = window.setTimeout(() => {
@@ -83,7 +90,7 @@ function call<T>(kind: 'prepare' | 'validate' | 'practice' | 'ai-check' | 'task-
       worker?.terminate(); worker = null; booted = null
       reject(new Error('Bot chạy quá lâu trên máy (có thể bị vòng lặp vô hạn).'))
     }, timeoutMs)
-    pending.set(id, { resolve, reject, timer })
+    pending.set(id, { resolve, reject, timer, onProgress })
     getWorker().postMessage({ id, kind, payload })
   })
 }
@@ -107,9 +114,9 @@ export const offlineEngine = {
     return call<{ public_score: number; families_public: Record<string, number>; errors: string[]; elapsed_ms: number }>('ai-check', { code, language: 'PYTHON', public_seed: publicSeed, rounds_per_match: roundsPerMatch, instances }, 120_000)
   },
   /** Giải AI, đề học từ thế cờ: chia 80/20 tập huấn luyện đã tải rồi chạy solve ngay trên máy. */
-  async taskCheck(code: string, task: { kind: string; meta: any; train: { X: any[]; y: number[] } }) {
+  async taskCheck(code: string, task: { kind: string; meta: any; train: { X: any[]; y: number[] } }, onProgress?: (p: { epoch: number; loss: number }) => void) {
     await boot()
-    return call<{ score: number; error: string | null; n_val: number; n_train: number; elapsed_ms: number }>('task-check', { code, language: 'PYTHON', task }, 180_000)
+    return call<TaskCheckResult>('task-check', { code, language: 'PYTHON', task }, 180_000, onProgress)
   },
   async practice(code: string, language: string, boss: string, ruleId: string) {
     await boot()

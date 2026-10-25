@@ -67,7 +67,7 @@ function ScoreForm({ tid, row, criteria, locked, onDone }: { tid: string; row: a
 export function AdminAiReports() {
   const { run, confirm, busy } = useLive()
   const { list, id, setId } = useAiTournaments()
-  const detail = useResource<any>(id ? `t:ai:admin-detail:${id}` : null, () => arenaApi.getTournament(id), { ttl: 8_000 })
+  const detail = useResource<any>(id ? `t:ai:admin-detail:${id}` : null, () => arenaApi.getTournament(id), { ttl: 8_000, refreshMs: 20_000 })
   const data = useResource<any>(id ? `ai:admin-reports:${id}` : null, () => arenaApi.getAiMainReports(id), { ttl: 5_000, refreshMs: 15_000 })
   const [deadline, setDeadline] = useState('')
   const [open, setOpen] = useState('')

@@ -23,7 +23,7 @@ const TIER_STYLE: Record<string, string> = {
 
 export function ChallengesPanel() {
   const { role, session, toast, openAuth } = useLive()
-  const list = useResource(`chal:${session.student_id || 'guest'}`, () => arenaApi.getChallenges(), { ttl: 10_000 })
+  const list = useResource(`chal:${session.student_id || 'guest'}`, () => arenaApi.getChallenges(), { ttl: 10_000, refreshMs: 60_000 })
   const [selected, setSelected] = useState('')
   const [result, setResult] = useState<any>(null)
   const [running, setRunning] = useState(false)
@@ -38,7 +38,7 @@ export function ChallengesPanel() {
     try {
       const res = await arenaApi.attemptChallenge(ch.id, { code, language })
       setResult(res)
-      invalidate('chal:')
+      invalidate('chal:'); invalidate('badges:'); invalidate('ai:badges')
       if (res.new_badge) toast('success', `Nhận huy hiệu “${ch.title}”!`)
       else if (res.passed) toast('success', 'Bạn đã vượt thử thách này (đã có huy hiệu).')
       else toast('info', `Chưa đạt: thắng ${res.wins}/${ch.runs} ván, cần ${ch.need_wins}.`)
@@ -127,7 +127,7 @@ export function ChallengesPanel() {
 
 /** Dải huy hiệu thử thách + huy hiệu mốc (tự tính) để hiển thị trên hồ sơ đội. */
 export function BadgeStrip({ studentId, milestones = [] }: { studentId: string; milestones?: { icon: string; label: string }[] }) {
-  const badges = useResource(studentId ? `badges:${studentId}` : null, () => arenaApi.getBadges(studentId), { ttl: 30_000 })
+  const badges = useResource(studentId ? `badges:${studentId}` : null, () => arenaApi.getBadges(studentId), { ttl: 30_000, refreshMs: 60_000 })
   const all = [...milestones.map((m) => ({ id: m.label, badge: m.icon, title: m.label, tier: 'Mốc' })), ...(badges.data?.items || [])]
   if (!all.length) return <p className="text-xs text-muted-foreground">Chưa có huy hiệu — hãy thử tab Vòng loại → Thử thách.</p>
   return (

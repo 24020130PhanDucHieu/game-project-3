@@ -175,7 +175,9 @@ func main() {
 	certHandler := &httpHandler.CertificateHandler{Service: tournamentService, Accounts: accounts, Store: qualifierStore}
 	// Giải AI: báo cáo kỹ thuật, Giải Kỹ thuật, huy hiệu riêng.
 	aiReports := &httpHandler.AIReportHandler{Service: tournamentService, Store: qualifierStore, Accounts: accounts,
-		AuditLog: func(actor, action string, details map[string]interface{}) { _ = accounts.LogAdminAction(actor, action, "", "", details) }}
+		AuditLog: func(actor, action string, details map[string]interface{}) {
+			_ = accounts.LogAdminAction(actor, action, "", "", details)
+		}}
 	aiReports.OnPublish = func(tid string) {
 		go func() {
 			aiReports.NotifyPublished(tid)
@@ -249,6 +251,8 @@ func main() {
 		wsHub.BroadcastTournamentJSON(tournamentID, matchID, gin.H{"type": eventType, "tournament_id": tournamentID, "match_id": matchID, "action": "play-round"})
 		certHandler.IssueAsync(tournamentID)
 	}
+	// Chấm vòng loại xong, đội nộp bài, đổi trạng thái...: báo cho mọi máy đang mở trang để tự tải lại.
+	qualifierService.OnUpdate = func(string) { wsHub.BroadcastGlobal("q") }
 	tournamentService.StartRoundTransitions(func(tournamentID, matchID string) {
 		httpHandler.InvalidateDerived()
 		wsHub.BroadcastTournamentJSON(tournamentID, matchID, gin.H{"type": "TOURNAMENT_UPDATED", "tournament_id": tournamentID, "match_id": matchID, "action": "next-round"})
@@ -594,4 +598,21 @@ func requireSession(manager *auth.Manager, adminOnly, matchScoped bool) gin.Hand
 		c.Set("session", session)
 		c.Next()
 	}
+}
+
+// globalScope cho biết một thao tác ghi thuộc khu vực dữ liệu nào để phát tín hiệu tải lại trên phòng chung.
+// Trả "" khi không cần (đã có tin riêng của giải, hoặc không ảnh hưởng người khác).
+func globalScope(path string) string {
+	for _, rule := range []struct{ prefix, scope string }{
+		{"/api/qualifiers", "q"}, {"/api/ai-cup", "q"}, {"/api/ai-main", "t:"}, {"/api/ai-bank", "ai:"},
+		{"/api/clarifications", "clar:"}, {"/api/admin/clarifications", "clar:"},
+		{"/api/admin/notifications", "nt:"}, {"/api/notifications", "nt:"},
+		{"/api/scrimmages", "scrim:"}, {"/api/challenges", "chal:"}, {"/api/admin/accounts", "admin:"},
+		{"/api/teams", "profile:"}, {"/api/tournaments/create", "tl"}, {"/api/ai-assistant", ""},
+	} {
+		if strings.HasPrefix(path, rule.prefix) {
+			return rule.scope
+		}
+	}
+	return ""
 }

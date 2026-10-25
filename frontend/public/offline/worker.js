@@ -250,6 +250,7 @@ self.onmessage = async (event) => {
     if (kind === 'prepare') { self.postMessage({ id, ok: true, result: { version: engineVersion } }); return }
     if ((payload.language || 'PYTHON') !== 'PYTHON') throw new Error('Chạy offline chỉ hỗ trợ Python. C++ cần kết nối tới máy chấm.')
     py.globals.set('job', py.toPy(payload))
+    py.globals.set('job_id', id)
     let result
     if (kind === 'validate') {
       result = py.runPython(`
@@ -270,9 +271,12 @@ if problem is None:
 json.dumps(out)`)
     } else if (kind === 'task-check') {
       result = py.runPython(`
-import json
+import json, js
+from pyodide.ffi import to_js
 from app.aitasks.taskcheck import check
-json.dumps(check(job["code"], job["task"], run_solve))`)
+def _prog(epoch, loss):
+    js.postMessage(to_js({"id": job_id, "progress": {"epoch": epoch, "loss": loss}}, dict_converter=js.Object.fromEntries))
+json.dumps(check(job["code"], job["task"], run_solve, progress=_prog))`)
     } else if (kind === 'ai-check') {
       result = py.runPython(`
 import json

@@ -15,6 +15,7 @@ import { CodeViewer } from '../../replay-viewer'
 import { AI_TEMPLATES } from './templates'
 import { TASK_TEMPLATES } from './task-templates'
 import { FAMILY_NAME, ScoreBar, fmt } from './common'
+import { CheckVisual, LossChart, visualFrom, type CheckVisualData } from './check-visual'
 
 type Check = { public_score: number; families_public: Record<string, number>; errors: string[]; elapsed_ms: number }
 
@@ -66,7 +67,8 @@ export function SubmitTab({ eventId, event, problem, detail, mine, blocked, onMi
   const [checkError, setCheckError] = useState('')
   const [viewing, setViewing] = useState<any>(null)
   const [taskIndex, setTaskIndex] = useState('1')
-  const [taskCheck, setTaskCheck] = useState<{ n: number; name: string; score: number; error: string | null; elapsed_ms: number; n_val: number; n_train: number } | null>(null)
+  const [taskCheck, setTaskCheck] = useState<{ n: number; name: string; visual: CheckVisualData } | null>(null)
+  const [live, setLive] = useState<number[]>([])
   const history: any[] = detail.data?.history || []
   const participant = detail.data?.participant
   const pending = outbox.filter((o) => o.kind !== 'match' && o.qualifierId === eventId)
@@ -100,11 +102,11 @@ export function SubmitTab({ eventId, event, problem, detail, mine, blocked, onMi
 
   async function localTaskCheck(code: string) {
     const n = Number(taskIndex)
-    setChecking(true); setCheckError(''); setTaskCheck(null)
+    setChecking(true); setCheckError(''); setTaskCheck(null); setLive([])
     try {
       const data = await arenaApi.getAiCupTaskData(eventId, n)
-      const result = await offlineEngine.taskCheck(code, data)
-      setTaskCheck({ n, name: problem.tasks?.[n - 1]?.name || `Đề ${n}`, ...result })
+      const result = await offlineEngine.taskCheck(code, data, (p) => setLive((old) => (old.length < 400 ? [...old, p.loss] : old)))
+      setTaskCheck({ n, name: problem.tasks?.[n - 1]?.name || `Đề ${n}`, visual: visualFrom(data, result) })
     } catch (e) {
       setCheckError(e instanceof Error ? e.message : 'Không chấm thử được')
     } finally { setChecking(false) }
@@ -140,12 +142,14 @@ export function SubmitTab({ eventId, event, problem, detail, mine, blocked, onMi
               {checking && <p className="text-xs text-muted-foreground" role="status">Đang chấm trên máy bạn. Lần đầu khởi động máy chấm có thể mất khoảng một phút…</p>}
               {checkError && <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300" data-testid="ai-check-error">{checkError}</p>}
               {check && <CheckResult check={check} />}
+              {checking && tasksMode && live.length > 1 && <LossChart points={live} live />}
               {taskCheck && (
-                <div data-testid="ai-task-check-result" className="space-y-2 rounded-xl border border-border bg-muted/30 p-4">
-                  <p className="text-xs text-muted-foreground">Đề {taskCheck.n}: {taskCheck.name} · huấn luyện trên {taskCheck.n_train} mẫu, kiểm tra {taskCheck.n_val} mẫu để riêng ra từ dữ liệu bạn tải</p>
-                  <p className="font-display text-3xl font-black tabular-nums" data-testid="ai-task-check-score">{fmt(taskCheck.score)}</p>
-                  <p className="text-xs text-muted-foreground">{(taskCheck.elapsed_ms / 1000).toFixed(1)} giây trên máy bạn · đây là ước lượng; điểm thật tính trên thế cờ ẩn của máy chấm</p>
-                  {taskCheck.error && <p className="text-xs text-amber-700 dark:text-amber-300">{taskCheck.error}</p>}
+                <div data-testid="ai-task-check-result" className="space-y-3 rounded-xl border border-border bg-muted/30 p-4">
+                  <p className="text-xs text-muted-foreground">Đề {taskCheck.n}: {taskCheck.name} · huấn luyện trên {taskCheck.visual.result.n_train} mẫu, kiểm tra {taskCheck.visual.result.n_val} mẫu để riêng ra từ dữ liệu bạn tải</p>
+                  <span className="sr-only" data-testid="ai-task-check-score">{fmt(taskCheck.visual.result.score)}</span>
+                  <CheckVisual data={taskCheck.visual} />
+                  <p className="text-xs text-muted-foreground">{(taskCheck.visual.result.elapsed_ms / 1000).toFixed(1)} giây trên máy bạn · đây là ước lượng; điểm thật tính trên thế cờ ẩn của máy chấm</p>
+                  {taskCheck.visual.result.error && <p className="text-xs text-amber-700 dark:text-amber-300">{taskCheck.visual.result.error}</p>}
                 </div>
               )}
               <SyncStatusCard draftKey={draftKey} pending={pending} serverLoading={detail.loading}

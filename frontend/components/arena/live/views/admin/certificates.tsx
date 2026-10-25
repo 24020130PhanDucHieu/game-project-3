@@ -15,7 +15,7 @@ import { CertificateImage, useCertificateActions } from '../../certificate-vault
  */
 export function CertificatesCard() {
   const { tournamentId, tournament, run } = useLive()
-  const certs = useResource(tournamentId ? `certs:admin:${tournamentId}` : null, () => arenaApi.getCertificates(tournamentId).then((r) => r.items || []), { ttl: 15_000 })
+  const certs = useResource(tournamentId ? `certs:admin:${tournamentId}` : null, () => arenaApi.getCertificates(tournamentId).then((r) => r.items || []), { ttl: 15_000, refreshMs: 30_000 })
   const items = certs.data || []
   const first = items[0]
   const [org, setOrg] = useState('BOT K69 ARENA')

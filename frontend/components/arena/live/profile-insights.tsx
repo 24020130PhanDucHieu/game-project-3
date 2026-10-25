@@ -18,8 +18,8 @@ const MOVE_LABEL: Record<string, string> = { ROCK: 'Búa', PAPER: 'Bao', SCISSOR
 export function BotAnalytics({ teamName }: { teamName?: string }) {
   const { session, scope, qualifierId, tournament, ownMatches } = useLive()
   const [tab, setTab] = useState<'stats' | 'diff'>('stats')
-  const detail = useResource<any>(qualifierId ? `q:detail:${scope}:${qualifierId}` : null, () => arenaApi.getQualifier(qualifierId), { ttl: 10_000 })
-  const scrims = useResource('scrim:list', () => arenaApi.getScrimmages(), { ttl: 15_000 })
+  const detail = useResource<any>(qualifierId ? `q:detail:${scope}:${qualifierId}` : null, () => arenaApi.getQualifier(qualifierId), { ttl: 10_000, refreshMs: 20_000 })
+  const scrims = useResource('scrim:list', () => arenaApi.getScrimmages(), { ttl: 15_000, refreshMs: 30_000 })
   const sid = session.student_id
   const mainElo = useResource(sid ? `elo:main:${sid}` : null, () => arenaApi.getMainEloHistory(sid!), { ttl: 20_000, refreshMs: 30_000 })
 
@@ -89,7 +89,7 @@ export function BotAnalytics({ teamName }: { teamName?: string }) {
   const L = versions.find((v) => v.id === left)
   const R = versions.find((v) => v.id === right)
 
-  const history = useResource('mh', () => arenaApi.getMatchHistory(), { ttl: 30_000 })
+  const history = useResource('mh', () => arenaApi.getMatchHistory(), { ttl: 30_000, refreshMs: 60_000 })
   const milestones = useMemo(() => {
     const out: { icon: string; label: string }[] = []
     if ((detail.data?.history || []).some((h: any) => h.valid || h.status === 'VALID')) out.push({ icon: 'valid', label: 'Bài hợp lệ đầu tiên' })

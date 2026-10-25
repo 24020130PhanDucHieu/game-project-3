@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-type Entry = { data?: unknown; error?: Error; at: number; promise?: Promise<unknown>; startedAt?: number }
+type Entry = { data?: unknown; error?: Error; at: number; promise?: Promise<unknown>; startedAt?: number; gen?: number; promiseGen?: number }
 
 const store = new Map<string, Entry>()
 const listeners = new Set<(key: string) => void>()
@@ -27,6 +27,7 @@ export function invalidate(prefix = '') {
   for (const [key, entry] of store) {
     if (key.startsWith(prefix)) {
       entry.at = 0
+      entry.gen = (entry.gen ?? 0) + 1 // yêu cầu đang bay từ trước lần này sẽ không được coi là dữ liệu mới
       if (!prefix) store.delete(key)
     }
   }
@@ -37,18 +38,20 @@ function load<T>(key: string, fetcher: () => Promise<T>, force: boolean, ttl: nu
   const entry = store.get(key) ?? { at: 0 }
   store.set(key, entry)
   // Yêu cầu đang bay quá 60 giây coi như treo: bỏ đi để lần tải sau không bị kẹt chờ mãi.
-  if (entry.promise && Date.now() - (entry.startedAt ?? 0) < 60_000) return entry.promise as Promise<T>
+  const gen = entry.gen ?? 0
+  if (entry.promise && entry.promiseGen === gen && Date.now() - (entry.startedAt ?? 0) < 60_000) return entry.promise as Promise<T>
   if (!force && entry.data !== undefined && Date.now() - entry.at < ttl) return Promise.resolve(entry.data as T)
   const promise: Promise<T> = fetcher()
     .then((data) => {
       entry.data = data
       entry.error = undefined
-      entry.at = Date.now()
+      // Nếu trong lúc chờ có invalidate(): vẫn hiện dữ liệu này nhưng giữ at = 0 để tải lại ngay.
+      if ((entry.gen ?? 0) === gen) entry.at = Date.now()
       return data
     })
     .catch((error) => {
       entry.error = error instanceof Error ? error : new Error(String(error))
-      entry.at = Date.now() // tránh vòng lặp tải lại liên tục khi lỗi; thử lại theo chu kỳ hoặc reload()
+      if ((entry.gen ?? 0) === gen) entry.at = Date.now() // tránh vòng lặp tải lại liên tục khi lỗi; thử lại theo chu kỳ hoặc reload()
       throw entry.error
     })
     .finally(() => {
@@ -56,8 +59,29 @@ function load<T>(key: string, fetcher: () => Promise<T>, force: boolean, ttl: nu
       notify(key)
     })
   entry.promise = promise
+  entry.promiseGen = gen
   entry.startedAt = Date.now()
   return promise
+}
+
+/**
+ * Quay lại tab, bật lại cửa sổ, hết ngủ máy hoặc có mạng trở lại: đánh dấu mọi khóa đã hết hạn để các màn hình đang mở
+ * tự tải lại ngay (không cần chuyển tab). Chỉ chạy tối đa một lần mỗi 3 giây.
+ */
+let lastWake = 0
+function wake() {
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return
+  const now = Date.now()
+  if (now - lastWake < 3_000) return
+  lastWake = now
+  for (const entry of store.values()) entry.at = 0
+  listeners.forEach((listener) => listener(''))
+}
+if (typeof window !== 'undefined') {
+  document.addEventListener('visibilitychange', wake)
+  window.addEventListener('focus', wake)
+  window.addEventListener('pageshow', wake)
+  window.addEventListener('online', wake)
 }
 
 export type Resource<T> = {

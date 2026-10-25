@@ -23,7 +23,7 @@ function readDraft(qid: string, sid?: string): { code: string; language: string 
 
 export function AcceptScrimmageToggle() {
   const { role, run } = useLive()
-  const list = useResource(role === 'TEAM' ? 'scrim:list' : null, () => arenaApi.getScrimmages(), { ttl: 15_000 })
+  const list = useResource(role === 'TEAM' ? 'scrim:list' : null, () => arenaApi.getScrimmages(), { ttl: 15_000, refreshMs: 30_000 })
   if (role !== 'TEAM' || !list.data) return null
   return (
     <label className="flex cursor-pointer items-center gap-2 text-sm">
@@ -45,7 +45,7 @@ export function ScrimmagePanel() {
   const [replayId, setReplayId] = useState('')
 
   const ranking = useResource(qualifierId ? `q:rank:${qualifierId}:1` : null, () => arenaApi.getQualifierRanking(qualifierId, 1), { ttl: 20_000 })
-  const history = useResource(role === 'TEAM' ? 'scrim:list' : null, () => arenaApi.getScrimmages(), { ttl: 10_000 })
+  const history = useResource(role === 'TEAM' ? 'scrim:list' : null, () => arenaApi.getScrimmages(), { ttl: 10_000, refreshMs: 30_000 })
   const replay = useResource<any>(replayId ? `scrim:replay:${replayId}` : null, () => arenaApi.getScrimmage(replayId), { ttl: 300_000 })
   useEffect(() => { setResult(null); setReplayId('') }, [qualifierId])
 

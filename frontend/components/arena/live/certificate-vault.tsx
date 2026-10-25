@@ -39,7 +39,7 @@ export function useCertificateActions() {
 /** Kho giấy chứng nhận của đội trong Hồ sơ: mọi giải đội đã đạt giải. */
 export function CertificateVault() {
   const { scope } = useLive()
-  const certs = useResource(`certs:${scope}`, () => arenaApi.getCertificates().then((r) => r.items || []), { ttl: 30_000 })
+  const certs = useResource(`certs:${scope}`, () => arenaApi.getCertificates().then((r) => r.items || []), { ttl: 30_000, refreshMs: 60_000 })
   const [open, setOpen] = useState<CertificateData | null>(null)
   const { busy, download, print } = useCertificateActions()
   const items = certs.data || []
