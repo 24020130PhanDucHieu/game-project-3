@@ -6,8 +6,9 @@ import { arenaApi } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 import { HumanCheck, type HumanProof } from './human-check'
 import { PRIVACY_ITEMS } from '../live/privacy-policy'
+import { PasswordRules, passwordChecks } from '../live/password-strength'
 
-export type AuthModalMode = 'login' | 'register' | 'forgot'
+export type AuthModalMode = 'login' | 'register' | 'forgot' | 'forgot-admin'
 
 export function AuthModal({
   open,
@@ -49,6 +50,14 @@ export function AuthModal({
   const [forgotNewPass, setForgotNewPass] = useState('')
   const [forgotLoading, setForgotLoading] = useState(false)
   const [forgotMsg, setForgotMsg] = useState<string | null>(null)
+
+  // Quên mật khẩu ban tổ chức: mã gửi tới email ban tổ chức (xem backend admin_password_handler.go)
+  const [adminSent, setAdminSent] = useState(false)
+  const [adminCode, setAdminCode] = useState('')
+  const [adminNew, setAdminNew] = useState('')
+  const [adminLoading, setAdminLoading] = useState(false)
+  const [adminMsg, setAdminMsg] = useState<{ tone: 'ok' | 'err'; text: string } | null>(null)
+  const [adminDone, setAdminDone] = useState(false)
 
   // Ô "Tôi không phải robot": mỗi lời giải dùng một lần nên tích lại sau mỗi lần gửi.
   const [proof, setProof] = useState<HumanProof | null>(null)
@@ -185,10 +194,10 @@ export function AuthModal({
                   </label>
                   <button
                     type="button"
-                    onClick={() => setMode('forgot')}
+                    onClick={() => { const u = loginUser.trim().toUpperCase(); setMode(asOrganizer || u === 'ADMIN' || u === 'BTC' ? 'forgot-admin' : 'forgot') }}
                     className="text-xs font-semibold text-primary hover:underline"
                   >
-                    Quên mật khẩu?
+                    {asOrganizer || ['ADMIN', 'BTC'].includes(loginUser.trim().toUpperCase()) ? 'Quên mật khẩu ban tổ chức?' : 'Quên mật khẩu?'}
                   </button>
                 </div>
                 <div className="flex h-12 items-center rounded-xl border border-input bg-card px-3.5 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
@@ -500,6 +509,65 @@ export function AuthModal({
               <button
                 type="button"
                 onClick={() => setMode('login')}
+                className="flex h-11 w-full items-center justify-center rounded-xl border border-border bg-card text-xs font-medium text-foreground transition hover:bg-muted"
+              >
+                Quay lại đăng nhập
+              </button>
+            </div>
+          </div>
+        )}
+        {mode === 'forgot-admin' && (
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight text-foreground">Quên mật khẩu ban tổ chức</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Mã đặt lại (6 số, hiệu lực 10 phút) được gửi tới email của ban tổ chức đã cấu hình trên máy chủ.</p>
+            {adminMsg && (
+              <div role="alert" data-testid="admin-forgot-msg" className={cn('mt-4 rounded-xl border p-3 text-xs font-medium', adminMsg.tone === 'ok' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300' : 'border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-300')}>{adminMsg.text}</div>
+            )}
+            {!adminDone && !adminSent && (
+              <form
+                className="mt-6 flex flex-col gap-4"
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  if (!proof) { setAdminMsg({ tone: 'err', text: 'Hãy tích ô “Tôi không phải robot” trước khi gửi yêu cầu.' }); return }
+                  setAdminLoading(true); setAdminMsg(null)
+                  try {
+                    const r = await arenaApi.forgotAdminPassword(proof)
+                    setAdminSent(true)
+                    setAdminMsg({ tone: 'ok', text: r.message || 'Đã gửi mã tới email ban tổ chức.' })
+                  } catch (err) {
+                    setAdminMsg({ tone: 'err', text: err instanceof Error ? err.message : 'Không gửi được mã.' })
+                  } finally { spendProof(); setAdminLoading(false) }
+                }}
+              >
+                <HumanCheck value={proof} onChange={setProof} resetKey={proofKey} />
+                <button type="submit" disabled={adminLoading} className="flex h-12 w-full items-center justify-center rounded-xl bg-brand text-sm font-bold text-white shadow-sm transition hover:brightness-110 disabled:opacity-50">{adminLoading ? 'Đang gửi...' : 'Gửi mã tới email ban tổ chức'}</button>
+              </form>
+            )}
+            {!adminDone && adminSent && (
+              <form
+                className="mt-6 flex flex-col gap-3"
+                onSubmit={async (e) => {
+                  e.preventDefault()
+                  setAdminLoading(true); setAdminMsg(null)
+                  try {
+                    const r = await arenaApi.resetAdminPassword(adminCode.trim(), adminNew)
+                    setAdminDone(true)
+                    setAdminMsg({ tone: 'ok', text: r.message || 'Đã đặt lại mật khẩu.' })
+                  } catch (err) {
+                    setAdminMsg({ tone: 'err', text: err instanceof Error ? err.message : 'Không đặt lại được mật khẩu.' })
+                  } finally { setAdminLoading(false) }
+                }}
+              >
+                <input required inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={adminCode} onChange={(e) => setAdminCode(e.target.value.replace(/\D/g, ''))} placeholder="Mã 6 số trong email" aria-label="Mã xác thực" className="h-11 rounded-xl border border-input bg-background px-3 font-mono tracking-[0.3em]" />
+                <input required type="password" autoComplete="new-password" value={adminNew} onChange={(e) => setAdminNew(e.target.value)} placeholder="Mật khẩu mới" aria-label="Mật khẩu mới" className="h-11 rounded-xl border border-input bg-background px-3" />
+                <PasswordRules password={adminNew} current="" username="admin" />
+                <button type="submit" disabled={adminLoading || !/^\d{6}$/.test(adminCode) || !passwordChecks(adminNew, '', 'admin').every((c) => c.ok)} className="h-11 rounded-xl bg-brand font-semibold text-white disabled:opacity-50">{adminLoading ? 'Đang lưu...' : 'Đặt lại mật khẩu'}</button>
+              </form>
+            )}
+            <div className="mt-4 flex flex-col gap-2.5">
+              <button
+                type="button"
+                onClick={() => { setMode('login'); setLoginUser('admin'); setAsOrganizer(true); setAdminSent(false); setAdminDone(false); setAdminCode(''); setAdminNew(''); setAdminMsg(null) }}
                 className="flex h-11 w-full items-center justify-center rounded-xl border border-border bg-card text-xs font-medium text-foreground transition hover:bg-muted"
               >
                 Quay lại đăng nhập

@@ -19,6 +19,7 @@ type Judge struct {
 	Username          string    `json:"username"`
 	DisplayName       string    `json:"display_name"`
 	Hash              string    `json:"password_hash"`
+	Email             string    `json:"email,omitempty"` // nhận mã xác thực khi tự đổi mật khẩu
 	Disabled          bool      `json:"disabled"`
 	CreatedAt         time.Time `json:"created_at"`
 	CreatedBy         string    `json:"created_by"`
@@ -30,6 +31,8 @@ type Judge struct {
 type JudgeView struct {
 	Username    string    `json:"username"`
 	DisplayName string    `json:"display_name"`
+	Email       string    `json:"email"` // đã che: ab***@gmail.com
+	HasEmail    bool      `json:"has_email"`
 	Disabled    bool      `json:"disabled"`
 	CreatedAt   time.Time `json:"created_at"`
 	CreatedBy   string    `json:"created_by"`
@@ -75,7 +78,15 @@ func ValidateJudgePassword(password string) error {
 }
 
 func (j *Judges) Create(username, displayName, password, createdBy string) (JudgeView, error) {
+	return j.CreateWithEmail(username, displayName, password, "", createdBy)
+}
+
+func (j *Judges) CreateWithEmail(username, displayName, password, email, createdBy string) (JudgeView, error) {
 	username = NormalizeJudgeName(username)
+	email = strings.TrimSpace(email)
+	if email != "" && !emailOK(email) {
+		return JudgeView{}, errors.New("Email giám khảo không hợp lệ.")
+	}
 	displayName = strings.TrimSpace(displayName)
 	if !judgeNamePattern.MatchString(username) || reservedJudgeNames[username] {
 		return JudgeView{}, errors.New("Tên đăng nhập 3–32 ký tự: chữ thường, số, dấu chấm, gạch ngang/gạch dưới; không trùng tên quản trị dành riêng.")
@@ -95,7 +106,7 @@ func (j *Judges) Create(username, displayName, password, createdBy string) (Judg
 	if err != nil {
 		return JudgeView{}, err
 	}
-	judge := Judge{Username: username, DisplayName: displayName, Hash: string(hash), CreatedAt: time.Now().UTC(), CreatedBy: createdBy}
+	judge := Judge{Username: username, DisplayName: displayName, Hash: string(hash), Email: email, CreatedAt: time.Now().UTC(), CreatedBy: createdBy}
 	if err := j.save(judge); err != nil {
 		return JudgeView{}, err
 	}
@@ -103,7 +114,7 @@ func (j *Judges) Create(username, displayName, password, createdBy string) (Judg
 }
 
 func (judge Judge) View() JudgeView {
-	return JudgeView{Username: judge.Username, DisplayName: judge.DisplayName, Disabled: judge.Disabled, CreatedAt: judge.CreatedAt, CreatedBy: judge.CreatedBy, LastLoginAt: judge.LastLoginAt}
+	return JudgeView{Username: judge.Username, DisplayName: judge.DisplayName, Email: MaskEmail(judge.Email), HasEmail: judge.Email != "", Disabled: judge.Disabled, CreatedAt: judge.CreatedAt, CreatedBy: judge.CreatedBy, LastLoginAt: judge.LastLoginAt}
 }
 
 // Authenticate so sánh mật khẩu với thời gian không đổi kể cả khi tài khoản không tồn tại.
@@ -181,4 +192,69 @@ func (j *Judges) ResetPassword(username, password string) (JudgeView, error) {
 	judge.Hash = string(hash)
 	judge.PasswordChangedAt = time.Now().UTC()
 	return judge.View(), j.save(judge)
+}
+
+var emailRe = regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
+
+func emailOK(email string) bool { return len(email) <= 120 && emailRe.MatchString(email) }
+
+// MaskEmail che phần giữa địa chỉ email: ab***@gmail.com (rỗng nếu không hợp lệ).
+func MaskEmail(email string) string {
+	at := strings.LastIndex(email, "@")
+	if at <= 0 {
+		return ""
+	}
+	name := email[:at]
+	keep := 2
+	if len(name) <= 2 {
+		keep = 1
+	}
+	return name[:keep] + "***" + email[at:]
+}
+
+// Email trả email đã lưu của giám khảo (dùng nội bộ để gửi mã xác thực).
+func (j *Judges) Email(username string) (string, error) {
+	judge, err := j.Get(username)
+	if err != nil {
+		return "", err
+	}
+	return judge.Email, nil
+}
+
+func (j *Judges) SetEmail(username, email string) (JudgeView, error) {
+	email = strings.TrimSpace(email)
+	if email != "" && !emailOK(email) {
+		return JudgeView{}, errors.New("Email giám khảo không hợp lệ.")
+	}
+	judge, err := j.Get(username)
+	if err != nil {
+		return JudgeView{}, err
+	}
+	judge.Email = email
+	return judge.View(), j.save(judge)
+}
+
+// CheckPassword kiểm mật khẩu mà không đổi gì (không cập nhật lần đăng nhập gần nhất).
+func (j *Judges) CheckPassword(username, password string) bool {
+	judge, err := j.Get(username)
+	if err != nil || judge.Disabled || judge.Hash == "" {
+		return false
+	}
+	return bcrypt.CompareHashAndPassword([]byte(judge.Hash), []byte(password)) == nil
+}
+
+// SetOwnPassword: giám khảo tự đổi mật khẩu (đã qua bước xác thực ở handler). Mọi phiên cũ của họ bị thu hồi
+// vì PasswordChangedAt mới hơn thời điểm cấp phiên.
+func (j *Judges) SetOwnPassword(username, password string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	judge, err := j.Get(username)
+	if err != nil {
+		return err
+	}
+	judge.Hash = string(hash)
+	judge.PasswordChangedAt = time.Now().UTC()
+	return j.save(judge)
 }

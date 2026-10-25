@@ -118,7 +118,7 @@ func (m *Manager) GetChecked(token string) (Session, bool, error) {
 			return Session{}, false, nil
 		}
 	}
-	if !revoked && (session.Role == "TEAM" || session.Judge != "") && m.CheckSession != nil {
+	if !revoked && (session.Role == "TEAM" || session.Role == "ADMIN") && m.CheckSession != nil {
 		valid, err := m.CheckSession(session)
 		if err != nil || !valid {
 			return Session{}, false, err

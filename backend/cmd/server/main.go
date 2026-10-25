@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"log"
 	"net"
@@ -77,11 +78,16 @@ func main() {
 	}
 	aHandler := &httpHandler.AccountsHandler{Store: accounts, Service: tournamentService, WorkerReady: botRunnerAdapter.Ready, WorkerMonitor: botRunnerAdapter.Monitor}
 	var judges *repository.Judges
+	var adminOwner *repository.AdminOwner
 	sessions.CheckSession = func(session auth.Session) (bool, error) {
 		if session.Role == "ADMIN" {
+			// Phiên chủ: phải được cấp sau lần đổi mật khẩu gần nhất của chủ.
+			if session.Judge == "" {
+				return adminOwner == nil || adminOwner.Valid(session.IssuedAt), nil
+			}
 			// Phiên giám khảo: tài khoản còn hoạt động và phiên được cấp sau lần đổi mật khẩu/khóa gần nhất.
-			if judges == nil || session.Judge == "" {
-				return session.Judge == "", nil
+			if judges == nil {
+				return false, nil
 			}
 			return judges.Valid(session.Judge, session.IssuedAt)
 		}
@@ -112,6 +118,24 @@ func main() {
 	judges = repository.NewJudges(qualifierStore)
 	mHandler.Judges = judges
 	jHandler := &httpHandler.JudgesHandler{Judges: judges}
+	adminOwner = repository.NewAdminOwner(qualifierStore)
+	mHandler.Owner = adminOwner
+	// Khóa HMAC cho mã xác thực email: bí mật của máy chủ (khác khóa phiên một tiền tố).
+	otpSecret := os.Getenv("SESSION_SECRET")
+	if otpSecret == "" {
+		otpSecret = os.Getenv("ADMIN_PASSWORD")
+	}
+	otpKey := sha256.Sum256([]byte("arena-admin-otp-v1:" + otpSecret))
+	pwHandler := &httpHandler.AdminPasswordHandler{
+		Owner: adminOwner, Judges: judges, Mailer: aHandler.Mailer, Human: human, Sessions: sessions,
+		OTP:        &httpHandler.OTPService{Store: qualifierStore, Key: otpKey[:]},
+		Locked:     mHandler.AdminLockedFor,
+		Result:     mHandler.AdminResultFor,
+		AdminEmail: httpHandler.AdminEmailFromEnv,
+		Audit: func(actor, action string, details map[string]interface{}) {
+			_ = accounts.LogAdminAction(actor, action, "", "", details)
+		},
+	}
 	clarHandler := &httpHandler.ClarificationHandler{Store: qualifierStore, Accounts: accounts}
 	scrimHandler := &httpHandler.ScrimmageHandler{Store: qualifierStore, Engine: tournamentService}
 	chalHandler := &httpHandler.ChallengeHandler{Store: qualifierStore, Accounts: accounts, Engine: tournamentService}
@@ -311,7 +335,13 @@ func main() {
 		api.POST("/admin/database/optimize", adminOnly, aHandler.OptimizeDatabase)
 		api.GET("/admin/judges", adminOnly, jHandler.List)
 		api.POST("/admin/judges", adminOnly, jHandler.Create)
+		api.PUT("/admin/judges/:username/email", adminOnly, jHandler.SetEmail)
 		api.POST("/admin/judges/:username/:action", adminOnly, jHandler.Action)
+		// Đổi / đặt lại mật khẩu quản trị: mật khẩu hiện tại + mã email (xem admin_password_handler.go)
+		api.POST("/admin/password/request", adminOnly, pwHandler.Request)
+		api.POST("/admin/password/change", adminOnly, pwHandler.Change)
+		api.POST("/admin/password/forgot", pwHandler.Forgot)
+		api.POST("/admin/password/reset", pwHandler.Reset)
 		api.GET("/clarifications", optionalSession(sessions), clarHandler.List)
 		api.POST("/ai/ask", requireSession(sessions, false, false), aiHandler.Ask)
 		api.GET("/ai/usage", requireSession(sessions, false, false), aiHandler.Usage)

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Activity, FileSpreadsheet, Flag, Megaphone, MessageCircleQuestion, MonitorPlay, ScanSearch, ScrollText, ShieldCheck, Trophy, Users } from 'lucide-react'
+import { Activity, FileSpreadsheet, Flag, LockKeyhole, Megaphone, MessageCircleQuestion, MonitorPlay, ScanSearch, ScrollText, ShieldCheck, Trophy, Users } from 'lucide-react'
 import { Card, EmptyState, SectionTitle, Tabs } from '../ui'
 import { useLive } from '../context'
 import { MonitorTab } from './admin/monitor'
@@ -13,9 +13,10 @@ import { AdminClarifications } from '../clarifications'
 import { AiAdminCard } from '../ai-admin'
 import { ImportExportTab } from './admin/import-export'
 import { AntiCheatTab } from './admin/anticheat'
+import { SecurityCard } from './admin/security'
 import { Button } from '../ui'
 
-type AdminTab = 'monitor' | 'tournament' | 'qualifier' | 'accounts' | 'notify' | 'logs' | 'judges' | 'clar' | 'io' | 'cheat'
+type AdminTab = 'monitor' | 'tournament' | 'qualifier' | 'accounts' | 'notify' | 'logs' | 'judges' | 'clar' | 'io' | 'cheat' | 'security'
 
 export function AdminView() {
   const { role, session } = useLive()
@@ -40,6 +41,7 @@ export function AdminView() {
           { id: 'clar', label: 'Hỏi đáp', icon: <MessageCircleQuestion className="size-4" /> },
           { id: 'cheat', label: 'Chống gian lận', icon: <ScanSearch className="size-4" /> },
           { id: 'logs', label: 'Nhật ký', icon: <ScrollText className="size-4" /> },
+          { id: 'security', label: 'Bảo mật', icon: <LockKeyhole className="size-4" /> },
           ...(session.owner ? [{ id: 'judges' as const, label: 'Giám khảo', icon: <ShieldCheck className="size-4" /> }] : []),
         ]}
       />
@@ -53,6 +55,7 @@ export function AdminView() {
       {tab === 'clar' && <div className="space-y-6"><AiAdminCard /><AdminClarifications /></div>}
       {tab === 'io' && <ImportExportTab />}
       {tab === 'cheat' && <AntiCheatTab />}
+      {tab === 'security' && <SecurityCard />}
     </div>
   )
 }

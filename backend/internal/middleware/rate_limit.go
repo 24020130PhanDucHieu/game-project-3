@@ -99,6 +99,9 @@ func RateLimitMiddleware() gin.HandlerFunc {
 			limit, ipLimit = 120, 600
 			bucket = "write"
 		}
+		if strings.HasPrefix(c.Request.URL.Path, "/api/admin/password/") {
+			limit, bucket = 10, "auth"
+		}
 		if strings.HasSuffix(c.Request.URL.Path, "/login") || strings.HasSuffix(c.Request.URL.Path, "/auth") || strings.HasSuffix(c.Request.URL.Path, "/reset-password") || strings.HasSuffix(c.Request.URL.Path, "/forgot-password") {
 			limit = 10
 			bucket = "auth"

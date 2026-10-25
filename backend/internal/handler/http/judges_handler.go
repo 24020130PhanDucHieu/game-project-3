@@ -51,12 +51,33 @@ func (h *JudgesHandler) Create(c *gin.Context) {
 		Username    string `json:"username"`
 		DisplayName string `json:"display_name"`
 		Password    string `json:"password"`
+		Email       string `json:"email"`
 	}
 	if c.ShouldBindJSON(&req) != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": "Dữ liệu giám khảo không hợp lệ."})
 		return
 	}
-	judge, err := h.Judges.Create(req.Username, req.DisplayName, req.Password, requestSession(c).Actor())
+	judge, err := h.Judges.CreateWithEmail(req.Username, req.DisplayName, req.Password, req.Email, requestSession(c).Actor())
+	if err != nil {
+		judgeError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "judge": judge})
+}
+
+// SetEmail: PUT /api/admin/judges/:username/email — chủ đặt email nhận mã xác thực cho giám khảo.
+func (h *JudgesHandler) SetEmail(c *gin.Context) {
+	if !requireOwner(c) {
+		return
+	}
+	var req struct {
+		Email string `json:"email"`
+	}
+	if c.ShouldBindJSON(&req) != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"detail": "Thiếu email."})
+		return
+	}
+	judge, err := h.Judges.SetEmail(c.Param("username"), req.Email)
 	if err != nil {
 		judgeError(c, err)
 		return

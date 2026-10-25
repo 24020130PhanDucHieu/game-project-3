@@ -611,8 +611,31 @@ export const arenaApi = {
     return apiRequest<{ items: any[] }>('/admin/judges', { cache: 'no-store' })
   },
 
-  async createJudge(payload: { username: string; display_name: string; password: string }) {
+  async createJudge(payload: { username: string; display_name: string; password: string; email?: string }) {
     return apiRequest('/admin/judges', { method: 'POST', body: JSON.stringify(payload) })
+  },
+
+  async setJudgeEmail(username: string, email: string) {
+    return apiRequest(`/admin/judges/${encodeURIComponent(username)}/email`, { method: 'PUT', body: JSON.stringify({ email }) })
+  },
+
+  // --- ĐỔI / ĐẶT LẠI MẬT KHẨU QUẢN TRỊ (mật khẩu hiện tại + mã gửi email) ---
+  async requestAdminPasswordCode(currentPassword: string) {
+    return apiRequest<{ sent_to: string; expires_in: number; resend_after: number }>('/admin/password/request', { method: 'POST', body: JSON.stringify({ current_password: currentPassword }) })
+  },
+
+  async changeAdminPassword(payload: { current_password: string; code: string; new_password: string }) {
+    const res = await apiRequest<{ session_token: string; message?: string }>('/admin/password/change', { method: 'POST', body: JSON.stringify(payload) })
+    if (res.session_token) setSessionToken(res.session_token) // phiên cũ đã bị thu hồi, dùng phiên mới
+    return res
+  },
+
+  async forgotAdminPassword(proof?: { human_challenge: string; human_solution: string } | null) {
+    return apiRequest<{ message?: string; expires_in?: number }>('/admin/password/forgot', { method: 'POST', body: JSON.stringify({ ...(proof || {}) }) })
+  },
+
+  async resetAdminPassword(code: string, newPassword: string) {
+    return apiRequest<{ message?: string }>('/admin/password/reset', { method: 'POST', body: JSON.stringify({ code, new_password: newPassword }) })
   },
 
   async judgeAction(username: string, action: 'disable' | 'enable' | 'reset-password', password?: string) {

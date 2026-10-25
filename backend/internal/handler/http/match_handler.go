@@ -27,6 +27,7 @@ type MatchHandler struct {
 	adminFails  map[string]adminFailure
 	Accounts    *repository.Accounts
 	Judges      *repository.Judges
+	Owner       *repository.AdminOwner // mật khẩu tài khoản chủ (nil thì dùng ADMIN_PASSWORD)
 	AccountSync func() error
 	service     *service.TournamentService
 	sessions    *auth.Manager
@@ -129,8 +130,7 @@ func (h *MatchHandler) AdminLogin(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "role": "ADMIN", "judge": judge.Username, "display_name": judge.DisplayName, "session_token": token})
 		return
 	}
-	configured := os.Getenv("ADMIN_PASSWORD")
-	if configured == "" || subtle.ConstantTimeCompare([]byte(password), []byte(configured)) != 1 {
+	if !h.ownerPasswordOK(password) {
 		h.adminResult(ip, false)
 		c.JSON(http.StatusUnauthorized, gin.H{"detail": "Invalid organizer credentials"})
 		return
@@ -142,6 +142,19 @@ func (h *MatchHandler) AdminLogin(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "SUCCESS", "role": "ADMIN", "session_token": token})
+}
+
+// AdminLockedFor / AdminResultFor: khóa đăng nhập ban tổ chức theo IP dùng chung với luồng đổi mật khẩu.
+func (h *MatchHandler) AdminLockedFor(ip string) time.Duration { return h.adminLocked(ip) }
+func (h *MatchHandler) AdminResultFor(ip string, ok bool)      { h.adminResult(ip, ok) }
+
+// ownerPasswordOK: mật khẩu tài khoản chủ — bản đã đổi qua web (nếu có), nếu không thì ADMIN_PASSWORD.
+func (h *MatchHandler) ownerPasswordOK(password string) bool {
+	if h.Owner != nil {
+		return h.Owner.Verify(password)
+	}
+	configured := os.Getenv("ADMIN_PASSWORD")
+	return configured != "" && subtle.ConstantTimeCompare([]byte(password), []byte(configured)) == 1
 }
 
 func isAdminUsername(username string) bool {
@@ -218,8 +231,7 @@ func (h *MatchHandler) Login(c *gin.Context) {
 	}
 	if isAdminUsername(username) {
 		password, _ := req["password"].(string)
-		configured := os.Getenv("ADMIN_PASSWORD")
-		if configured == "" || subtle.ConstantTimeCompare([]byte(password), []byte(configured)) != 1 {
+		if !h.ownerPasswordOK(password) {
 			c.JSON(http.StatusUnauthorized, gin.H{"detail": "Invalid organizer credentials"})
 			return
 		}
