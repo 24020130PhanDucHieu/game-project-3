@@ -60,10 +60,23 @@ function SourceChip({ s, close }: { s: NonNullable<AiMessage['sources']>[number]
   )
 }
 
-function TypingDots() {
+function TypingDots({ startedAt }: { startedAt?: number }) {
+  const [elapsed, setElapsed] = useState(0)
+  useEffect(() => {
+    const start = startedAt ?? Date.now()
+    const tick = () => setElapsed(Math.max(0, Math.floor((Date.now() - start) / 1000)))
+    tick()
+    const timer = setInterval(tick, 1000)
+    return () => clearInterval(timer)
+  }, [startedAt])
   return (
-    <span className="inline-flex items-center gap-1 py-1" role="status" aria-label="Trợ lý đang tra cứu">
-      {[0, 1, 2].map((i) => <span key={i} className="size-1.5 animate-bounce rounded-full bg-muted-foreground/70" style={{ animationDelay: `${i * 150}ms` }} />)}
+    <span className="block space-y-2">
+      <span className="flex items-center gap-2" role="status">
+        <span className="inline-flex gap-1" aria-hidden>{[0, 1, 2].map((i) => <span key={i} className="size-1.5 animate-bounce rounded-full bg-muted-foreground/70" style={{ animationDelay: `${i * 150}ms` }} />)}</span>
+        <span>{elapsed >= 20 ? 'Trợ lý phản hồi chậm, bạn có thể chờ hoặc hủy.' : 'Đang tra cứu và kiểm tra câu trả lời…'}</span>
+      </span>
+      <span className="block text-xs text-muted-foreground" aria-live="off">Đã chờ {elapsed} giây</span>
+      <button type="button" onClick={() => aiStore.cancel()} className="text-xs font-medium text-primary underline underline-offset-2">Hủy yêu cầu</button>
     </span>
   )
 }
@@ -84,7 +97,7 @@ function Bubble({ m, close }: { m: AiMessage; close: () => void }) {
       <Avatar />
       <div className="min-w-0 max-w-[88%] space-y-2">
         <div className={cn('rounded-2xl rounded-bl-md border px-3.5 py-2 text-sm leading-snug', m.error ? 'border-red-500/30 bg-red-500/10' : m.needsHuman ? 'border-amber-500/30 bg-amber-500/10' : 'border-border bg-card')}>
-          {m.pending ? <TypingDots /> : <span className="whitespace-pre-wrap break-words">{m.text}</span>}
+          {m.pending ? <TypingDots startedAt={m.startedAt} /> : <span className="whitespace-pre-wrap break-words">{m.text}</span>}
         </div>
         {!m.pending && !!m.sources?.length && (
           <div className="space-y-1.5">
@@ -114,7 +127,8 @@ function ChatWindow({ onClose }: { onClose: () => void }) {
   useEffect(() => { input.current?.focus() }, [])
 
   const out = st.remaining === 0
-  const disabled = st.busy || out || st.available === false
+  const inputDisabled = out || st.available !== true
+  const disabled = st.busy || inputDisabled
   const send = (q: string) => {
     if (!q.trim() || disabled) return
     setText('')
@@ -129,7 +143,7 @@ function ChatWindow({ onClose }: { onClose: () => void }) {
           <p className="truncate text-sm font-bold">Trợ lý K69</p>
           <p className="flex items-center gap-1.5 text-[11px] text-white/85"><span className="size-1.5 rounded-full bg-emerald-300" aria-hidden />Luôn dẫn nguồn · AI có thể sai</p>
         </div>
-        <button type="button" onClick={() => aiStore.clear()} disabled={!st.messages.length || st.busy} aria-label="Cuộc trò chuyện mới" title="Cuộc trò chuyện mới" className="grid size-8 place-items-center rounded-full text-white/90 transition hover:bg-white/15 disabled:opacity-40"><RotateCcw className="size-4" /></button>
+        <button type="button" onClick={() => aiStore.clear()} disabled={!st.messages.length} aria-label="Cuộc trò chuyện mới" title="Cuộc trò chuyện mới" className="grid size-8 place-items-center rounded-full text-white/90 transition hover:bg-white/15 disabled:opacity-40"><RotateCcw className="size-4" /></button>
         <button type="button" onClick={onClose} aria-label="Đóng trợ lý" className="grid size-8 place-items-center rounded-full text-white/90 transition hover:bg-white/15"><X className="size-5" /></button>
       </header>
 
@@ -147,6 +161,8 @@ function ChatWindow({ onClose }: { onClose: () => void }) {
       </div>
 
       <form className="border-t border-border bg-card/60 p-3" onSubmit={(e) => { e.preventDefault(); send(text) }}>
+        {st.usageError && <p role="status" className="mb-2 text-xs text-muted-foreground">Chưa cập nhật được trạng thái trợ lý. <button type="button" onClick={() => void aiStore.refreshUsage()} className="font-medium text-primary underline">Thử kết nối lại</button></p>}
+        {st.available === null && !st.usageError && <p role="status" className="mb-2 text-xs text-muted-foreground">Đang kết nối với trợ lý…</p>}
         {st.available === false && <p role="alert" className="mb-2 rounded-lg bg-amber-500/10 px-3 py-1.5 text-xs text-amber-800 dark:text-amber-200">Trợ lý đang tắt. Bạn vẫn gửi được câu hỏi cho ban tổ chức ở Hướng dẫn → Hỏi BTC.</p>}
         {out && st.available !== false && <p role="alert" className="mb-2 rounded-lg bg-amber-500/10 px-3 py-1.5 text-xs text-amber-800 dark:text-amber-200">Hôm nay đội bạn đã dùng hết lượt hỏi. Hãy gửi câu hỏi cho ban tổ chức.</p>}
         <div className="flex items-end gap-2">
@@ -157,10 +173,10 @@ function ChatWindow({ onClose }: { onClose: () => void }) {
             rows={1}
             maxLength={400}
             value={text}
-            disabled={disabled}
+            disabled={inputDisabled}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(text) } }}
-            placeholder="Nhập câu hỏi…"
+            placeholder={st.busy ? 'Bạn có thể soạn câu hỏi tiếp theo…' : 'Nhập câu hỏi…'}
             className="max-h-24 min-h-10 flex-1 resize-none rounded-2xl border border-border bg-background px-3.5 py-2 text-sm outline-none transition focus:border-primary/60 focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
           />
           <button type="submit" disabled={disabled || !text.trim()} aria-label="Gửi câu hỏi cho trợ lý" className="grid size-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-600 text-white shadow-md transition hover:brightness-110 disabled:opacity-50"><Send className="size-4" /></button>
@@ -180,17 +196,30 @@ export function AiLauncher() {
   const st = useAi()
   const [open, setOpen] = useState(false)
   const [seen, setSeen] = useState(0)
-  useEffect(() => { if (role !== 'GUEST') void aiStore.refreshUsage() }, [role, scope])
-  useEffect(() => { aiStore.resetOnScope(scope) }, [scope])
+  useEffect(() => {
+    aiStore.resetOnScope(`${role}:${scope}`)
+    if (role === 'GUEST') return
+    const refresh = () => { if (document.visibilityState !== 'hidden') void aiStore.refreshUsage() }
+    refresh()
+    const timer = setInterval(refresh, 30_000)
+    window.addEventListener('online', refresh)
+    window.addEventListener('focus', refresh)
+    return () => {
+      clearInterval(timer)
+      window.removeEventListener('online', refresh)
+      window.removeEventListener('focus', refresh)
+    }
+  }, [role, scope])
   useEffect(() => {
     if (!open) return
+    void aiStore.refreshUsage()
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
   const replies = st.messages.filter((m) => m.role === 'ai' && !m.pending).length
   useEffect(() => { if (open) setSeen(replies) }, [open, replies])
-  if (role === 'GUEST' || st.available !== true) return null
+  if (role === 'GUEST' || st.available === false) return null
   const unread = !open && replies > seen
   return (
     <>

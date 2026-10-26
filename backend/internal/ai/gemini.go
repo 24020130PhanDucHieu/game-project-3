@@ -44,6 +44,9 @@ func (c *GeminiClient) Complete(ctx context.Context, req Request) (Response, err
 	url := fmt.Sprintf("%s/v1beta/models/%s:generateContent", c.BaseURL, req.Model)
 	var last error
 	for attempt := 0; attempt < 3; attempt++ {
+		if err := ctx.Err(); err != nil {
+			return Response{}, err
+		}
 		if attempt > 0 {
 			select {
 			case <-time.After(time.Duration(attempt) * 1500 * time.Millisecond): // 1,5 s rồi 3 s
@@ -59,6 +62,9 @@ func (c *GeminiClient) Complete(ctx context.Context, req Request) (Response, err
 		hreq.Header.Set("x-goog-api-key", c.APIKey) // khóa nằm trong header, không nằm trong URL (tránh lọt vào log)
 		resp, err := c.HTTP.Do(hreq)
 		if err != nil {
+			if ctx.Err() != nil {
+				return Response{}, ctx.Err()
+			}
 			last = fmt.Errorf("gemini: kết nối lỗi")
 			continue
 		}

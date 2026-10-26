@@ -241,11 +241,12 @@ func main() {
 		},
 	}
 	aiHandler.Agent = &ai.Agent{
-		C:         aiClient,
-		Model:     aiModel,
-		MaxTurns:  5,
-		MaxTokens: aiMaxTokens,
-		Tools:     &ai.Toolbox{KB: aiKB, Data: httpHandler.NewAIData(tournamentService, clarHandler), Now: time.Now},
+		C:                 aiClient,
+		Model:             aiModel,
+		MaxTurns:          5,
+		MaxTokens:         aiMaxTokens,
+		PrefetchKnowledge: true,
+		Tools:             &ai.Toolbox{KB: aiKB, Data: httpHandler.NewAIData(tournamentService, clarHandler), Now: time.Now},
 	}
 	tournamentService.OnRoundEvent = func(tournamentID, matchID, eventType string) {
 		httpHandler.InvalidateDerived()

@@ -96,7 +96,9 @@ export async function apiRequest<T = any>(
       break
     } catch (error) {
       const offline = typeof navigator !== 'undefined' && navigator.onLine === false
-      if (attempt >= 3 || offline || controller.signal.aborted || !(error instanceof TypeError)) throw error
+      // Không gửi lại câu hỏi AI tự động: lỗi mạng có thể xảy ra sau khi máy chủ đã nhận câu hỏi.
+      const isAiAsk = cleanEndpoint === '/ai/ask' || cleanEndpoint === '/api/ai/ask'
+      if (isAiAsk || attempt >= 3 || offline || controller.signal.aborted || !(error instanceof TypeError)) throw error
       await new Promise((r) => setTimeout(r, 600 * 2 ** attempt))
     }
   }
@@ -706,8 +708,8 @@ export const arenaApi = {
     return apiRequest<{ student_id: string; team_name?: string; start: number; rating: number; played: number; wins: number; k_factor?: number; formula?: { base: number; k: number; start: number; zero_sum?: boolean; margin?: Record<string, number> }; events: MainEloEvent[] }>(`/ranking/elo-history?student_id=${encodeURIComponent(studentId)}${track ? `&track=${track}` : ''}`)
   },
 
-  async askAi(question: string, tournamentId?: string) {
-    return apiRequest<AiAnswer>('/ai/ask', { method: 'POST', body: JSON.stringify({ question, tournament_id: tournamentId || '' }) })
+  async askAi(question: string, tournamentId?: string, signal?: AbortSignal) {
+    return apiRequest<AiAnswer>('/ai/ask', { method: 'POST', signal, body: JSON.stringify({ question, tournament_id: tournamentId || '' }) })
   },
 
   async getAiUsage() {
