@@ -43,10 +43,10 @@ func (c *GeminiClient) Complete(ctx context.Context, req Request) (Response, err
 	}
 	url := fmt.Sprintf("%s/v1beta/models/%s:generateContent", c.BaseURL, req.Model)
 	var last error
-	for attempt := 0; attempt < 2; attempt++ {
+	for attempt := 0; attempt < 3; attempt++ {
 		if attempt > 0 {
 			select {
-			case <-time.After(800 * time.Millisecond):
+			case <-time.After(time.Duration(attempt) * 1500 * time.Millisecond): // 1,5 s rồi 3 s
 			case <-ctx.Done():
 				return Response{}, ctx.Err()
 			}

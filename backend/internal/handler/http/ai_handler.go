@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -25,9 +26,18 @@ type AIHandler struct {
 	Quota     *ai.Manager
 	Available bool // có khóa API
 	Audit     func(actor, action string, details map[string]interface{})
+
+	errMu   sync.Mutex
+	lastErr string // lỗi gần nhất từ nhà cung cấp mô hình, để ban tổ chức biết vì sao trợ lý bận
+	lastAt  time.Time
 }
 
-const aiQuestionMax = 400
+const (
+	aiQuestionMax = 400
+	// Một câu hỏi có thể cần nhiều lượt gọi model liên tiếp để tra cứu và kiểm chứng nguồn.
+	// Client Gemini cho mỗi lượt tối đa 30 giây; frontend chờ 130 giây cho POST.
+	aiAskTimeout = 120 * time.Second
+)
 
 // aiData cho công cụ của trợ lý đọc dữ liệu thật; mọi dữ liệu giải đi qua redactTournament như API công khai.
 type aiData struct {
@@ -189,12 +199,15 @@ func (h *AIHandler) Ask(c *gin.Context) {
 		}
 		return
 	}
-	ctx, cancel := context.WithTimeout(c.Request.Context(), 35*time.Second)
+	ctx, cancel := context.WithTimeout(c.Request.Context(), aiAskTimeout)
 	defer cancel()
 	res, err := h.Agent.Ask(ctx, question, who)
 	if err != nil {
 		h.Quota.Refund(qid)
 		log.Printf("[AI] lỗi nhà cung cấp: %v", err)
+		h.errMu.Lock()
+		h.lastErr, h.lastAt = truncateRunes(err.Error(), 400), time.Now()
+		h.errMu.Unlock()
 		c.JSON(http.StatusBadGateway, gin.H{"detail": "Trợ lý AI đang bận. Bạn thử lại sau ít phút hoặc bấm “Hỏi ban tổ chức”.", "code": "AI_BUSY"})
 		return
 	}
@@ -241,7 +254,10 @@ func (h *AIHandler) Settings(c *gin.Context) {
 		}
 	}
 	u := h.Quota.UsageFor("ADMIN")
-	c.JSON(http.StatusOK, gin.H{"available": h.Available, "settings": h.Quota.Settings(), "tokens_today": u.TokensToday, "asked_today": asked, "needs_human_today": human, "model": h.Agent.Model, "kb_version": h.KB.Version})
+	h.errMu.Lock()
+	lastErr, lastAt := h.lastErr, h.lastAt
+	h.errMu.Unlock()
+	c.JSON(http.StatusOK, gin.H{"last_error": lastErr, "last_error_at": lastAt.Unix(), "available": h.Available, "settings": h.Quota.Settings(), "tokens_today": u.TokensToday, "asked_today": asked, "needs_human_today": human, "model": h.Agent.Model, "kb_version": h.KB.Version})
 }
 
 // SaveSettings: PUT /api/ai/settings (admin).

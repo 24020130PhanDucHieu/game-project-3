@@ -48,6 +48,9 @@ export function AiAdminCard() {
           {!d.available && (
             <p className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-200"><AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />Máy chủ chưa có khóa API nên trợ lý chưa trả lời được. Đặt GEMINI_API_KEY (Google) hoặc ANTHROPIC_API_KEY (Claude) trong file môi trường của máy chủ rồi khởi động lại dịch vụ.</p>
           )}
+          {d.last_error && (
+            <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-800 dark:text-red-200" data-testid="ai-last-error"><strong>Lỗi gọi mô hình gần nhất{d.last_error_at ? ` (${new Date(d.last_error_at * 1000).toLocaleTimeString('vi-VN')})` : ''}:</strong> {d.last_error}</p>
+          )}
           {/* Một hàng gọn: số liệu hôm nay + cài đặt, thay cho hai khối lớn xếp chồng. */}
           <div className="flex flex-wrap items-stretch gap-2" data-testid="ai-stats">
             {[

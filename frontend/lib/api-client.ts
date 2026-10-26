@@ -715,7 +715,7 @@ export const arenaApi = {
   },
 
   async getAiSettings() {
-    return apiRequest<{ available: boolean; settings: AiSettings; tokens_today: number; asked_today: number; needs_human_today: number; model: string; kb_version: string }>('/ai/settings')
+    return apiRequest<{ available: boolean; settings: AiSettings; tokens_today: number; asked_today: number; needs_human_today: number; model: string; kb_version: string; last_error?: string; last_error_at?: number }>('/ai/settings')
   },
 
   async saveAiSettings(body: AiSettings) {

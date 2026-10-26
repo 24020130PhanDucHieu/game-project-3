@@ -1,0 +1,12 @@
+./accounts.go
+./admin_owner.go
+./gateway_lease.go
+./judges.go
+./monitoring.go
+./postgres_tournament_list.go
+./postgres_tournament_repository.go
+./qualifier_records.go
+./readiness.go
+./tournament_repository.go
+./upgrades.go
+./validation_queue.go
