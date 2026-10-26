@@ -315,3 +315,53 @@ html[data-fx='lite'] body::before { display: none; }
 @keyframes draw-line { to { stroke-dashoffset: 0; } }
 @media (prefers-reduced-motion: reduce) { .draw-line { animation: none; stroke-dashoffset: 0; } }
 html[data-fx='lite'] .draw-line { animation: none; stroke-dashoffset: 0; }
+
+/* Chuyển đề / chuyển tab: trượt nhẹ theo hướng đi (chỉ transform và opacity). */
+@keyframes slide-next { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
+@keyframes slide-prev { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }
+.task-slide-next { animation: slide-next .22s ease-out both; }
+.task-slide-prev { animation: slide-prev .22s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .task-slide-next, .task-slide-prev { animation: none; } }
+html[data-fx='off'] .task-slide-next, html[data-fx='off'] .task-slide-prev { animation: none; }
+
+
+/* ---------- Hiệu ứng chuyển trang, xuất hiện lần lượt, thanh tiến trình, thông báo ---------- */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .2s; animation-timing-function: ease-out; }
+html[data-vt='next']::view-transition-old(root) { animation-name: vt-out-left; }
+html[data-vt='next']::view-transition-new(root) { animation-name: vt-in-right; }
+html[data-vt='prev']::view-transition-old(root) { animation-name: vt-out-right; }
+html[data-vt='prev']::view-transition-new(root) { animation-name: vt-in-left; }
+@keyframes vt-out-left { to { opacity: 0; transform: translateX(-14px); } }
+@keyframes vt-in-right { from { opacity: 0; transform: translateX(14px); } }
+@keyframes vt-out-right { to { opacity: 0; transform: translateX(14px); } }
+@keyframes vt-in-left { from { opacity: 0; transform: translateX(-14px); } }
+
+/* Hàng bảng xuất hiện lần lượt (tối đa 8 hàng đầu, trễ rất ngắn để không chặn việc đọc). */
+@keyframes row-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.stagger > tr { animation: row-in .28s ease-out both; }
+.stagger > tr:nth-child(2) { animation-delay: 25ms; } .stagger > tr:nth-child(3) { animation-delay: 50ms; } .stagger > tr:nth-child(4) { animation-delay: 75ms; }
+.stagger > tr:nth-child(5) { animation-delay: 100ms; } .stagger > tr:nth-child(6) { animation-delay: 125ms; } .stagger > tr:nth-child(7) { animation-delay: 150ms; } .stagger > tr:nth-child(n+8) { animation-delay: 175ms; }
+
+@keyframes top-progress { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+.top-progress { animation: top-progress 1.1s ease-in-out infinite; }
+
+/* Thông báo trượt vào, dấu tích tự vẽ ra. */
+@keyframes toast-in { from { opacity: 0; transform: translateY(12px) scale(.97); } to { opacity: 1; transform: none; } }
+.toast-in { animation: toast-in .25s cubic-bezier(.2,.9,.3,1.2) both; }
+@keyframes draw-check { to { stroke-dashoffset: 0; } }
+.toast-ok svg path:last-child { stroke-dasharray: 20; stroke-dashoffset: 20; animation: draw-check .45s .12s ease-out forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+  .stagger > tr, .top-progress, .toast-in { animation: none; }
+  .toast-ok svg path:last-child { animation: none; stroke-dashoffset: 0; }
+}
+/* Chế độ "gọn": giữ chuyển cảnh nhưng bỏ hiệu ứng nặng đã khai báo ở trên; "tắt": không còn chuyển động nào. */
+html[data-fx='lite'] .stagger > tr { animation: none; }
+html[data-fx='off'] *, html[data-fx='off'] *::before, html[data-fx='off'] *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+html[data-fx='off'] .toast-ok svg path:last-child { stroke-dashoffset: 0; }
+
+/* Ảnh camera mới mờ dần hiện lên trên ảnh cũ. */
+@keyframes snap-fade { from { opacity: 0; } to { opacity: 1; } }
+.snap-fade { animation: snap-fade .45s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .snap-fade { animation: none; } }

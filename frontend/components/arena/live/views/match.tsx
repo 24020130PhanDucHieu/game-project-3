@@ -594,7 +594,7 @@ export function MatchView() {
               <Card title={t.round_mode === 'TASK' ? 'Kết quả các hiệp' : 'Sân đấu'} subtitle={t.round_mode === 'TASK' ? 'Mỗi hiệp một đề học máy: hai đội cùng giải, điểm cao hơn thắng hiệp' : 'Bàn cờ do server thực thi — chọn hiệp, tua từng bước, đổi giao diện hoặc xem 3D điện ảnh'}>
                 <RoundsPanel tournamentId={tournamentId} matchId={matchId} match={match} task={t.round_mode === 'TASK'} />
               </Card>
-              <WebcamPanel tournamentId={tournamentId} matchId={matchId} />
+              <WebcamPanel tournamentId={tournamentId} matchId={matchId} round={match.current_round_idx || 1} running={match.round_status === 'BATTLE_RUNNING'} />
             </>
           )}
         </>

@@ -64,10 +64,12 @@ function remoteFor(snap: RtcSnapshot, match: (p: PeerInfo) => boolean): { peer?:
   return { peer, remote: peer ? snap.remotes.find((r) => r.peer.id === peer.id) : undefined }
 }
 
-export function WebcamPanel({ tournamentId, matchId, compact = false }: { tournamentId: string; matchId: string; compact?: boolean }) {
+export function WebcamPanel({ tournamentId, matchId, compact = false, round = 0, running = false }: { tournamentId: string; matchId: string; compact?: boolean; round?: number; running?: boolean }) {
   const { role, session, enterMatch, ownMatches } = useLive()
   const inRoom = role === 'ADMIN' || (role === 'TEAM' && session.match_id === matchId)
   const { st, snap, stream } = useWebcam(tournamentId, matchId, inRoom)
+  // Chỉ đội thi ghi video (ban tổ chức chỉ xem).
+  useEffect(() => { if (role === 'TEAM' && inRoom) webcamStore.setRound(round, running) }, [role, inRoom, round, running])
   const cam = { stream, micOn: st.micOn, devices: st.devices, deviceId: st.deviceId, start: (id?: string) => webcamStore.start(id), stop: () => webcamStore.stop(), toggleMic: () => webcamStore.toggleMic() }
   const error = st.error || snap.error
 
@@ -102,7 +104,7 @@ export function WebcamPanel({ tournamentId, matchId, compact = false }: { tourna
   return (
     <Card
       title={compact ? 'Camera hai đội' : 'Webcam phòng đấu'}
-      subtitle={compact ? undefined : admin ? 'Giám sát camera hai đội. Video truyền trực tiếp giữa trình duyệt, máy chủ không lưu hình.' : 'Camera của bạn chỉ được gửi cho ban tổ chức (và đối thủ nếu được cho phép).'}
+      subtitle={compact ? undefined : admin ? 'Giám sát camera hai đội. Video truyền trực tiếp giữa trình duyệt; riêng đội thi còn gửi bản ghi hình ngắn của mỗi hiệp (không có âm thanh) để xem lại, lưu 30 ngày.' : 'Camera của bạn chỉ được gửi trực tiếp cho ban tổ chức (và đối thủ nếu được cho phép). Trong lúc hiệp chạy, hình ngắn của bạn (không âm thanh) được lưu 30 ngày cho replay; chỉ ban tổ chức và hai đội trong trận xem được.'}
       action={<Badge tone={connected ? 'success' : snap.status === 'connecting' ? 'warning' : 'neutral'}>{connected ? <Wifi className="size-3" /> : <WifiOff className="size-3" />}{connected ? 'Đã kết nối' : snap.status === 'connecting' ? 'Đang kết nối…' : 'Mất kết nối'}</Badge>}
     >
       <div className="space-y-4">

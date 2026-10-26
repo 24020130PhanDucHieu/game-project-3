@@ -48,6 +48,18 @@ function prune() {
   for (const [key, entry] of store) if (!entry.promise && (entry.lastUsed ?? entry.at) < cutoff) store.delete(key)
 }
 
+// Số yêu cầu đang bay (để hiện thanh tiến trình trên cùng).
+let inflight = 0
+const fetchListeners = new Set<() => void>()
+export const fetching = {
+  get: () => inflight,
+  subscribe(l: () => void) { fetchListeners.add(l); return () => { fetchListeners.delete(l) } },
+}
+function bump(delta: number) {
+  inflight = Math.max(0, inflight + delta)
+  fetchListeners.forEach((l) => l())
+}
+
 function load<T>(key: string, fetcher: () => Promise<T>, force: boolean, ttl: number): Promise<T> {
   const entry = store.get(key) ?? { at: 0 }
   store.set(key, entry)
@@ -56,6 +68,7 @@ function load<T>(key: string, fetcher: () => Promise<T>, force: boolean, ttl: nu
   const gen = entry.gen ?? 0
   if (entry.promise && entry.promiseGen === gen && Date.now() - (entry.startedAt ?? 0) < 60_000) return entry.promise as Promise<T>
   if (!force && entry.data !== undefined && Date.now() - entry.at < ttl) return Promise.resolve(entry.data as T)
+  bump(1)
   const promise: Promise<T> = fetcher()
     .then((data) => {
       entry.data = data
@@ -72,6 +85,7 @@ function load<T>(key: string, fetcher: () => Promise<T>, force: boolean, ttl: nu
       throw entry.error
     })
     .finally(() => {
+      bump(-1)
       if (entry.promise === promise) entry.promise = undefined
       notify(key)
     })

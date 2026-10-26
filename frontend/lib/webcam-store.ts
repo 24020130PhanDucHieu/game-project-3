@@ -67,6 +67,7 @@ async function captureOnce() {
   const stream = state.stream
   const [tid, mid] = state.key.split(':')
   if (!stream || !tid || !mid) return
+  if (rec && rec.ok && !rec.dead) return // đang có video tốt: không cần ảnh chụp
   const frame = await grabFrame(stream)
   if (!frame) return
   const canvas = document.createElement('canvas')
@@ -88,6 +89,72 @@ async function captureOnce() {
   }
 }
 
+// Video ngắn của hiệp: ghi bằng MediaRecorder (chỉ hình, ~150 kbps), gửi từng mảnh 5 giây lên máy chủ ngay khi có.
+// Ghi lỗi hoặc trình duyệt không hỗ trợ thì cứ để ảnh 10 giây lo phần replay.
+const CLIP_PART_MS = 5_000
+const CLIP_MIMES = ['video/webm;codecs=vp8', 'video/webm', 'video/mp4']
+type Recording = { mr: MediaRecorder; round: number; seq: number; kind: string; chain: Promise<void>; ok: boolean; dead: boolean; pending: Blob[]; pendingSize: number }
+let rec: Recording | null = null
+let roundInfo = { round: 0, running: false }
+
+function pickMime() {
+  if (typeof MediaRecorder === 'undefined') return ''
+  return CLIP_MIMES.find((m) => { try { return MediaRecorder.isTypeSupported(m) } catch { return false } }) || ''
+}
+
+function stopRecording() {
+  const r = rec
+  rec = null
+  if (!r) return
+  try { if (r.mr.state !== 'inactive') r.mr.stop() } catch { /* bỏ qua */ }
+}
+
+function startRecording(round: number) {
+  const stream = state.stream
+  const [tid, mid] = state.key.split(':')
+  const mime = pickMime()
+  if (!stream || !tid || !mid || !mime || !stream.getVideoTracks().length) return
+  let mr: MediaRecorder
+  try { mr = new MediaRecorder(new MediaStream(stream.getVideoTracks()), { mimeType: mime, videoBitsPerSecond: 150_000 }) } catch { return }
+  const r: Recording = { mr, round, seq: 0, kind: mime.startsWith('video/mp4') ? 'video/mp4' : 'video/webm', chain: Promise.resolve(), ok: false, dead: false, pending: [], pendingSize: 0 }
+  // Trình duyệt đôi khi cắt mảnh rất nhỏ: gom lại tới ~4 KB rồi mới gửi (mảnh cuối gửi khi dừng).
+  const flush = () => {
+    if (!r.pending.length || r.dead) return
+    const part = new Blob(r.pending, { type: r.kind })
+    r.pending = []; r.pendingSize = 0
+    r.chain = r.chain.then(async () => {
+      if (r.dead) return
+      const seq = r.seq
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try { await arenaApi.uploadClipPart(tid, mid, r.round, seq, r.kind, part); r.seq = seq + 1; r.ok = true; return }
+        catch (e) {
+          const status = (e as { status?: number })?.status
+          if (status === 429 && attempt === 0) { await new Promise((res) => setTimeout(res, 2200)); continue }
+          r.dead = true // 409/413/lỗi mạng: bỏ clip của hiệp này, ảnh 10 giây vẫn chạy
+          return
+        }
+      }
+    })
+  }
+  mr.ondataavailable = (ev) => {
+    if (!ev.data || ev.data.size === 0 || r.dead) return
+    r.pending.push(ev.data); r.pendingSize += ev.data.size
+    if (r.pendingSize >= 4096) flush()
+  }
+  mr.onstop = flush
+  mr.onerror = () => { r.dead = true }
+  try { mr.start(CLIP_PART_MS) } catch { return }
+  rec = r
+}
+
+function syncRecording() {
+  const want = !!state.stream && !!state.key && roundInfo.running && roundInfo.round > 0
+  if (!want) { stopRecording(); return }
+  if (rec && rec.round === roundInfo.round && rec.mr.stream.getVideoTracks()[0] && state.stream?.getVideoTracks().includes(rec.mr.stream.getVideoTracks()[0])) return
+  stopRecording()
+  startRecording(roundInfo.round)
+}
+
 function syncSnapshots() {
   const want = !!state.stream && !!state.key
   if (want && !snapTimer) {
@@ -103,7 +170,7 @@ const listeners = new Set<() => void>()
 function set(patch: Partial<WebcamState>) {
   state = { ...state, ...patch }
   listeners.forEach((l) => l())
-  if ('stream' in patch || 'key' in patch) syncSnapshots()
+  if ('stream' in patch || 'key' in patch) { syncSnapshots(); syncRecording() }
 }
 
 export const webcamStore = {
@@ -128,12 +195,20 @@ export const webcamStore = {
 
   leave() {
     cancelAnimationFrame(frame); frame = 0
+    stopRecording()
     room?.destroy(); room = null
     stopTracks()
     set({ key: '', snap: EMPTY_SNAP, stream: null, micOn: false })
   },
 
   setAllowOpponent(v: boolean) { room?.setAllowOpponent(v) },
+
+  /** Báo hiệp hiện tại và hiệp có đang chạy không: ghi video đúng trong lúc hiệp chạy. */
+  setRound(round: number, running: boolean) {
+    if (roundInfo.round === round && roundInfo.running === running) return
+    roundInfo = { round, running }
+    syncRecording()
+  },
 
   async start(id?: string) {
     set({ error: '' })

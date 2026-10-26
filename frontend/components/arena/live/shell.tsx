@@ -1,9 +1,11 @@
 'use client'
 
 import { AiLauncher } from './ai-assistant'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { releaseOrphanLock } from '@/lib/scroll-lock'
-import { BookOpen, Bell, BrainCircuit, Flag, LayoutDashboard, LogIn, LogOut, Medal, Menu, Monitor, Moon, Network, RefreshCw, Shield, Sun, Swords, UserPlus, UserRound, WifiOff, X, type LucideIcon } from 'lucide-react'
+import { fetching } from '@/lib/cache'
+import { useFx, type FxMode } from '@/lib/fx'
+import { BookOpen, Bell, BrainCircuit, Flag, LayoutDashboard, LogIn, LogOut, Medal, Menu, Monitor, Moon, Network, RefreshCw, Shield, Sun, Swords, UserPlus, UserRound, WifiOff, X, Zap, ZapOff, type LucideIcon } from 'lucide-react'
 import { AuthModal } from '../modals/auth-modal'
 import { invalidate } from '@/lib/cache'
 import { useTheme, type ThemeMode } from '@/lib/theme'
@@ -35,6 +37,32 @@ const NAV: { id: ViewId; label: string; icon: LucideIcon; adminOnly?: boolean }[
 ]
 
 const TOURNAMENT_VIEWS: ViewId[] = ['overview', 'bracket', 'match']
+
+/** Thanh mảnh trên cùng chạy khi có yêu cầu đang tải (chỉ hiện nếu kéo dài trên 250 ms, để không nháy). */
+function TopProgress() {
+  const { busy } = useLive()
+  const count = useSyncExternalStore(fetching.subscribe, fetching.get, () => 0)
+  const active = count > 0 || busy
+  const [show, setShow] = useState(false)
+  useEffect(() => {
+    if (!active) { setShow(false); return }
+    const timer = window.setTimeout(() => setShow(true), 250)
+    return () => window.clearTimeout(timer)
+  }, [active])
+  return <div aria-hidden className={cn('pointer-events-none fixed inset-x-0 top-0 z-[75] h-0.5 overflow-hidden transition-opacity duration-300', show ? 'opacity-100' : 'opacity-0')}><div className="top-progress h-full w-1/3 bg-brand" /></div>
+}
+
+const FX_LABEL: Record<FxMode, string> = { full: 'Hiệu ứng: đầy đủ', lite: 'Hiệu ứng: gọn (nhẹ cho máy yếu)', off: 'Hiệu ứng: tắt' }
+
+function FxToggle() {
+  const [mode, setMode] = useFx()
+  const next: Record<FxMode, FxMode> = { full: 'lite', lite: 'off', off: 'full' }
+  return (
+    <Button variant="ghost" size="sm" onClick={() => setMode(next[mode])} aria-label={`${FX_LABEL[mode]}. Bấm để đổi`} title={FX_LABEL[mode]} data-testid="fx-toggle" data-fx-mode={mode}>
+      {mode === 'off' ? <ZapOff className="size-4" /> : <Zap className={cn('size-4', mode === 'lite' && 'opacity-60')} />}
+    </Button>
+  )
+}
 
 function ThemeToggle() {
   const { mode, setMode, resolved } = useTheme()
@@ -133,6 +161,7 @@ function Topbar({ onMenu }: { onMenu: () => void }) {
           </span>
         )}
         <Button variant="ghost" size="sm" aria-label="Làm mới dữ liệu" disabled={busy} onClick={() => { setSpinning(true); invalidate(''); window.setTimeout(() => setSpinning(false), 700) }}><RefreshCw className={cn('size-4', spinning && 'animate-spin')} /></Button>
+        <FxToggle />
         <ThemeToggle />
         {role !== 'GUEST' && <AlertsToggle />}
         <NotificationBell />
@@ -143,7 +172,7 @@ function Topbar({ onMenu }: { onMenu: () => void }) {
           </>
         ) : (
           <>
-            <Badge tone={role === 'ADMIN' ? 'accent' : 'info'}>{role === 'ADMIN' ? 'Ban tổ chức' : 'Đội thi'}</Badge>
+            <span className="hidden sm:inline-flex"><Badge tone={role === 'ADMIN' ? 'accent' : 'info'}>{role === 'ADMIN' ? 'Ban tổ chức' : 'Đội thi'}</Badge></span>
             <Button variant="ghost" size="sm" className="md:hidden" aria-label="Đăng xuất" onClick={() => void logout()}><LogOut className="size-4" /></Button>
           </>
         )}
@@ -172,6 +201,7 @@ export function Shell() {
 
   return (
     <div className="min-h-dvh bg-background text-foreground md:flex">
+      <TopProgress />
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[90] focus:rounded-lg focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground">Bỏ qua điều hướng</a>
       <aside className="hidden w-[264px] shrink-0 border-r border-border bg-sidebar text-sidebar-foreground md:sticky md:top-0 md:block md:h-dvh">
         <SidebarBody onPick={() => undefined} />

@@ -6,6 +6,7 @@ import { arenaApi, type MainEloEvent } from '@/lib/api-client'
 import { useResource } from '@/lib/cache'
 import { sameStudent, stamp } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { useCountUp, useReducedMotion } from '@/lib/motion'
 import { Badge, Card, DataTable, EmptyState, ErrorNote, SkeletonRows, Stat } from '../../ui'
 import { useLive } from '../../context'
 import { RankBadge } from '../ranking'
@@ -56,46 +57,89 @@ function Legend({ items }: { items: [string, string][] }) {
   return <ul className="mt-2 flex flex-wrap gap-3 text-[11px] text-muted-foreground">{items.map(([name, color]) => <li key={name} className="flex items-center gap-1.5"><span className="size-2.5 rounded-full" style={{ background: color }} />{name}</li>)}</ul>
 }
 
-/** Thẻ giải thích: công thức bằng lời, bảng hệ số theo tỉ số, và ví dụ tính bằng số thật (trận gần nhất, hoặc ví dụ minh họa). */
+const OUTCOMES = [
+  { id: 'w0', label: 'Thắng 3–0', won: true, loser: 0 },
+  { id: 'w1', label: 'Thắng 3–1', won: true, loser: 1 },
+  { id: 'w2', label: 'Thắng 3–2', won: true, loser: 2 },
+  { id: 'l2', label: 'Thua 2–3', won: false, loser: 2 },
+  { id: 'l1', label: 'Thua 1–3', won: false, loser: 1 },
+  { id: 'l0', label: 'Thua 0–3', won: false, loser: 0 },
+] as const
+
+const vi = (n: number, d = 1) => n.toFixed(d).replace('.', ',')
+
+/** Máy tính ELO tương tác: kéo thanh trượt, chọn kết quả, thấy ngay xác suất kỳ vọng, điểm đổi và công thức điền số. */
 function HowItWorks({ formula, last }: { formula?: Formula; last?: MainEloEvent }) {
+  const reduced = useReducedMotion()
   const k = formula?.k ?? 32
   const margin = formula?.margin || { '0': 1.3, '1': 1.15, '2': 1 }
-  const ex = last
-    ? { mine: last.before, opp: last.opponent_before || 1200, won: last.result === 'win', m: last.margin || 1, label: `Trận gần nhất của đội: ${last.score} trước ${last.opponent_name}` }
-    : { mine: 1200, opp: 1300, won: true, m: 1, label: 'Ví dụ minh họa: đội 1200 điểm gặp đội 1300 điểm, thắng 3–2' }
-  const e = expectedOf(ex.mine, ex.opp)
-  const delta = k * ex.m * ((ex.won ? 1 : 0) - e)
+  const seed = last ? { mine: Math.round(last.before), opp: Math.round(last.opponent_before || 1200), outcome: (last.result === 'win' ? 'w' : 'l') + String(Math.min(2, Math.max(0, Number(last.score?.split(':')[last.result === 'win' ? 1 : 0]) || 0))) } : { mine: 1200, opp: 1300, outcome: 'w2' }
+  const [mine, setMine] = useState(seed.mine)
+  const [opp, setOpp] = useState(seed.opp)
+  const [outcome, setOutcome] = useState<string>(seed.outcome)
+  const [open, setOpen] = useState(() => { try { return localStorage.getItem('arena.elo.how') !== 'closed' } catch { return true } })
+  const toggle = () => setOpen((v) => { try { localStorage.setItem('arena.elo.how', v ? 'closed' : 'open') } catch { /* bỏ qua */ } return !v })
+  const o = OUTCOMES.find((x) => x.id === outcome) || OUTCOMES[2]
+  const e = expectedOf(mine, opp)
+  const m = Number(margin[String(o.loser)] ?? 1)
+  const delta = k * m * ((o.won ? 1 : 0) - e)
+  const shownE = useCountUp(e * 100, reduced, 450)
+  const shownDelta = useCountUp(delta, reduced, 450)
+  const next = mine + delta
+  const up = delta >= 0
   return (
-    <Card icon={<Sigma />} title="ELO được tính thế nào?" subtitle="Ai cũng bắt đầu 1200 điểm. Thắng đối thủ mạnh được nhiều điểm, thua đối thủ yếu mất nhiều điểm">
-      <div className="space-y-4 text-sm leading-relaxed" data-testid="elo-how">
-        <ol className="grid gap-3 md:grid-cols-3">
-          {[
-            ['1. Kỳ vọng thắng', `Trước trận, máy tính xác suất đội bạn thắng dựa vào chênh lệch ELO hai đội. Chênh 400 điểm thì bên mạnh hơn kỳ vọng thắng khoảng 91%.`],
-            ['2. Kết quả thật', 'Thắng trận Bo5 (3 hiệp trước) là 1, thua là 0. Chỉ kết quả cả trận mới tính, không tính riêng từng hiệp.'],
-            ['3. Điểm thay đổi', `Điểm đổi = K × M × (kết quả − kỳ vọng). K = ${k} cố định. Đội thua mất đúng số điểm đội thắng nhận, nên tổng ELO không đổi.`],
-          ].map(([t, b]) => <li key={t} className="rounded-xl border border-border p-3"><p className="font-semibold">{t}</p><p className="mt-1 text-xs text-muted-foreground">{b}</p></li>)}
-        </ol>
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-xl border border-border bg-muted/20 p-3">
-            <p className="text-xs font-bold uppercase tracking-wide text-primary">Hệ số thưởng M theo tỉ số</p>
-            <p className="mt-1 text-xs text-muted-foreground">Thắng đậm được thưởng thêm; thắng sát nút tính như ELO thông thường.</p>
-            <table className="mt-2 w-full text-left text-xs"><tbody className="divide-y divide-border">
-              {[['3–0', margin['0']], ['3–1', margin['1']], ['3–2', margin['2']]].map(([s, m]) => <tr key={String(s)}><td className="py-1.5 font-semibold">Thắng {s}</td><td className="py-1.5 tabular-nums">M = ×{String(m).replace('.', ',')}</td></tr>)}
-            </tbody></table>
+    <Card icon={<Sigma />} title="ELO được tính thế nào?" subtitle="Thử kéo thanh trượt và chọn kết quả: số liệu bên phải đổi ngay"
+      action={<button type="button" onClick={toggle} className="text-xs font-semibold text-primary hover:underline" aria-expanded={open}>{open ? 'Thu gọn' : 'Mở ra'}</button>}>
+      {open && (
+        <div className="space-y-5" data-testid="elo-how">
+          <p className="text-sm leading-relaxed text-muted-foreground">Ai cũng bắt đầu <strong className="text-foreground">1200</strong> điểm. Thắng đối thủ <strong className="text-foreground">mạnh hơn</strong> được nhiều điểm; thua đối thủ <strong className="text-foreground">yếu hơn</strong> mất nhiều điểm. Mỗi trận Bo5 đổi điểm một lần, đội thua mất đúng số điểm đội thắng nhận nên <strong className="text-foreground">tổng ELO không đổi</strong>.</p>
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 [&>*]:min-w-0">
+            <div className="space-y-4 rounded-2xl border border-border bg-muted/20 p-4">
+              {([['ELO của đội bạn', mine, setMine, 'var(--primary)'], ['ELO của đối thủ', opp, setOpp, '#f59e0b']] as const).map(([label, value, set, color]) => (
+                <label key={label} className="block text-xs font-semibold text-muted-foreground">
+                  <span className="flex items-center justify-between"><span>{label}</span><span className="font-display text-lg font-extrabold tabular-nums text-foreground">{value}</span></span>
+                  <input type="range" min={800} max={1800} step={5} value={value} onChange={(ev) => set(Number(ev.target.value))} className="mt-1 w-full" style={{ accentColor: color }} aria-label={label} data-testid={label.includes('bạn') ? 'elo-mine' : 'elo-opp'} />
+                </label>
+              ))}
+              <div>
+                <p className="mb-1.5 text-xs font-semibold text-muted-foreground">Kết quả trận Bo5</p>
+                <div className="grid grid-cols-3 gap-1.5" role="radiogroup" aria-label="Kết quả trận">
+                  {OUTCOMES.map((x) => (
+                    <button key={x.id} type="button" role="radio" aria-checked={outcome === x.id} onClick={() => setOutcome(x.id)} data-testid={`elo-out-${x.id}`}
+                      className={cn('rounded-xl border px-2 py-2 text-xs font-bold transition-all duration-150 active:scale-95', outcome === x.id ? (x.won ? 'border-emerald-500/60 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300' : 'border-red-500/60 bg-red-500/15 text-red-700 dark:text-red-300') : 'border-border bg-card/60 text-muted-foreground hover:border-primary/40')}>
+                      {x.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {last && <button type="button" className="text-xs font-semibold text-primary hover:underline" onClick={() => { setMine(seed.mine); setOpp(seed.opp); setOutcome(seed.outcome) }}>Dùng số của trận gần nhất của đội</button>}
+            </div>
+
+            <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4" data-testid="elo-example" aria-live="polite">
+              <p className="text-xs font-semibold text-muted-foreground">1 · Kỳ vọng thắng của đội bạn</p>
+              <div className="mt-1 flex items-center gap-3">
+                <div className="h-3 flex-1 overflow-hidden rounded-full bg-muted"><div className="bar-fill h-full rounded-full transition-[width] duration-500" style={{ width: `${e * 100}%` }} /></div>
+                <span className="font-display w-16 text-right text-xl font-extrabold tabular-nums">{vi(shownE, 0)}%</span>
+              </div>
+              <p className="mt-3 text-xs font-semibold text-muted-foreground">2 · Điểm thay đổi</p>
+              <p className={cn('font-display text-5xl font-black tabular-nums transition-colors', up ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')} data-testid="elo-delta">{up ? '+' : ''}{vi(shownDelta)}</p>
+              <p className="mt-1 flex items-center gap-2 text-sm tabular-nums"><span className="text-muted-foreground">ELO mới:</span><strong>{vi(mine, 0)}</strong><span className="text-muted-foreground">→</span><strong className={up ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>{vi(next)}</strong></p>
+              <div className="mt-3 space-y-1 rounded-xl bg-background/60 p-3 font-mono text-[11.5px] leading-relaxed tabular-nums">
+                <p><span className="text-muted-foreground">Kỳ vọng E = 1 ÷ (1 + 10^((</span><span className="text-amber-600 dark:text-amber-300">{opp}</span><span className="text-muted-foreground"> − </span><span className="text-primary">{mine}</span><span className="text-muted-foreground">) ÷ 400))</span> = <strong>{vi(e, 3)}</strong></p>
+                <p><span className="text-muted-foreground">Điểm đổi = K × M × (kết quả − E)</span></p>
+                <p>= <span title="K cố định">{k}</span> × <span title="Hệ số theo tỉ số" className="text-fuchsia-600 dark:text-fuchsia-300">{vi(m, 2)}</span> × (<span title="Thắng = 1, thua = 0">{o.won ? 1 : 0}</span> − {vi(e, 3)}) = <strong className={up ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>{up ? '+' : ''}{vi(delta, 2)}</strong></p>
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">K = {k} (cố định) · M là hệ số thưởng theo tỉ số hiệp (xem bên dưới).</p>
+            </div>
           </div>
-          <div className="rounded-xl border border-primary/30 bg-primary/5 p-3" data-testid="elo-example">
-            <p className="text-xs font-bold uppercase tracking-wide text-primary">Ví dụ tính bằng số thật</p>
-            <p className="mt-1 text-xs text-muted-foreground">{ex.label}</p>
-            <ul className="mt-2 space-y-1 text-xs tabular-nums">
-              <li>ELO của đội: <strong>{ex.mine.toFixed(1)}</strong> · đối thủ: <strong>{ex.opp.toFixed(1)}</strong></li>
-              <li>Kỳ vọng thắng = 1 ÷ (1 + 10^(({ex.opp.toFixed(0)} − {ex.mine.toFixed(0)}) ÷ 400)) = <strong>{(e * 100).toFixed(1)}%</strong></li>
-              <li>Kết quả: <strong>{ex.won ? 'thắng (1)' : 'thua (0)'}</strong>, hệ số thưởng M = <strong>×{ex.m}</strong></li>
-              <li>Điểm đổi = {k} × {ex.m} × ({ex.won ? 1 : 0} − {e.toFixed(3)}) = <strong className={delta >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}>{delta >= 0 ? '+' : ''}{delta.toFixed(1)}</strong> → ELO mới <strong>{(ex.mine + delta).toFixed(1)}</strong></li>
-            </ul>
+          <div className="flex flex-wrap items-center gap-2 text-xs" data-testid="elo-margins">
+            <span className="font-semibold text-muted-foreground">Hệ số thưởng M cho đội thắng:</span>
+            {[['3–0', margin['0']], ['3–1', margin['1']], ['3–2', margin['2']]].map(([sc, mm]) => <span key={String(sc)} className="rounded-full border border-border bg-card/60 px-2.5 py-1 font-bold tabular-nums">{sc} <span className="text-fuchsia-600 dark:text-fuchsia-300">×{vi(Number(mm), 2)}</span></span>)}
+            <span className="text-muted-foreground">· Thắng sát nút tính như ELO thông thường.</span>
           </div>
+          <p className="text-xs text-muted-foreground">ELO Giải AI tính riêng, không lẫn ELO giải thường và không phụ thuộc điểm vòng loại. Trận nhường đi (không có đối thủ) không tính.</p>
         </div>
-        <p className="text-xs text-muted-foreground">ELO Giải AI tính riêng, không lẫn với ELO giải thường và không phụ thuộc điểm vòng loại. Trận nhường đi (không có đối thủ) không được tính.</p>
-      </div>
+      )}
     </Card>
   )
 }

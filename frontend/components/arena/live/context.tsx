@@ -6,6 +6,7 @@ import { arenaApi, clearSessionToken, getSessionToken } from '@/lib/api-client'
 import { webcamStore } from '@/lib/webcam-store'
 import { registerOfflineSupport } from '@/lib/offline-engine'
 import { invalidate, useResource, type Resource } from '@/lib/cache'
+import { withTransition } from '@/lib/fx'
 import { createTournamentSocket } from '@/lib/match-socket'
 import { isRetryable, listOutbox, markFailed, remove as removeOutbox, type OutboxItem } from '@/lib/outbox'
 import { sameStudent } from '@/lib/format'
@@ -357,11 +358,19 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     return () => { window.removeEventListener('online', onOnline); window.clearInterval(timer) }
   }, [role, flushOutbox])
 
+  // Đổi màn hình bằng hiệu ứng chuyển mờ; hướng trượt theo thứ tự màn hình trong menu.
+  const ORDER: ViewId[] = ['profile', 'overview', 'bracket', 'ranking', 'match', 'qualifier', 'aicup', 'guide', 'admin']
+  const viewRef = useRef(view)
+  viewRef.current = view
+  const navigate = useCallback((next: ViewId) => {
+    const dir = ORDER.indexOf(next) >= ORDER.indexOf(viewRef.current) ? 1 : -1
+    withTransition(() => setView(next), dir)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const openAuth = useCallback((mode: 'login' | 'register') => setAuthRequest({ mode }), [])
   const closeAuth = useCallback(() => setAuthRequest(null), [])
   // Giá trị ngữ cảnh chỉ đổi khi có thứ thật sự đổi, nên các màn hình dùng useLive() không render lại theo mỗi lần Provider render.
   const value: Live = useMemo(() => ({
-    view, navigate: setView, session, role, scope, refreshSession,
+    view, navigate, session, role, scope, refreshSession,
     tournaments, tournamentId, setTournamentId, tournament, matchId, setMatchId,
     qualifiers, qualifierId, setQualifierId, aiEvents, aiEventId, setAiEventId, notifications, capabilities, socketOpen, busy,
     run, toast, confirm, enterMatch, ownMatches,
@@ -374,7 +383,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       {children}
       <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[80] flex flex-col items-center gap-2 p-4 sm:items-end" role="status" aria-live="polite">
         {toasts.map((t) => (
-          <div key={t.id} className={cn('pointer-events-auto flex max-w-md items-start gap-3 rounded-xl border bg-card px-4 py-3 text-sm shadow-lg',
+          <div key={t.id} className={cn('toast-in pointer-events-auto flex max-w-md items-start gap-3 rounded-xl border bg-card px-4 py-3 text-sm shadow-lg', t.tone === 'success' && 'toast-ok',
             t.tone === 'error' ? 'border-red-500/40' : t.tone === 'success' ? 'border-emerald-500/40' : 'border-border')}>
             {t.tone === 'error' ? <XCircle className="mt-0.5 size-4 shrink-0 text-red-500" /> : t.tone === 'success' ? <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-500" /> : <Info className="mt-0.5 size-4 shrink-0 text-sky-500" />}
             <span className="min-w-0 flex-1 break-words">{t.text}</span>

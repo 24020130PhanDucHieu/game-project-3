@@ -8,7 +8,7 @@ const KEY = 'arena.theme'
 const Ctx = createContext<{ mode: ThemeMode; resolved: 'light' | 'dark'; setMode: (mode: ThemeMode) => void } | null>(null)
 
 /** Chạy trước khi React hydrate để tránh nháy sáng/tối. */
-export const themeBootScript = `try{var m=localStorage.getItem('${KEY}')||'dark';var d=m==='dark'||(m==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}try{var n=navigator,c=n.connection;if((n.deviceMemory&&n.deviceMemory<=4)||(n.hardwareConcurrency&&n.hardwareConcurrency<=4)||(c&&c.saveData))document.documentElement.dataset.fx='lite'}catch(e){}`
+export const themeBootScript = `try{var m=localStorage.getItem('${KEY}')||'dark';var d=m==='dark'||(m==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);document.documentElement.style.colorScheme=d?'dark':'light'}catch(e){}try{var f=localStorage.getItem('arena.fx');if(f==='lite'||f==='off')document.documentElement.dataset.fx=f;else if(f!=='full'){var n=navigator,c=n.connection;if((n.deviceMemory&&n.deviceMemory<=4)||(n.hardwareConcurrency&&n.hardwareConcurrency<=4)||(c&&c.saveData))document.documentElement.dataset.fx='lite'}}catch(e){}`
 
 function systemDark() {
   return typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches

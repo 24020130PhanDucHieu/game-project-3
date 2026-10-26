@@ -5,6 +5,7 @@ import { AlertTriangle, ChevronLeft, ChevronRight, Inbox, Loader2 } from 'lucide
 import { cn } from '@/lib/utils'
 import { statusOf, type Tone } from '@/lib/format'
 import { useCountUp, useReducedMotion } from '@/lib/motion'
+import { withTransition } from '@/lib/fx'
 import { useModalLayer } from '@/lib/scroll-lock'
 
 export const toneClass: Record<Tone, string> = {
@@ -242,7 +243,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, className }: {
           key={tab.id}
           role="tab"
           aria-selected={value === tab.id}
-          onClick={() => onChange(tab.id)}
+          onClick={() => { if (tab.id !== value) withTransition(() => onChange(tab.id), tabs.findIndex((x) => x.id === tab.id) > tabs.findIndex((x) => x.id === value) ? 1 : -1) }}
           className={cn(
             'relative z-10 inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
             value === tab.id ? (box ? 'text-primary-foreground' : 'bg-brand text-primary-foreground shadow-md shadow-primary/25') : 'text-muted-foreground hover:bg-card/70 hover:text-foreground',
@@ -279,7 +280,7 @@ export function DataTable({ head, children, className }: { head: string[]; child
         <thead className="bg-muted/60 text-xs tracking-wide text-muted-foreground">
           <tr>{head.map((h, i) => <th key={i} scope="col" className="whitespace-nowrap px-3 py-2.5 font-semibold">{h}</th>)}</tr>
         </thead>
-        <tbody className="divide-y divide-border [&>tr]:transition-colors [&>tr:hover]:bg-primary/[0.05] [&>tr:hover]:shadow-[inset_3px_0_0_var(--primary)] [&>tr:nth-child(even)]:bg-muted/25">{children}</tbody>
+        <tbody className="stagger divide-y divide-border [&>tr]:transition-colors [&>tr:hover]:bg-primary/[0.05] [&>tr:hover]:shadow-[inset_3px_0_0_var(--primary)] [&>tr:nth-child(even)]:bg-muted/25">{children}</tbody>
       </table>
     </div>
   )

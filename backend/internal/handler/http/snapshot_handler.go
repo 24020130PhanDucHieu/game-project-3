@@ -191,7 +191,7 @@ func (h *SnapshotHandler) File(c *gin.Context) {
 func (h *SnapshotHandler) Cleanup() {
 	cutoff := time.Now().Add(-snapshotMaxAge)
 	_ = filepath.Walk(h.Dir, func(path string, info os.FileInfo, err error) error {
-		if err == nil && !info.IsDir() && strings.HasSuffix(path, ".jpg") && info.ModTime().Before(cutoff) {
+		if err == nil && !info.IsDir() && (strings.HasSuffix(path, ".jpg") || strings.HasSuffix(path, ".webm") || strings.HasSuffix(path, ".mp4")) && info.ModTime().Before(cutoff) {
 			_ = os.Remove(path)
 		}
 		return nil

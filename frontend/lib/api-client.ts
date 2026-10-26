@@ -634,6 +634,28 @@ export const arenaApi = {
     return URL.createObjectURL(await res.blob())
   },
 
+  /** Video ngắn của một hiệp, gửi từng mảnh theo thứ tự `seq` (server nối các mảnh lại thành một tệp phát được). */
+  async uploadClipPart(tournamentId: string, matchId: string, round: number, seq: number, mime: string, part: Blob) {
+    return apiRequest(`/tournaments/${encodeURIComponent(tournamentId)}/matches/${encodeURIComponent(matchId)}/clips?round=${round}&seq=${seq}&mime=${encodeURIComponent(mime)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: part,
+    })
+  },
+
+  async getClips(tournamentId: string, matchId: string, round: number) {
+    return apiRequest<{ round: number; items: { side: 'team_a' | 'team_b'; file: string; bytes?: number; mime?: string }[] }>(
+      `/tournaments/${encodeURIComponent(tournamentId)}/matches/${encodeURIComponent(matchId)}/clips?round=${round}`, { cache: 'no-store' })
+  },
+
+  async clipUrl(tournamentId: string, matchId: string, file: string) {
+    const token = getSessionToken()
+    const res = await fetch(`${getApiBaseUrl()}/api/tournaments/${encodeURIComponent(tournamentId)}/matches/${encodeURIComponent(matchId)}/clips/file?path=${encodeURIComponent(file)}`,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+    if (!res.ok) throw new Error(`Không tải được video camera (${res.status})`)
+    return URL.createObjectURL(await res.blob())
+  },
+
   async deleteQualifier(qid: string) {
     return apiRequest(`/qualifiers/${encodeURIComponent(qid)}`, {
       method: 'DELETE',
