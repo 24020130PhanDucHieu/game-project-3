@@ -179,7 +179,7 @@ function PieceCard({ step, id, highlight, theme, redName, blueName, follow, onFo
   const info = PIECE_ICON[piece.type]
   const color = piece.side === 'red' ? theme.red : theme.blue
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card/95 px-3 py-2 text-xs shadow-lg backdrop-blur" style={{ borderColor: color }} role="status" aria-label="Thông tin quân đang chọn">
+    <div className="flex flex-wrap items-center gap-3 rounded-xl border bg-card/95 px-3 py-2 text-xs shadow-lg" style={{ borderColor: color }} role="status" aria-label="Thông tin quân đang chọn">
       <span className="grid size-9 place-items-center rounded-full text-white" style={{ background: color }}><PieceIcon type={piece.type} className="size-5" /></span>
       <div className="min-w-0">
         <p className="font-bold">{info?.label ?? 'Quân ẩn'} · <span style={{ color }}>{piece.side === 'red' ? redName : blueName}</span></p>
@@ -207,7 +207,7 @@ export function BoardPlayer({ steps, autoPlay = false, redName = 'Đội Đỏ',
   const [speed, setSpeed] = useState(1)
   const [view, setView] = useState<'2d' | '3d'>('2d')
   const [cam, setCam] = useState<CameraMode>('cinematic')
-  const [quality, setQuality] = useState<'high' | 'low'>('high')
+  const [quality, setQuality] = useState<'high' | 'low'>(() => (typeof navigator !== 'undefined' && (navigator.hardwareConcurrency || 8) <= 4 ? 'low' : 'high'))
   const [notice, setNotice] = useState('')
   const [selected, setSelected] = useState<string | null>(null)
   const [follow, setFollow] = useState(false)

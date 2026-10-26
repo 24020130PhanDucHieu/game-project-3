@@ -108,13 +108,13 @@ export default function Board3D({ step, prev, animate, theme, camera, quality, o
       return
     }
     const high = quality === 'high'
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, high ? 2 : 1))
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, high ? 1.5 : 1))
     renderer.toneMapping = THREE.ACESFilmicToneMapping
     renderer.toneMappingExposure = 1.05
     renderer.shadowMap.enabled = high
     renderer.shadowMap.type = THREE.PCFSoftShadowMap
     el.appendChild(renderer.domElement)
-    renderer.domElement.style.cssText = 'width:100%;height:100%;display:block;border-radius:inherit;touch-action:none'
+    renderer.domElement.style.cssText = 'width:100%;height:100%;display:block;border-radius:inherit;touch-action:pan-y'
 
     const scene = new THREE.Scene()
     scene.background = new THREE.Color(theme.backdrop)
@@ -440,6 +440,8 @@ export default function Board3D({ step, prev, animate, theme, camera, quality, o
     controls.maxDistance = 22
     controls.target.set(0, 0, 0)
     controls.enabled = false
+    // OrbitControls tự đặt touch-action:none; chỉ chế độ camera tự do mới cần chiếm thao tác chạm, còn lại để trang cuộn được.
+    renderer.domElement.style.touchAction = 'pan-y'
     let mode: CameraMode = latest.current.camera
     const focus = new THREE.Vector3()
     let theta = 0
@@ -447,6 +449,7 @@ export default function Board3D({ step, prev, animate, theme, camera, quality, o
     const setCamera = (next: CameraMode) => {
       mode = next
       controls.enabled = next === 'free'
+      renderer.domElement.style.touchAction = next === 'free' ? 'none' : 'pan-y'
       if (next === 'free') { controls.target.copy(focus); controls.update() }
     }
     setCamera(mode)

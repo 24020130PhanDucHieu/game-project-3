@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { Check, ChevronLeft, ChevronRight, Clock, Sparkles, Target, X as XIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCountUp, useReducedMotion } from '@/lib/motion'
+import { useModalLayer } from '@/lib/scroll-lock'
 import type { TaskCheckResult } from '@/lib/offline-engine'
 import { Button, ProgressRing, Tabs } from '../../ui'
 import { Board } from '../../board'
@@ -209,15 +210,15 @@ type Mark = { sample: { b: string; s: number; t: number }; truth: number; pred: 
 /** Xem một thế cờ cỡ lớn kèm đáp án thật và dự đoán; duyệt trước/sau, đóng bằng Esc. */
 function BoardDialog({ marks, index, onIndex, onClose, name }: { marks: Mark[]; index: number; onIndex: (i: number) => void; onClose: () => void; name: (i: number) => string }) {
   const m = marks[index]
+  useModalLayer(onClose)
   useEffect(() => {
     const key = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-      else if (e.key === 'ArrowRight') onIndex(Math.min(marks.length - 1, index + 1))
+      if (e.key === 'ArrowRight') onIndex(Math.min(marks.length - 1, index + 1))
       else if (e.key === 'ArrowLeft') onIndex(Math.max(0, index - 1))
     }
     window.addEventListener('keydown', key)
     return () => window.removeEventListener('keydown', key)
-  }, [index, marks.length, onClose, onIndex])
+  }, [index, marks.length, onIndex])
   const step = useMemo(() => (m ? boardToStep(m.sample.b, m.sample.s) : null), [m])
   if (!m || !step || typeof document === 'undefined') return null
   const mover = m.sample.s === 0 ? 'Đỏ' : 'Xanh'
@@ -330,7 +331,7 @@ export function CheckVisual({ data }: { data: CheckVisualData }) {
                 </div>
               ))}
             </div>
-            {list.length > limit && <Button variant="secondary" size="sm" onClick={() => setLimit((n) => n + 24)}>Xem thêm {Math.min(24, list.length - limit)} thế ({list.length - limit} còn lại)</Button>}
+            {list.length > limit && limit < 96 && <Button variant="secondary" size="sm" onClick={() => setLimit((n) => Math.min(96, n + 24))}>Xem thêm {Math.min(24, list.length - limit)} thế ({list.length - limit} còn lại)</Button>}
             {list.length === 0 && <p className="rounded-xl border border-dashed border-border p-4 text-center text-sm text-muted-foreground">Không có thế nào trong nhóm này.</p>}
           </div>
         )}

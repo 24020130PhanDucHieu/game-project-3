@@ -48,7 +48,7 @@ function Countdown({ seconds }: { seconds: number }) {
   return (
     <div className="flex gap-2" role="timer" aria-label="Thời gian còn lại để nộp bài">
       {parts.map(([v, label]) => (
-        <div key={label} className="min-w-14 rounded-xl bg-card/90 px-2 py-1.5 text-center shadow-sm ring-1 ring-border backdrop-blur-md">
+        <div key={label} className="min-w-14 rounded-xl bg-card/90 px-2 py-1.5 text-center shadow-sm ring-1 ring-border">
           <div className="font-display text-2xl font-black tabular-nums leading-none text-foreground">{String(v).padStart(2, '0')}</div>
           <div className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
         </div>
@@ -59,7 +59,7 @@ function Countdown({ seconds }: { seconds: number }) {
 
 function HeroStat({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
   return (
-    <div className="rounded-xl bg-card/80 px-3 py-2.5 shadow-sm ring-1 ring-border backdrop-blur-md transition hover:bg-card">
+    <div className="rounded-xl bg-card/80 px-3 py-2.5 shadow-sm ring-1 ring-border transition hover:bg-card">
       <p className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-muted-foreground"><span className="text-primary">{icon}</span>{label}</p>
       <p className="font-display mt-0.5 text-lg font-extrabold tabular-nums">{value}</p>
     </div>

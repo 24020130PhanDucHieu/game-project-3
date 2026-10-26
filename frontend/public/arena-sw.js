@@ -1,5 +1,5 @@
 /* Service worker: giữ giao diện, engine offline và Pyodide trong bộ nhớ đệm để mất mạng vẫn mở trang, kiểm tra mã và đấu thử boss. */
-const VERSION = 'arena-offline-v4'
+const VERSION = 'arena-offline-v5'
 const SHELL = `${VERSION}-shell`
 const STATIC = `${VERSION}-static`
 const PYODIDE = 'https://cdn.jsdelivr.net/pyodide/'
@@ -27,9 +27,16 @@ async function cacheFirst(request, name) {
   return response
 }
 
+// Mạng treo không được làm trang đứng: quá hạn thì rơi về bản lưu (nếu có).
+function fetchWithTimeout(request, ms = 8000) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), ms)
+  return fetch(request, { signal: controller.signal }).finally(() => clearTimeout(timer))
+}
+
 async function networkFirst(request, name) {
   try {
-    const response = await fetch(request)
+    const response = await fetchWithTimeout(request)
     if (response.ok) (await caches.open(name)).put(request, response.clone())
     return response
   } catch (error) {
@@ -54,7 +61,7 @@ async function apiKey(request) {
 async function apiNetworkFirst(request) {
   const key = await apiKey(request)
   try {
-    const response = await fetch(request)
+    const response = await fetchWithTimeout(request, 25000)
     if (response.ok && response.type !== 'opaque') (await caches.open(API)).put(key, response.clone())
     return response
   } catch (error) {

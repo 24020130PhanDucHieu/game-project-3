@@ -357,14 +357,17 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     return () => { window.removeEventListener('online', onOnline); window.clearInterval(timer) }
   }, [role, flushOutbox])
 
-  const value: Live = {
+  const openAuth = useCallback((mode: 'login' | 'register') => setAuthRequest({ mode }), [])
+  const closeAuth = useCallback(() => setAuthRequest(null), [])
+  // Giá trị ngữ cảnh chỉ đổi khi có thứ thật sự đổi, nên các màn hình dùng useLive() không render lại theo mỗi lần Provider render.
+  const value: Live = useMemo(() => ({
     view, navigate: setView, session, role, scope, refreshSession,
     tournaments, tournamentId, setTournamentId, tournament, matchId, setMatchId,
     qualifiers, qualifierId, setQualifierId, aiEvents, aiEventId, setAiEventId, notifications, capabilities, socketOpen, busy,
     run, toast, confirm, enterMatch, ownMatches,
-    openAuth: (mode) => setAuthRequest({ mode }), authRequest, closeAuth: () => setAuthRequest(null),
+    openAuth, authRequest, closeAuth,
     logout, outbox, flushOutbox,
-  }
+  }), [view, session, role, scope, refreshSession, tournaments, tournamentId, setTournamentId, tournament, matchId, qualifiers, qualifierId, aiEvents, aiEventId, notifications, capabilities, socketOpen, busy, run, toast, confirm, enterMatch, ownMatches, openAuth, authRequest, closeAuth, logout, outbox, flushOutbox]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <Ctx.Provider value={value}>

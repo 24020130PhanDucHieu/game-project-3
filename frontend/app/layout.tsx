@@ -26,7 +26,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link
           href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
           rel="stylesheet"
+          media="print"
+          id="gfonts"
         />
+        {/* Tải phông không chặn hiển thị trang: nạp xong mới áp dụng (mạng chậm hoặc bị chặn thì trang vẫn hiện ngay bằng phông hệ thống). */}
+        <script dangerouslySetInnerHTML={{ __html: "(function(){var l=document.getElementById('gfonts');if(!l)return;function on(){l.media='all'}if(l.sheet)on();else l.addEventListener('load',on)})()" }} />
       </head>
       <body className="min-h-screen bg-background font-sans text-foreground antialiased selection:bg-primary/20 selection:text-primary">
         {children}

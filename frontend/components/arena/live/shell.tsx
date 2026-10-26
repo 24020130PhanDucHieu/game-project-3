@@ -2,6 +2,7 @@
 
 import { AiLauncher } from './ai-assistant'
 import { useEffect, useRef, useState } from 'react'
+import { releaseOrphanLock } from '@/lib/scroll-lock'
 import { BookOpen, Bell, BrainCircuit, Flag, LayoutDashboard, LogIn, LogOut, Medal, Menu, Monitor, Moon, Network, RefreshCw, Shield, Sun, Swords, UserPlus, UserRound, WifiOff, X, type LucideIcon } from 'lucide-react'
 import { AuthModal } from '../modals/auth-modal'
 import { invalidate } from '@/lib/cache'
@@ -122,7 +123,7 @@ function Topbar({ onMenu }: { onMenu: () => void }) {
   const showTournament = TOURNAMENT_VIEWS.includes(view) || (view === 'admin')
   const [spinning, setSpinning] = useState(false)
   return (
-    <header className="sticky top-0 z-30 flex flex-wrap items-center gap-3 border-b border-border bg-background/70 px-4 py-3 backdrop-blur-xl md:px-8">
+    <header className="sticky top-0 z-30 flex flex-wrap items-center gap-3 border-b border-border bg-background/95 px-4 py-3 md:px-8">
       <Button variant="ghost" size="sm" className="md:hidden" aria-label="Mở menu" onClick={onMenu}><Menu className="size-5" /></Button>
       <div className="md:hidden"><Brand /></div>
       <div className="ml-auto flex items-center gap-1.5">
@@ -161,7 +162,7 @@ export function Shell() {
     window.addEventListener('hashchange', read)
     return () => window.removeEventListener('hashchange', read)
   }, [])
-  useEffect(() => { window.scrollTo({ top: 0 }) }, [view])
+  useEffect(() => { releaseOrphanLock(); window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }) }, [view])
   useEffect(() => {
     if (!drawer) return
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setDrawer(false) }

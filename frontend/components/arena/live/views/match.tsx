@@ -91,7 +91,7 @@ function TeamPanel({ match, side, won, task }: { match: any; side: 'team_a' | 't
     : { icon: <Hourglass className="size-3.5" />, text: task ? 'Chưa nộp mô hình' : 'Chưa nộp bot', cls: 'bg-amber-500/15 text-amber-700 ring-amber-500/35 dark:text-amber-300' }
   return (
     <div className={cn('relative flex flex-1 flex-col gap-4 rounded-2xl p-4 md:p-5', red ? 'items-start text-left' : 'items-end text-right',
-      'bg-card/75 ring-1 ring-border shadow-sm backdrop-blur-md', red ? 'border-l-4 border-l-rose-400' : 'border-r-4 border-r-sky-400', isWin && 'ring-2 ring-amber-400 shadow-[0_0_36px_rgba(251,191,36,.35)]')}>
+      'bg-card/75 ring-1 ring-border shadow-sm', red ? 'border-l-4 border-l-rose-400' : 'border-r-4 border-r-sky-400', isWin && 'ring-2 ring-amber-400 shadow-[0_0_36px_rgba(251,191,36,.35)]')}>
       <div className={cn('flex w-full items-center gap-3', !red && 'flex-row-reverse')}>
         <div className="relative">
           {team ? <Avatar name={team.team_name} size="xl" ring={isWin ? 'gold' : red ? 'red' : 'blue'} /> : <span className="grid size-16 place-items-center rounded-2xl border border-dashed border-border text-muted-foreground" aria-hidden>?</span>}

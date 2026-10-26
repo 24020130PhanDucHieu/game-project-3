@@ -5,6 +5,7 @@ import { AlertTriangle, ChevronLeft, ChevronRight, Inbox, Loader2 } from 'lucide
 import { cn } from '@/lib/utils'
 import { statusOf, type Tone } from '@/lib/format'
 import { useCountUp, useReducedMotion } from '@/lib/motion'
+import { useModalLayer } from '@/lib/scroll-lock'
 
 export const toneClass: Record<Tone, string> = {
   neutral: 'border-border bg-muted text-muted-foreground',
@@ -289,14 +290,12 @@ export function ConfirmDialog({ open, title, message, confirmLabel = 'Xác nhậ
   open: boolean; title: string; message?: ReactNode; confirmLabel?: string; danger?: boolean; onConfirm: () => void; onCancel: () => void
 }) {
   const ref = useRef<HTMLDivElement>(null)
+  useModalLayer(onCancel, open)
   useEffect(() => {
     if (!open) return
-    const onKey = (event: KeyboardEvent) => { if (event.key === 'Escape') onCancel() }
-    window.addEventListener('keydown', onKey)
     // Việc nguy hiểm (xóa...) thì đưa tiêu điểm vào “Hủy” để lỡ bấm Enter không xóa nhầm.
     ref.current?.querySelector<HTMLButtonElement>(danger ? 'button[data-cancel]' : 'button[data-autofocus]')?.focus()
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onCancel, danger])
+  }, [open, danger])
   if (!open) return null
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onMouseDown={(e) => { if (e.target === e.currentTarget) onCancel() }}>

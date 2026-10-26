@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom'
 import { Check, Copy, X } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { useResource } from '@/lib/cache'
+import { useModalLayer } from '@/lib/scroll-lock'
 import { decodeRule, stamp } from '@/lib/format'
 import { Badge, Button, ErrorNote, Skeleton, SkeletonRows } from './ui'
 import { useLive } from './context'
@@ -18,13 +19,7 @@ const CodeEditor = dynamic(() => import('./code-editor'), { ssr: false, loading:
 
 /** Cửa sổ phủ toàn màn hình: Esc hoặc bấm nền để đóng, khóa cuộn trang phía sau. */
 export function Overlay({ title, subtitle, onClose, children, actions }: { title: ReactNode; subtitle?: ReactNode; onClose: () => void; children: ReactNode; actions?: ReactNode }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    const prev = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev }
-  }, [onClose])
+  useModalLayer(onClose)
   // Render thẳng vào <body>: nếu nằm trong thẻ có transform (hiệu ứng), `fixed` sẽ bị bó trong thẻ đó.
   if (typeof document === 'undefined') return null
   return createPortal(

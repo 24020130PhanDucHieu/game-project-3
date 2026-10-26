@@ -7,9 +7,9 @@
  * - Tạm dừng tải định kỳ khi tab bị ẩn.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-type Entry = { data?: unknown; error?: Error; at: number; promise?: Promise<unknown>; startedAt?: number; gen?: number; promiseGen?: number }
+type Entry = { data?: unknown; error?: Error; at: number; promise?: Promise<unknown>; startedAt?: number; gen?: number; promiseGen?: number; lastUsed?: number }
 
 const store = new Map<string, Entry>()
 const listeners = new Set<(key: string) => void>()
@@ -41,9 +41,17 @@ export function forget(match: string | ((key: string) => boolean)) {
   listeners.forEach((listener) => listener(''))
 }
 
+/** Bộ nhớ đệm không phình mãi: quá 150 mục thì bỏ các mục lâu không ai dùng (trên 10 phút, không có yêu cầu đang bay). */
+function prune() {
+  if (store.size <= 150) return
+  const cutoff = Date.now() - 600_000
+  for (const [key, entry] of store) if (!entry.promise && (entry.lastUsed ?? entry.at) < cutoff) store.delete(key)
+}
+
 function load<T>(key: string, fetcher: () => Promise<T>, force: boolean, ttl: number): Promise<T> {
   const entry = store.get(key) ?? { at: 0 }
   store.set(key, entry)
+  prune()
   // Yêu cầu đang bay quá 60 giây coi như treo: bỏ đi để lần tải sau không bị kẹt chờ mãi.
   const gen = entry.gen ?? 0
   if (entry.promise && entry.promiseGen === gen && Date.now() - (entry.startedAt ?? 0) < 60_000) return entry.promise as Promise<T>
@@ -83,8 +91,9 @@ function wake() {
   const now = Date.now()
   if (now - lastWake < 3_000) return
   lastWake = now
-  for (const entry of store.values()) entry.at = 0
-  listeners.forEach((listener) => listener(''))
+  // Chỉ đánh dấu cũ những mục đã tải trên 5 giây; rải thông báo trong ~1,5 giây để không tải lại đồng loạt gây giật.
+  for (const entry of store.values()) if (now - entry.at > 5_000) entry.at = 0
+  listeners.forEach((listener) => window.setTimeout(() => listener(''), Math.random() * 1500))
 }
 if (typeof window !== 'undefined') {
   document.addEventListener('visibilitychange', wake)
@@ -166,11 +175,12 @@ export function useResource<T>(
   }, [key, refreshMs, run])
 
   const entry = key ? store.get(key) : undefined
-  return {
-    data: entry?.data as T | undefined,
-    error: entry?.error,
-    loading: !!key && entry?.data === undefined && !entry?.error,
-    refreshing: !!entry?.promise && entry.data !== undefined,
-    reload: () => run(true),
-  }
+  if (entry) entry.lastUsed = Date.now()
+  const data = entry?.data as T | undefined
+  const error = entry?.error
+  const loading = !!key && entry?.data === undefined && !entry?.error
+  const refreshing = !!entry?.promise && entry.data !== undefined
+  const reload = useCallback(() => run(true), [run])
+  // Giữ nguyên danh tính đối tượng khi dữ liệu không đổi: các nơi dùng làm phụ thuộc (useMemo/useEffect) không bị render lại vô ích.
+  return useMemo(() => ({ data, error, loading, refreshing, reload }), [data, error, loading, refreshing, reload])
 }

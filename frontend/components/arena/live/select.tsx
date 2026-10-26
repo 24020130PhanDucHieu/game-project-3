@@ -79,10 +79,12 @@ export function Select({ label, className, children, value, defaultValue, onChan
       if (!menu.current?.contains(t) && !button.current?.contains(t)) setOpen(false)
     }
     const onMove = () => place()
+    // Cuộn trang (ngoài chính menu) thì đóng menu thay vì dựng lại vị trí liên tục; tránh giật khi cuộn.
+    const onScroll = (e: Event) => { if (menu.current && e.target instanceof Node && menu.current.contains(e.target)) return; setOpen(false) }
     document.addEventListener('mousedown', onDown)
     window.addEventListener('resize', onMove)
-    window.addEventListener('scroll', onMove, true)
-    return () => { document.removeEventListener('mousedown', onDown); window.removeEventListener('resize', onMove); window.removeEventListener('scroll', onMove, true) }
+    window.addEventListener('scroll', onScroll, true)
+    return () => { document.removeEventListener('mousedown', onDown); window.removeEventListener('resize', onMove); window.removeEventListener('scroll', onScroll, true) }
   }, [open])
   useEffect(() => {
     if (open) {
