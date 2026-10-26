@@ -12,6 +12,7 @@ import { Board } from '../../board'
 import { BOARD_THEMES } from '../../board-themes'
 import { PIECE_LABEL } from '../../piece-icons'
 import { fmt } from './common'
+import { PredictionStage } from './prediction-stage'
 
 /** Dữ liệu cần để vẽ hình minh họa, lấy từ đề đã tải và kết quả chấm thử. */
 export type CheckVisualData = {
@@ -266,12 +267,18 @@ export function CheckVisual({ data }: { data: CheckVisualData }) {
   const marks: Mark[] = useMemo(() => {
     const t = result.y_true || []
     const p = result.preds || []
-    return samples.map((sample, i) => ({ sample, truth: t[i], pred: Math.round(p[i]), ok: Math.round(p[i]) === t[i] }))
-  }, [samples, result])
+    return samples.map((sample, i) => ({ sample, truth: t[i], pred: regression ? p[i] : Math.round(p[i]), ok: regression ? p[i] === t[i] : Math.round(p[i]) === t[i] }))
+      .filter((m) => Number.isFinite(m.truth) && Number.isFinite(m.pred))
+  }, [samples, result, regression])
   const correct = marks.filter((m) => m.ok).length
   const [filter, setFilter] = useState<'all' | 'ok' | 'bad'>('all')
   const [limit, setLimit] = useState(24)
   const [open, setOpen] = useState<number | null>(null)
+  const [spotlight, setSpotlight] = useState(0)
+  const current = Math.min(spotlight, Math.max(0, marks.length - 1))
+  const focused = marks[current]
+  const focusedStep = useMemo(() => focused ? boardToStep(focused.sample.b, focused.sample.s) : null, [focused])
+  useEffect(() => { setSpotlight(0); setOpen(null); setLimit(24) }, [data])
   const name = (i: number) => classes[i] || `Lớp ${i}`
   const list = useMemo(() => {
     const filtered = marks.filter((m) => (filter === 'all' ? true : filter === 'ok' ? m.ok : !m.ok))
@@ -298,7 +305,7 @@ export function CheckVisual({ data }: { data: CheckVisualData }) {
             <p className="text-xs font-semibold text-muted-foreground">Điểm ước lượng</p>
             <p className="font-display text-5xl font-black leading-none tabular-nums" style={{ color: level.color }} data-testid="check-visual-score">{fmt(shown)}</p>
             <p className="mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-bold" style={{ background: `${level.color}22`, color: level.color }}><Sparkles className="size-4" aria-hidden />{level.text}</p>
-            <p className="mt-2 text-xs text-muted-foreground">{lead > 0 ? `Cao hơn đoán mò ${lead} điểm (đoán mò được khoảng ${Math.round(chance)}).` : `Chưa hơn mức đoán mò (khoảng ${Math.round(chance)} điểm). Thử thêm đặc trưng hoặc huấn luyện lâu hơn.`}</p>
+            <p className="mt-2 text-xs text-muted-foreground">{regression ? 'Điểm tính theo R² trên các mẫu kiểm tra. Mốc 0 tương ứng không hơn cách dự đoán trung bình đáp án; đây không phải tỷ lệ đoán đúng.' : lead > 0 ? `Cao hơn đoán mò ${lead} điểm (đoán mò được khoảng ${Math.round(chance)}).` : `Chưa hơn mức đoán mò (khoảng ${Math.round(chance)} điểm). Thử thêm đặc trưng hoặc huấn luyện lâu hơn.`}</p>
           </div>
         </div>
         <div className="relative mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
@@ -310,6 +317,8 @@ export function CheckVisual({ data }: { data: CheckVisualData }) {
           ))}
         </div>
       </div>
+
+      {focused && focusedStep && <PredictionStage step={focusedStep} index={current} total={marks.length} side={focused.sample.s} truth={regression ? String(focused.truth) : name(focused.truth)} prediction={regression ? String(focused.pred) : name(focused.pred)} error={regression ? Math.abs(focused.pred - focused.truth) : undefined} onIndex={setSpotlight} />}
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.5fr)]">
         <div className="space-y-5">

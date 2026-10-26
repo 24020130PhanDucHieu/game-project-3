@@ -7,6 +7,7 @@ import { decodeRule } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Badge, ErrorNote, Skeleton } from '../../ui'
 import { MiniBoard } from './check-visual'
+import { ProblemExplanation } from './problem-explanation'
 
 const DIFFICULTY = ['', 'Dễ', 'Vừa', 'Khó']
 
@@ -99,6 +100,8 @@ export function TaskCard({ eventId, index, t }: { eventId: string; index: number
         <Badge tone={t.difficulty === 1 ? 'success' : t.difficulty === 2 ? 'info' : 'warning'}>{DIFFICULTY[t.difficulty]}</Badge>
       </header>
 
+      <ProblemExplanation task={t} />
+
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] [&>*]:min-w-0">
         <section className="space-y-3">
           <p className="rounded-2xl bg-primary/5 px-4 py-3 text-[15px] leading-relaxed" data-testid="task-plain">{t.plain || t.title}</p>
@@ -127,7 +130,7 @@ export function TaskCard({ eventId, index, t }: { eventId: string; index: number
           <section className="rounded-2xl border border-border bg-muted/20 p-4">
             <h4 className="flex items-center gap-2 text-sm font-bold"><Target className="size-4 text-primary" aria-hidden />Chấm điểm thế nào?</h4>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground" data-testid="task-metric">{t.metric_plain || 'Điểm trên thang 0–100.'}</p>
-            <ChanceBar chance={Number(t.chance) || 0} />
+            {!regression && <ChanceBar chance={Number(t.chance) || 0} />}
           </section>
           <section className="space-y-2 rounded-2xl border border-border bg-muted/20 p-4">
             <h4 className="flex items-center gap-2 text-sm font-bold"><Download className="size-4 text-primary" aria-hidden />Dữ liệu để học</h4>

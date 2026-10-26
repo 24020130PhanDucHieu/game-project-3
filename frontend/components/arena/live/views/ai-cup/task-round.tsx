@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { Badge, Button, Card } from '../../ui'
 import { ScoreBar, fmt } from './common'
 import { JsonNote } from './task-card'
+import { ProblemExplanation } from './problem-explanation'
 import { CheckVisual, LossChart, visualFrom, type CheckVisualData } from './check-visual'
 
 const DIFFICULTY = ['', 'Dễ', 'Vừa', 'Khó']
@@ -74,6 +75,7 @@ export function RoundTaskCard({ tournamentId, matchId, task, round, canDownload 
           <summary className="cursor-pointer font-semibold">Đề bài kỹ thuật đầy đủ</summary>
           <p className="mt-2 whitespace-pre-wrap leading-relaxed text-muted-foreground" data-testid="round-task-statement">{task.statement}</p>
         </details>
+        <ProblemExplanation task={task} />
         <JsonNote />
         {canDownload && <Button variant="secondary" size="sm" loading={busy} onClick={() => void download()} data-testid="round-task-download"><Download className="size-4" />Tải tệp JSON (không bắt buộc)</Button>}
         {error && <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300">{error}</p>}

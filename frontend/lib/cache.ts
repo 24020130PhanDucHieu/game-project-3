@@ -22,6 +22,18 @@ export function readCache<T>(key: string): T | undefined {
   return store.get(key)?.data as T | undefined
 }
 
+/** Ghi kết quả thao tác vào cache và vô hiệu hóa các lượt đọc đã bắt đầu trước đó. */
+export function updateCache<T>(key: string, update: (previous: T | undefined) => T | undefined) {
+  const entry = store.get(key) ?? { at: 0 }
+  entry.data = update(entry.data as T | undefined)
+  entry.error = undefined
+  entry.gen = (entry.gen ?? 0) + 1
+  entry.promise = undefined
+  entry.at = Date.now()
+  store.set(key, entry)
+  notify(key)
+}
+
 /** Xóa các khóa bắt đầu bằng prefix; để trống để xóa tất cả (khi đổi phiên). */
 export function invalidate(prefix = '') {
   for (const [key, entry] of store) {
@@ -71,6 +83,7 @@ function load<T>(key: string, fetcher: () => Promise<T>, force: boolean, ttl: nu
   bump(1)
   const promise: Promise<T> = fetcher()
     .then((data) => {
+      if (store.get(key) !== entry || (entry.gen ?? 0) !== gen || entry.promise !== promise) return data
       entry.data = data
       entry.error = undefined
       // Nếu trong lúc chờ có invalidate(): vẫn hiện dữ liệu này nhưng giữ at = 0 để tải lại ngay.
@@ -78,6 +91,7 @@ function load<T>(key: string, fetcher: () => Promise<T>, force: boolean, ttl: nu
       return data
     })
     .catch((error) => {
+      if (store.get(key) !== entry || (entry.gen ?? 0) !== gen || entry.promise !== promise) throw error
       entry.error = error instanceof Error ? error : new Error(String(error))
       // Mục đã bị xóa ở máy chủ: không được tiếp tục hiện dữ liệu cũ.
       if ((error as { status?: number })?.status === 404) entry.data = undefined

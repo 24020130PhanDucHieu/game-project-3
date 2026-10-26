@@ -106,6 +106,12 @@ func withDraft(r Result, draft string) Result {
 // Ask chạy vòng tool-use. Chỉ trả lời khi submit_answer qua được kiểm chứng; mọi trường hợp khác
 // (model bịa nguồn, trích dẫn không có thật, con số không có trong nguồn, hết vòng...) đều chuyển cho ban tổ chức.
 func (a *Agent) Ask(ctx context.Context, question string, who Identity) (Result, error) {
+	if err := ctx.Err(); err != nil {
+		return Result{}, err
+	}
+	if result, ok := a.quickAnswer(question); ok {
+		return result, nil
+	}
 	seen := map[string]Source{} // nguồn công cụ đã trả về TRONG lượt hỏi này
 	var used []string
 	var usage Usage

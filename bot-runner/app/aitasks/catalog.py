@@ -33,7 +33,7 @@ TEMPLATE_PLAIN = {
         "metric": "Điểm = phần trăm thế cờ bạn đoán đúng. Đoán mò (tung đồng xu) được khoảng 50 điểm.",
     },
     "nextcard": {
-        "plain": "Cho một thế cờ, đoán xem đối thủ (một bot luôn chơi theo một thói quen cố định, thỉnh thoảng đi ngẫu nhiên) sẽ ra lá bài nào.",
+        "plain": "Cho một thế cờ, đoán lá bài tiếp theo của bên đang đến lượt đi (trường s). Bên này do bot có một thói quen cố định điều khiển, thỉnh thoảng đi ngẫu nhiên.",
         "labels": ["0 = Búa", "1 = Giấy", "2 = Kéo"],
         "metric": "Điểm = phần trăm thế cờ bạn đoán đúng lá bài. Đoán mò được khoảng 33 điểm; học được thói quen của bot thì cao hơn nhiều.",
     },
@@ -165,6 +165,7 @@ def public_spec(item, n=None):
         "n": n if n is not None else item.get("n"), "id": item["entry_id"] if "entry_id" in item else item["id"], "name": item["name"], "template": item["template"],
         "difficulty": item["difficulty"], "rule_id": p["rule_id"], "kind": meta["kind"], "classes": meta["classes"], "metric": meta["metric"],
         "n_train": p["n_train"], "time_s": p["time_s"], "title": meta["title"], "statement": statement_for(item),
+        "horizon": p["horizon"], "cap": p["cap"],
         **plain_spec(item),
     }
 
@@ -182,7 +183,7 @@ def plain_spec(item):
         "metric_plain": info["metric"],
         "chance": round(100.0 / len(classes), 1) if classes else 0.0,
         "note": item.get("statement") or "",
-        "policy_hint": "Các ván mẫu do máy chơi (có yếu tố ngẫu nhiên) để sinh dữ liệu, nên có sai số không tránh khỏi: không ai đạt 100 điểm.",
+        "policy_hint": "Các ván mẫu do máy chơi để sinh dữ liệu và có thể có yếu tố ngẫu nhiên. Điểm cao trên tập học chưa bảo đảm điểm cao trên dữ liệu chưa thấy.",
     }
 
 

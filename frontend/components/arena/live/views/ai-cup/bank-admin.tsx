@@ -1,12 +1,26 @@
 'use client'
 
-import { useState } from 'react'
-import { Copy, FlaskConical, Library, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { BookOpen, Copy, FlaskConical, Library, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
-import { invalidate, useResource } from '@/lib/cache'
+import { invalidate, updateCache, useResource } from '@/lib/cache'
 import { Badge, Button, Card, DataTable, EmptyState, ErrorNote, Field, Select, SkeletonRows, TextArea } from '../../ui'
 import { useLive } from '../../context'
 import { fmt } from './common'
+import { ProblemExplanation } from './problem-explanation'
+import { useModalLayer } from '@/lib/scroll-lock'
+import { createPortal } from 'react-dom'
+
+function EntryPreview({ entry, onClose }: { entry: any; onClose: () => void }) {
+  useModalLayer(onClose)
+  return createPortal(<div className="fixed inset-0 z-[90] grid place-items-center bg-black/65 p-3 backdrop-blur-sm" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
+    <section role="dialog" aria-modal="true" aria-label={`Đề bài: ${entry.name}`} className="surface max-h-[90dvh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-border p-5 sm:p-7" data-testid="bank-preview">
+      <header className="mb-5 flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-widest text-primary">Xem đề trong kho</p><h3 className="mt-1 text-xl font-extrabold">{entry.name}</h3><p className="mt-1 text-xs text-muted-foreground">Mẫu đề · chưa phải bộ dữ liệu được bốc cho một giải cụ thể</p></div><Button size="sm" variant="ghost" onClick={onClose} aria-label="Đóng đề bài"><X className="size-4" /></Button></header>
+      <ProblemExplanation task={{ ...entry, rule_id: entry.params?.rule_id, n_train: entry.params?.n_train, time_s: entry.params?.time_s }} />
+      {entry.statement && <p className="mt-4 whitespace-pre-wrap rounded-xl bg-primary/5 p-4 text-sm">Ghi chú của ban tổ chức: {entry.statement}</p>}
+    </section>
+  </div>, document.body)
+}
 
 const RULES: [string, string][] = [
   ['STAGE_1_STANDARD', 'Luật chuẩn'], ['COMBO_4', 'Sương mù'], ['COMBO_16', 'Vật cản ngẫu nhiên'], ['COMBO_2', 'Đảo tương khắc'],
@@ -98,14 +112,39 @@ function EntryForm({ initial, editing, templates, onClose }: { initial: Draft; e
 }
 
 export function AdminAiBank() {
-  const { run, confirm, busy } = useLive()
+  const { run, confirm, toast } = useLive()
   const bank = useResource<any>('ai:bank', () => arenaApi.getAiBank(), { ttl: 10_000, refreshMs: 30_000 })
   const [form, setForm] = useState<{ draft: Draft; editing: boolean } | null>(null)
   const [probe, setProbe] = useState<{ id: string; result: any } | null>(null)
   const [probing, setProbing] = useState('')
-  const entries: any[] = bank.data?.entries || []
+  const [preview, setPreview] = useState<any>(null)
+  const [saving, setSaving] = useState<Set<string>>(new Set())
+  const [pendingEnabled, setPendingEnabled] = useState<Record<string, boolean>>({})
+  const locks = useRef(new Set<string>())
+  const entries: any[] = (bank.data?.entries || []).map((e: any) => e.id in pendingEnabled ? { ...e, enabled: pendingEnabled[e.id] } : e)
   const templates = bank.data?.templates || []
   const nameOf = (id: string) => templates.find((t: any) => t.id === id)?.name || id
+  const toggle = async (entry: any, enabled: boolean) => {
+    if (locks.current.has(entry.id)) return
+    locks.current.add(entry.id)
+    setPendingEnabled((old) => ({ ...old, [entry.id]: enabled }))
+    setSaving(new Set(locks.current))
+    const patch = (value: boolean) => updateCache<any>('ai:bank', (data) => data ? { ...data, entries: data.entries.map((e: any) => e.id === entry.id ? { ...e, enabled: value } : e) } : data)
+    patch(enabled)
+    try {
+      await arenaApi.updateAiBankEntry(entry.id, { enabled })
+      patch(enabled)
+      toast('success', enabled ? 'Đã bật đề' : 'Đã tắt đề')
+    } catch (error) {
+      patch(entry.enabled)
+      toast('error', error instanceof Error ? error.message : 'Chưa lưu được trạng thái đề.')
+    } finally {
+      locks.current.delete(entry.id)
+      setPendingEnabled((old) => { const next = { ...old }; delete next[entry.id]; return next })
+      setSaving(new Set(locks.current))
+      invalidate('ai:bank')
+    }
+  }
   const test = async (e: any) => {
     setProbing(e.id)
     try { setProbe({ id: e.id, result: await arenaApi.probeAiBankEntry(e) }) } catch (err) { setProbe({ id: e.id, result: { ok: false, errors: [err instanceof Error ? err.message : 'Không thử được đề.'] } }) } finally { setProbing('') }
@@ -114,6 +153,7 @@ export function AdminAiBank() {
     <Card icon={<Library />} title="Kho đề Giải AI" subtitle="Đề học từ thế cờ do máy sinh từ engine bàn cờ. Admin bốc ngẫu nhiên từ kho khi ra đề; có thể thêm đề mới và bật/tắt đề."
       action={<Button size="sm" onClick={() => setForm({ draft: blank(), editing: false })} data-testid="bank-add"><Plus className="size-4" />Thêm đề</Button>}>
       <div className="space-y-4">
+        {preview && <EntryPreview entry={preview} onClose={() => setPreview(null)} />}
         {!form && (
           <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-3">
             <Button onClick={() => setForm({ draft: blank(), editing: false })} data-testid="bank-add-body"><Plus className="size-4" />Thêm đề mới vào kho</Button>
@@ -131,8 +171,9 @@ export function AdminAiBank() {
                 <td className="px-3 py-2.5"><Badge tone={e.difficulty === 1 ? 'success' : e.difficulty === 2 ? 'info' : 'warning'}>{DIFFICULTY[e.difficulty]}</Badge></td>
                 <td className="px-3 py-2.5 text-xs text-muted-foreground">{(e.tags || []).join(', ')}</td>
                 <td className="px-3 py-2.5">{e.builtin ? <Badge>Dựng sẵn</Badge> : <Badge tone="accent">Admin thêm</Badge>}</td>
-                <td className="px-3 py-2.5"><label className="flex items-center gap-1.5 text-xs"><input type="checkbox" className="accent-primary" checked={e.enabled} disabled={busy} onChange={() => void run(() => arenaApi.updateAiBankEntry(e.id, e.builtin ? { enabled: !e.enabled } : { ...e, enabled: !e.enabled }), e.enabled ? 'Đã tắt đề' : 'Đã bật đề', () => invalidate('ai:bank'))} aria-label={`Bật đề ${e.name}`} />{e.enabled ? 'Bật' : 'Tắt'}</label></td>
+                <td className="px-3 py-2.5"><label className="flex min-w-24 items-center gap-1.5 text-xs"><input type="checkbox" className="accent-primary" checked={e.enabled} disabled={saving.has(e.id)} onChange={(event) => void toggle(e, event.target.checked)} aria-label={`Bật đề ${e.name}`} />{saving.has(e.id) ? 'Đang lưu…' : e.enabled ? 'Bật' : 'Tắt'}</label></td>
                 <td className="px-3 py-2.5"><div className="flex justify-end gap-1">
+                  <Button size="sm" variant="secondary" onClick={() => setPreview(e)} data-testid="bank-row-view"><BookOpen className="size-3.5" />Xem đề</Button>
                   <Button size="sm" variant="secondary" loading={probing === e.id} onClick={() => void test(e)} data-testid="bank-row-probe"><FlaskConical className="size-3.5" />Thử</Button>
                   <Button size="sm" variant="ghost" onClick={() => setForm({ draft: fromEntry(e, true), editing: false })} aria-label="Nhân bản"><Copy className="size-3.5" /></Button>
                   {!e.builtin && <Button size="sm" variant="ghost" onClick={() => setForm({ draft: fromEntry(e, false), editing: true })} aria-label="Sửa"><Pencil className="size-3.5" /></Button>}
