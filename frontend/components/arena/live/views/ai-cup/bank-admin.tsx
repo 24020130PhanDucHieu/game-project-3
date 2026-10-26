@@ -133,16 +133,15 @@ export function AdminAiBank() {
     patch(enabled)
     try {
       await arenaApi.updateAiBankEntry(entry.id, { enabled })
-      patch(enabled)
       toast('success', enabled ? 'Đã bật đề' : 'Đã tắt đề')
     } catch (error) {
       patch(entry.enabled)
+      invalidate('ai:bank') // chỉ tải lại khi lưu lỗi; lưu được thì bộ đệm đã đúng, tải lại chỉ làm bảng nháy
       toast('error', error instanceof Error ? error.message : 'Chưa lưu được trạng thái đề.')
     } finally {
       locks.current.delete(entry.id)
       setPendingEnabled((old) => { const next = { ...old }; delete next[entry.id]; return next })
       setSaving(new Set(locks.current))
-      invalidate('ai:bank')
     }
   }
   const test = async (e: any) => {
@@ -163,14 +162,14 @@ export function AdminAiBank() {
         {bank.loading && !bank.data ? <SkeletonRows rows={5} /> : bank.error && !bank.data ? <ErrorNote message={bank.error.message} onRetry={() => void bank.reload()} /> : !entries.length ? <EmptyState title="Kho đề trống" /> : (
           <DataTable head={['Đề', 'Mẫu', 'Luật', 'Độ khó', 'Thẻ', 'Nguồn', 'Trạng thái', '']}>
             {entries.map((e) => [
-              <tr key={e.id} data-testid="bank-row" className={e.enabled ? undefined : 'opacity-60'}>
+              <tr key={e.id} data-testid="bank-row" className={e.enabled ? 'transition-opacity duration-200' : 'opacity-60 transition-opacity duration-200'}>
                 <td className="px-3 py-2.5 font-medium">{e.name}<span className="block font-mono text-[11px] font-normal text-muted-foreground">{e.id}</span></td>
                 <td className="px-3 py-2.5 text-xs">{nameOf(e.template)}</td>
                 <td className="px-3 py-2.5 font-mono text-xs">{e.params.rule_id}</td>
                 <td className="px-3 py-2.5"><Badge tone={e.difficulty === 1 ? 'success' : e.difficulty === 2 ? 'info' : 'warning'}>{DIFFICULTY[e.difficulty]}</Badge></td>
                 <td className="px-3 py-2.5 text-xs text-muted-foreground">{(e.tags || []).join(', ')}</td>
                 <td className="px-3 py-2.5">{e.builtin ? <Badge>Dựng sẵn</Badge> : <Badge tone="accent">Admin thêm</Badge>}</td>
-                <td className="px-3 py-2.5"><label className="flex min-w-24 items-center gap-1.5 text-xs"><input type="checkbox" className="accent-primary" checked={e.enabled} disabled={saving.has(e.id)} onChange={(event) => void toggle(e, event.target.checked)} aria-label={`Bật đề ${e.name}`} />{saving.has(e.id) ? 'Đang lưu…' : e.enabled ? 'Bật' : 'Tắt'}</label></td>
+                <td className="px-3 py-2.5"><label className="flex min-w-24 items-center gap-1.5 text-xs"><input type="checkbox" className="accent-primary" checked={e.enabled} onChange={(event) => void toggle(e, event.target.checked)} aria-label={`Bật đề ${e.name}`} />{e.enabled ? 'Bật' : 'Tắt'}</label></td>
                 <td className="px-3 py-2.5"><div className="flex justify-end gap-1">
                   <Button size="sm" variant="secondary" onClick={() => setPreview(e)} data-testid="bank-row-view"><BookOpen className="size-3.5" />Xem đề</Button>
                   <Button size="sm" variant="secondary" loading={probing === e.id} onClick={() => void test(e)} data-testid="bank-row-probe"><FlaskConical className="size-3.5" />Thử</Button>
