@@ -150,8 +150,7 @@ export function AdminAiBank() {
     try { setProbe({ id: e.id, result: await arenaApi.probeAiBankEntry(e) }) } catch (err) { setProbe({ id: e.id, result: { ok: false, errors: [err instanceof Error ? err.message : 'Không thử được đề.'] } }) } finally { setProbing('') }
   }
   return (
-    <Card icon={<Library />} title="Kho đề Giải AI" subtitle="Đề học từ thế cờ do máy sinh từ engine bàn cờ. Admin bốc ngẫu nhiên từ kho khi ra đề; có thể thêm đề mới và bật/tắt đề."
-      action={<Button size="sm" onClick={() => setForm({ draft: blank(), editing: false })} data-testid="bank-add"><Plus className="size-4" />Thêm đề</Button>}>
+    <Card icon={<Library />} title="Kho đề Giải AI" subtitle="Đề học từ thế cờ do máy sinh từ engine bàn cờ. Admin bốc ngẫu nhiên từ kho khi ra đề; có thể thêm đề mới và bật/tắt đề.">
       <div className="space-y-4">
         {preview && <EntryPreview entry={preview} onClose={() => setPreview(null)} />}
         {!form && (
