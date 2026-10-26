@@ -77,7 +77,7 @@ function LiveSlide({ tournament }: { tournament: any }) {
             </div>
             <p className="text-xl text-muted-foreground">{round.win_reason}</p>
           </div>
-        ) : steps.length ? <Board3D step={steps[i]} prev={i > 0 ? steps[i - 1] : undefined} animate={i > 0} theme={BOARD_THEMES[0]} camera="cinematic" quality="high" /> : null}
+        ) : steps.length ? <Board3D step={steps[i]} prev={i > 0 ? steps[i - 1] : undefined} animate={i > 0} theme={BOARD_THEMES[0]} camera="cinematic" quality="high" fpsKey /> : null}
       </div>
     </div>
   )
