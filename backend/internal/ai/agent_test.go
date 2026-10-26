@@ -590,6 +590,21 @@ func TestModelSaysUnknownIsNotRetried(t *testing.T) {
 	}
 }
 
+func TestRejectedDraftIsKeptWhenModelThenGivesUp(t *testing.T) {
+	m := &scripted{turns: []Response{
+		turn(call("c1", "search_knowledge", map[string]string{"query": "bàn cờ"})),
+		turn(submit("Bàn cờ có kích thước 9×9.", false, [2]string{boardID, "diễn đạt lại không nguyên văn"})),
+		turn(submit("", true)),
+	}}
+	res, _ := newAgent(t, m).Ask(context.Background(), "bàn cờ?", Identity{Role: "TEAM", StudentID: "A1"})
+	if !res.NeedsHuman || res.Answer != FallbackAnswer || res.Reason != "model_needs_human" {
+		t.Fatalf("người dùng chỉ thấy chuyển BTC: %+v", res)
+	}
+	if !strings.Contains(res.Draft, "Bàn cờ có kích thước 9×9") {
+		t.Fatalf("bản nháp bị bác phải được giữ cho ban tổ chức: %q", res.Draft)
+	}
+}
+
 func TestFillerWordsDoNotCauseRejection(t *testing.T) {
 	m := &scripted{turns: []Response{
 		turn(call("c1", "search_knowledge", map[string]string{"query": "bàn cờ"})),

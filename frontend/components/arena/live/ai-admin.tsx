@@ -44,40 +44,47 @@ export function AiAdminCard() {
   return (
     <Card icon={<Bot />} title="Trợ lý AI hỏi đáp luật" subtitle="Chỉ trả lời từ tài liệu, cấu hình giải và hỏi đáp công khai. Câu không có căn cứ được chuyển cho ban tổ chức." action={d && (d.available ? <Badge tone={d.settings.enabled ? 'success' : 'warning'} dot>{d.settings.enabled ? 'Đang bật' : 'Đang tắt'}</Badge> : <Badge tone="danger" dot>Chưa có khóa API</Badge>)}>
       {info.loading ? <SkeletonRows rows={3} /> : info.error && !d ? <ErrorNote message={info.error.message} onRetry={() => void info.reload()} /> : d && (
-        <div className="space-y-5">
+        <div className="space-y-3">
           {!d.available && (
             <p className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-200"><AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />Máy chủ chưa có khóa API nên trợ lý chưa trả lời được. Đặt GEMINI_API_KEY (Google) hoặc ANTHROPIC_API_KEY (Claude) trong file môi trường của máy chủ rồi khởi động lại dịch vụ.</p>
           )}
-          <div className="grid gap-3 sm:grid-cols-4">
+          {/* Một hàng gọn: số liệu hôm nay + cài đặt, thay cho hai khối lớn xếp chồng. */}
+          <div className="flex flex-wrap items-stretch gap-2" data-testid="ai-stats">
             {[
               ['Câu hỏi hôm nay', d.asked_today],
               ['Chuyển cho BTC', d.needs_human_today],
               ['Token hôm nay', d.tokens_today.toLocaleString('vi-VN')],
               ['Mô hình', d.model],
-            ].map(([k, v]) => <div key={String(k)} className="rounded-xl border border-border px-3 py-2"><p className="text-[11px] text-muted-foreground">{k}</p><p className="truncate font-semibold tabular-nums">{v}</p></div>)}
+            ].map(([k, v]) => (
+              <div key={String(k)} className="min-w-0 flex-1 basis-32 rounded-xl border border-border bg-muted/20 px-3 py-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{k}</p>
+                <p className="truncate text-sm font-extrabold tabular-nums" title={String(v)}>{v}</p>
+              </div>
+            ))}
           </div>
-          <div className="grid items-end gap-3 sm:grid-cols-4">
-            <label className="flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm font-medium"><input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="size-4 accent-[var(--primary)]" />Bật trợ lý</label>
-            <Field label="Lượt hỏi mỗi đội mỗi ngày" type="number" min={0} max={500} value={perTeam} onChange={(e) => setPerTeam(e.target.value)} />
-            <Field label="Trần token mỗi ngày" type="number" min={0} value={tokens} onChange={(e) => setTokens(e.target.value)} hint="Vượt trần thì trợ lý ngừng trả lời tới hôm sau" />
-            <Button onClick={() => void save()}><Save className="size-4" />Lưu cài đặt</Button>
+          <div className="flex flex-wrap items-end gap-x-4 gap-y-3 rounded-xl border border-border bg-muted/10 px-3 py-2.5" data-testid="ai-settings">
+            <label className="flex h-9 cursor-pointer items-center gap-2 text-sm font-medium"><input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="size-4 accent-[var(--primary)]" />Bật trợ lý</label>
+            <Field label="Lượt hỏi/đội/ngày" type="number" min={0} max={500} value={perTeam} onChange={(e) => setPerTeam(e.target.value)} className="w-36" />
+            <Field label="Trần token/ngày" type="number" min={0} value={tokens} onChange={(e) => setTokens(e.target.value)} className="w-40" />
+            <Button size="sm" className="h-10" onClick={() => void save()}><Save className="size-4" />Lưu</Button>
+            <p className="min-w-48 flex-1 pb-1 text-[11px] text-muted-foreground">Vượt trần token thì trợ lý ngừng trả lời tới hôm sau.</p>
           </div>
           <div>
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm font-semibold">Nhật ký hỏi đáp 3 ngày gần nhất</p>
+              <p className="text-sm font-semibold">Nhật ký hỏi đáp (3 ngày gần nhất)</p>
               <Tabs value={only} onChange={setOnly} tabs={[{ id: 'human', label: 'Chưa trả lời được' }, { id: 'all', label: 'Tất cả' }]} />
             </div>
             {log.loading ? <SkeletonRows rows={3} /> : items.length ? (
-              <ul className="divide-y divide-border rounded-xl border border-border">
+              <ul className="max-h-80 divide-y divide-border overflow-y-auto rounded-xl border border-border">
                 {items.slice(0, 40).map((l) => (
-                  <li key={l.id} className="space-y-1 px-3 py-2.5 text-sm">
+                  <li key={l.id} className="space-y-0.5 px-3 py-2 text-sm">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium">{l.question}</span>
                       {l.needs_human ? <Badge tone="warning">{reasonLabel(l.reason)}</Badge> : <Badge tone="success">Có nguồn</Badge>}
                       {l.cached && <Badge>Từ bộ nhớ đệm</Badge>}
                     </div>
                     <p className="text-xs text-muted-foreground">{l.team_name || l.student_id} · {relative(new Date(l.at * 1000).toISOString())}{l.tokens ? ` · ${l.tokens} token` : ''}</p>
-                    {l.needs_human && <Button size="sm" variant="ghost" onClick={() => void navigator.clipboard?.writeText(l.question)}><Copy className="size-3.5" />Chép câu hỏi để đăng câu trả lời công khai</Button>}
+                    {l.needs_human && <Button size="sm" variant="ghost" className="-ml-2 h-7" onClick={() => void navigator.clipboard?.writeText(l.question)}><Copy className="size-3.5" />Chép câu hỏi để trả lời công khai</Button>}
                   </li>
                 ))}
               </ul>

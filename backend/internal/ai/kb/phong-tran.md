@@ -14,3 +14,6 @@ Trong lúc đấu, mỗi đội có camera bật gửi một ảnh nhỏ khoản
 
 ## Replay
 Dùng tab Lịch sử và Replay để xem lại từng hiệp từng bước. Replay che thông tin đối thủ theo luật sương mù. Mã nguồn riêng chỉ đội sở hữu và ban tổ chức xem được.
+
+## Trận hiệp đề học máy ở giải chính AI
+Trong giải chính AI dùng hiệp đề ML, phòng trận hiện đề của hiệp hiện tại thay cho sân cờ. Hai đội nộp mô hình hàm solve, ban tổ chức khai hỏa khi cả hai đã nộp mô hình hợp lệ và bộ đề đã khóa. Bảng Điểm từng hiệp hiện đề, điểm hai đội và người thắng hiệp; điểm cao hơn thắng, bằng điểm thì dùng lá thăm bốc sẵn. Đội chỉ thấy đề của hiệp hiện tại. Tab Giao hữu không có ở giải này.

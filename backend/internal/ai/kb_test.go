@@ -67,6 +67,12 @@ var golden = []struct{ q, want string }{
 	{"kho đề Giải AI gồm những loại đề nào, admin bốc ngẫu nhiên thế nào", "giai-ai#kho-de-hoc-tu-the-co"},
 	{"mỗi hiệp giải chính AI bốc đề thế nào, ai điểm cao hơn thắng hiệp", "giai-ai#hiep-de-ml-o-giai-chinh-ai"},
 	{"hàm solve nhận tham số gì, có dùng nnlite lan truyền ngược được không", "giai-ai#nop-mo-hinh-cho-kho-de"},
+	{"tệp JSON dữ liệu của đề để làm gì, có bắt buộc tải không", "giai-ai#tep-json-du-lieu-cua-de-de-lam-gi"},
+	{"nút chấm thử đề này cho thấy những gì", "giai-ai#cham-thu-tren-may-va-hinh-minh-hoa"},
+	{"ELO giải AI có hệ số thưởng thắng 3-0 không", "giai-ai#elo-va-huy-hieu-giai-ai"},
+	{"xem lịch sử ELO của đội ở đâu trong Giải AI", "giai-ai#tab-elo-va-lich-su-giai-ai"},
+	{"admin ghi danh đội vào vòng loại hay giải nào", "quy-trinh#ban-to-chuc-ghi-danh-doi"},
+	{"trận đề ML hai đội thắng hiệp thế nào, hòa điểm thì sao", "phong-tran#tran-hiep-de-hoc-may-o-giai-chinh-ai"},
 }
 
 func TestGoldenSearch(t *testing.T) {

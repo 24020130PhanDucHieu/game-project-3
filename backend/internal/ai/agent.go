@@ -109,6 +109,7 @@ func (a *Agent) Ask(ctx context.Context, question string, who Identity) (Result,
 	var used []string
 	var usage Usage
 	cacheable := true
+	rejected := "" // bản nháp bị bác gần nhất (nếu có)
 	messages := []Message{{Role: "user", Content: question}}
 	turns := a.MaxTurns
 	if turns <= 0 {
@@ -149,7 +150,12 @@ func (a *Agent) Ask(ctx context.Context, question string, who Identity) (Result,
 				if res.NeedsHuman && fixable(res.Reason) && turn < turns {
 					retry = &calls[i]
 					retry.Content = rejectFeedback(res.Reason)
+					rejected = res.Draft
 					continue
+				}
+				// Model bị bác rồi tự nhận "không biết": vẫn giữ bản nháp bị bác để ban tổ chức xem chất lượng tra cứu.
+				if res.NeedsHuman && res.Draft == "" && rejected != "" {
+					res.Draft = rejected
 				}
 				return res, nil
 			}

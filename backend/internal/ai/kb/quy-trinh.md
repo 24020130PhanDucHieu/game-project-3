@@ -23,3 +23,6 @@ Dùng replay trong tab Trận đấu để xem từng bước. Bảng đấu và
 
 ## Giấy chứng nhận
 Khi trận chung kết có kết quả, các đội đạt giải (Quán quân, Á quân, hai đội Đồng hạng Ba) tự nhận thông báo. Giấy chứng nhận nằm trong Hồ sơ đội, mục Kho giấy chứng nhận, có thể xem, tải ảnh PNG hoặc in và lưu PDF.
+
+## Ban tổ chức ghi danh đội
+Ở Quản trị, tab Tài khoản, ban tổ chức chọn loại đích (giải thường, vòng loại thường hoặc vòng loại Giải AI) rồi chọn đích cụ thể, mỗi nút ghi danh nêu rõ tên đích và có hộp xác nhận. Cột Đang ở cho biết mỗi đội đã ở giải hoặc vòng loại nào. Giải chính AI không ghi danh bằng tay, chỉ nhận đội qua nút Chốt đội của vòng loại AI. Giải thường được chọn ở tab Bảng đấu.
