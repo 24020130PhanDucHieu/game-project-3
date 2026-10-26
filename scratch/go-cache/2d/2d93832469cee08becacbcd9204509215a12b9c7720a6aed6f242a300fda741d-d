@@ -1,4 +1,0 @@
-./bot_runner_adapter.go
-./monitoring.go
-./readiness.go
-./worker_scheduler.go

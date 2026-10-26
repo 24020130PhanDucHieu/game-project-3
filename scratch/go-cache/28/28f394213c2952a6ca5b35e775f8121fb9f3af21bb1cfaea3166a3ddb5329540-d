@@ -1,7 +1,0 @@
-./agent.go
-./client.go
-./format.go
-./gemini.go
-./kb.go
-./quota.go
-./tools.go

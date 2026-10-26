@@ -1,9 +1,0 @@
-./ai.go
-./ai_runner.go
-./ban.go
-./operations.go
-./registration.go
-./runner.go
-./service.go
-./submission_queue.go
-./tasks.go

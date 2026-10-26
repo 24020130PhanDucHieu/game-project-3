@@ -85,3 +85,4 @@ frontend/tsconfig.tsbuildinfo
 
 # Lõi Pyodide tải lúc build (scripts/sync-offline-engine.mjs)
 frontend/public/offline/pyodide/
+scratch/

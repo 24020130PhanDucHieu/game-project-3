@@ -130,7 +130,7 @@ func TestGeminiRetriesAndHidesUpstreamDetail(t *testing.T) {
 	if _, err := c.Complete(context.Background(), Request{Model: "m", System: "s", Tools: Defs(), ToolChoice: map[string]interface{}{"type": "any"}, Messages: []Message{{Role: "user", Content: "x"}}}); err != nil || len(f.bodies) != 2 {
 		t.Fatalf("phải thử lại sau 429: %v n=%d", err, len(f.bodies))
 	}
-	f2 := &fakeGemini{status: []int{500, 500}, replies: []string{"{}"}}
+	f2 := &fakeGemini{status: []int{500, 500, 500}, replies: []string{"{}"}}
 	srv2 := httptest.NewServer(http.HandlerFunc(f2.handler))
 	defer srv2.Close()
 	if _, err := NewGeminiClient(srv2.URL, "k").Complete(context.Background(), Request{Model: "m", Messages: []Message{{Role: "user", Content: "x"}}}); err == nil {
