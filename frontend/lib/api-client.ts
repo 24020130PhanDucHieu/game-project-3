@@ -502,7 +502,7 @@ export const arenaApi = {
     return apiRequest<any>(`/ai-main/${encodeURIComponent(tid)}/tasks/${lock ? 'lock' : 'unlock'}`, { method: 'POST' })
   },
   async getAiMainMatchTask(tid: string, mid: string) {
-    return apiRequest<{ kind: string; meta: any; train: { X: any[]; y: number[] } }>(`/ai-main/${encodeURIComponent(tid)}/matches/${encodeURIComponent(mid)}/task`)
+    return apiRequest<{ kind: string; meta: any; train: { X: any[]; y: number[] } }>(`/ai-main/${encodeURIComponent(tid)}/matches/${encodeURIComponent(mid)}/task`, { cache: 'no-store' })
   },
 
   // Giải chính AI: báo cáo kỹ thuật, chấm rubric, huy hiệu
@@ -653,6 +653,10 @@ export const arenaApi = {
     return apiRequest(`/admin/accounts/${encodeURIComponent(studentId)}`, {
       method: 'DELETE',
     })
+  },
+
+  async getAdminEnrollments() {
+    return apiRequest<any>('/admin/accounts/enrollments', { cache: 'no-store' })
   },
 
   async enrollAdminAccount(studentId: string, payload: any) {

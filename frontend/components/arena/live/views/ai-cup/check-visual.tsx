@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { cn } from '@/lib/utils'
+import { useCountUp, useReducedMotion } from '@/lib/motion'
 import type { TaskCheckResult } from '@/lib/offline-engine'
 import { ScoreBar, fmt } from './common'
 
@@ -20,32 +21,6 @@ export function visualFrom(task: { meta: any; train: { X: any[] } }, result: Tas
     return { b: String(x.b || '.'.repeat(81)), s: Number(x.s) || 0, t: Number(x.t) || 0 }
   })
   return { result, samples, classes: (task.meta?.classes || []).map(String), regression: !!task.meta?.regression }
-}
-
-function useReducedMotion() {
-  const [reduced, setReduced] = useState(false)
-  useEffect(() => {
-    try { setReduced(window.matchMedia('(prefers-reduced-motion: reduce)').matches) } catch { /* bỏ qua */ }
-  }, [])
-  return reduced
-}
-
-/** Số chạy từ 0 lên giá trị thật. */
-function useCountUp(target: number, reduced: boolean, ms = 700) {
-  const [value, setValue] = useState(reduced ? target : 0)
-  useEffect(() => {
-    if (reduced) { setValue(target); return }
-    let frame = 0
-    const start = performance.now()
-    const tick = (now: number) => {
-      const k = Math.min(1, (now - start) / ms)
-      setValue(target * (1 - Math.pow(1 - k, 3)))
-      if (k < 1) frame = requestAnimationFrame(tick)
-    }
-    frame = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frame)
-  }, [target, reduced, ms])
-  return value
 }
 
 const PIECE_COLOR = { red: '#ef4444', blue: '#3b82f6' }

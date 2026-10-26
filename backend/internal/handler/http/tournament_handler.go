@@ -541,6 +541,10 @@ func currentTaskSpec(tournament, match map[string]interface{}) map[string]interf
 	if tournament["round_mode"] != "TASK" {
 		return nil
 	}
+	// Trận chưa có đủ hai đội thì chưa lộ đề: đội còn đang đấu vòng trước không được biết trước đề vòng sau.
+	if match["team_a"] == nil || match["team_b"] == nil {
+		return nil
+	}
 	plan, _ := tournament["ai_task_plan"].(map[string]interface{})
 	if plan == nil || plan["locked"] != true {
 		return nil

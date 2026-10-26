@@ -77,10 +77,13 @@ export function ProfileView() {
   const own = role === 'TEAM' && sameStudent(sid, session.student_id)
   const canEdit = own || role === 'ADMIN'
 
+  // Admin chọn đội từ danh sách tài khoản thay vì phải nhớ và gõ mã sinh viên.
+  const accounts = useResource<any[]>(role === 'ADMIN' ? 'admin:accounts' : null, () => arenaApi.getAdminAccounts().then((r) => (Array.isArray(r) ? r : [])), { ttl: 15_000, refreshMs: 30_000 })
+  const aiRanking = useResource<any[]>(sid ? 'rk:ai' : null, () => arenaApi.getRanking('ai').then((r) => (Array.isArray(r) ? r : [])), { ttl: 15_000, refreshMs: 30_000 })
   const profile = useResource<any>(sid ? `profile:${sid}` : null, () => arenaApi.getProfile(sid).then((r: any) => r.profile), { ttl: 30_000, refreshMs: 60_000 })
   const ranking = useRanking()
   const history = useHistory()
-  const qualifier = useResource<any>(own && qualifierId ? `q:detail:${scope}:${qualifierId}` : null, () => arenaApi.getQualifier(qualifierId), { ttl: 10_000, refreshMs: 20_000 })
+  const qualifier = useResource<any>((own || role === 'ADMIN') && sid && qualifierId ? `q:detail:${scope}:${qualifierId}:${sid}` : null, () => arenaApi.getQualifier(qualifierId, own ? '' : sid), { ttl: 10_000, refreshMs: 20_000 })
   const [form, setForm] = useState<any>(null)
   useEffect(() => setForm(profile.data ? { ...profile.data } : null), [profile.data])
 
@@ -89,6 +92,7 @@ export function ProfileView() {
   const teamName = profile.data?.team_name || rankRow?.bot_name
   const myHistory = useMemo(() => (history.data || []).filter((h) => (h.bot_names || []).includes(teamName)).sort((a, b) => Number(b.timestamp) - Number(a.timestamp)).slice(0, 10), [history.data, teamName])
   const participant = qualifier.data?.participant
+  const aiRow = (aiRanking.data || []).find((r) => sameStudent(r.student_id, sid))
 
   async function save(event: FormEvent) {
     event.preventDefault()
@@ -99,8 +103,17 @@ export function ProfileView() {
     <div className="space-y-6">
       <SectionTitle eyebrow="Tài khoản" title="Hồ sơ đội" />
 
+      {role === 'ADMIN' && (
+        <Card title="Chọn đội để xem hồ sơ" subtitle="Bạn đang dùng tài khoản quản trị nên không có hồ sơ đội riêng. Chọn một đội trong danh sách, hoặc gõ mã sinh viên ở khung bên dưới.">
+          <Select label="Đội" value={target} onChange={(e) => setTarget(e.target.value)} data-testid="admin-profile-pick" className="max-w-xl">
+            <option value="">{accounts.loading && !accounts.data ? 'Đang tải danh sách…' : '— Chọn đội —'}</option>
+            {(accounts.data || []).map((a) => <option key={a.student_id} value={a.student_id}>{a.student_id} · {a.team_name}</option>)}
+          </Select>
+        </Card>
+      )}
+
       {role !== 'TEAM' && (
-        <Card title={role === 'ADMIN' ? 'Tra cứu hồ sơ đội' : 'Xem hồ sơ công khai'} subtitle="Nhập mã sinh viên của đội để xem thông tin và thành tích.">
+        <Card title={role === 'ADMIN' ? 'Hoặc tra cứu theo mã sinh viên' : 'Xem hồ sơ công khai'} subtitle="Nhập mã sinh viên của đội để xem thông tin và thành tích.">
           <form className="flex flex-wrap items-end gap-3" onSubmit={(e) => { e.preventDefault(); setTarget(lookup.trim().toUpperCase()) }}>
             <Field label="Mã sinh viên" className="min-w-56 flex-1" value={lookup} onChange={(e) => setLookup(e.target.value)} placeholder="VD: 24020130" />
             <Button type="submit" disabled={!lookup.trim()}><Search className="size-4" />Tra cứu</Button>
@@ -110,7 +123,8 @@ export function ProfileView() {
       )}
 
       {!sid ? (
-        role === 'GUEST' ? <Card><EmptyState icon={<UserRound className="size-7" />} title="Đăng nhập để xem hồ sơ đội của bạn" action={<Button onClick={() => openAuth('login')}>Đăng nhập</Button>} /></Card> : null
+        role === 'GUEST' ? <Card><EmptyState icon={<UserRound className="size-7" />} title="Đăng nhập để xem hồ sơ đội của bạn" action={<Button onClick={() => openAuth('login')}>Đăng nhập</Button>} /></Card>
+          : <Card><EmptyState icon={<UserRound className="size-7" />} title="Chưa chọn đội" hint="Chọn một đội ở khung phía trên để xem thông tin, ELO và thành tích của đội." /></Card>
       ) : profile.loading ? (
         <div className="grid gap-4 md:grid-cols-2"><Skeleton className="h-64 rounded-2xl" /><Skeleton className="h-64 rounded-2xl" /></div>
       ) : profile.error && !profile.data ? <ErrorNote message={profile.error.message} onRetry={() => void profile.reload()} /> : profile.data && form && (
@@ -119,12 +133,13 @@ export function ProfileView() {
             <div className="flex flex-wrap items-center gap-4">
               <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-lg font-extrabold text-primary" aria-hidden>{String(profile.data.team_name || '?').slice(0, 2).toUpperCase()}</div>
               <div className="min-w-0 flex-1"><h2 className="truncate text-xl font-bold">{profile.data.team_name}</h2><p className="text-sm text-muted-foreground">MSSV {profile.data.student_id}{profile.data.university ? ` · ${profile.data.university}` : ''}</p></div>
-              {rankRow && <Badge tone="accent">Hạng #{rankIndex + 1} toàn hệ thống</Badge>}
+              {rankRow && <Badge tone="accent">Hạng #{rankIndex + 1} giải thường</Badge>}
+              {role === 'ADMIN' && <Badge tone="info">Đang xem bằng quyền quản trị</Badge>}
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <Stat label="ELO toàn hệ thống" value={rankRow?.elo_score ?? '—'} />
+              <Stat label="ELO giải thường" value={rankRow?.elo_score ?? '—'} hint={aiRow ? `Giải AI: ${aiRow.elo_score} (${aiRow.wins}/${aiRow.matches_played} trận)` : 'Chưa đấu giải AI'} />
               <Stat label="Thắng / Trận" value={rankRow ? `${rankRow.wins}/${rankRow.matches_played}` : '—'} hint={rankRow ? `${rankRow.win_rate}% tỉ lệ thắng` : 'Chưa thi đấu'} />
-              <Stat label="ELO vòng loại" value={participant?.student_id ? Number(participant.elo).toFixed(1) : '—'} hint={own ? undefined : 'Chỉ hiện với tài khoản của bạn'} />
+              <Stat label="ELO vòng loại" value={participant?.student_id ? Number(participant.elo).toFixed(1) : '—'} hint={own || role === 'ADMIN' ? (participant?.student_id ? undefined : 'Đội chưa đăng ký vòng loại này') : 'Chỉ hiện với tài khoản của bạn'} />
               <Stat label="Ngôn ngữ ưa dùng" value={profile.data.preferred_language || '—'} />
             </div>
           </Card>

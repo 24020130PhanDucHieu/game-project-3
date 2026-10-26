@@ -161,6 +161,7 @@ func main() {
 		log.Fatalf("Could not recover interrupted rounds: %v", err)
 	}
 	qualifierService := qualifier.New(qualifierStore, accounts, tournamentService, botRunnerAdapter)
+	aHandler.Qualifiers = qualifierService
 	qHandler := &httpHandler.QualifierHandler{Service: qualifierService, AuditLog: func(actor, action string, details map[string]interface{}) {
 		_ = accounts.LogAdminAction(actor, action, "", "", details)
 	}}
@@ -251,6 +252,14 @@ func main() {
 		wsHub.BroadcastTournamentJSON(tournamentID, matchID, gin.H{"type": eventType, "tournament_id": tournamentID, "match_id": matchID, "action": "play-round"})
 		certHandler.IssueAsync(tournamentID)
 	}
+	tournamentService.OnDeleted = func(id string) {
+		if err := qualifierService.ReleaseTarget(id); err != nil {
+			log.Printf("[Cleanup] Không gỡ được liên kết vòng loại với giải %s: %v", id, err)
+		}
+		if err := qualifierStore.DeletePrefixes("aireport:"+id+":", "aiscore:"+id+":", "aireportcfg:"+id, "certcfg:"+id, "chat:"+id+"/"); err != nil {
+			log.Printf("[Cleanup] Không dọn được dữ liệu của giải %s: %v", id, err)
+		}
+	}
 	// Chấm vòng loại xong, đội nộp bài, đổi trạng thái...: báo cho mọi máy đang mở trang để tự tải lại.
 	qualifierService.OnUpdate = func(string) { wsHub.BroadcastGlobal("q") }
 	tournamentService.StartRoundTransitions(func(tournamentID, matchID string) {
@@ -288,6 +297,11 @@ func main() {
 		}
 		if c.Request.URL.Path == "/api/tournament/rule/set" {
 			wsHub.BroadcastTournamentJSON(c.Query("tournament_id"), "", gin.H{"type": "TOURNAMENT_UPDATED", "tournament_id": c.Query("tournament_id"), "action": "set-rule"})
+		}
+		if scope := globalScope(c.Request.URL.Path); scope != "" {
+			wsHub.BroadcastGlobal(scope)
+		} else if c.Request.Method == http.MethodDelete && len(parts) == 3 && parts[0] == "api" && parts[1] == "tournaments" {
+			wsHub.BroadcastGlobal("tl")
 		}
 		if len(parts) >= 3 && parts[0] == "api" && parts[1] == "tournaments" {
 			tournamentID := c.Param("id")
@@ -351,6 +365,7 @@ func main() {
 		api.PUT("/teams/email", requireSession(sessions, false, false), aHandler.TeamEmail)
 		api.DELETE("/admin/accounts/:studentId", adminOnly, aHandler.Delete)
 		api.POST("/admin/accounts/:studentId/enroll", adminOnly, aHandler.Enroll)
+		api.GET("/admin/accounts/enrollments", adminOnly, aHandler.Enrollments)
 		api.GET("/admin/monitoring", adminOnly, aHandler.Monitoring)
 		api.POST("/admin/database/optimize", adminOnly, aHandler.OptimizeDatabase)
 		api.GET("/admin/judges", adminOnly, jHandler.List)

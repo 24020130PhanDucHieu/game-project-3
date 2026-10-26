@@ -42,10 +42,10 @@ export function AntiCheatTab() {
   const [open, setOpen] = useState('')
   useEffect(() => { setId(source === 'qualifier' ? qualifierId : tournamentId); setOpen('') }, [source, qualifierId, tournamentId])
   const report = useResource<any>(id ? `sim:${source}:${id}:${min}` : null, () => arenaApi.getSimilarity(source, id, min), { ttl: 30_000 })
-  const options = source === 'qualifier' ? [...(qualifiers.data || []).map((q) => [q.id, q.name]), ...(aiEvents.data || []).map((q) => [q.id, `[Giải AI] ${q.name}`])] : (tournaments.data || []).map((t) => [t.tournament_id, t.name])
+  const options = source === 'qualifier' ? [...(qualifiers.data || []).map((q) => [q.id, q.name]), ...(aiEvents.data || []).map((q) => [q.id, `[Giải AI] ${q.name}`])] : (tournaments.data || []).map((t) => [t.tournament_id, t.track === 'AI' ? `[Giải chính AI] ${t.name}` : t.name])
 
   return (
-    <Card title="Chống gian lận — độ giống mã nguồn" subtitle="So sánh bài hợp lệ mới nhất của các đội (vòng loại) hoặc bài hiện tại trong các trận (giải chính)." action={<ScanSearch className="size-4 text-muted-foreground" />}>
+    <Card title="Chống gian lận — độ giống mã nguồn" subtitle="So sánh bài hợp lệ mới nhất của các đội ở vòng loại (kể cả vòng loại Giải AI) hoặc bài hiện tại trong các trận của giải chính. Mã mẫu mà nhiều đội cùng dùng được bỏ qua." action={<ScanSearch className="size-4 text-muted-foreground" />}>
       <div className="space-y-4">
         <div className="grid gap-3 sm:grid-cols-[180px_1fr_220px] sm:items-end">
           <Select label="Nguồn" value={source} onChange={(e) => setSource(e.target.value as 'qualifier' | 'tournament')}>
@@ -58,9 +58,10 @@ export function AntiCheatTab() {
             <input type="range" min={0.5} max={0.95} step={0.05} value={min} onChange={(e) => setMin(Number(e.target.value))} className="mt-2 w-full accent-primary" aria-label="Ngưỡng giống" />
           </label>
         </div>
-        {report.loading ? <SkeletonRows rows={5} /> : report.error && !report.data ? <ErrorNote message={report.error.message} onRetry={() => void report.reload()} /> : report.data && (
+        {!id ? <EmptyState icon={<ScanSearch className="size-7" />} title="Chưa chọn nguồn để kiểm tra" hint="Chọn vòng loại hoặc giải ở ô phía trên. Cần ít nhất hai đội đã nộp bài hợp lệ thì mới so sánh được." />
+        : report.loading ? <SkeletonRows rows={5} /> : report.error && !report.data ? <ErrorNote message={report.error.message} onRetry={() => void report.reload()} /> : report.data && (
           <>
-            <p className="text-xs text-muted-foreground">Đã so {report.data.documents} bài · {report.data.pairs.length} cặp vượt ngưỡng (tối đa 200).</p>
+            <p className="text-xs text-muted-foreground">Đã so {report.data.documents} bài · {report.data.pairs.length} cặp vượt ngưỡng (tối đa 200).{report.data.documents < 2 ? ' Cần ít nhất hai bài hợp lệ để so sánh.' : ''}</p>
             {report.data.pairs.length ? (
               <DataTable head={['Đội A', 'Đội B', 'Giống', 'Bao phủ', 'Ngôn ngữ', 'Đánh giá', '']}>
                 {report.data.pairs.map((p: any) => {

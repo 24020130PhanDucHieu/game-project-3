@@ -34,6 +34,13 @@ export function invalidate(prefix = '') {
   listeners.forEach((listener) => listener(prefix))
 }
 
+/** Xóa hẳn các mục có khóa thỏa điều kiện (khác invalidate: không giữ lại dữ liệu cũ), dùng sau khi xóa một thứ ở máy chủ. */
+export function forget(match: string | ((key: string) => boolean)) {
+  const test = typeof match === 'string' ? (key: string) => key.includes(match) : match
+  for (const key of [...store.keys()]) if (test(key)) store.delete(key)
+  listeners.forEach((listener) => listener(''))
+}
+
 function load<T>(key: string, fetcher: () => Promise<T>, force: boolean, ttl: number): Promise<T> {
   const entry = store.get(key) ?? { at: 0 }
   store.set(key, entry)
@@ -51,6 +58,8 @@ function load<T>(key: string, fetcher: () => Promise<T>, force: boolean, ttl: nu
     })
     .catch((error) => {
       entry.error = error instanceof Error ? error : new Error(String(error))
+      // Mục đã bị xóa ở máy chủ: không được tiếp tục hiện dữ liệu cũ.
+      if ((error as { status?: number })?.status === 404) entry.data = undefined
       if ((entry.gen ?? 0) === gen) entry.at = Date.now() // tránh vòng lặp tải lại liên tục khi lỗi; thử lại theo chu kỳ hoặc reload()
       throw entry.error
     })

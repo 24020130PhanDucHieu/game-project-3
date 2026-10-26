@@ -44,7 +44,7 @@ export function ScrimmagePanel() {
   const [result, setResult] = useState<any>(null)
   const [replayId, setReplayId] = useState('')
 
-  const ranking = useResource(qualifierId ? `q:rank:${qualifierId}:1` : null, () => arenaApi.getQualifierRanking(qualifierId, 1), { ttl: 20_000 })
+  const ranking = useResource(qualifierId ? `q:rank:${qualifierId}:1` : null, () => arenaApi.getQualifierRanking(qualifierId, 1), { ttl: 20_000, refreshMs: 45_000 })
   const history = useResource(role === 'TEAM' ? 'scrim:list' : null, () => arenaApi.getScrimmages(), { ttl: 10_000, refreshMs: 30_000 })
   const replay = useResource<any>(replayId ? `scrim:replay:${replayId}` : null, () => arenaApi.getScrimmage(replayId), { ttl: 300_000 })
   useEffect(() => { setResult(null); setReplayId('') }, [qualifierId])

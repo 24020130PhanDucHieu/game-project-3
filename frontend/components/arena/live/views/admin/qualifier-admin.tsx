@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { Ban, FileCode2, Flag, Pause, Play, Plus, ShieldCheck, Snowflake, Trash2, Trophy, UserRoundPlus } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
-import { invalidate, useResource } from '@/lib/cache'
+import { forget, invalidate, useResource } from '@/lib/cache'
 import { fromLocalInput, toLocalInput } from '@/lib/format'
 import { Badge, Button, Card, DataTable, EmptyState, ErrorNote, Field, Pagination, ProgressBar, Select, SkeletonRows, StatusBadge } from '../../ui'
 import { statusOf } from '@/lib/format'
@@ -17,7 +17,7 @@ import { AdminAiSteps } from '../ai-cup/admin-steps'
 
 const FILTERS = [['', 'Tất cả'], ['NOT_SUBMITTED', 'Chưa nộp'], ['PENDING', 'Đang kiểm tra'], ['VALID', 'Hợp lệ'], ['INVALID', 'Không hợp lệ'], ['LOCKED', 'Đã khóa'], ['BANNED', 'Bị loại']]
 
-function ConfigForm({ event, ai }: { event?: any; ai?: boolean }) {
+function ConfigForm({ event, ai, onCreated }: { event?: any; ai?: boolean; onCreated?: () => void }) {
   const { run, setQualifierId, setAiEventId } = useLive()
   const [name, setName] = useState('')
   const [deadline, setDeadline] = useState('')
@@ -30,7 +30,7 @@ function ConfigForm({ event, ai }: { event?: any; ai?: boolean }) {
   useEffect(() => {
     setMode(event ? (event.mode === 'TASKS' ? 'TASKS' : 'RPS') : 'TASKS'); setTaskCount(String(event?.task_count || 6))
     setName(event?.name || ''); setDeadline(toLocalInput(event?.deadline)); setRounds(String(event?.rounds || 5)); setTopK(String(event?.top_k || 8)); setGitMode(!!event?.git_mode); setTemplate(event?.git_template_url || '')
-  }, [event])
+  }, [event?.id, event?.status, event?.tasks_locked]) // eslint-disable-line react-hooks/exhaustive-deps
   const payload = () => ({ name: name.trim(), deadline: fromLocalInput(deadline), rounds: Number(rounds), top_k: Number(topK), git_mode: ai ? false : gitMode, git_template_url: ai ? '' : template.trim(), ...(ai ? { kind: 'AI', mode: mode === 'TASKS' ? 'TASKS' : '', task_count: mode === 'TASKS' ? Number(taskCount) : 0 } : {}) })
   const editable = !event || event.status === 'OPEN'
   return (
@@ -57,7 +57,7 @@ function ConfigForm({ event, ai }: { event?: any; ai?: boolean }) {
         {event ? (
           <Button disabled={!editable || !name.trim() || !deadline} onClick={() => void run(() => arenaApi.configureQualifier(event.id, payload()), 'Đã cập nhật cấu hình', () => invalidate('q'))}>Lưu cấu hình</Button>
         ) : (
-          <Button disabled={!name.trim() || !deadline} onClick={() => void run(async () => { const created: any = await arenaApi.createQualifier(payload()); if (created?.id) (ai ? setAiEventId : setQualifierId)(created.id) }, ai ? 'Đã tạo vòng loại AI' : 'Đã tạo vòng loại', () => invalidate('ql'))} data-testid="create-qualifier"><Plus className="size-4" />{ai ? 'Tạo vòng loại AI' : 'Tạo vòng loại'}</Button>
+          <Button disabled={!name.trim() || !deadline} onClick={() => void run(async () => { const created: any = await arenaApi.createQualifier(payload()); if (created?.id) (ai ? setAiEventId : setQualifierId)(created.id) }, ai ? 'Đã tạo vòng loại AI' : 'Đã tạo vòng loại', () => { invalidate('ql'); setName(''); setDeadline(''); onCreated?.() })} data-testid="create-qualifier"><Plus className="size-4" />{ai ? 'Tạo vòng loại AI' : 'Tạo vòng loại'}</Button>
         )}
       </div>
     </div>
@@ -184,7 +184,14 @@ export function QualifierAdminTab({ ai }: { ai?: boolean }) {
   const [creating, setCreating] = useState(false)
   const event = qualifiers.data?.find((q) => q.id === qualifierId)
   const detail = useResource<any>(qualifierId ? `q:detail:admin:${qualifierId}` : null, () => arenaApi.getQualifier(qualifierId), { ttl: 5_000, refreshMs: 8_000 })
-  const live = detail.data?.event ?? event
+  // Chỉ tin chi tiết khi đúng sự kiện đang chọn và sự kiện còn trong danh sách (đã xóa thì không hiện bản cũ trong bộ đệm).
+  const live = event ? (detail.data?.event?.id === event.id ? detail.data.event : event) : undefined
+  const removeEvent = (id: string) => {
+    forget(id)
+    try { for (const k of Object.keys(localStorage)) if (k.includes(id)) localStorage.removeItem(k) } catch { /* bỏ qua */ }
+    setQualifierId(''); setCreating(false)
+    invalidate('q'); invalidate('ql'); invalidate('ai:'); invalidate('rk'); invalidate('clar:')
+  }
 
   return (
     <div className="space-y-6">
@@ -196,7 +203,7 @@ export function QualifierAdminTab({ ai }: { ai?: boolean }) {
         </details>
       )}
       <div id="ai-step-event"><Card title={ai ? 'Vòng loại Giải AI' : 'Vòng loại'} action={<><Button size="sm" variant={creating ? 'secondary' : 'primary'} onClick={() => setCreating((v) => !v)}><Plus className="size-4" />{creating ? 'Đóng' : 'Tạo mới'}</Button></>}>
-        {creating ? <ConfigForm ai={ai} /> : qualifiers.data?.length ? (
+        {creating ? <ConfigForm ai={ai} onCreated={() => setCreating(false)} /> : qualifiers.data?.length ? (
           <Select aria-label="Chọn vòng loại" value={qualifierId} onChange={(e) => setQualifierId(e.target.value)}>
             {qualifiers.data.map((q) => <option key={q.id} value={q.id}>{q.name} · {statusOf(q.status).label}</option>)}
           </Select>
@@ -205,7 +212,7 @@ export function QualifierAdminTab({ ai }: { ai?: boolean }) {
 
       {!creating && live && (
         <>
-          <Card title={live.name} action={<><StatusBadge status={live.status} /><Button size="sm" variant="danger" aria-label="Xóa vòng loại" disabled={busy} onClick={async () => { if (await confirm({ title: `Xóa vòng loại “${live.name}”?`, message: 'Toàn bộ đội, bài nộp và kết quả của vòng loại sẽ bị xóa.', danger: true, confirmLabel: 'Xóa' })) void run(() => arenaApi.deleteQualifier(live.id), 'Đã xóa vòng loại', () => { invalidate('q'); invalidate('ql') }) }}><Trash2 className="size-4" /></Button></>}>
+          <Card title={live.name} action={<><StatusBadge status={live.status} /><Button size="sm" variant="danger" aria-label="Xóa vòng loại" disabled={busy} onClick={async () => { if (await confirm({ title: `Xóa vòng loại “${live.name}”?`, message: 'Toàn bộ đội, bài nộp và kết quả của vòng loại sẽ bị xóa.', danger: true, confirmLabel: 'Xóa' })) void run(() => arenaApi.deleteQualifier(live.id), 'Đã xóa vòng loại', () => removeEvent(live.id)) }}><Trash2 className="size-4" /></Button></>}>
             <div className="grid gap-4 sm:grid-cols-3 text-sm">
               <div><p className="text-xs text-muted-foreground">{ai ? 'Lượt chấm' : 'Lượt ghép cặp'}</p><p className="font-semibold tabular-nums">{live.applied_round ?? 0}/{live.rounds}</p></div>
               <div><p className="text-xs text-muted-foreground">Đội đủ điều kiện</p><p className="font-semibold tabular-nums">{live.eligible ?? 0} (top {live.top_k})</p></div>
@@ -214,10 +221,10 @@ export function QualifierAdminTab({ ai }: { ai?: boolean }) {
             {live.total > 0 && <div className="mt-4"><ProgressBar value={live.completed || 0} max={live.total} label="Tiến độ" /></div>}
             {live.error && <div className="mt-4"><ErrorNote message={live.error} /></div>}
           </Card>
-          {ai && live.mode === 'TASKS' && <div id="ai-step-tasks"><AdminAiTasks event={live} /></div>}
-          <div id="ai-step-ops"><Card title="Điều hành"><Operations event={live} ai={ai} /></Card></div>
+          {ai && live.mode === 'TASKS' && <div id="ai-step-tasks"><AdminAiTasks key={live.id} event={live} /></div>}
+          <div id="ai-step-ops"><Card title="Điều hành"><Operations key={live.id} event={live} ai={ai} /></Card></div>
           {live.status === 'OPEN' && <Card title="Cấu hình"><ConfigForm event={live} ai={ai} /></Card>}
-          <Teams id={live.id} ai={ai} />
+          <Teams key={live.id} id={live.id} ai={ai} />
           {ai ? <AdminAiBoard qid={live.id} /> : <AdminScoreHistory qid={live.id} />}
           {ai && <div id="ai-step-main"><AdminAiReports /></div>}
         </>

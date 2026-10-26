@@ -48,7 +48,7 @@ type Live = {
   toast: (tone: Toast['tone'], text: string) => void
   confirm: (options: Confirm) => Promise<boolean>
   /** Chọn trận để vào phòng (đội thi gọi /select để lấy phiên theo trận). */
-  enterMatch: (id: string) => Promise<void>
+  enterMatch: (id: string, tournamentIdOverride?: string) => Promise<void>
   ownMatches: [string, any][]
   openAuth: (mode: 'login' | 'register') => void
   authRequest: { mode: 'login' | 'register' } | null
@@ -167,12 +167,14 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   }, [session.tournament_id])
   useEffect(() => {
     const list = qualifiers.data
+    if (list && !list.length) { if (qualifierId) setQualifierId(''); return }
     if (!list?.length) return
     if (!qualifierId || !list.some((q) => q.id === qualifierId)) setQualifierId(list[0].id)
   }, [qualifiers.data, qualifierId])
 
   useEffect(() => {
     const list = aiEvents.data
+    if (list && !list.length) { if (aiEventId) setAiEventId(''); return }
     if (!list?.length) return
     if (!aiEventId || !list.some((q) => q.id === aiEventId)) setAiEventId(list[0].id)
   }, [aiEvents.data, aiEventId])
@@ -278,13 +280,18 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     return Object.entries(matches).filter(([, m]) => sameStudent(m.team_a?.student_id, session.student_id) || sameStudent(m.team_b?.student_id, session.student_id))
   }, [matches, role, session.student_id])
 
-  const enterMatch = useCallback(async (id: string) => {
-    if (role === 'TEAM' && ownMatches.some(([mid]) => mid === id) && session.match_id !== id) {
+  const enterMatch = useCallback(async (id: string, tournamentIdOverride?: string) => {
+    // Mã trận như m_lvl1_0 trùng nhau giữa các giải, nên khi mở trận của giải khác phải truyền rõ giải đó.
+    const other = !!tournamentIdOverride && tournamentIdOverride !== tournamentId
+    const tid = tournamentIdOverride || tournamentId
+    if (other) setTournamentIdState(tid)
+    if (role === 'TEAM' && (other || ownMatches.some(([mid]) => mid === id)) && (other || session.match_id !== id)) {
       try {
-        await arenaApi.selectTeamMatch(tournamentId, id)
+        await arenaApi.selectTeamMatch(tid, id)
         await refreshSession()
       } catch (e) {
-        toast('error', e instanceof Error ? e.message : 'Không vào được phòng trận')
+        // Mở trận của giải khác mà đội không thi đấu ở đó: vào xem như khán giả, không báo lỗi.
+        if (!other) toast('error', e instanceof Error ? e.message : 'Không vào được phòng trận')
       }
     }
     setMatchId(id)

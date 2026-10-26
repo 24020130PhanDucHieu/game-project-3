@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"database/sql"
 	cryptorand "crypto/rand"
 	"encoding/json"
 	"errors"
@@ -20,6 +21,7 @@ import (
 	"project-tuan3/internal/auth"
 	"project-tuan3/internal/humancheck"
 	"project-tuan3/internal/mailer"
+	"project-tuan3/internal/qualifier"
 	"project-tuan3/internal/repository"
 	"project-tuan3/internal/service"
 )
@@ -38,6 +40,8 @@ type AccountsHandler struct {
 	QueueCounts      func(context.Context) (map[string]int, error)
 	// Records chứa nhật ký mọi thao tác ghi của quản trị (middleware AdminAudit) để hiển thị cùng nhật ký sự kiện.
 	Records *repository.QualifierRecords
+	// Qualifiers dùng để ghi danh vào vòng loại và cho biết mỗi đội đang ở đâu.
+	Qualifiers *qualifier.Service
 	// Mailer gửi mã khôi phục mật khẩu tới email đội đã đăng ký.
 	Mailer     mailer.Sender
 	mu         sync.Mutex
@@ -457,18 +461,119 @@ func (h *AccountsHandler) Enroll(c *gin.Context) {
 	}
 	var req struct {
 		TournamentID string `json:"tournament_id"`
+		TargetType   string `json:"target_type"` // tournament (mặc định) | qualifier | ai_qualifier
+		TargetID     string `json:"target_id"`
 	}
-	if c.ShouldBindJSON(&req) != nil || req.TournamentID == "" {
-		c.JSON(400, gin.H{"detail": "Hãy chọn giải đấu."})
+	if c.ShouldBindJSON(&req) != nil {
+		c.JSON(400, gin.H{"detail": "Yêu cầu không hợp lệ."})
 		return
 	}
-	_, err = h.Service.MutateTournament(req.TournamentID, "add-team", map[string]interface{}{"student_id": a.StudentID, "team_name": a.TeamName, "university": "Khối Kỹ Thuật"})
-	if err != nil {
-		c.JSON(400, gin.H{"detail": err.Error()})
+	if req.TargetID == "" {
+		req.TargetID = req.TournamentID
+	}
+	if req.TargetType == "" {
+		req.TargetType = "tournament"
+	}
+	if req.TargetID == "" {
+		c.JSON(400, gin.H{"detail": "Hãy chọn giải hoặc vòng loại để ghi danh."})
 		return
 	}
-	c.Set("eventTournamentID", req.TournamentID)
-	c.JSON(200, gin.H{"status": "SUCCESS", "tournament_id": req.TournamentID})
+	actor := requestSession(c).Actor()
+	switch req.TargetType {
+	case "qualifier", "ai_qualifier":
+		if h.Qualifiers == nil {
+			c.JSON(503, gin.H{"detail": "Chưa sẵn sàng ghi danh vào vòng loại."})
+			return
+		}
+		e, total, err := h.Qualifiers.AdminRegister(req.TargetID, a.StudentID, req.TargetType == "ai_qualifier")
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				c.JSON(404, gin.H{"detail": "Không tìm thấy vòng loại này (có thể đã bị xóa)."})
+				return
+			}
+			c.JSON(400, gin.H{"detail": err.Error()})
+			return
+		}
+		_ = h.Store.LogAdminAction(actor, "ENROLL_QUALIFIER", "", e.ID, map[string]interface{}{"student_id": a.StudentID, "qualifier": e.Name, "kind": req.TargetType})
+		c.JSON(200, gin.H{"status": "SUCCESS", "target_type": req.TargetType, "target_id": e.ID, "target_name": e.Name, "total": total, "capacity": 4000})
+	case "tournament":
+		_, err = h.Service.MutateTournament(req.TargetID, "add-team", map[string]interface{}{"student_id": a.StudentID, "team_name": a.TeamName, "university": "Khối Kỹ Thuật"})
+		if err != nil {
+			c.JSON(400, gin.H{"detail": err.Error()})
+			return
+		}
+		c.Set("eventTournamentID", req.TargetID)
+		name, total, capacity := req.TargetID, 0, 0
+		if t, err := h.Service.GetTournamentByID(req.TargetID); err == nil {
+			if n, _ := t["name"].(string); n != "" {
+				name = n
+			}
+			teams, _ := t["teams"].([]interface{})
+			total = len(teams)
+			if f, ok := t["num_teams"].(float64); ok {
+				capacity = int(f)
+			}
+		}
+		_ = h.Store.LogAdminAction(actor, "ENROLL_TOURNAMENT", req.TargetID, "", map[string]interface{}{"student_id": a.StudentID, "tournament": name})
+		c.JSON(200, gin.H{"status": "SUCCESS", "target_type": "tournament", "target_id": req.TargetID, "tournament_id": req.TargetID, "target_name": name, "total": total, "capacity": capacity})
+	default:
+		c.JSON(400, gin.H{"detail": "Loại đích không hợp lệ."})
+	}
+}
+
+// Enrollments cho biết mỗi tài khoản đang ở giải nào / vòng loại nào để ban tổ chức không ghi danh nhầm hay trùng.
+func (h *AccountsHandler) Enrollments(c *gin.Context) {
+	type chip struct {
+		ID     string `json:"id"`
+		Name   string `json:"name"`
+		Kind   string `json:"kind"`
+		Status string `json:"status,omitempty"`
+	}
+	out := map[string][]chip{}
+	for id, raw := range h.Service.GetAllTournaments() {
+		t, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		name, _ := t["name"].(string)
+		kind := "tournament"
+		if track, _ := t["track"].(string); track == "AI" {
+			kind = "ai_main"
+		}
+		status, _ := t["status"].(string)
+		teams, _ := t["teams"].([]interface{})
+		for _, team := range teams {
+			if m, ok := team.(map[string]interface{}); ok {
+				if sid, _ := m["student_id"].(string); sid != "" {
+					key := strings.ToUpper(sid)
+					out[key] = append(out[key], chip{ID: id, Name: name, Kind: kind, Status: status})
+				}
+			}
+		}
+	}
+	if h.Qualifiers != nil {
+		if events, err := h.Qualifiers.Events(); err == nil {
+			for _, e := range events {
+				people, err := h.Qualifiers.ParticipantSummaries(e.ID)
+				if err != nil {
+					continue
+				}
+				kind := "qualifier"
+				if e.Kind == qualifier.KindAI {
+					kind = "ai_qualifier"
+				}
+				for sid, p := range people {
+					if p.TestBot {
+						continue
+					}
+					key := strings.ToUpper(sid)
+					out[key] = append(out[key], chip{ID: e.ID, Name: e.Name, Kind: kind, Status: e.Status})
+				}
+			}
+		}
+	}
+	c.Header("Cache-Control", "no-store")
+	c.JSON(200, gin.H{"items": out})
 }
 
 const forgotLimit = 3

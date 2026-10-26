@@ -48,12 +48,11 @@ export function MainTab() {
   const levels = [...new Set(matches.map(([, m]) => Number(m.round_level)))].sort((a, b) => a - b)
   const champion = t?.champion
   const open = (mid?: string) => {
-    setTournamentId(id)
-    if (mid) { void enterMatch(mid) } else { setMatchId(''); navigate('bracket') }
+    if (mid) { void enterMatch(mid, id) } else { setTournamentId(id); setMatchId(''); navigate('bracket') }
   }
   return (
     <div className="space-y-6">
-      <Card icon={<Trophy />} title="Giải chính AI" subtitle="Loại trực tiếp Bo5: các đội đứng đầu vòng loại AI đấu bot của mình trên bàn cờ 9×9"
+      <Card icon={<Trophy />} title="Giải chính AI" subtitle="Loại trực tiếp, thắng 3 trong 5 hiệp: các đội đứng đầu vòng loại AI thi đấu với nhau bằng mô hình của mình"
         action={list.length > 1 ? <Select aria-label="Chọn giải chính AI" value={id} onChange={(e) => setId(e.target.value)} className="w-full sm:w-56">{list.map((x) => <option key={x.tournament_id} value={x.tournament_id}>{x.name}</option>)}</Select> : undefined}>
         {detail.loading && !t ? <Skeleton className="h-24 w-full rounded-xl" /> : (
           <div className="flex flex-wrap items-center justify-between gap-4">

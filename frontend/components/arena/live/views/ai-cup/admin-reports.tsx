@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ClipboardCheck, Eye, EyeOff, Plus, Trophy } from 'lucide-react'
+import { ClipboardCheck, Eye, EyeOff, Plus, Trash2, Trophy } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
-import { invalidate, useResource } from '@/lib/cache'
+import { forget, invalidate, useResource } from '@/lib/cache'
 import { fromLocalInput, shortTime, toLocalInput } from '@/lib/format'
 import { Badge, Button, Card, DataTable, EmptyState, ErrorNote, Field, Select, SkeletonRows, TextArea } from '../../ui'
 import { useLive } from '../../context'
@@ -65,7 +65,7 @@ function ScoreForm({ tid, row, criteria, locked, onDone }: { tid: string; row: a
 }
 
 export function AdminAiReports() {
-  const { run, confirm, busy } = useLive()
+  const { run, confirm, busy, tournamentId, setTournamentId } = useLive()
   const { list, id, setId } = useAiTournaments()
   const detail = useResource<any>(id ? `t:ai:admin-detail:${id}` : null, () => arenaApi.getTournament(id), { ttl: 8_000, refreshMs: 20_000 })
   const data = useResource<any>(id ? `ai:admin-reports:${id}` : null, () => arenaApi.getAiMainReports(id), { ttl: 5_000, refreshMs: 15_000 })
@@ -82,8 +82,18 @@ export function AdminAiReports() {
         <CreateMain onCreated={setId} />
         {!list.length ? <EmptyState title="Chưa có giải chính AI" hint="Tạo giải chính rồi dùng “Chốt đội” ở vòng loại AI để nạp Top K vào giải." /> : (
           <div className="space-y-5">
-            <Select label="Giải chính AI" value={id} onChange={(e) => setId(e.target.value)} className="max-w-md">{list.map((x) => <option key={x.tournament_id} value={x.tournament_id}>{x.name}</option>)}</Select>
-            {detail.data?.round_mode === 'TASK' && <AdminMainTasks tid={id} />}
+            <div className="flex flex-wrap items-end gap-3">
+              <Select label="Giải chính AI" value={id} onChange={(e) => setId(e.target.value)} className="min-w-64 max-w-md flex-1">{list.map((x) => <option key={x.tournament_id} value={x.tournament_id}>{x.name}</option>)}</Select>
+              <Button variant="danger" disabled={busy || !id} aria-label="Xóa giải chính AI" data-testid="ai-main-delete" onClick={async () => {
+                const name = list.find((x) => x.tournament_id === id)?.name || id
+                if (!(await confirm({ title: `Xóa giải chính AI “${name}”?`, message: 'Toàn bộ trận, bài nộp, báo cáo kỹ thuật và điểm chấm của giải này sẽ bị xóa. Vòng loại đã chốt vào giải này sẽ được mở lại để chốt đội lần nữa.', danger: true, confirmLabel: 'Xóa giải' }))) return
+                const gone = id
+                void run(async () => { await arenaApi.deleteTournament(gone); if (tournamentId === gone) setTournamentId('') }, 'Đã xóa giải chính AI', () => {
+                  forget(gone); setId(''); invalidate('tl'); invalidate('t:'); invalidate('rk'); invalidate('mh'); invalidate('elo:main:'); invalidate('profile:'); invalidate('certs'); invalidate('ai:'); invalidate('q'); invalidate('ql')
+                })
+              }}><Trash2 className="size-4" />Xóa giải</Button>
+            </div>
+            {detail.data?.round_mode === 'TASK' && <AdminMainTasks key={id} tid={id} />}
             {data.loading && !data.data ? <SkeletonRows rows={4} /> : data.error && !data.data ? <ErrorNote message={data.error.message} onRetry={() => void data.reload()} /> : (
               <>
                 <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border p-4">

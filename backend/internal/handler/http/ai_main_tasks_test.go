@@ -38,6 +38,10 @@ func TestCurrentTaskSpecFollowsLevelAndRound(t *testing.T) {
 		t.Fatal("hiệp 3 của vòng 1 phải ra đề thứ 3 của vòng 1", spec)
 	}
 	m2 := tour["matches"].(map[string]interface{})["m2"].(map[string]interface{})
+	if currentTaskSpec(tour, m2) != nil {
+		t.Fatal("trận chưa đủ hai đội không được lộ đề của hiệp đầu")
+	}
+	m2["team_a"], m2["team_b"] = map[string]interface{}{"student_id": "A"}, map[string]interface{}{"student_id": "B"}
 	if spec := currentTaskSpec(tour, m2); spec == nil || spec["name"] != "l2 đề 1" {
 		t.Fatal(spec)
 	}

@@ -219,3 +219,28 @@ func TestTasksConfigureLimits(t *testing.T) {
 		t.Fatal("vòng loại thường không có chế độ đề từ kho", normal, err)
 	}
 }
+
+func TestTestBotsInTasksModeHaveSolveCode(t *testing.T) {
+	s, _, _ := tasksFixture(t, map[string]string{}, false)
+	for _, code := range testBotSolve {
+		if !strings.Contains(code, "def solve(task)") || strings.Contains(code, "decide_move") {
+			t.Fatalf("mã bot thử nghiệm của kho đề phải là solve: %q", code)
+		}
+	}
+	if err := s.GenerateTestBots("ai1", 3); err != nil {
+		t.Fatal(err)
+	}
+	people, _ := s.Participants("ai1")
+	n := 0
+	for _, p := range people {
+		if p.TestBot {
+			n++
+			if !strings.Contains(p.Code, "def solve(task)") {
+				t.Fatalf("bot thử nghiệm %s không có solve: %q", p.SID, p.Code)
+			}
+		}
+	}
+	if n != 3 {
+		t.Fatalf("cần 3 bot thử nghiệm, có %d", n)
+	}
+}

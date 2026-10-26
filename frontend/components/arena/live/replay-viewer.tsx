@@ -89,8 +89,8 @@ export function ReplayViewer({ tournamentId, matchId, match, round, onClose, onR
               <p className="text-sm text-muted-foreground">{data.win_reason}</p>
               <div className="mt-2 flex flex-wrap gap-1.5">{data.round_kind === 'TASK' ? <Badge tone="accent">Đề ML</Badge> : decodeRule(data.stage_rule).active.map((c) => <Badge key={c} tone="accent">{c}</Badge>)}</div>
             </div>
-            <SnapshotPanel tournamentId={tournamentId} matchId={matchId} round={round} redName={data.team_a_name || match.team_a?.team_name || 'Đội Đỏ'} blueName={data.team_b_name || match.team_b?.team_name || 'Đội Xanh'} />
-            <RoundLog logs={logs} redName={data.team_a_name || match.team_a?.team_name || 'Đội Đỏ'} blueName={data.team_b_name || match.team_b?.team_name || 'Đội Xanh'} defaultOpen maxHeight="max-h-80" />
+            {data.round_kind !== 'TASK' && <SnapshotPanel tournamentId={tournamentId} matchId={matchId} round={round} redName={data.team_a_name || match.team_a?.team_name || 'Đội Đỏ'} blueName={data.team_b_name || match.team_b?.team_name || 'Đội Xanh'} />}
+            {data.round_kind !== 'TASK' && <RoundLog logs={logs} redName={data.team_a_name || match.team_a?.team_name || 'Đội Đỏ'} blueName={data.team_b_name || match.team_b?.team_name || 'Đội Xanh'} defaultOpen maxHeight="max-h-80" />}
           </div>
         </div>
       )}

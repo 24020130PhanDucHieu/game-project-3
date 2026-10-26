@@ -224,3 +224,84 @@ func TestModelCardValidationAndWindow(t *testing.T) {
 		t.Fatal("model card changed after scoring started")
 	}
 }
+
+func TestReleaseTargetReopensPromotionAfterMainTournamentDeleted(t *testing.T) {
+	s, _, e := aiFixture(t, map[string]string{"a": "x"})
+	e.Status, e.Target = "PROMOTED", "main1"
+	other := Event{ID: "ai2", Kind: KindAI, Status: "PROMOTED", Target: "main2", Seed: "s2"}
+	if err := s.Store.Batch(map[string]interface{}{metaKey(e.ID): e, metaKey(other.ID): other}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.ReleaseTarget("main1"); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := s.Event(e.ID)
+	if got.Status != "FINISHED" || got.Target != "" || got.Seed != "secret" {
+		t.Fatalf("vòng loại phải về FINISHED, bỏ đích, giữ hạt giống: %+v", got)
+	}
+	untouched, _ := s.Event(other.ID)
+	if untouched.Status != "PROMOTED" || untouched.Target != "main2" {
+		t.Fatalf("không được đụng vòng loại của giải khác: %+v", untouched)
+	}
+}
+
+func TestDeleteEventSignalsAndClearsRecords(t *testing.T) {
+	s, _, e := aiFixture(t, map[string]string{"a": "x"})
+	signalled := ""
+	s.OnUpdate = func(id string) { signalled = id }
+	if err := s.Store.Batch(map[string]interface{}{"validation:" + e.ID + ":a": map[string]interface{}{"status": "QUEUED"}}); err != nil {
+		t.Fatal(err)
+	}
+	e.Status = "FINISHED"
+	_ = s.Store.Batch(map[string]interface{}{metaKey(e.ID): e})
+	if err := s.DeleteEvent(e.ID); err != nil {
+		t.Fatal(err)
+	}
+	if signalled != e.ID {
+		t.Fatal("xóa vòng loại phải báo cho các máy khác")
+	}
+	var v map[string]interface{}
+	if s.Store.Get("validation:"+e.ID+":a", &v) == nil {
+		t.Fatal("nhiệm vụ kiểm tra mồ côi vẫn còn")
+	}
+	if _, err := s.Event(e.ID); err == nil {
+		t.Fatal("sự kiện phải biến mất")
+	}
+}
+
+func TestAdminRegisterChecksKindStatusAndDuplicates(t *testing.T) {
+	s, _, e := aiFixture(t, map[string]string{"a": "x"})
+	accounts, err := repositoryAccounts(t)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = accounts.Create("S1", "Đội Một", "pass-1234"); err != nil {
+		t.Fatal(err)
+	}
+	s.Accounts = accounts
+	e.Status = "OPEN"
+	normal := Event{ID: "n1", Kind: "", Status: "OPEN", Rounds: 1, TopK: 8, Seed: "s"}
+	if err = s.Store.Batch(map[string]interface{}{metaKey(e.ID): e, metaKey(normal.ID): normal}); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err = s.AdminRegister(e.ID, "S1", false); err == nil || !strings.Contains(err.Error(), "Giải AI") {
+		t.Fatalf("ghi danh vòng loại AI bằng loại thường phải bị từ chối: %v", err)
+	}
+	if _, _, err = s.AdminRegister(normal.ID, "S1", true); err == nil || !strings.Contains(err.Error(), "thường") {
+		t.Fatalf("ghi danh vòng loại thường bằng loại AI phải bị từ chối: %v", err)
+	}
+	if _, total, err := s.AdminRegister(e.ID, "S1", true); err != nil || total != 2 {
+		t.Fatalf("ghi danh hợp lệ: total=%d err=%v", total, err)
+	}
+	if _, _, err = s.AdminRegister(e.ID, "S1", true); err == nil || !strings.Contains(err.Error(), "đã có") {
+		t.Fatalf("ghi danh trùng phải báo: %v", err)
+	}
+	if _, _, err = s.AdminRegister(e.ID, "NOPE", true); err == nil {
+		t.Fatal("tài khoản không tồn tại phải bị từ chối")
+	}
+	e.Status = "LOCKED"
+	_ = s.Store.Batch(map[string]interface{}{metaKey(e.ID): e})
+	if _, _, err = s.AdminRegister(e.ID, "S1", true); err == nil {
+		t.Fatal("vòng loại đã khóa bài không được ghi danh thêm")
+	}
+}

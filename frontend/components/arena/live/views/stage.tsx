@@ -58,19 +58,35 @@ function LiveSlide({ tournament }: { tournament: any }) {
         ))}
         <div className="flex flex-wrap justify-center gap-2">
           <Badge tone={m.status === 'COMPLETED' ? 'accent' : 'success'}>{m.status === 'COMPLETED' ? `${m.winner_name} thắng` : `Hiệp ${m.current_round_idx}/${m.max_rounds || 5}`}</Badge>
-          {decodeRule(round?.stage_rule).active.map((r) => <Badge key={r} tone="accent">{r}</Badge>)}
+          {round?.round_kind === 'TASK' ? <Badge tone="accent">Đề ML</Badge> : decodeRule(round?.stage_rule).active.map((r) => <Badge key={r} tone="accent">{r}</Badge>)}
         </div>
         {steps[i]?.log && <p className="rounded-2xl bg-card/70 px-5 py-3 text-center text-lg">{steps[i].log}</p>}
       </div>
       <div className="min-h-0">
-        {steps.length ? <Board3D step={steps[i]} prev={i > 0 ? steps[i - 1] : undefined} animate={i > 0} theme={BOARD_THEMES[0]} camera="cinematic" quality="high" /> : null}
+        {round?.round_kind === 'TASK' ? (
+          <div className="flex h-full flex-col items-center justify-center gap-8 text-center">
+            <p className="font-display text-3xl font-black uppercase tracking-[0.2em] text-primary">Hiệp {round.round_number}: {round.task?.name}</p>
+            <div className="grid w-full max-w-3xl grid-cols-2 gap-6">
+              {(['team_a', 'team_b'] as const).map((side) => (
+                <div key={side} className={cn('rounded-3xl border-2 p-6', won === side ? 'glow-gold border-amber-400/60 bg-amber-400/10' : 'border-border bg-card/70')}>
+                  <p className="font-display truncate text-2xl font-extrabold">{m[side]?.team_name}</p>
+                  <p className="font-display gradient-text mt-2 text-7xl font-black tabular-nums">{Number(round.scores?.[side]).toFixed(1)}</p>
+                  <p className="text-sm text-muted-foreground">điểm trên thế cờ ẩn</p>
+                </div>
+              ))}
+            </div>
+            <p className="text-xl text-muted-foreground">{round.win_reason}</p>
+          </div>
+        ) : steps.length ? <Board3D step={steps[i]} prev={i > 0 ? steps[i - 1] : undefined} animate={i > 0} theme={BOARD_THEMES[0]} camera="cinematic" quality="high" /> : null}
       </div>
     </div>
   )
 }
 
-function TopSlide() {
-  const ranking = useRanking()
+function TopSlide({ ai }: { ai?: boolean }) {
+  const normal = useRanking()
+  const aiRanking = useResource<any[]>('rk:ai', () => arenaApi.getRanking('ai').then((r) => (Array.isArray(r) ? r : [])), { ttl: 15_000, refreshMs: 30_000 })
+  const ranking = ai ? aiRanking : normal
   const rows = (ranking.data || []).slice(0, 10)
   return (
     <div className="mx-auto grid h-full max-w-5xl content-center gap-3">
@@ -172,7 +188,7 @@ export function StageView({ onExit }: { onExit: () => void }) {
         {!t ? <p className="text-center text-3xl text-muted-foreground">Chưa có giải đấu.</p>
           : slide.id === 'bracket' ? <BracketSlide tournament={t} />
           : slide.id === 'live' ? <LiveSlide tournament={t} />
-          : slide.id === 'top' ? <TopSlide />
+          : slide.id === 'top' ? <TopSlide ai={t?.track === 'AI'} />
           : <ClockSlide tournament={t} />}
       </main>
       <footer className="relative flex items-center gap-3 px-8 pb-5">

@@ -198,7 +198,7 @@ export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSu
 
       <div>
         <div className="mb-1 flex items-center justify-between">
-          <label className="text-xs font-semibold text-muted-foreground">Mã nguồn bot</label>
+          <label className="text-xs font-semibold text-muted-foreground">{hideValidate ? 'Mã nguồn mô hình (hàm solve)' : 'Mã nguồn bot'}</label>
           <span className="flex gap-1.5" aria-hidden>
             <span className="size-2.5 rounded-full bg-red-400/80" /><span className="size-2.5 rounded-full bg-amber-400/80" /><span className="size-2.5 rounded-full bg-emerald-400/80" />
           </span>
@@ -260,15 +260,15 @@ export function Workbench({ draftKey, ruleId, withExplanation, submitLabel, onSu
         )}
         {renderActions?.({ code, language, explanation, commit })}
       </div>
-      {!canUse && <p className="text-xs text-muted-foreground">Đăng nhập để kiểm tra mã và đấu thử boss.</p>}
+      {!canUse && <p className="text-xs text-muted-foreground">{hideValidate ? 'Đăng nhập để nộp mô hình và chấm thử.' : 'Đăng nhập để kiểm tra mã và đấu thử boss.'}</p>}
       <div className={cn('flex flex-wrap items-center gap-2 rounded-xl border px-3 py-2 text-xs', online ? 'border-border bg-muted/30 text-muted-foreground' : 'border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-200')}>
         {online ? <HardDrive className="size-3.5" /> : <CloudOff className="size-3.5" />}
         <span className="min-w-0 flex-1">
-          {!online ? (offline.status === 'ready' ? 'Đang mất mạng — “Kiểm tra mã” và “Đấu thử” chạy ngay trên máy bằng engine offline (chỉ Python).' : 'Đang mất mạng và chưa tải gói offline — hãy tải khi có mạng để luyện tập offline.')
-            : offline.status === 'ready' ? `Gói chạy offline đã sẵn sàng${offline.version ? ` (engine ${offline.version})` : ''}: mất mạng vẫn kiểm tra mã và đấu thử boss được.`
+          {!online ? (offline.status === 'ready' ? hideValidate ? 'Đang mất mạng — “Chấm thử” chạy ngay trên máy bằng engine offline (chỉ Python).' : 'Đang mất mạng — “Kiểm tra mã” và “Đấu thử” chạy ngay trên máy bằng engine offline (chỉ Python).' : 'Đang mất mạng và chưa tải gói offline — hãy tải khi có mạng để luyện tập offline.')
+            : offline.status === 'ready' ? `Gói chạy offline đã sẵn sàng${offline.version ? ` (engine ${offline.version})` : ''}: mất mạng vẫn ${hideValidate ? 'chấm thử đề' : 'kiểm tra mã và đấu thử boss'} được.`
             : offline.status === 'loading' ? 'Đang tải gói chạy offline (~10 MB, chỉ tải một lần)…'
             : offline.status === 'error' ? `Chưa tải được gói offline: ${offline.error}`
-            : 'Tải trước gói chạy offline để vẫn kiểm tra mã và đấu thử boss khi mất mạng.'}
+            : hideValidate ? 'Tải trước gói chạy offline để vẫn chấm thử đề khi mất mạng.' : 'Tải trước gói chạy offline để vẫn kiểm tra mã và đấu thử boss khi mất mạng.'}
         </span>
         {online && offline.status !== 'ready' && <Button size="sm" variant="secondary" loading={offline.status === 'loading'} onClick={() => void offlineEngine.prepare()}><Download className="size-3.5" />Tải gói offline</Button>}
       </div>

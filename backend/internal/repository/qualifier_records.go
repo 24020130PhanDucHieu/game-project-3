@@ -387,11 +387,11 @@ func (s *QualifierRecords) DeleteQualifier(id string) error {
 		return s.failed
 	}
 	if s.db != nil {
-		_, err := s.db.Exec(`DELETE FROM arena_qualifier_records WHERE key=$1 OR key LIKE $2 OR key LIKE $3 OR key LIKE $4 OR key=$5`,
-			"event:"+id, "participant:"+id+":%", "submission:"+id+":%", "job:"+id+":%", "aitasks:"+id)
+		_, err := s.db.Exec(`DELETE FROM arena_qualifier_records WHERE key=$1 OR key LIKE $2 OR key LIKE $3 OR key LIKE $4 OR key=$5 OR key LIKE $6`,
+			"event:"+id, "participant:"+id+":%", "submission:"+id+":%", "job:"+id+":%", "aitasks:"+id, "validation:"+id+":%")
 		return err
 	}
-	prefixes := []string{"event:" + id, "participant:" + id + ":", "submission:" + id + ":", "job:" + id + ":", "aitasks:" + id}
+	prefixes := []string{"event:" + id, "participant:" + id + ":", "submission:" + id + ":", "job:" + id + ":", "aitasks:" + id, "validation:" + id + ":"}
 	for key := range s.items {
 		matches := false
 		for _, prefix := range prefixes {
@@ -428,5 +428,34 @@ func (s *QualifierRecords) DeleteKey(key string) error {
 	delete(s.items, key)
 	sum := sha256.Sum256([]byte(key))
 	_ = os.Remove(filepath.Join(s.dir, hex.EncodeToString(sum[:])+".record"))
+	return nil
+}
+
+// DeletePrefixes xóa mọi bản ghi có khóa bắt đầu bằng một trong các tiền tố (dọn dữ liệu của một giải đã xóa).
+func (s *QualifierRecords) DeletePrefixes(prefixes ...string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.views = map[string]qualifierView{}
+	if s.failed != nil {
+		return s.failed
+	}
+	if s.db != nil {
+		for _, prefix := range prefixes {
+			if _, err := s.db.Exec(`DELETE FROM arena_qualifier_records WHERE key LIKE $1`, strings.NewReplacer(`\`, `\`, `%`, `\%`, `_`, `\_`).Replace(prefix)+"%"); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	for key := range s.items {
+		for _, prefix := range prefixes {
+			if strings.HasPrefix(key, prefix) {
+				delete(s.items, key)
+				sum := sha256.Sum256([]byte(key))
+				_ = os.Remove(filepath.Join(s.dir, hex.EncodeToString(sum[:])+".record"))
+				break
+			}
+		}
+	}
 	return nil
 }

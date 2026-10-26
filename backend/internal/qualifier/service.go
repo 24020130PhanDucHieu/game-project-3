@@ -157,7 +157,39 @@ func (s *Service) DeleteEvent(id string) error {
 		return errors.New("Không thể xóa vòng loại đang thi đấu. Vui lòng tạm dừng trước khi xóa.")
 	}
 	s.mu.Unlock()
-	return s.Store.DeleteQualifier(id)
+	if err := s.Store.DeleteQualifier(id); err != nil {
+		return err
+	}
+	s.signal(id) // báo cho mọi máy đang mở trang tải lại danh sách
+	return nil
+}
+
+// ReleaseTarget gỡ liên kết các vòng loại đã chốt vào một giải vừa bị xóa: đưa PROMOTED về FINISHED để chốt đội lại được.
+func (s *Service) ReleaseTarget(target string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	events, err := s.Events()
+	if err != nil {
+		return err
+	}
+	for _, e := range events {
+		if e.Target != target {
+			continue
+		}
+		stored, err := s.Event(e.ID)
+		if err != nil {
+			continue
+		}
+		stored.Target = ""
+		if stored.Status == "PROMOTED" {
+			stored.Status = "FINISHED"
+		}
+		if err := s.Store.Batch(map[string]interface{}{metaKey(e.ID): stored}); err != nil {
+			return err
+		}
+		s.signal(e.ID)
+	}
+	return nil
 }
 func (s *Service) Participants(id string) (map[string]Participant, error) {
 	rows, err := s.Store.List("participant:" + id + ":")

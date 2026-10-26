@@ -74,7 +74,13 @@ func (h *QualifierHandler) Register(c *gin.Context) {
 	c.JSON(200, gin.H{"status": "SUCCESS"})
 }
 
-func qualifierError(c *gin.Context, err error) { c.JSON(400, gin.H{"detail": err.Error()}) }
+func qualifierError(c *gin.Context, err error) {
+	if errors.Is(err, sql.ErrNoRows) {
+		c.JSON(404, gin.H{"detail": "Không tìm thấy vòng loại này (có thể đã bị xóa)."})
+		return
+	}
+	c.JSON(400, gin.H{"detail": err.Error()})
+}
 func (h *QualifierHandler) List(c *gin.Context) {
 	all, err := h.Service.Events()
 	if err != nil {

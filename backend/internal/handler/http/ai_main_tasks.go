@@ -303,7 +303,8 @@ func (h *AIMainTaskHandler) MatchTask(c *gin.Context) {
 		cached = raw
 		h.data.put(key, raw)
 	}
-	c.Header("Cache-Control", "private, max-age=120")
+	// Cùng một địa chỉ trả dữ liệu của hiệp hiện tại; đổi hiệp thì nội dung đổi nên không được đệm.
+	c.Header("Cache-Control", "no-store")
 	c.Header("Content-Disposition", `attachment; filename="de-hiep-`+strconv.Itoa(level)+`-`+strconv.Itoa(index+1)+`.json"`)
 	c.Data(http.StatusOK, "application/json; charset=utf-8", cached)
 }

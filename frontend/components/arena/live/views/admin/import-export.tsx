@@ -78,9 +78,9 @@ function ImportCard() {
               setRows(readRows(await file.text()))
             }} />
           </label>
-          <Select label="Ghi danh luôn vào giải (tùy chọn)" value={target} onChange={(e) => setTarget(e.target.value)} className="w-64">
+          <Select label="Ghi danh luôn vào giải thường (tùy chọn; giải chính AI chỉ nhận đội từ vòng loại)" value={target} onChange={(e) => setTarget(e.target.value)} className="w-64">
             <option value="">Không ghi danh</option>
-            {tournaments.data?.map((t) => <option key={t.tournament_id} value={t.tournament_id}>{t.name}{t.tournament_id === tournamentId ? ' (đang chọn)' : ''}</option>)}
+            {tournaments.data?.filter((t) => t.track !== 'AI').map((t) => <option key={t.tournament_id} value={t.tournament_id}>{t.name} · {t.num_teams} chỗ{t.tournament_id === tournamentId ? ' (đang chọn)' : ''}</option>)}
           </Select>
           <Button variant="ghost" size="sm" onClick={() => downloadCsv('mau-nhap-doi.csv', ['student_id', 'team_name', 'password', 'email'], [['24020001', 'Alpha Bot', '', 'alpha@gmail.com'], ['24020002', 'Beta Bot', 'matkhau123', 'beta@gmail.com']])}><FileSpreadsheet className="size-4" />Tải file mẫu</Button>
         </div>

@@ -18,6 +18,8 @@ type TournamentService struct {
 	locksMu      sync.Mutex
 	locks        map[string]*sync.Mutex
 	OnRoundEvent func(string, string, string)
+	// OnDeleted chạy sau khi một giải bị xóa để dọn dữ liệu đi kèm (báo cáo, chứng nhận, liên kết vòng loại).
+	OnDeleted func(id string)
 }
 
 func NewTournamentService(repo repository.TournamentRepository, adapter adapter.BotRunnerAdapter) *TournamentService {
@@ -164,7 +166,13 @@ func (s *TournamentService) DeleteTournament(id string) error {
 	if err := s.repo.Delete(id); err != nil {
 		return err
 	}
-	return s.repo.SaveToDisk()
+	if err := s.repo.SaveToDisk(); err != nil {
+		return err
+	}
+	if s.OnDeleted != nil {
+		s.OnDeleted(id)
+	}
+	return nil
 }
 
 // CreateTournament tạo giải mới; track "AI" đánh dấu giải chính của Giải AI (xếp hạng, ELO tách riêng giải thường).
@@ -223,6 +231,11 @@ func (s *TournamentService) MutateTournament(tournamentID, action string, params
 	}
 	if track, _ := current["track"].(string); track == "AI" && (action == "add-team" || action == "quick-fill") {
 		return nil, errors.New("Giải chính AI chỉ nhận đội đã qua vòng loại AI. Hãy chốt đội từ vòng loại AI.")
+	}
+	if action == "add-team" {
+		if qid, _ := current["qualifier_id"].(string); qid != "" {
+			return nil, errors.New("Giải này đã nhận đội từ vòng loại nên không ghi danh thêm bằng tay được.")
+		}
 	}
 	if current["round_mode"] == "TASK" && (action == "submit-code" || action == "submit-draft" || action == "play-round" || action == "demo-fill") {
 		if plan, _ := current["ai_task_plan"].(map[string]interface{}); plan == nil || plan["locked"] != true {
