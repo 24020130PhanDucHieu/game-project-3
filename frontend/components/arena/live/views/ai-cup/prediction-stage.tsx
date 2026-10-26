@@ -17,9 +17,11 @@ export function PredictionStage({ step, index, total, side, truth, prediction, e
   const host = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
   const [tabVisible, setTabVisible] = useState(true)
-  const [mode, setMode] = useState<'2d' | '3d'>('3d')
-  const [unsupported, setUnsupported] = useState(false)
   const reduced = useReducedMotion()
+  // Người bật "giảm chuyển động" mặc định xem 2D nhưng vẫn tự chọn 3D được.
+  const [mode, setMode] = useState<'2d' | '3d'>(reduced ? '2d' : '3d')
+  const [unsupported, setUnsupported] = useState(false)
+  useEffect(() => { if (reduced) setMode('2d') }, [reduced])
   const fallback = useCallback(() => { setUnsupported(true); setMode('2d') }, [])
   useEffect(() => {
     const el = host.current
@@ -32,12 +34,12 @@ export function PredictionStage({ step, index, total, side, truth, prediction, e
     document.addEventListener('visibilitychange', visibility)
     return () => { observer.disconnect(); document.removeEventListener('visibilitychange', visibility) }
   }, [])
-  const is3d = mode === '3d' && !unsupported && !reduced
+  const is3d = mode === '3d' && !unsupported
   const matched = truth === prediction
   return <section ref={host} className="overflow-hidden rounded-3xl border border-primary/30 bg-gradient-to-br from-primary/10 via-card to-card shadow-lg" data-testid="prediction-stage">
     <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4 sm:px-6">
       <div><p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-primary"><ScanLine className="size-4" />Phòng quan sát mô hình</p><h3 className="mt-1 font-display text-lg font-extrabold">Một thế cờ · Hai góc nhìn</h3></div>
-      <div className="flex gap-2"><Button size="sm" variant={is3d ? 'secondary' : 'primary'} onClick={() => setMode('2d')} aria-pressed={!is3d}><Layers className="size-3.5" />2D</Button><Button size="sm" variant={is3d ? 'primary' : 'secondary'} disabled={unsupported || reduced} onClick={() => setMode('3d')} aria-pressed={is3d}><Box className="size-3.5" />3D</Button></div>
+      <div className="flex gap-2"><Button size="sm" variant={is3d ? 'secondary' : 'primary'} onClick={() => setMode('2d')} aria-pressed={!is3d}><Layers className="size-3.5" />2D</Button><Button size="sm" variant={is3d ? 'primary' : 'secondary'} onClick={() => { setUnsupported(false); setMode('3d') }} aria-pressed={is3d}><Box className="size-3.5" />3D</Button></div>
     </header>
     <div className="grid items-center gap-5 p-4 sm:p-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(240px,1fr)]">
       <div className="min-w-0 rounded-2xl border border-border bg-background/60 p-2">
