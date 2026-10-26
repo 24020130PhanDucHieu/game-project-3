@@ -79,12 +79,16 @@ export function Select({ label, className, children, value, defaultValue, onChan
       if (!menu.current?.contains(t) && !button.current?.contains(t)) setOpen(false)
     }
     const onMove = () => place()
-    // Cuộn trang (ngoài chính menu) thì đóng menu thay vì dựng lại vị trí liên tục; tránh giật khi cuộn.
-    const onScroll = (e: Event) => { if (menu.current && e.target instanceof Node && menu.current.contains(e.target)) return; setOpen(false) }
+    // Cuộn trang thì đặt lại vị trí menu nhưng gộp vào một lần mỗi khung hình (không dựng lại theo từng sự kiện cuộn).
+    let frame = 0
+    const onScroll = (e: Event) => {
+      if (menu.current && e.target instanceof Node && menu.current.contains(e.target)) return
+      if (!frame) frame = requestAnimationFrame(() => { frame = 0; place() })
+    }
     document.addEventListener('mousedown', onDown)
     window.addEventListener('resize', onMove)
     window.addEventListener('scroll', onScroll, true)
-    return () => { document.removeEventListener('mousedown', onDown); window.removeEventListener('resize', onMove); window.removeEventListener('scroll', onScroll, true) }
+    return () => { cancelAnimationFrame(frame); document.removeEventListener('mousedown', onDown); window.removeEventListener('resize', onMove); window.removeEventListener('scroll', onScroll, true) }
   }, [open])
   useEffect(() => {
     if (open) {

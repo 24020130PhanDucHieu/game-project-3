@@ -283,6 +283,16 @@ class TemplateFilesTests(unittest.TestCase):
         bad = taskcheck.check('def solve(task): return [0]', view, lambda code, task: [0])
         self.assertIn('đúng', bad['error'])
 
+    def test_public_spec_has_plain_language_fields_for_every_builtin(self):
+        from app.aitasks import catalog
+        for entry in catalog.builtin_entries():
+            spec = catalog.public_spec(dict(entry, entry_id=entry['id']), 1)
+            self.assertTrue(spec['plain'] and spec['metric_plain'] and spec['label_help'], entry['id'])
+            self.assertNotIn('{', spec['plain'] + spec['metric_plain'] + ''.join(spec['label_help']), 'còn chỗ trống chưa điền: ' + entry['id'])
+            self.assertNotIn('counter', spec['plain'])
+            self.assertEqual(spec['chance'], 0.0 if spec['kind'] == 'reg' else round(100.0 / len(spec['classes']), 1))
+            self.assertIn('statement', spec)  # giữ tương thích với bản cũ
+
     def test_diverged_regression_does_not_crash_grading(self):
         from app.aitasks import metrics
         preds, problem = metrics.clean_predictions('reg', [1e300, -1e300, 5.0], 3)

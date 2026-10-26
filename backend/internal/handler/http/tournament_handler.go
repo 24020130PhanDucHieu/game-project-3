@@ -524,16 +524,27 @@ func (h *TournamentHandler) GetEloHistory(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"detail": "Thiếu mã sinh viên."})
 		return
 	}
-	team, ok := ComputeMainElo(filterTrack(h.service.GetAllTournaments(), trackParam(c)))[sid]
+	track := trackParam(c)
+	formula := eloFormula(track)
+	team, ok := ComputeMainElo(filterTrack(h.service.GetAllTournaments(), track))[sid]
 	if !ok {
-		c.JSON(http.StatusOK, gin.H{"student_id": sid, "start": mainEloStart, "rating": mainEloStart, "played": 0, "wins": 0, "events": []EloEvent{}})
+		c.JSON(http.StatusOK, gin.H{"student_id": sid, "start": mainEloStart, "rating": mainEloStart, "played": 0, "wins": 0, "k_factor": mainEloK, "formula": formula, "events": []EloEvent{}})
 		return
 	}
 	events := team.History
 	if events == nil {
 		events = []EloEvent{}
 	}
-	c.JSON(http.StatusOK, gin.H{"student_id": sid, "team_name": team.TeamName, "start": mainEloStart, "rating": round1(team.Rating), "played": team.Played, "wins": team.Wins, "k_factor": mainEloK, "events": events})
+	c.JSON(http.StatusOK, gin.H{"student_id": sid, "team_name": team.TeamName, "start": mainEloStart, "rating": round1(team.Rating), "played": team.Played, "wins": team.Wins, "k_factor": mainEloK, "formula": formula, "events": events})
+}
+
+// eloFormula mô tả công thức để giao diện giải thích cách tính mà không phải ghi cứng số trong mã giao diện.
+func eloFormula(track string) gin.H {
+	f := gin.H{"base": 400, "k": mainEloK, "start": mainEloStart, "zero_sum": true}
+	if track == "AI" {
+		f["margin"] = gin.H{"0": marginFor(0), "1": marginFor(1), "2": marginFor(2)} // theo số hiệp đội thua giành được
+	}
+	return f
 }
 
 // currentTaskSpec trả phần công khai (không hạt giống) của đề ở hiệp hiện tại của một trận, nếu giải dùng hiệp đề ML và đã khóa đề.

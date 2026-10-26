@@ -25,6 +25,36 @@ TEMPLATE_STATEMENT = {
 }
 
 
+# Lời giải thích dễ hiểu cho học sinh (không dùng tên chính sách hay mã khóa): hiện trong thẻ đề ở giao diện.
+TEMPLATE_PLAIN = {
+    "winner": {
+        "plain": "Cho một thế cờ giữa ván, đoán xem bên đang đến lượt đi sẽ THẮNG hay THUA ván này.",
+        "labels": ["0 = bên đang đi sẽ thua", "1 = bên đang đi sẽ thắng"],
+        "metric": "Điểm = phần trăm thế cờ bạn đoán đúng. Đoán mò (tung đồng xu) được khoảng 50 điểm.",
+    },
+    "nextcard": {
+        "plain": "Cho một thế cờ, đoán xem đối thủ (một bot luôn chơi theo một thói quen cố định, thỉnh thoảng đi ngẫu nhiên) sẽ ra lá bài nào.",
+        "labels": ["0 = Búa", "1 = Giấy", "2 = Kéo"],
+        "metric": "Điểm = phần trăm thế cờ bạn đoán đúng lá bài. Đoán mò được khoảng 33 điểm; học được thói quen của bot thì cao hơn nhiều.",
+    },
+    "plies_left": {
+        "plain": "Cho một thế cờ, đoán xem còn bao nhiêu nước đi nữa thì ván kết thúc (con số càng chính xác càng tốt).",
+        "labels": ["Số thực: số nước còn lại, tối đa {cap}"],
+        "metric": "Điểm đo mức độ gần đúng của các con số bạn dự đoán (thang 0–100, tính từ R²). 0 nghĩa là không hơn việc lúc nào cũng đoán số trung bình; càng gần 100 càng chuẩn.",
+    },
+    "material": {
+        "plain": "Cho một thế cờ, đoán xem sau {horizon} nước nữa bên đang đi hơn hay kém đối thủ bao nhiêu quân.",
+        "labels": ["Số thực = số quân bên đi trừ số quân đối thủ. Ví dụ +2: bên đi hơn 2 quân; −1: kém 1 quân"],
+        "metric": "Điểm đo mức độ gần đúng của con số bạn đoán (thang 0–100, tính từ R²). 0 nghĩa là không hơn việc lúc nào cũng đoán số trung bình.",
+    },
+    "capture_next": {
+        "plain": "Cho một thế cờ, đoán xem trong lượt này bên đang đi có ăn được quân của đối thủ hay không.",
+        "labels": ["0 = không ăn quân", "1 = có ăn quân"],
+        "metric": "Điểm = trung bình phần trăm đoán đúng của từng nhóm (có ăn và không ăn), nên đoán một đáp án cho tất cả chỉ được khoảng 50 điểm.",
+    },
+}
+
+
 def _entry(id, name, template, difficulty, tags, **params):
     return {"id": id, "name": name, "template": template, "params": params, "statement": "", "tags": tags, "difficulty": difficulty, "enabled": True, "builtin": True}
 
@@ -135,6 +165,24 @@ def public_spec(item, n=None):
         "n": n if n is not None else item.get("n"), "id": item["entry_id"] if "entry_id" in item else item["id"], "name": item["name"], "template": item["template"],
         "difficulty": item["difficulty"], "rule_id": p["rule_id"], "kind": meta["kind"], "classes": meta["classes"], "metric": meta["metric"],
         "n_train": p["n_train"], "time_s": p["time_s"], "title": meta["title"], "statement": statement_for(item),
+        **plain_spec(item),
+    }
+
+
+def plain_spec(item):
+    """Phần giải thích dễ hiểu của đề (bổ sung cho `statement` kỹ thuật, không thay thế để giữ tương thích)."""
+    meta = T.TEMPLATES[item["template"]]
+    p = item["params"]
+    info = TEMPLATE_PLAIN[item["template"]]
+    fill = {"cap": p["cap"], "horizon": p["horizon"]}
+    classes = meta["classes"]
+    return {
+        "plain": info["plain"].format(**fill),
+        "label_help": [x.format(**fill) for x in info["labels"]],
+        "metric_plain": info["metric"],
+        "chance": round(100.0 / len(classes), 1) if classes else 0.0,
+        "note": item.get("statement") or "",
+        "policy_hint": "Các ván mẫu do máy chơi (có yếu tố ngẫu nhiên) để sinh dữ liệu, nên có sai số không tránh khỏi: không ai đạt 100 điểm.",
     }
 
 

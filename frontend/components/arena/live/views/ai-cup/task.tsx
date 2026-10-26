@@ -6,6 +6,7 @@ import { arenaApi } from '@/lib/api-client'
 import { Badge, Button, Card, EmptyState, Skeleton } from '../../ui'
 import { AI_TEMPLATES } from './templates'
 import { TASK_TEMPLATES } from './task-templates'
+import { JsonNote, TaskCard } from './task-card'
 import { FAMILY_NAME } from './common'
 
 export function CopyCode({ code }: { code: string }) {
@@ -122,27 +123,55 @@ function TasksTaskTab({ eventId, p }: { eventId: string; p: any }) {
   const tasks: any[] = p.tasks || []
   return (
     <div className="space-y-6">
-      <Card icon={<BookOpenCheck />} title="Đề bài: học từ thế cờ" subtitle="Máy sinh thế cờ từ chính engine bàn cờ 9×9 rồi gán nhãn theo kết quả ván thật; bạn viết hàm đoán nhãn cho thế cờ chưa thấy">
+      <Card icon={<BookOpenCheck />} title="Cuộc thi này làm gì?" subtitle="Dạy một mô hình nhỏ “đọc” thế cờ trên bàn cờ 9×9, rồi để máy chấm xem nó đoán đúng đến đâu">
         <div className="space-y-4 text-sm leading-relaxed">
-          <p>Mỗi đề là một bài toán học máy nhỏ về bàn cờ (đoán bên thắng, đoán lá bài kế tiếp, đoán số quân, đoán nước đi có ăn quân...). Bạn nộp <strong>một tệp Python</strong> có hàm <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">solve(task)</code> dùng chung cho mọi đề: hàm nhận dữ liệu huấn luyện có nhãn và các thế cờ cần đoán, trả về danh sách dự đoán.</p>
-          <p>Điểm mỗi đề trên thang 0–100. Điểm công khai tính trên một tập thế cờ cố định; điểm riêng tư (kết quả chính thức) tính trên thế cờ mới theo từng lượt. Ban tổ chức bốc ngẫu nhiên {p.task_count} đề từ kho; mỗi đề tối đa vài giây, tổng bộ đề tối đa {p.limits.suite_seconds} giây.</p>
+          <p>Mỗi <strong>đề</strong> là một câu hỏi về thế cờ (ví dụ: “bên nào sẽ thắng?”). Bạn được xem nhiều thế cờ đã có <strong>đáp án</strong> để học, sau đó mô hình của bạn phải đoán đáp án cho những thế cờ <strong>chưa từng thấy</strong>. Ban tổ chức đã chọn {p.task_count} đề cho vòng loại này; mỗi đề chấm trên thang 0–100.</p>
+          <ol className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 [&>*]:min-w-0" data-testid="task-steps">
+            {[
+              ['1. Đọc đề', 'Xem từng đề bên dưới: đề hỏi gì, ví dụ thật, chấm điểm thế nào.'],
+              ['2. Viết hàm solve', 'Một hàm Python nhận dữ liệu có đáp án, trả về danh sách dự đoán. Có mã mẫu ở cuối trang.'],
+              ['3. Chấm thử trên máy', 'Ở tab “Nộp mô hình”, bấm “Chấm thử”: không tốn lượt, xem ngay thế cờ nào đoán sai.'],
+              ['4. Nộp bài', 'Máy chấm chạy trên thế cờ ẩn. Điểm riêng tư là điểm chính thức xếp hạng.'],
+            ].map(([title, body]) => <li key={title} className="rounded-xl border border-border p-3"><p className="font-semibold">{title}</p><p className="mt-1 text-xs text-muted-foreground">{body}</p></li>)}
+          </ol>
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 [&>*]:min-w-0">
+            <div className="rounded-xl border border-border bg-muted/20 p-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-primary">Bạn nộp gì?</p>
+              <p className="mt-1 text-xs text-muted-foreground">Một tệp Python có hàm <code className="rounded bg-muted px-1 font-mono">solve(task)</code>, trả về <strong>danh sách</strong> dự đoán, mỗi thế cờ cần đoán một giá trị, đúng thứ tự:</p>
+              <pre className="mt-2 overflow-x-auto rounded-lg bg-background p-3 font-mono text-[12px] leading-relaxed">{`def solve(task):
+    dem = len(task["test"]["X"])      # số thế cờ cần đoán
+    # task["train"]["X"], task["train"]["y"]: thế cờ + đáp án để học
+    return [0] * dem                   # ví dụ: đoán 0 cho tất cả`}</pre>
+              <p className="mt-2 text-xs text-muted-foreground">Đề phân loại: trả số nguyên (0, 1, 2… theo bảng nhãn của đề). Đề đoán số: trả số thực.</p>
+            </div>
+            <div className="space-y-2">
+              <JsonNote />
+              <details className="rounded-xl border border-border bg-muted/20 p-3 text-xs" data-testid="data-dictionary">
+                <summary className="cursor-pointer text-sm font-semibold">Ý nghĩa các trường dữ liệu của mỗi thế cờ</summary>
+                <table className="mt-2 w-full table-fixed text-left break-words">
+                  <tbody className="divide-y divide-border">
+                    {[
+                      ['b', 'Bàn cờ dạng chuỗi 81 ký tự (9 hàng × 9 ô, hàng trước). Chữ HOA = quân của bên đang đi (R Búa, P Bao, S Kéo, J Joker), chữ thường = quân đối thủ, ? = quân bị sương mù che, # = vật cản, . = ô trống.'],
+                      ['s', 'Bên đang đến lượt: 0 = Đỏ, 1 = Xanh.'],
+                      ['t', 'Số thứ tự lượt hiện tại của ván.'],
+                      ['c', 'Số quân Búa, Bao, Kéo còn lại của bên đang đi, ví dụ [3, 2, 3].'],
+                      ['e', 'Số quân Búa, Bao, Kéo của đối thủ; là null khi có sương mù (không nhìn thấy).'],
+                      ['h, g', 'Các lá bài gần nhất của bên đang đi (h) và của đối thủ (g), ví dụ "RPS" = Búa rồi Bao rồi Kéo.'],
+                    ].map(([k, v]) => <tr key={k}><td className="w-16 py-1.5 pr-2 align-top font-mono font-bold text-primary">{k}</td><td className="py-1.5 text-muted-foreground">{v}</td></tr>)}
+                  </tbody>
+                </table>
+              </details>
+            </div>
+          </div>
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-amber-900 dark:text-amber-100">
             <p className="flex items-center gap-2 font-semibold"><ShieldAlert className="size-4" />Quy tắc môi trường chấm</p>
-            <p className="mt-1">Python thuần: chỉ import {p.limits.modules.join(', ')}. Có thư viện <code className="font-mono text-xs">nnlite</code> với lan truyền xuôi/ngược và Adam/SGD để huấn luyện mạng nhỏ ngay trong <code className="font-mono text-xs">solve</code> (không có NumPy). Không dùng <code className="font-mono text-xs">class</code>, tên bắt đầu bằng gạch dưới (kể cả <code className="font-mono text-xs">for _ in</code>) bị cấm. Có thể huấn luyện ngoài máy rồi nhúng trọng số (mã ≤ {Math.round(p.limits.code_bytes / 1024)} KB).</p>
+            <p className="mt-1">Python thuần: chỉ import {p.limits.modules.join(', ')}. Có thư viện <code className="font-mono text-xs">nnlite</code> để huấn luyện mạng nơ-ron nhỏ ngay trong <code className="font-mono text-xs">solve</code> (không có NumPy). Không dùng <code className="font-mono text-xs">class</code>, tên bắt đầu bằng gạch dưới (kể cả <code className="font-mono text-xs">for _ in</code>) bị cấm. Mã tối đa {Math.round(p.limits.code_bytes / 1024)} KB; mỗi đề chạy tối đa vài giây, cả bộ đề tối đa {p.limits.suite_seconds} giây.</p>
           </div>
         </div>
       </Card>
       {!p.tasks_locked && !tasks.length ? (
         <Card><EmptyState icon={<Lock className="size-6" />} title="Ban tổ chức chưa công bố bộ đề" hint="Bộ đề được bốc ngẫu nhiên từ kho và khóa trước khi nhận bài. Hãy quay lại sau." /></Card>
-      ) : tasks.map((t, i) => (
-        <Card key={i} icon={<Brain />} title={`Đề ${i + 1}: ${t.name}`} subtitle={`${t.title} · luật ${t.rule_id} · ${t.n_train} mẫu huấn luyện · ${t.time_s} giây`}
-          action={<Badge tone={t.difficulty === 1 ? 'success' : t.difficulty === 2 ? 'info' : 'warning'}>{DIFFICULTY[t.difficulty]}</Badge>}>
-          <div className="space-y-3">
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground" data-testid="task-statement">{t.statement}</p>
-            <a href={arenaApi.aiCupTaskDataUrl(eventId, i + 1)} download className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90" data-testid={`task-data-${i + 1}`}><Download className="size-4" />Tải dữ liệu huấn luyện đề {i + 1} (JSON)</a>
-          </div>
-        </Card>
-      ))}
+      ) : tasks.map((t, i) => <TaskCard key={i} eventId={eventId} index={i} t={t} />)}
       <Card icon={<Sparkles />} title="Mã mẫu" subtitle="Nạp bằng nút ở tab Nộp mô hình hoặc chép ở đây">
         <div className="space-y-5">{TASK_TEMPLATES.map((t) => <div key={t.id}><p className="mb-2 text-sm font-semibold">{t.label}</p><CopyCode code={t.code} /></div>)}</div>
       </Card>

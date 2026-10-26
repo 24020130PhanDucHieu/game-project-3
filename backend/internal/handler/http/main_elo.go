@@ -13,7 +13,57 @@ import (
 const (
 	mainEloStart = 1200.0
 	mainEloK     = 32.0
+	// Giải AI: thắng đậm được thưởng thêm theo tỉ số hiệp (cả hai đội cùng hệ số nên tổng ELO vẫn bằng 0).
+	aiMarginStep = 0.15
 )
+
+// marginFor trả hệ số thưởng cho trận Bo5 của Giải AI theo số hiệp đội thua giành được: 3–0 → 1,3; 3–1 → 1,15; 3–2 → 1,0.
+func marginFor(loserRounds int) float64 {
+	switch {
+	case loserRounds <= 0:
+		return 1 + 2*aiMarginStep
+	case loserRounds == 1:
+		return 1 + aiMarginStep
+	}
+	return 1
+}
+
+// EloRound: điểm hai đội ở một hiệp đề ML của trận (nhìn từ phía đội đang xem).
+type EloRound struct {
+	N        int     `json:"n"`
+	Task     string  `json:"task_name"`
+	MyScore  float64 `json:"my_score"`
+	OppScore float64 `json:"opp_score"`
+	Won      bool    `json:"won"`
+	Tie      bool    `json:"tie,omitempty"`
+}
+
+// eloRounds đọc điểm từng hiệp đề ML từ lịch sử hiệp của trận, nhìn từ phía `side` (team_a hoặc team_b).
+func eloRounds(history []interface{}, side string) []EloRound {
+	other := "team_b"
+	if side == "team_b" {
+		other = "team_a"
+	}
+	var out []EloRound
+	for i, raw := range history {
+		r, ok := raw.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		scores, _ := r["scores"].(map[string]interface{})
+		if scores == nil {
+			continue
+		}
+		n := int(num(r["round_number"]))
+		if n == 0 {
+			n = i + 1
+		}
+		task, _ := r["task"].(map[string]interface{})
+		tie, _ := r["tie"].(bool)
+		out = append(out, EloRound{N: n, Task: str(task, "name"), MyScore: round1(num(scores[side])), OppScore: round1(num(scores[other])), Won: r["winner"] == side, Tie: tie})
+	}
+	return out
+}
 
 // EloEvent: một trận làm thay đổi ELO của một đội.
 type EloEvent struct {
@@ -30,6 +80,11 @@ type EloEvent struct {
 	After          float64 `json:"after"`
 	Delta          float64 `json:"delta"`
 	Expected       float64 `json:"expected"` // xác suất thắng dự kiến trước trận
+	// Chi tiết để giải thích cách tính: ELO đối thủ trước trận, hệ số K, hệ số thưởng tỉ số, điểm từng hiệp (hiệp đề ML).
+	OpponentBefore float64    `json:"opponent_before"`
+	K              float64    `json:"k"`
+	Margin         float64    `json:"margin"`
+	Rounds         []EloRound `json:"rounds,omitempty"`
 }
 
 // tournamentTrack: "AI" cho giải chính của Giải AI, rỗng cho giải thường.
@@ -73,6 +128,8 @@ type eloMatch struct {
 	at                     float64
 	a, b                   map[string]interface{}
 	winner                 string
+	ai                     bool
+	history                []interface{}
 }
 
 func num(v interface{}) float64 {
@@ -112,6 +169,7 @@ func ComputeMainElo(all map[string]interface{}) map[string]*MainEloTeam {
 			continue
 		}
 		created := num(t["created_at"])
+		aiTrack := tournamentTrack(t) == "AI"
 		// Đội đã đăng ký giải nhưng chưa đấu vẫn có mặt ở bảng với 1200.
 		tms, _ := t["teams"].([]interface{})
 		for _, r := range tms {
@@ -136,11 +194,12 @@ func ComputeMainElo(all map[string]interface{}) map[string]*MainEloTeam {
 					at = num(last["timestamp"])
 				}
 			}
+			history, _ := m["rounds_history"].([]interface{})
 			level := int(num(m["round_level"]))
 			if at == 0 { // kết quả do ban tổ chức xử: xếp theo thời điểm tạo giải và vòng đấu
 				at = created + float64(level)
 			}
-			list = append(list, eloMatch{tid: tid, tname: str(t, "name"), mid: mid, round: str(m, "round_name"), level: level, at: at, a: a, b: b, winner: m["winner"].(string)})
+			list = append(list, eloMatch{tid: tid, tname: str(t, "name"), mid: mid, round: str(m, "round_name"), level: level, at: at, a: a, b: b, winner: m["winner"].(string), ai: aiTrack, history: history})
 		}
 	}
 	sort.Slice(list, func(i, j int) bool {
@@ -160,19 +219,28 @@ func ComputeMainElo(all map[string]interface{}) map[string]*MainEloTeam {
 		if m.winner == "team_a" {
 			sa, sb = 1.0, 0.0
 		}
-		da, db := mainEloK*(sa-ea), mainEloK*(sb-(1-ea))
 		wa, wb := int(num(m.a["rounds_won"])), int(num(m.b["rounds_won"]))
-		ev := func(me, opp *MainEloTeam, before, delta, exp float64, won bool, mine, theirs int) EloEvent {
+		margin := 1.0
+		if m.ai {
+			if sa == 1 {
+				margin = marginFor(wb)
+			} else {
+				margin = marginFor(wa)
+			}
+		}
+		da, db := mainEloK*margin*(sa-ea), mainEloK*margin*(sb-(1-ea))
+		ev := func(me, opp *MainEloTeam, before, delta, exp float64, won bool, mine, theirs int, side string) EloEvent {
 			res := "loss"
 			if won {
 				res = "win"
 			}
 			return EloEvent{TournamentID: m.tid, TournamentName: m.tname, MatchID: m.mid, RoundName: m.round, At: m.at,
 				OpponentID: opp.StudentID, OpponentName: opp.TeamName, Result: res, Score: strconv.Itoa(mine) + ":" + strconv.Itoa(theirs),
-				Before: round1(before), After: round1(before + delta), Delta: round1(delta), Expected: math.Round(exp*1000) / 1000}
+				Before: round1(before), After: round1(before + delta), Delta: round1(delta), Expected: math.Round(exp*1000) / 1000,
+				OpponentBefore: round1(opp.Rating), K: mainEloK, Margin: margin, Rounds: eloRounds(m.history, side)}
 		}
-		ta.History = append(ta.History, ev(ta, tb, ta.Rating, da, ea, sa == 1, wa, wb))
-		tb.History = append(tb.History, ev(tb, ta, tb.Rating, db, 1-ea, sb == 1, wb, wa))
+		ta.History = append(ta.History, ev(ta, tb, ta.Rating, da, ea, sa == 1, wa, wb, "team_a"))
+		tb.History = append(tb.History, ev(tb, ta, tb.Rating, db, 1-ea, sb == 1, wb, wa, "team_b"))
 		ta.Rating += da
 		tb.Rating += db
 		ta.Played++

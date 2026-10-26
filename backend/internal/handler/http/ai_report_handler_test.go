@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http/httptest"
 	"strings"
 	"sync"
@@ -145,7 +146,8 @@ func TestMainEloIsIndependentPerTrack(t *testing.T) {
 	if len(a) != 2 || a["Z"] == nil || a["Y"] != nil {
 		t.Fatalf("Giải AI lẫn đội của giải thường: %v", a)
 	}
-	if n["X"].Rating != 1216 || a["X"].Rating != 1216 {
+	// Cùng thắng một trận nhưng giải AI có hệ số thưởng tỉ số (đội thua 0 hiệp → ×1,3); cả hai đều xuất phát từ 1200.
+	if n["X"].Rating != 1216 || math.Abs(a["X"].Rating-1220.8) > 1e-9 {
 		t.Fatalf("mỗi đường đua phải bắt đầu lại từ 1200: %v %v", n["X"].Rating, a["X"].Rating)
 	}
 }

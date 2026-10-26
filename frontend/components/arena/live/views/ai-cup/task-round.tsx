@@ -7,6 +7,7 @@ import { offlineEngine } from '@/lib/offline-engine'
 import { cn } from '@/lib/utils'
 import { Badge, Button, Card } from '../../ui'
 import { ScoreBar, fmt } from './common'
+import { JsonNote } from './task-card'
 import { CheckVisual, LossChart, visualFrom, type CheckVisualData } from './check-visual'
 
 const DIFFICULTY = ['', 'Dễ', 'Vừa', 'Khó']
@@ -66,11 +67,15 @@ export function RoundTaskCard({ tournamentId, matchId, task, round, canDownload 
     <Card icon={<Brain />} title={`Đề của hiệp ${round}: ${task.name}`} subtitle={`${task.title} · luật ${task.rule_id} · ${task.n_train} mẫu huấn luyện · ${task.time_s} giây`}
       action={<Badge tone={task.difficulty === 1 ? 'success' : task.difficulty === 2 ? 'info' : 'warning'}>{DIFFICULTY[task.difficulty]}</Badge>}>
       <div className="space-y-3" data-testid="round-task">
-        <details className="rounded-xl border border-border bg-muted/30 p-3 text-sm" open>
-          <summary className="cursor-pointer font-semibold">Đề bài</summary>
+        {task.plain && <p className="text-sm leading-relaxed" data-testid="round-task-plain">{task.plain}</p>}
+        {Array.isArray(task.label_help) && task.label_help.length > 0 && <ul className="flex flex-wrap gap-1.5">{task.label_help.map((l: string) => <li key={l}><Badge tone="neutral">{l}</Badge></li>)}</ul>}
+        {task.metric_plain && <p className="rounded-xl bg-primary/5 px-3 py-2 text-xs text-muted-foreground"><strong className="text-foreground">Chấm điểm: </strong>{task.metric_plain}</p>}
+        <details className="rounded-xl border border-border bg-muted/30 p-3 text-sm">
+          <summary className="cursor-pointer font-semibold">Đề bài kỹ thuật đầy đủ</summary>
           <p className="mt-2 whitespace-pre-wrap leading-relaxed text-muted-foreground" data-testid="round-task-statement">{task.statement}</p>
         </details>
-        {canDownload && <Button variant="secondary" loading={busy} onClick={() => void download()} data-testid="round-task-download"><Download className="size-4" />Tải dữ liệu huấn luyện (JSON)</Button>}
+        <JsonNote />
+        {canDownload && <Button variant="secondary" size="sm" loading={busy} onClick={() => void download()} data-testid="round-task-download"><Download className="size-4" />Tải tệp JSON (không bắt buộc)</Button>}
         {error && <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300">{error}</p>}
       </div>
     </Card>

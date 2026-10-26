@@ -139,6 +139,9 @@ export type MainEloEvent = {
   tournament_id: string; tournament_name: string; match_id: string; round_name: string; at: number
   opponent_id: string; opponent_name: string; result: 'win' | 'loss'; score: string
   before: number; after: number; delta: number; expected: number
+  /** Chi tiết cách tính (có ở các trận mới): ELO đối thủ trước trận, hệ số K, hệ số thưởng tỉ số, điểm từng hiệp đề ML. */
+  opponent_before?: number; k?: number; margin?: number
+  rounds?: { n: number; task_name: string; my_score: number; opp_score: number; won: boolean; tie?: boolean }[]
 }
 
 /** Nguồn dẫn của một câu trả lời AI: đoạn trích nguyên văn từ tài liệu hoặc dữ liệu thật của giải. */
@@ -678,7 +681,7 @@ export const arenaApi = {
   },
 
   async getMainEloHistory(studentId: string, track: '' | 'ai' = '') {
-    return apiRequest<{ student_id: string; team_name?: string; start: number; rating: number; played: number; wins: number; k_factor?: number; events: MainEloEvent[] }>(`/ranking/elo-history?student_id=${encodeURIComponent(studentId)}${track ? `&track=${track}` : ''}`)
+    return apiRequest<{ student_id: string; team_name?: string; start: number; rating: number; played: number; wins: number; k_factor?: number; formula?: { base: number; k: number; start: number; zero_sum?: boolean; margin?: Record<string, number> }; events: MainEloEvent[] }>(`/ranking/elo-history?student_id=${encodeURIComponent(studentId)}${track ? `&track=${track}` : ''}`)
   },
 
   async askAi(question: string, tournamentId?: string) {

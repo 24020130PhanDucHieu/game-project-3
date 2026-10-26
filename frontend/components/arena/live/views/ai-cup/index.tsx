@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Ban, BookOpenCheck, BrainCircuit, CalendarClock, Check, CheckCircle2, Circle, ClipboardList, Cpu, FileText, Flag, ListChecks, ListOrdered, LogIn, Medal, Swords, Timer, Trophy, Users } from 'lucide-react'
+import { Ban, BookOpenCheck, BrainCircuit, CalendarClock, Check, CheckCircle2, Circle, ClipboardList, Cpu, FileText, Flag, LineChart, ListChecks, ListOrdered, LogIn, Medal, Swords, Timer, Trophy, Users } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { invalidate, useResource } from '@/lib/cache'
 import { cn } from '@/lib/utils'
@@ -14,6 +14,7 @@ import { TaskTab } from './task'
 import { SubmitTab } from './submit'
 import { BoardTab, MyResults } from './board'
 import { MainTab } from './main'
+import { EloTab } from './elo'
 import { ReportTab } from './report'
 import { AiBadges } from './badges'
 
@@ -84,7 +85,7 @@ function TeamSteps({ tasksMode, tasksReady, declared, hasModel, locked, open, go
   )
 }
 
-type Section = 'overview' | 'task' | 'submit' | 'board' | 'main' | 'report'
+type Section = 'overview' | 'task' | 'submit' | 'board' | 'elo' | 'main' | 'report'
 
 export function AiCupView() {
   const { aiEvents, aiEventId, setAiEventId, role, session, scope, run, openAuth, navigate } = useLive()
@@ -113,6 +114,7 @@ export function AiCupView() {
     { id: 'task', label: 'Đề bài & dữ liệu', icon: <BookOpenCheck className="size-4" /> },
     ...(role === 'TEAM' ? [{ id: 'submit' as const, label: 'Nộp mô hình', icon: <ClipboardList className="size-4" /> }] : []),
     { id: 'board', label: 'Bảng điểm', icon: <ListOrdered className="size-4" /> },
+    { id: 'elo', label: 'ELO & lịch sử', icon: <LineChart className="size-4" /> },
     { id: 'main', label: 'Giải chính AI', icon: <Trophy className="size-4" /> },
     { id: 'report', label: 'Báo cáo kỹ thuật', icon: <FileText className="size-4" /> },
   ]
@@ -211,7 +213,7 @@ export function AiCupView() {
           <Card icon={<Cpu />} title="Giải AI vận hành thế nào" subtitle="Cùng cơ chế vòng loại → giải chính như giải thường, nhưng thi bằng mô hình học máy">
             <ol className="grid gap-4 text-sm sm:grid-cols-2 xl:grid-cols-4">
               {(problem.data?.mode === 'TASKS' ? [
-                ['1. Đọc đề, tải dữ liệu', 'Mỗi đề là một bài toán học máy nhỏ về bàn cờ 9×9. Tải dữ liệu có đáp án của từng đề để học.'],
+                ['1. Đọc đề, tải dữ liệu', 'Mỗi đề là một câu hỏi về thế cờ 9×9 (ví dụ: bên nào sẽ thắng?). Xem ví dụ thật ở từng đề; dữ liệu để học đã có sẵn trong hàm solve.'],
                 ['2. Huấn luyện & chấm thử', 'Viết hàm solve, bấm “Chấm thử” để thấy điểm ước lượng và thế cờ đoán đúng/sai ngay trên máy bạn.'],
                 ['3. Nộp trước hạn', 'Nộp Python thuần (tối đa 64 KB). Bản hợp lệ cuối cùng được khóa khi hết hạn.'],
                 ['4. Chấm trên thế cờ ẩn', `Máy chủ chấm ${rounds || 'nhiều'} lượt trên thế cờ bạn chưa từng thấy. ${event.top_k} đội đứng đầu vào giải chính (đấu loại trực tiếp, thắng 3 trong 5 hiệp) và nộp báo cáo kỹ thuật để giám khảo chấm (Giải Kỹ thuật).`],
@@ -240,6 +242,7 @@ export function AiCupView() {
         <SubmitTab eventId={aiEventId} event={event} problem={problem.data} detail={detail} mine={mine.data} blocked={blocked} onMineChange={() => void mine.reload()} />
       )}
       {event && section === 'board' && <BoardTab eventId={aiEventId} event={event} mine={mine.data} mineId={session.student_id} tasks={problem.data?.mode === 'TASKS' ? problem.data.tasks || [] : undefined} />}
+      {event && section === 'elo' && <EloTab mine={mine.data} />}
       {event && section === 'main' && <MainTab />}
       {event && section === 'report' && <ReportTab />}
     </div>
