@@ -307,3 +307,9 @@ html[data-fx='lite'] .animate-float, html[data-fx='lite'] .dot-live { animation:
 html[data-fx='lite'] .aurora-blob, html[data-fx='lite'] .aurora-blob-slow { display: none; }
 html[data-fx='lite'] body::before { display: none; }
 @media (prefers-reduced-motion: reduce) { .shimmer::after, .dot-live { animation: none; } }
+
+/* Đường biểu đồ tự vẽ ra dần (pathLength=1). */
+.draw-line { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw-line 1.3s ease-out .15s forwards; }
+@keyframes draw-line { to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) { .draw-line { animation: none; stroke-dashoffset: 0; } }
+html[data-fx='lite'] .draw-line { animation: none; stroke-dashoffset: 0; }
