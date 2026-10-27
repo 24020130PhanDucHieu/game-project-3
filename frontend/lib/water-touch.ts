@@ -17,7 +17,7 @@ export function installWaterTouch() {
   const find = (e: Event) => ((e.target as Element | null)?.closest?.('.water') as HTMLElement | null)
 
   const ring = (x: number, y: number, size: number, small = false) => {
-    if (live >= 3) return
+    if (live >= 5) return
     live++
     const el = document.createElement('span')
     el.className = small ? 'water-ring water-ring-small' : 'water-ring'
@@ -43,7 +43,7 @@ export function installWaterTouch() {
     if (el && el.matches(':disabled')) { setHot(null); return }
     if (el !== hot) {
       setHot(el)
-      if (el) ring(e.clientX, e.clientY, 54, true) // chạm mặt nước khi vừa đưa chuột vào
+      if (el) ring(e.clientX, e.clientY, 70, true) // chạm mặt nước khi vừa đưa chuột vào
     }
     if (!el) return
     const x = e.clientX, y = e.clientY
@@ -64,9 +64,11 @@ export function installWaterTouch() {
     if (!motionEnabled()) return
     const el = find(e)
     if (!el || el.matches(':disabled')) return
-    ring(e.clientX, e.clientY, 120)
-    window.setTimeout(() => ring(e.clientX, e.clientY, 76, true), 110)
-    el.animate?.([{ scale: '1' }, { scale: '.965' }, { scale: '1.025' }, { scale: '1' }], { duration: 420, easing: 'cubic-bezier(.2,.8,.2,1)' })
+    ring(e.clientX, e.clientY, 170)
+    window.setTimeout(() => ring(e.clientX, e.clientY, 110), 90)
+    window.setTimeout(() => ring(e.clientX, e.clientY, 64, true), 180)
+    // Nhún kiểu thạch: ép xuống, bật quá đà, rồi lắng lại.
+    el.animate?.([{ scale: '1' }, { scale: '.9' }, { scale: '1.08' }, { scale: '.98' }, { scale: '1' }], { duration: 560, easing: 'cubic-bezier(.3,.7,.3,1)' })
   }
 
   document.addEventListener('pointermove', onMove, { passive: true })

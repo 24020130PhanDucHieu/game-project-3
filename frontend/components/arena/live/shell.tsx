@@ -123,26 +123,28 @@ function SidebarBody({ onPick }: { onPick: () => void }) {
     if (!nav) return
     const measure = () => {
       const active = nav.querySelector<HTMLElement>('[aria-current="page"]')
-      if (active) setIndicator({ top: active.offsetTop, height: active.offsetHeight })
+      // Toạ độ so với khung thanh bên (không phải nav) vì dải cong phải tràn ra tận mép phải, đè lên đường viền.
+      if (active) setIndicator({ top: nav.offsetTop + active.offsetTop - nav.scrollTop, height: active.offsetHeight })
     }
     measure()
     const observer = new ResizeObserver(measure)
     observer.observe(nav)
     nav.querySelectorAll('button').forEach((el) => observer.observe(el))
-    return () => observer.disconnect()
+    nav.addEventListener('scroll', measure, { passive: true })
+    return () => { observer.disconnect(); nav.removeEventListener('scroll', measure) }
   }, [view, role])
   return (
-    <div className="flex h-full flex-col">
+    <div className="relative isolate flex h-full flex-col">
+      {indicator && <span aria-hidden data-testid="nav-curve" className="nav-curve" style={{ height: indicator.height, transform: `translateY(${indicator.top}px)` }} />}
       <div className="flex h-20 items-center border-b border-border px-5"><Brand /></div>
       <nav ref={navRef} className="relative isolate flex-1 space-y-1 overflow-y-auto px-3 py-5" aria-label="Điều hướng chính">
-        {indicator && <span aria-hidden className="fx-nav-indicator pointer-events-none absolute left-3 right-3 top-0 -z-10 rounded-xl bg-gradient-to-r from-primary/25 via-primary/10 to-transparent shadow-[inset_3px_0_0_var(--primary)]" style={{ height: indicator.height, transform: `translateY(${indicator.top}px)` }} />}
         <p className="mb-2 px-3 text-[11px] font-bold tracking-widest text-muted-foreground">THI ĐẤU</p>
         {NAV.filter((item) => !item.adminOnly || role === 'ADMIN').map((item) => {
           const Icon = item.icon
           const active = view === item.id
           return (
             <button key={item.id} aria-current={active ? 'page' : undefined} onClick={() => { navigate(item.id); onPick() }}
-              className={cn('flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm transition-colors', active ? 'font-bold text-foreground' : 'text-muted-foreground hover:translate-x-0.5 hover:bg-muted/70 hover:text-foreground')}>
+              className={cn('water relative flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm transition-colors', active ? 'font-bold text-foreground' : 'text-muted-foreground hover:translate-x-0.5 hover:bg-muted/70 hover:text-foreground')}>
               <span className={cn('grid size-7 shrink-0 place-items-center rounded-lg transition-colors', active ? 'icon-tile text-primary' : 'text-muted-foreground')}><Icon className="size-[18px]" aria-hidden /></span>
               <span className="min-w-0 flex-1 truncate">{item.label}</span>
               {(item.id === 'qualifier' || item.id === 'aicup') && outbox.length > 0 && <Badge tone="warning">{outbox.length}</Badge>}
