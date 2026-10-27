@@ -473,3 +473,36 @@ html[data-fx] .cube-drag-zone .billboard-cube.fx-tilt {
 @media (prefers-reduced-motion: reduce) {
   .cube-drag-zone .billboard-cube.fx-tilt { transform: translateZ(calc(var(--cube-size) * -.5)) rotateX(var(--cube-x,-12deg)) rotateY(var(--cube-y,-24deg)) !important; transition: none; }
 }
+
+/* Tournament globe: rotating meridians, readable foreground and cross-faded colors. */
+.orb-scene { width: 100%; max-width: 520px; margin: auto; padding: 28px 0 8px; }
+.orb-interaction { width: min(100%, 360px); margin: auto; touch-action: pan-y pinch-zoom; cursor: grab; }
+.advert-orb { position: relative; width: 100%; aspect-ratio: 1; overflow: hidden; border-radius: 50%; isolation: isolate; background: #302065; box-shadow: 0 0 55px -18px #a78bfa70, 0 28px 50px -25px #08051dcc; border: 1px solid #ffffff30; }
+.orb-palette { position: absolute; inset: 0; opacity: 0; transition: opacity 1.2s ease-in-out; }
+.orb-palette-active { opacity: 1; }
+.orb-shading { position: absolute; inset: 0; pointer-events: none; border-radius: inherit; background: radial-gradient(ellipse at 26% 16%,#ffffff75,transparent 36%),radial-gradient(ellipse at 45% 42%,transparent 25%,#0b062a60 72%,#060316d9 100%); box-shadow: inset -18px -24px 45px #0c062c80, inset 5px 5px 16px #ffffff45; }
+.orb-longitudes { position: absolute; inset: 1px; border-radius: 50%; perspective: 800px; transform: rotateZ(-18deg) rotateX(var(--cube-x,0deg)) rotateY(var(--cube-y,0deg)); }
+.orb-spin { width: 100%; height: 100%; transform-style: preserve-3d; animation: orb-revolve 26s linear infinite; }
+.orb-meridian { position: absolute; inset: 0; border: 1px solid #ffffff38; border-radius: 50%; box-shadow: 0 0 10px #ffffff08; }
+@keyframes orb-revolve { to { transform: rotateY(360deg); } }
+.orb-copy { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; width: 100%; padding: 16%; color: white; text-align: center; text-shadow: 0 2px 12px #090321aa; background: radial-gradient(ellipse at center,#110b304d,transparent 72%); animation: orb-copy-in .55s ease-out both; border-radius: 50%; }
+.orb-copy:focus-visible { outline: 3px solid white; outline-offset: -7px; }
+.orb-eyebrow { max-width: 100%; border: 1px solid #ffffff30; border-radius: 30px; background: #14082b50; padding: 5px 10px; font-size: 10px; line-height: 1.4; font-weight: 800; letter-spacing: .1em; }
+.orb-title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; font-size: clamp(20px,2.3vw,30px); line-height: 1.15; font-weight: 900; overflow-wrap: anywhere; }
+.orb-description { display: grid; gap: 4px; font-size: 12px; line-height: 1.5; font-weight: 600; color: #fffffff0; }
+.orb-description > span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.orb-action { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; }
+.orb-shadow { width: 66%; height: 26px; margin: 15px auto 4px; border-radius: 50%; background: radial-gradient(ellipse,#a78bfa38,transparent 70%); }
+@keyframes orb-copy-in { from { opacity: 0; translate: 0 8px; } to { opacity: 1; translate: 0 0; } }
+.orb-scene:hover .orb-spin, .orb-scene:focus-within .orb-spin, .orb-interaction[data-dragging] .orb-spin { animation-play-state: paused; }
+.orb-interaction[data-dragging] .orb-copy { cursor: grabbing; }
+@media (max-width: 640px) { .orb-scene { padding-top: 12px; } .orb-copy { gap: 8px; padding: 15%; } .orb-title { font-size: 23px; } .orb-description { font-size: 11px; } .orb-action { font-size: 10px; } }
+html[data-fx='lite'] .orb-spin, html[data-fx='off'] .orb-spin { animation: none; }
+html[data-fx='off'] .orb-copy { animation: none; }
+html[data-fx='off'] .orb-palette { transition: none; }
+@media (prefers-reduced-motion: reduce) { .orb-spin, .orb-copy { animation: none; } .orb-palette { transition: none; } }
+
+.orb-copy.orb-copy-curved { padding: 0; display: block; background: radial-gradient(ellipse at center,#110b3038,transparent 72%); }
+.orb-curved-advert { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 2px 3px #10062985); }
+.orb-ink-eyebrow { letter-spacing: .7px; }
+.orb-ink-title { letter-spacing: -.5px; }
