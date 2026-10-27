@@ -23,6 +23,7 @@ import { GuideView } from './views/guide'
 import { AdminView } from './views/admin'
 import { AlertsToggle, AlertsWatcher } from './alerts'
 import { StageView } from './views/stage'
+import { installWaterTouch } from '@/lib/water-touch'
 
 const NAV: { id: ViewId; label: string; icon: LucideIcon; adminOnly?: boolean }[] = [
   { id: 'profile', label: 'Hồ sơ đội', icon: UserRound },
@@ -207,6 +208,7 @@ export function Shell() {
     window.addEventListener('hashchange', read)
     return () => window.removeEventListener('hashchange', read)
   }, [])
+  useEffect(() => installWaterTouch(), [])
   useEffect(() => { releaseOrphanLock(); window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }) }, [view])
   useEffect(() => {
     if (!drawer) return
@@ -248,6 +250,15 @@ export function Shell() {
         </main>
         <AiLauncher />
       </div>
+      {/* Bộ lọc gợn nước dùng cho lớp nền banner khi rê chuột (chỉ tính khi được áp dụng). */}
+      <svg width="0" height="0" aria-hidden="true" focusable="false" style={{ position: 'absolute' }}>
+        <filter id="arena-water" x="-5%" y="-5%" width="110%" height="110%" colorInterpolationFilters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.012 0.02" numOctaves="2" seed="4" result="noise">
+            <animate attributeName="baseFrequency" dur="8s" values="0.012 0.02;0.02 0.013;0.012 0.02" repeatCount="indefinite" />
+          </feTurbulence>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="16" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </svg>
       <AlertsWatcher />
       {stage && <StageView onExit={() => { history.replaceState(null, '', window.location.pathname + window.location.search); setStage(false) }} />}
       <AuthModal

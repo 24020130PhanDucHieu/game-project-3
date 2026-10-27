@@ -65,6 +65,7 @@ export function Button({ variant = 'primary', size = 'md', loading, className, c
         'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
         size === 'sm' ? 'h-8 px-3 text-xs' : 'h-10 px-4 text-sm',
         styles,
+        'water relative',
         variant === 'primary' && 'fx-magnet',
         className,
       )}
@@ -266,7 +267,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, className }: {
             listRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus({ preventScroll: true })
           }}
           className={cn(
-            'relative z-10 inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+            'water relative z-10 inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
             value === tab.id ? (box ? 'text-primary-foreground' : 'bg-brand text-primary-foreground shadow-md shadow-primary/25') : 'text-muted-foreground hover:bg-card/70 hover:text-foreground',
           )}
         >

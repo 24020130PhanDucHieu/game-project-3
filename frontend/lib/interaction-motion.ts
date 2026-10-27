@@ -20,7 +20,7 @@ export function usePointerMotion<T extends HTMLElement>(mode: 'light' | 'tilt' |
       bounds = null
       window.removeEventListener('blur', reset)
       el.removeAttribute('data-pointer')
-      for (const key of ['--tilt-x', '--tilt-y', '--magnet-x', '--magnet-y']) el.style.removeProperty(key)
+      for (const key of ['--par-x', '--par-y', '--tilt-x', '--tilt-y', '--magnet-x', '--magnet-y']) el.style.removeProperty(key)
     }
     const enter = (event: PointerEvent) => {
       if (event.pointerType !== 'mouse' || !motionEnabled() || !window.matchMedia('(hover: hover) and (pointer: fine)').matches || el.matches(':disabled')) return
@@ -40,6 +40,8 @@ export function usePointerMotion<T extends HTMLElement>(mode: 'light' | 'tilt' |
         if (mode === 'tilt') {
           el.style.setProperty('--tilt-x', `${(0.5 - y) * 5}deg`)
           el.style.setProperty('--tilt-y', `${(x - 0.5) * 7}deg`)
+          el.style.setProperty('--par-x', String((x - 0.5) * 2))
+          el.style.setProperty('--par-y', String((y - 0.5) * 2))
         }
         if (mode === 'magnet') {
           el.style.setProperty('--magnet-x', `${(x - 0.5) * 5}px`)
