@@ -39,14 +39,21 @@ export function useFx(): [FxMode, (m: FxMode) => void] {
  * Chạy một thay đổi giao diện (đổi màn hình, đổi tab) với hiệu ứng chuyển mờ bằng View Transitions API.
  * Không hỗ trợ, giảm chuyển động hoặc chế độ off/lite thì chạy thẳng (không trễ). `dir` quyết định hướng trượt.
  */
+let activeTransition: { skipTransition: () => void } | null = null
+let transitionGeneration = 0
 export function withTransition(update: () => void, dir: 1 | -1 | 0 = 0) {
-  const doc = typeof document !== 'undefined' ? (document as Document & { startViewTransition?: (cb: () => void) => { finished: Promise<void> } }) : null
+  const generation = ++transitionGeneration
+  const doc = typeof document !== 'undefined' ? (document as Document & { startViewTransition?: (cb: () => void) => { finished: Promise<void>; skipTransition: () => void; ready: Promise<void> } }) : null
   const reduced = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-  if (!doc?.startViewTransition || reduced || getFx() !== 'full') { update(); return }
+  if (!doc?.startViewTransition || reduced || getFx() !== 'full') { activeTransition?.skipTransition(); update(); return }
   const root = doc.documentElement
   root.dataset.vt = dir > 0 ? 'next' : dir < 0 ? 'prev' : 'fade'
-  const done = () => { delete root.dataset.vt }
+  activeTransition?.skipTransition()
   try {
-    doc.startViewTransition(() => { flushSync(update) }).finished.then(done, done)
-  } catch { done(); update() }
+    const transition = doc.startViewTransition(() => { if (generation === transitionGeneration) flushSync(update) })
+    activeTransition = transition
+    const done = () => { if (activeTransition === transition) { activeTransition = null; delete root.dataset.vt } }
+    transition.ready.catch(() => {})
+    transition.finished.then(done, done)
+  } catch { activeTransition = null; delete root.dataset.vt; update() }
 }

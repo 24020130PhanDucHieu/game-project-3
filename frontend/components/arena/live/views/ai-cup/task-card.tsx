@@ -1,13 +1,15 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ChevronDown, Download, Info, Target } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
 import { decodeRule } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Badge, ErrorNote, Skeleton } from '../../ui'
-import { MiniBoard } from './check-visual'
+import { MiniBoard, boardToStep } from './check-visual'
 import { ProblemExplanation } from './problem-explanation'
+import { Board } from '../../board'
+import { BOARD_THEMES } from '../../board-themes'
 
 const DIFFICULTY = ['', 'Dễ', 'Vừa', 'Khó']
 
@@ -59,6 +61,9 @@ export function TaskCard({ eventId, index, t }: { eventId: string; index: number
   const [examples, setExamples] = useState<Example[] | null>(exampleCache.get(cacheKey) ?? null)
   const [error, setError] = useState('')
   const [full, setFull] = useState(false)
+  const [selected, setSelected] = useState<number | null>(null)
+  const chosen = selected !== null ? examples?.[selected] : null
+  const chosenStep = useMemo(() => chosen ? boardToStep(chosen.b, chosen.s) : null, [chosen])
   const rules = decodeRule(t.rule_id).active
   const regression = t.kind === 'reg'
 
@@ -115,7 +120,7 @@ export function TaskCard({ eventId, index, t }: { eventId: string; index: number
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" data-testid="task-examples">
                 {examples.map((e, i) => (
                   <figure key={i} className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-muted/20 p-3 transition-transform hover:-translate-y-0.5">
-                    <MiniBoard b={e.b} s={e.s} title={`Ví dụ ${i + 1}`} />
+                    <MiniBoard b={e.b} s={e.s} title={`Mở ví dụ ${i + 1}`} onClick={() => setSelected(selected === i ? null : i)} />
                     <figcaption className="text-center text-xs"><span className="block text-muted-foreground">Bên {e.s === 0 ? 'Đỏ' : 'Xanh'} đang đi</span><strong className="leading-snug">{e.label}</strong></figcaption>
                   </figure>
                 ))}
@@ -124,6 +129,7 @@ export function TaskCard({ eventId, index, t }: { eventId: string; index: number
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" aria-busy="true">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-44 rounded-2xl" />)}</div>
             )}
           </div>
+          {chosen && chosenStep && <section className="lesson-stage rounded-2xl border border-primary/25 bg-primary/5 p-4" data-testid="task-example-detail"><div className="mb-3 flex items-center justify-between gap-3"><h4 className="text-sm font-bold">Ví dụ {(selected ?? 0) + 1} · {chosen.label}</h4><button type="button" onClick={() => setSelected(null)} className="shrink-0 text-xs font-semibold text-primary">Đóng minh họa</button></div><div className="mx-auto max-w-sm"><Board step={chosenStep} theme={BOARD_THEMES[0]} size="md" /></div><p className="mt-3 text-xs leading-relaxed text-muted-foreground">Trong mẫu này bên {chosen.s === 0 ? 'Đỏ' : 'Xanh'} đang đi. Các chữ HOA trong dữ liệu là quân bên này; chữ thường là quân đối thủ. Nhãn ở trên là đáp án có sẵn để học, không phải dự đoán của mô hình.</p></section>}
         </section>
 
         <aside className="space-y-4">

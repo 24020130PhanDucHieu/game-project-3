@@ -365,3 +365,50 @@ html[data-fx='off'] .toast-ok svg path:last-child { stroke-dashoffset: 0; }
 @keyframes snap-fade { from { opacity: 0; } to { opacity: 1; } }
 .snap-fade { animation: snap-fade .45s ease-out both; }
 @media (prefers-reduced-motion: reduce) { .snap-fade { animation: none; } }
+
+/* Tương tác theo chuột: một frame cho phần tử đang tương tác, không chạy nền. */
+.fx-light { position: relative; isolation: isolate; }
+.fx-light::after { content: ''; position: absolute; inset: 0; z-index: 2; border-radius: inherit; pointer-events: none; opacity: 0; background: radial-gradient(380px circle at var(--pointer-x,50%) var(--pointer-y,50%), color-mix(in oklab,var(--primary) 14%,transparent), transparent 72%); transition: opacity .25s ease; }
+.fx-light[data-pointer='active']::after { opacity: 1; }
+.fx-tilt { transform: perspective(1200px) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg)); transform-style: preserve-3d; transition: transform .38s cubic-bezier(.2,.8,.2,1); }
+.fx-tilt[data-pointer='active'] { transition-duration: .12s; }
+.fx-depth { transform: translateZ(20px); }
+.fx-magnet { translate: var(--magnet-x,0px) var(--magnet-y,0px); }
+.fx-nav-indicator { transition: transform .28s cubic-bezier(.2,.8,.2,1), height .24s ease; }
+.fx-screen-enter { animation: fx-screen-in .24s ease-out both; }
+@keyframes fx-screen-in { from { opacity: .4; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.arena-content { view-transition-name: arena-content; }
+html[data-vt]::view-transition-old(root), html[data-vt]::view-transition-new(root) { animation: none; }
+::view-transition-old(arena-content) { animation: fx-content-out .16s ease-in both; }
+::view-transition-new(arena-content) { animation: fx-content-in .25s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes fx-content-out { to { opacity: 0; transform: translateY(-5px); } }
+@keyframes fx-content-in { from { opacity: 0; transform: translateY(9px); } }
+.fx-stagger > * { animation: fx-screen-in .32s ease-out both; }
+.fx-stagger > :nth-child(2) { animation-delay: 35ms; }
+.fx-stagger > :nth-child(3) { animation-delay: 70ms; }
+.fx-stagger > :nth-child(4) { animation-delay: 105ms; }
+.fx-dialog-backdrop { animation: fx-overlay-in .18s ease-out both; }
+@keyframes fx-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+.lesson-stage { animation: fx-screen-in .24s ease-out both; }
+.lesson-token { transition: transform .22s ease, background .22s ease, border-color .22s ease, box-shadow .22s ease; }
+.lesson-token[aria-pressed='true'] { transform: translateY(-3px); box-shadow: 0 8px 24px -14px var(--primary); }
+.lesson-connector { stroke-dasharray: 6 7; stroke-dashoffset: 26; animation: lesson-connect .65s ease-out forwards; }
+@keyframes lesson-connect { to { stroke-dashoffset: 0; } }
+@media (hover: none), (pointer: coarse) {
+  .fx-tilt { transform: none; }
+  .fx-magnet { translate: none; }
+  .fx-light::after { display: none; }
+}
+html[data-fx='lite'] .fx-tilt, html[data-fx='off'] .fx-tilt { transform: none; }
+html[data-fx='lite'] .fx-magnet, html[data-fx='off'] .fx-magnet { translate: none; }
+html[data-fx='lite'] .fx-light::after, html[data-fx='off'] .fx-light::after { display: none; }
+html[data-fx='lite'] .fx-stagger > *, html[data-fx='lite'] .lesson-connector { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .fx-tilt, .fx-depth { transform: none !important; }
+  .fx-magnet { translate: none !important; }
+  .fx-light::after { display: none; }
+  .fx-nav-indicator, [role='tablist'] > span[aria-hidden] { transition: none !important; }
+  .fx-screen-enter, .fx-stagger > *, .lesson-stage, .lesson-connector, .fx-dialog-backdrop { animation: none !important; }
+  .lesson-token { transition: none; }
+  .lesson-token[aria-pressed='true'] { transform: none; }
+}

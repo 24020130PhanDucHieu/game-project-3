@@ -9,6 +9,7 @@ import { TASK_TEMPLATES } from './task-templates'
 import { cn } from '@/lib/utils'
 import { Fold, JsonNote, TaskCard } from './task-card'
 import { FAMILY_NAME } from './common'
+import { MotionSurface } from '../../motion-surface'
 
 export function CopyCode({ code }: { code: string }) {
   const [done, setDone] = useState(false)
@@ -135,13 +136,13 @@ function TasksTaskTab({ eventId, p }: { eventId: string; p: any }) {
   const pick = (i: number) => { setDir(i >= current ? 1 : -1); setActive(i) }
   return (
     <div className="space-y-5">
-      <section className="surface relative overflow-hidden rounded-3xl border border-border p-5 sm:p-6" data-testid="task-hero">
+      <MotionSurface tilt className="surface relative overflow-hidden rounded-3xl border border-border p-5 sm:p-6" data-testid="task-hero">
         <div className="pointer-events-none absolute -right-10 -top-16 size-56 rounded-full bg-primary/15 blur-3xl" aria-hidden />
         <div className="relative">
           <p className="text-[11px] font-bold uppercase tracking-widest text-primary">Giải AI · Học từ thế cờ</p>
           <h2 className="font-display mt-1 text-2xl font-extrabold">Dạy mô hình “đọc” thế cờ 9×9</h2>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">Mỗi đề là một câu hỏi về thế cờ. Bạn có nhiều thế cờ đã có đáp án để học, rồi đoán đáp án cho thế cờ chưa từng thấy. {p.task_count} đề, mỗi đề chấm trên thang 0–100.</p>
-          <ol className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 [&>*]:min-w-0" data-testid="task-steps">
+          <ol className="fx-stagger mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4 [&>*]:min-w-0" data-testid="task-steps">
             {STEPS.map((s, i) => (
               <li key={s.title} className="relative flex gap-3 rounded-2xl border border-border bg-background/60 p-3.5">
                 <span className="grid size-10 shrink-0 place-items-center rounded-xl icon-tile text-primary"><s.icon className="size-5" aria-hidden /></span>
@@ -150,7 +151,7 @@ function TasksTaskTab({ eventId, p }: { eventId: string; p: any }) {
             ))}
           </ol>
         </div>
-      </section>
+      </MotionSurface>
 
       {!p.tasks_locked && !tasks.length ? (
         <Card><EmptyState icon={<Lock className="size-6" />} title="Ban tổ chức chưa công bố bộ đề" hint="Bộ đề được bốc ngẫu nhiên từ kho và khóa trước khi nhận bài. Trang tự cập nhật khi có đề." /></Card>

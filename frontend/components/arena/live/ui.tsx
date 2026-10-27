@@ -5,8 +5,8 @@ import { AlertTriangle, ChevronLeft, ChevronRight, Inbox, Loader2 } from 'lucide
 import { cn } from '@/lib/utils'
 import { statusOf, type Tone } from '@/lib/format'
 import { useCountUp, useReducedMotion } from '@/lib/motion'
-import { withTransition } from '@/lib/fx'
 import { useModalLayer } from '@/lib/scroll-lock'
+import { usePointerMotion } from '@/lib/interaction-motion'
 
 export const toneClass: Record<Tone, string> = {
   neutral: 'border-border bg-muted text-muted-foreground',
@@ -22,8 +22,9 @@ export function Card({ children, className, title, subtitle, action, padded = tr
   /** Icon nhỏ cạnh tiêu đề (lucide). */
   icon?: ReactNode
 }) {
+  const motionRef = usePointerMotion<HTMLElement>()
   return (
-    <section className={cn('animate-fade-up surface rounded-2xl border border-border text-card-foreground', className)}>
+    <section ref={motionRef} className={cn('fx-light animate-fade-up surface rounded-2xl border border-border text-card-foreground', className)}>
       {(title || action) && (
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-gradient-to-r from-primary/[0.09] via-primary/[0.03] to-transparent px-5 py-3.5">
           <div className="flex min-w-0 items-center gap-2.5">
@@ -48,6 +49,7 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 export function Button({ variant = 'primary', size = 'md', loading, className, children, disabled, type = 'button', ...rest }: ButtonProps) {
+  const motionRef = usePointerMotion<HTMLButtonElement>(variant === 'primary' ? 'magnet' : 'none')
   const styles = {
     primary: 'bg-brand text-primary-foreground shadow-md shadow-primary/25 glow-hover hover:brightness-110 active:translate-y-px active:scale-[.98]',
     secondary: 'border border-border bg-card/70 text-foreground shadow-sm hover:border-primary/50 hover:bg-accent/50 active:scale-[.98]',
@@ -56,12 +58,14 @@ export function Button({ variant = 'primary', size = 'md', loading, className, c
   }[variant]
   return (
     <button
+      ref={motionRef}
       type={type}
       disabled={disabled || loading}
       className={cn(
         'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
         size === 'sm' ? 'h-8 px-3 text-xs' : 'h-10 px-4 text-sm',
         styles,
+        variant === 'primary' && 'fx-magnet',
         className,
       )}
       {...rest}
@@ -226,13 +230,21 @@ export function Tabs<T extends string>({ tabs, value, onChange, className }: {
   useLayoutEffect(() => {
     const measure = () => {
       const el = listRef.current?.querySelector<HTMLElement>('[aria-selected="true"]')
-      if (el) setBox({ left: el.offsetLeft, width: el.offsetWidth })
+      const list = listRef.current
+      if (el && list) {
+        setBox({ left: el.offsetLeft, width: el.offsetWidth })
+        const left = el.offsetLeft - 4
+        const right = el.offsetLeft + el.offsetWidth + 4
+        if (left < list.scrollLeft) list.scrollLeft = left
+        else if (right > list.scrollLeft + list.clientWidth) list.scrollLeft = right - list.clientWidth
+      }
     }
     measure()
     const list = listRef.current
     if (!list || typeof ResizeObserver === 'undefined') return
     const observer = new ResizeObserver(measure)
     observer.observe(list)
+    list.querySelectorAll('button').forEach((el) => observer.observe(el))
     return () => observer.disconnect()
   }, [value, tabs.length])
   return (
@@ -242,8 +254,17 @@ export function Tabs<T extends string>({ tabs, value, onChange, className }: {
         <button
           key={tab.id}
           role="tab"
+          tabIndex={value === tab.id ? 0 : -1}
           aria-selected={value === tab.id}
-          onClick={() => { if (tab.id !== value) withTransition(() => onChange(tab.id), tabs.findIndex((x) => x.id === tab.id) > tabs.findIndex((x) => x.id === value) ? 1 : -1) }}
+          onClick={() => { if (tab.id !== value) onChange(tab.id) }}
+          onKeyDown={(event) => {
+            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+            event.preventDefault()
+            const i = tabs.findIndex((t) => t.id === value)
+            const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (i + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length
+            onChange(tabs[next].id)
+            listRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus({ preventScroll: true })
+          }}
           className={cn(
             'relative z-10 inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
             value === tab.id ? (box ? 'text-primary-foreground' : 'bg-brand text-primary-foreground shadow-md shadow-primary/25') : 'text-muted-foreground hover:bg-card/70 hover:text-foreground',

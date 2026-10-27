@@ -6,6 +6,9 @@ import { countdown } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useLive } from './context'
 import { useNow } from './shared'
+import { MotionSurface } from './motion-surface'
+import { useReducedMotion } from '@/lib/motion'
+import { useFx } from '@/lib/fx'
 
 type Slide = { key: string; eyebrow: string; title: string; lines: string[]; accent: string; emoji: string; onClick?: () => void; live?: boolean }
 
@@ -18,8 +21,8 @@ export function Billboard() {
   const now = useNow()
   const [index, setIndex] = useState(0)
   const [hover, setHover] = useState(false)
-  const [reduced, setReduced] = useState(false)
-  useEffect(() => { setReduced(window.matchMedia('(prefers-reduced-motion: reduce)').matches) }, [])
+  const reduced = useReducedMotion()
+  const [fx] = useFx()
 
   const slides = useMemo<Slide[]>(() => {
     const out: Slide[] = []
@@ -43,15 +46,15 @@ export function Billboard() {
 
   useEffect(() => { if (index >= slides.length) setIndex(0) }, [slides.length, index])
   useEffect(() => {
-    if (hover || slides.length < 2) return
+    if (hover || reduced || fx !== 'full' || slides.length < 2) return
     const timer = window.setTimeout(() => setIndex((i) => (i + 1) % slides.length), 6000)
     return () => window.clearTimeout(timer)
-  }, [index, hover, slides.length])
+  }, [index, hover, slides.length, reduced, fx])
 
   const go = (d: number) => setIndex((i) => (i + d + slides.length) % slides.length)
   return (
     <div className="relative mx-auto w-full max-w-[560px] select-none" style={{ perspective: '1400px' }} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
-      <div className={cn('relative', !reduced && 'billboard-sway')} style={{ transformStyle: 'preserve-3d', transform: 'rotateY(-16deg) rotateX(6deg)' }}>
+      <MotionSurface tilt className="relative rounded-[22px]" style={{ transformStyle: 'preserve-3d' }}>
         {/* Khung biển: viền kim loại + đèn chiếu phía trên */}
         <div className="relative aspect-[16/9] rounded-[22px] border-[6px] border-slate-700 bg-slate-900 shadow-[0_40px_80px_-30px_rgba(0,0,0,.7),inset_0_0_0_2px_rgba(255,255,255,.08)] dark:border-slate-600" style={{ transformStyle: 'preserve-3d' }}>
           <div className="pointer-events-none absolute -top-5 left-[12%] right-[12%] flex justify-between" aria-hidden>
@@ -71,7 +74,7 @@ export function Billboard() {
               <span className="absolute -right-4 -bottom-6 text-[120px] leading-none opacity-30 md:text-[150px]" aria-hidden>{s.emoji}</span>
               <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,transparent_35%,rgba(255,255,255,.28)_50%,transparent_65%)] billboard-shine" aria-hidden />
               <span className={cn('relative inline-flex items-center gap-1.5 rounded-full bg-black/25 px-2.5 py-1 text-[11px] font-extrabold tracking-[0.18em]', s.live && 'animate-pulse')}>{s.eyebrow}</span>
-              <span className="font-display relative mt-3 line-clamp-2 block text-2xl font-black leading-tight drop-shadow md:text-3xl">{s.title}</span>
+              <span className="fx-depth font-display relative mt-3 line-clamp-2 block text-2xl font-black leading-tight drop-shadow md:text-3xl">{s.title}</span>
               <span className="relative mt-3 block space-y-0.5 text-sm font-semibold text-white/90">{s.lines.map((l) => <span key={l} className="block truncate">{l}</span>)}</span>
             </button>
           ))}
@@ -80,7 +83,7 @@ export function Billboard() {
         <div className="mx-auto flex w-[55%] justify-between" aria-hidden>
           <span className="h-10 w-3 rounded-b bg-gradient-to-b from-slate-600 to-slate-800" /><span className="h-10 w-3 rounded-b bg-gradient-to-b from-slate-600 to-slate-800" />
         </div>
-      </div>
+      </MotionSurface>
       {slides.length > 1 && (
         <div className="mt-2 flex items-center justify-center gap-2">
           <button aria-label="Biển trước" onClick={() => go(-1)} className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><ChevronLeft className="size-4" /></button>
