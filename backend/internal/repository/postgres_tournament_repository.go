@@ -17,9 +17,12 @@ import (
 )
 
 type PostgresTournamentRepository struct {
-	db    *sql.DB
-	mu    sync.RWMutex
-	cache map[string]map[string]interface{}
+	db              *sql.DB
+	mu              sync.RWMutex
+	cache           map[string]map[string]interface{}
+	readMu          sync.Mutex
+	versions        map[string]string
+	cacheGeneration uint64
 }
 
 func NewPostgresTournamentRepository(databaseURL string) (*PostgresTournamentRepository, error) {
@@ -80,51 +83,15 @@ func (r *PostgresTournamentRepository) migrateSchema() error {
 }
 
 func (r *PostgresTournamentRepository) warmupCache() error {
-	rows, err := r.db.Query("SELECT id, data FROM tournaments")
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	for rows.Next() {
-		var id string
-		var rawData []byte
-		if err := rows.Scan(&id, &rawData); err == nil {
-			var t map[string]interface{}
-			if err := json.Unmarshal(rawData, &t); err == nil {
-				r.cache[id] = t
-			}
-		}
-	}
-	return nil
+	_, err := r.readAllVersioned()
+	return err
 }
 
 func (r *PostgresTournamentRepository) GetAll() map[string]interface{} {
-	rows, err := r.db.Query("SELECT id, data FROM tournaments")
+	result, err := r.readAllVersioned()
 	if err != nil {
 		return r.cachedSnapshot()
 	}
-	defer rows.Close()
-	result := make(map[string]interface{})
-	cacheSnapshot := make(map[string]map[string]interface{})
-	for rows.Next() {
-		var id string
-		var raw []byte
-		var tournament map[string]interface{}
-		if rows.Scan(&id, &raw) == nil && json.Unmarshal(raw, &tournament) == nil {
-			result[id] = tournament
-			cacheSnapshot[id] = tournament
-		}
-	}
-	if rows.Err() != nil {
-		return r.cachedSnapshot()
-	}
-	r.mu.Lock()
-	r.cache = cacheSnapshot
-	r.mu.Unlock()
 	return result
 }
 
@@ -139,7 +106,10 @@ func (r *PostgresTournamentRepository) cachedSnapshot() map[string]interface{} {
 }
 
 func (r *PostgresTournamentRepository) GetList() []model.TournamentSummary {
-	tournaments := r.GetAll()
+	if list, err := r.GetListChecked(); err == nil {
+		return list
+	}
+	tournaments := r.cachedSnapshot()
 	list := []model.TournamentSummary{}
 	for id, raw := range tournaments {
 		t, ok := raw.(map[string]interface{})
@@ -171,37 +141,6 @@ func (r *PostgresTournamentRepository) GetList() []model.TournamentSummary {
 	return list
 }
 
-func (r *PostgresTournamentRepository) GetByID(id string) (map[string]interface{}, bool, error) {
-	var rawData []byte
-	var err error
-	for attempt := 0; attempt < 2; attempt++ {
-		ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
-		err = r.db.QueryRowContext(ctx, "SELECT data FROM tournaments WHERE id = $1", id).Scan(&rawData)
-		cancel()
-		if err == nil || err == sql.ErrNoRows {
-			break
-		}
-	}
-	if err == sql.ErrNoRows {
-		return nil, false, nil
-	}
-	if err != nil {
-		return nil, false, fmt.Errorf("không thể kết nối dữ liệu giải đấu: %w", err)
-	}
-
-	var t map[string]interface{}
-	if err := json.Unmarshal(rawData, &t); err != nil {
-		return nil, false, fmt.Errorf("dữ liệu giải đấu không hợp lệ: %w", err)
-	}
-	t["tournament_id"] = id
-
-	r.mu.Lock()
-	r.cache[id] = t
-	r.mu.Unlock()
-
-	return cloneTournament(t), true, nil
-}
-
 func (r *PostgresTournamentRepository) Save(id string, tournament map[string]interface{}) error {
 	name, _ := tournament["name"].(string)
 	status, _ := tournament["status"].(string)
@@ -225,6 +164,8 @@ func (r *PostgresTournamentRepository) Save(id string, tournament map[string]int
 	}
 	r.mu.Lock()
 	r.cache[id] = cloneTournament(tournament)
+	delete(r.versions, id)
+	r.cacheGeneration++
 	r.mu.Unlock()
 	return nil
 }
@@ -243,6 +184,8 @@ func (r *PostgresTournamentRepository) Delete(id string) error {
 	}
 	r.mu.Lock()
 	delete(r.cache, id)
+	delete(r.versions, id)
+	r.cacheGeneration++
 	r.mu.Unlock()
 	return nil
 }

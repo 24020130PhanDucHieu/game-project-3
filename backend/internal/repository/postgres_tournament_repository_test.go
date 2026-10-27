@@ -32,14 +32,15 @@ func (c *readConn) QueryContext(context.Context, string, []driver.NamedValue) (d
 
 type readRows struct{ done bool }
 
-func (r *readRows) Columns() []string { return []string{"data"} }
+func (r *readRows) Columns() []string { return []string{"version", "data"} }
 func (r *readRows) Close() error      { return nil }
 func (r *readRows) Next(values []driver.Value) error {
 	if r.done {
 		return io.EOF
 	}
 	r.done = true
-	values[0] = []byte(`{"tournament_id":"legacy-id","matches":{}}`)
+	values[0] = "1:2026-10-27"
+	values[1] = []byte(`{"tournament_id":"legacy-id","matches":{}}`)
 	return nil
 }
 func testReadRepository(t *testing.T, d *readDriver) *PostgresTournamentRepository {

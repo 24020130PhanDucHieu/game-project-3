@@ -126,23 +126,20 @@ func (s *TournamentService) StartRoundTransitions(onUpdated func(string, string)
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
 		for range ticker.C {
-			for tournamentID, raw := range s.repo.GetAll() {
-				tournament, _ := raw.(map[string]interface{})
-				matches, _ := tournament["matches"].(map[string]interface{})
-				for matchID, rawMatch := range matches {
-					match, _ := rawMatch.(map[string]interface{})
-					deadline, _ := match["intermission_ends_at"].(float64)
-					if match["round_status"] != "ROUND_FINISHED" || deadline <= 0 || float64(time.Now().UnixMilli())/1000 < deadline {
-						continue
-					}
-					result, err := s.MutateTournament(tournamentID, "next-round", map[string]interface{}{"match_id": matchID})
-					if err != nil {
-						log.Printf("Round transition failed for %s/%s: %v", tournamentID, matchID, err)
-						continue
-					}
-					if result["status"] == "SUCCESS" && onUpdated != nil {
-						onUpdated(tournamentID, matchID)
-					}
+			due, err := repository.DueRoundTransitions(s.repo, float64(time.Now().UnixMilli())/1000)
+			if err != nil {
+				log.Printf("Round transition lookup failed: %v", err)
+				continue
+			}
+			for _, item := range due {
+				tournamentID, matchID := item.TournamentID, item.MatchID
+				result, err := s.MutateTournament(tournamentID, "next-round", map[string]interface{}{"match_id": matchID})
+				if err != nil {
+					log.Printf("Round transition failed for %s/%s: %v", tournamentID, matchID, err)
+					continue
+				}
+				if result["status"] == "SUCCESS" && onUpdated != nil {
+					onUpdated(tournamentID, matchID)
 				}
 			}
 		}
