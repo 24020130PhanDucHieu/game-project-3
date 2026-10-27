@@ -368,7 +368,7 @@ html[data-fx='off'] .toast-ok svg path:last-child { stroke-dashoffset: 0; }
 
 /* Tương tác theo chuột: một frame cho phần tử đang tương tác, không chạy nền. */
 .fx-light { position: relative; isolation: isolate; }
-.fx-light::after { content: ''; position: absolute; inset: 0; z-index: 2; border-radius: inherit; pointer-events: none; opacity: 0; background: radial-gradient(380px circle at var(--pointer-x,50%) var(--pointer-y,50%), color-mix(in oklab,var(--primary) 14%,transparent), transparent 72%); transition: opacity .25s ease; }
+.fx-light::after { content: ''; position: absolute; inset: 0; z-index: 2; border-radius: inherit; pointer-events: none; opacity: 0; background: radial-gradient(420px circle at var(--pointer-x,50%) var(--pointer-y,50%), color-mix(in oklab,var(--primary) 26%,transparent), transparent 72%); box-shadow: inset 0 0 0 1px color-mix(in oklab,var(--primary) 30%,transparent); transition: opacity .3s ease; }
 .fx-light[data-pointer='active']::after { opacity: 1; }
 .fx-tilt { transform: perspective(1200px) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg)); transform-style: preserve-3d; transition: transform .38s cubic-bezier(.2,.8,.2,1); }
 .fx-tilt[data-pointer='active'] { transition-duration: .12s; }
@@ -399,6 +399,49 @@ html[data-vt]::view-transition-old(root), html[data-vt]::view-transition-new(roo
   .fx-magnet { translate: none; }
   .fx-light::after { display: none; }
 }
+
+/* A real six-face CSS cube: no WebGL context or continuous render loop. */
+.billboard-scene { --cube-size: clamp(210px, 46vw, 280px); position: relative; width: 100%; max-width: 560px; margin: auto; padding: 70px 0 20px; perspective: 1200px; }
+.billboard-cube.fx-tilt { width: var(--cube-size); height: var(--cube-size); margin: 0 auto; isolation: auto; transform-style: preserve-3d; transform: translateZ(calc(var(--cube-size) * -.5)) rotateX(calc(-12deg + var(--tilt-x,0deg))) rotateY(calc(-24deg + var(--tilt-y,0deg))); transition: transform .65s cubic-bezier(.22,1,.36,1); }
+.billboard-cube.fx-light::after { display: none; }
+.cube-face { position: absolute; inset: 0; border: 1px solid rgba(183,163,255,.6); backface-visibility: hidden; background: #21163e; }
+.cube-front { transform: translateZ(calc(var(--cube-size) * .5)); box-shadow: 0 0 24px #9560ff35; }
+.cube-back { transform: rotateY(180deg) translateZ(calc(var(--cube-size) * .5)); }
+.cube-right { transform: rotateY(90deg) translateZ(calc(var(--cube-size) * .5)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; overflow: hidden; background: linear-gradient(145deg,#5526a8,#17112f); color: #d9c7ff; font-size: 10px; letter-spacing: .2em; }
+.cube-left { transform: rotateY(-90deg) translateZ(calc(var(--cube-size) * .5)); display: grid; place-items: center; color: #c4b5fd; }
+.cube-top { transform: rotateX(90deg) translateZ(calc(var(--cube-size) * .5)); display: grid; place-items: center; background: linear-gradient(130deg,#b792ff,#5b31af); color: white; font-size: 17px; font-weight: 800; letter-spacing: .15em; }
+.cube-bottom { transform: rotateX(-90deg) translateZ(calc(var(--cube-size) * .5)); }
+.cube-mark { font-size: 64px; font-weight: 900; letter-spacing: -.06em; text-shadow: 0 0 25px #b78aff80; }
+.cube-orbit { position: absolute; width: 80%; aspect-ratio: 1; border: 1px solid #d4b5ff40; border-radius: 50%; box-shadow: 0 0 0 25px #d4b5ff08,0 0 0 50px #d4b5ff06; }
+.cube-top-grid { position: absolute; inset: 0; background-image: linear-gradient(#ffffff15 1px,transparent 1px),linear-gradient(90deg,#ffffff15 1px,transparent 1px); background-size: 24px 24px; }
+.cube-slide { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 18px; text-align: left; color: white; overflow: hidden; opacity: 0; visibility: hidden; transform: translateY(10px); transition: opacity .4s ease, transform .5s cubic-bezier(.22,1,.36,1),visibility .4s; pointer-events: none; }
+.cube-slide .text-2xl { font-size: 25px; }
+.cube-slide > span:last-child { margin-top: 12px; }
+.cube-slide-active { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
+.cube-slide:focus-visible { outline: 3px solid white; outline-offset: -5px; }
+.cube-slide-light { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at var(--pointer-x,50%) var(--pointer-y,30%),#ffffff70,transparent 70%); opacity: .15; transition: opacity .4s; }
+.billboard-cube[data-pointer='active'] .cube-slide-light { opacity: .85; }
+.billboard-halo { position: absolute; inset: 5% 0 15%; background: radial-gradient(ellipse,#915aff28,transparent 65%); pointer-events: none; }
+.cube-ground { width: 65%; height: 35px; margin: 30px auto 12px; border-radius: 50%; background: radial-gradient(ellipse,#8b5cf64d,transparent 70%); }
+.cube-controls button { min-width: 10px; min-height: 10px; transition: background .25s, width .35s cubic-bezier(.22,1,.36,1); }
+.task-reference[open] > div, details[open] > div { animation: fx-screen-in .3s ease-out; }
+html[data-vt='next']::view-transition-new(arena-content) { animation-name: arena-slide-next; }
+html[data-vt='prev']::view-transition-new(arena-content) { animation-name: arena-slide-prev; }
+@keyframes arena-slide-next { from { opacity: 0; transform: translateX(24px); } }
+@keyframes arena-slide-prev { from { opacity: 0; transform: translateX(-24px); } }
+@media (max-width: 640px) {
+  .billboard-scene { padding-top: 48px; }
+  .cube-slide { padding: 14px; }
+  .cube-slide > span:first-of-type { display: none; }
+  .cube-slide > span:last-child { display: none; }
+  .cube-slide .text-2xl { font-size: 20px; }
+}
+html[data-fx='off'] .billboard-cube.fx-tilt, html[data-fx='lite'] .billboard-cube.fx-tilt { transform: translateZ(calc(var(--cube-size) * -.5)) rotateX(-12deg) rotateY(-24deg); transition: none; }
+html[data-fx='off'] .cube-slide, html[data-fx='off'] details[open] > div { transition: none; animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .billboard-cube.fx-tilt { transform: translateZ(calc(var(--cube-size) * -.5)) rotateX(-12deg) rotateY(-24deg) !important; transition: none; }
+  .cube-slide, .cube-controls button, details[open] > div { transition: none; animation: none; }
+}
 html[data-fx='lite'] .fx-tilt, html[data-fx='off'] .fx-tilt { transform: none; }
 html[data-fx='lite'] .fx-magnet, html[data-fx='off'] .fx-magnet { translate: none; }
 html[data-fx='lite'] .fx-light::after, html[data-fx='off'] .fx-light::after { display: none; }
@@ -411,4 +454,22 @@ html[data-fx='lite'] .fx-stagger > *, html[data-fx='lite'] .lesson-connector { a
   .fx-screen-enter, .fx-stagger > *, .lesson-stage, .lesson-connector, .fx-dialog-backdrop { animation: none !important; }
   .lesson-token { transition: none; }
   .lesson-token[aria-pressed='true'] { transform: none; }
+}
+
+/* Dragging owns rotation; keep depth in low-motion modes without automatic momentum. */
+.cube-drag-zone { transform-style: preserve-3d; touch-action: pan-y pinch-zoom; cursor: grab; pointer-events: none; }
+.cube-drag-zone .billboard-cube { pointer-events: none; }
+.cube-drag-zone .cube-face { pointer-events: auto; }
+.cube-drag-zone .cube-slide { cursor: grab; }
+.cube-drag-zone .billboard-cube.fx-tilt,
+html[data-fx] .cube-drag-zone .billboard-cube.fx-tilt {
+  transform: translateZ(calc(var(--cube-size) * -.5)) rotateX(var(--cube-x,-12deg)) rotateY(var(--cube-y,-24deg));
+}
+.cube-drag-zone[data-dragging] .billboard-cube,
+.cube-drag-zone[data-spinning] .billboard-cube { transition: none; }
+.cube-drag-zone[data-dragging], .cube-drag-zone[data-dragging] .cube-slide { cursor: grabbing; }
+.cube-drag-zone .cube-right { display: block; overflow: visible; letter-spacing: normal; }
+.cube-drag-zone .cube-left { display: block; }
+@media (prefers-reduced-motion: reduce) {
+  .cube-drag-zone .billboard-cube.fx-tilt { transform: translateZ(calc(var(--cube-size) * -.5)) rotateX(var(--cube-x,-12deg)) rotateY(var(--cube-y,-24deg)) !important; transition: none; }
 }

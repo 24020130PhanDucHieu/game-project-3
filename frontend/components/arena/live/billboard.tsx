@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, RotateCcw, MoveHorizontal } from 'lucide-react'
 import { countdown } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { useLive } from './context'
@@ -9,6 +9,7 @@ import { useNow } from './shared'
 import { MotionSurface } from './motion-surface'
 import { useReducedMotion } from '@/lib/motion'
 import { useFx } from '@/lib/fx'
+import { useCubeDrag } from '@/lib/cube-drag'
 
 type Slide = { key: string; eyebrow: string; title: string; lines: string[]; accent: string; emoji: string; onClick?: () => void; live?: boolean }
 
@@ -19,6 +20,7 @@ const ACCENTS = ['from-violet-600 via-fuchsia-500 to-cyan-400', 'from-amber-500 
 export function Billboard() {
   const { tournaments, qualifiers, tournament, setTournamentId, navigate, setQualifierId, enterMatch } = useLive()
   const now = useNow()
+  const cube = useCubeDrag()
   const [index, setIndex] = useState(0)
   const [hover, setHover] = useState(false)
   const reduced = useReducedMotion()
@@ -51,43 +53,43 @@ export function Billboard() {
     return () => window.clearTimeout(timer)
   }, [index, hover, slides.length, reduced, fx])
 
-  const go = (d: number) => setIndex((i) => (i + d + slides.length) % slides.length)
+  const go = (d: number) => { cube.reset(); setIndex((i) => (i + d + slides.length) % slides.length) }
   return (
-    <div className="relative mx-auto w-full max-w-[560px] select-none" style={{ perspective: '1400px' }} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
-      <MotionSurface tilt className="relative rounded-[22px]" style={{ transformStyle: 'preserve-3d' }}>
-        {/* Khung biển: viền kim loại + đèn chiếu phía trên */}
-        <div className="relative aspect-[16/9] rounded-[22px] border-[6px] border-slate-700 bg-slate-900 shadow-[0_40px_80px_-30px_rgba(0,0,0,.7),inset_0_0_0_2px_rgba(255,255,255,.08)] dark:border-slate-600" style={{ transformStyle: 'preserve-3d' }}>
-          <div className="pointer-events-none absolute -top-5 left-[12%] right-[12%] flex justify-between" aria-hidden>
-            {[0, 1, 2].map((i) => <span key={i} className="h-4 w-10 rounded-t-full bg-slate-600 shadow-[0_12px_30px_8px_rgba(255,255,220,.35)]" />)}
-          </div>
-          {slides.map((s, i) => (
-            <button
-              key={s.key}
-              type="button"
-              aria-hidden={i !== index}
-              tabIndex={i === index ? 0 : -1}
-              onClick={s.onClick}
-              className={cn('absolute inset-0 overflow-hidden rounded-[16px] bg-gradient-to-br p-5 text-left text-white transition-all duration-700 [backface-visibility:hidden] md:p-7', s.accent, s.onClick ? 'cursor-pointer' : 'cursor-default')}
-              style={{ transform: i === index ? 'rotateX(0deg)' : i < index ? 'rotateX(90deg)' : 'rotateX(-90deg)', opacity: i === index ? 1 : 0, transformOrigin: 'center center' }}
-            >
-              <span className="hero-grid absolute inset-0 opacity-40" aria-hidden />
-              <span className="absolute -right-4 -bottom-6 text-[120px] leading-none opacity-30 md:text-[150px]" aria-hidden>{s.emoji}</span>
-              <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,transparent_35%,rgba(255,255,255,.28)_50%,transparent_65%)] billboard-shine" aria-hidden />
-              <span className={cn('relative inline-flex items-center gap-1.5 rounded-full bg-black/25 px-2.5 py-1 text-[11px] font-extrabold tracking-[0.18em]', s.live && 'animate-pulse')}>{s.eyebrow}</span>
-              <span className="fx-depth font-display relative mt-3 line-clamp-2 block text-2xl font-black leading-tight drop-shadow md:text-3xl">{s.title}</span>
-              <span className="relative mt-3 block space-y-0.5 text-sm font-semibold text-white/90">{s.lines.map((l) => <span key={l} className="block truncate">{l}</span>)}</span>
+    <div className="billboard-scene select-none" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)} onFocusCapture={() => setHover(true)} onBlurCapture={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setHover(false) }}>
+      <div className="billboard-halo" aria-hidden />
+      <div ref={cube.ref} className="cube-drag-zone" {...cube.handlers} onTouchStart={() => setHover(true)} aria-label="Khối thông tin 3D. Kéo ngang để xoay; dùng các nút bên dưới để chọn thông tin.">
+      <MotionSurface className="billboard-cube fx-tilt">
+        <div className="cube-face cube-top" aria-hidden><span>ARENA / LIVE</span><span className="cube-top-grid" /></div>
+        <div className="cube-face cube-bottom" aria-hidden />
+        {(['front', 'right', 'back', 'left'] as const).map((face, offset) => {
+          const s = slides[(index + offset) % slides.length]
+          if (!s) return null
+          return <div key={face} className={`cube-face cube-${face}`}>
+            <button key={s.key} type="button" tabIndex={offset === 0 ? 0 : -1} onFocus={(e) => { if (e.currentTarget.matches(':focus-visible')) cube.orient(-offset * 90 - 24) }} onClick={s.onClick}
+              className={cn('cube-slide bg-gradient-to-br', s.accent, 'cube-slide-active', s.onClick ? 'cursor-pointer' : 'cursor-default')}>
+              <span className="hero-grid absolute inset-0 opacity-30" aria-hidden />
+              <span className="cube-slide-light" aria-hidden />
+              <span className="relative flex items-center justify-between text-[10px] font-bold tracking-[.2em] text-white/75"><span>FRESHMAN ARENA</span><span>0{(index + offset) % slides.length + 1}</span></span>
+              <span className="relative mt-auto block">
+                <span className={cn('inline-flex rounded-full border border-white/20 bg-black/25 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest', s.live && 'animate-pulse')}>{s.eyebrow}</span>
+                <span className="mt-4 line-clamp-3 block text-2xl font-black leading-tight sm:text-3xl">{s.title}</span>
+                <span className="mt-3 block space-y-1 text-xs font-medium text-white/90 sm:text-sm">{s.lines.map(l => <span key={l} className="block">{l}</span>)}</span>
+              </span>
+              <span className="relative mt-5 flex items-center justify-between border-t border-white/25 pt-3 text-[10px] font-semibold tracking-wider"><span>{s.onClick ? 'KHÁM PHÁ GIẢI ĐẤU' : 'SẴN SÀNG RA TRẬN'}</span><ChevronRight className="size-4" /></span>
             </button>
-          ))}
         </div>
-        {/* Chân biển */}
-        <div className="mx-auto flex w-[55%] justify-between" aria-hidden>
-          <span className="h-10 w-3 rounded-b bg-gradient-to-b from-slate-600 to-slate-800" /><span className="h-10 w-3 rounded-b bg-gradient-to-b from-slate-600 to-slate-800" />
-        </div>
+        })}
       </MotionSurface>
+      </div>
+      <div className="cube-ground" aria-hidden />
+      <div className="relative mb-3 flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5"><MoveHorizontal className="size-3.5" />Kéo ngang để xoay · Bấm mặt để xem</span>
+        <button type="button" onClick={cube.reset} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/70 px-3 py-2 transition-colors hover:border-primary/60 hover:text-primary"><RotateCcw className="size-3.5" />Đặt lại góc nhìn</button>
+      </div>
       {slides.length > 1 && (
-        <div className="mt-2 flex items-center justify-center gap-2">
+        <div className="cube-controls relative flex items-center justify-center gap-2">
           <button aria-label="Biển trước" onClick={() => go(-1)} className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><ChevronLeft className="size-4" /></button>
-          {slides.map((s, i) => <button key={s.key} aria-label={`Biển ${i + 1}: ${s.title}`} onClick={() => setIndex(i)} className={cn('h-1.5 rounded-full transition-all', i === index ? 'w-6 bg-primary' : 'w-1.5 bg-muted-foreground/40')} />)}
+          {slides.map((s, i) => <button key={s.key} aria-current={i === index ? true : undefined} aria-label={`Biển ${i + 1}: ${s.title}`} onClick={() => { cube.reset(); setIndex(i) }} className={cn('h-1.5 rounded-full transition-all', i === index ? 'w-6 bg-primary' : 'w-1.5 bg-muted-foreground/40')} />)}
           <button aria-label="Biển sau" onClick={() => go(1)} className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><ChevronRight className="size-4" /></button>
         </div>
       )}

@@ -249,7 +249,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, className }: {
   }, [value, tabs.length])
   return (
     <div ref={listRef} role="tablist" className={cn('relative flex gap-1 overflow-x-auto rounded-xl border border-border bg-muted/60 p-1', className)}>
-      {box && <span aria-hidden className="bg-brand pointer-events-none absolute bottom-1 top-1 rounded-lg shadow-md shadow-primary/25 transition-[left,width] duration-300 ease-out" style={{ left: box.left, width: box.width }} />}
+      {box && <span aria-hidden className="bg-brand pointer-events-none absolute bottom-1 left-0 top-1 rounded-lg shadow-md shadow-primary/30 transition-[transform,width] duration-300 ease-[cubic-bezier(.22,1,.36,1)]" style={{ transform: `translateX(${box.left}px)`, width: box.width }} />}
       {tabs.map((tab) => (
         <button
           key={tab.id}

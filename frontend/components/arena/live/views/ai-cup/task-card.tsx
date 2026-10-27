@@ -95,7 +95,7 @@ export function TaskCard({ eventId, index, t }: { eventId: string; index: number
   }, [cacheKey, eventId, index, regression, t.label_help])
 
   return (
-    <article className="animate-fade-up space-y-4 rounded-2xl border border-border surface p-5" data-testid={`task-card-${index + 1}`}>
+    <article className="lesson-stage space-y-5 rounded-2xl border border-border surface p-4 sm:p-6" data-testid={`task-card-${index + 1}`}>
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-widest text-primary">Đề {index + 1}</p>
@@ -109,13 +109,12 @@ export function TaskCard({ eventId, index, t }: { eventId: string; index: number
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] [&>*]:min-w-0">
         <section className="space-y-3">
-          <p className="rounded-2xl bg-primary/5 px-4 py-3 text-[15px] leading-relaxed" data-testid="task-plain">{t.plain || t.title}</p>
           {Array.isArray(t.label_help) && t.label_help.length > 0 && (
             <ul className="flex flex-wrap gap-1.5" data-testid="task-labels">{t.label_help.map((l: string) => <li key={l}><Badge tone="neutral">{l}</Badge></li>)}</ul>
           )}
           {t.note && <p className="rounded-lg border-l-4 border-primary bg-primary/5 px-3 py-2 text-sm">Ghi chú của ban tổ chức: {t.note}</p>}
           <div>
-            <p className="mb-2 text-xs font-semibold text-muted-foreground">Ví dụ thật từ dữ liệu của đề</p>
+            <p className="mb-2 text-xs font-semibold text-muted-foreground">Khám phá thế cờ mẫu · Bấm bàn cờ để xem rõ</p>
             {error ? <ErrorNote message={error} /> : examples ? (
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" data-testid="task-examples">
                 {examples.map((e, i) => (
