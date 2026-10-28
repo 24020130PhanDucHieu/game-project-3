@@ -14,7 +14,7 @@ export function HologramStage({ slide, index, count, go, onPause, effectsEnabled
   const [focus, setFocus] = useState(false)
   const [paused, setPaused] = useState(false)
   const [visible, setVisible] = useState(true)
-  const tilt = usePointerMotion<HTMLDivElement>(effectsEnabled ? 'tilt' : 'none')
+  const tilt = usePointerMotion<HTMLDivElement>(effectsEnabled && visible ? 'parallax' : 'none')
   const swipe = useRef<{ x: number; y: number } | null>(null)
   const stopped = hover || focus || paused || !visible
   useEffect(() => { onPause(stopped) }, [stopped, onPause])

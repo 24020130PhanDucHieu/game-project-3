@@ -8,7 +8,7 @@ export function motionEnabled() {
 }
 
 /** Chỉ cập nhật CSS của phần tử đang rê chuột; không render lại React theo từng tọa độ. */
-export function usePointerMotion<T extends HTMLElement>(mode: 'light' | 'tilt' | 'magnet' | 'none' = 'light') {
+export function usePointerMotion<T extends HTMLElement>(mode: 'light' | 'tilt' | 'parallax' | 'magnet' | 'none' = 'light') {
   const ref = useRef<T>(null)
   useEffect(() => {
     const el = ref.current
@@ -29,6 +29,8 @@ export function usePointerMotion<T extends HTMLElement>(mode: 'light' | 'tilt' |
       window.addEventListener('blur', reset, { once: true })
     }
     const move = (event: PointerEvent) => {
+      // Effects can become enabled while the cursor is already inside the card.
+      if (!bounds) enter(event)
       if (!bounds) return
       if (!motionEnabled() || el.matches(':disabled')) { reset(); return }
       const x = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width))
@@ -37,9 +39,9 @@ export function usePointerMotion<T extends HTMLElement>(mode: 'light' | 'tilt' |
       frame = requestAnimationFrame(() => {
         el.style.setProperty('--pointer-x', `${x * 100}%`)
         el.style.setProperty('--pointer-y', `${y * 100}%`)
-        if (mode === 'tilt') {
-          el.style.setProperty('--tilt-x', `${(0.5 - y) * 5}deg`)
-          el.style.setProperty('--tilt-y', `${(x - 0.5) * 7}deg`)
+        if (mode === 'tilt' || mode === 'parallax') {
+          el.style.setProperty('--tilt-x', `${(0.5 - y) * (mode === 'parallax' ? 12 : 5)}deg`)
+          el.style.setProperty('--tilt-y', `${(x - 0.5) * (mode === 'parallax' ? 16 : 7)}deg`)
           el.style.setProperty('--par-x', String((x - 0.5) * 2))
           el.style.setProperty('--par-y', String((y - 0.5) * 2))
         }
