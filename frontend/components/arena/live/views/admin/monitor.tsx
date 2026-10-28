@@ -88,10 +88,34 @@ export function MonitorTab({ onGo }: { onGo: Go }) {
         </Card>
         <Card title="Cơ sở dữ liệu" action={<><StatusBadge status={db.status} /><Button size="sm" variant="secondary" loading={busy} onClick={async () => { if (await confirm({ title: 'Cập nhật thống kê truy vấn?', message: 'Chạy ANALYZE; không thu hồi dung lượng ổ đĩa.', confirmLabel: 'Chạy' })) void run(() => arenaApi.optimizeDatabase() as Promise<any>, 'Đã cập nhật thống kê cơ sở dữ liệu', () => monitor.reload()) }}><Database className="size-3.5" />Tối ưu</Button></>}>
           <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-            {[['Nhà cung cấp', db.provider], ['Dung lượng CSDL', db.db_size], ['Dung lượng bảng chính', db.tables_size], ['Số bản ghi', db.record_count?.toLocaleString?.('vi-VN')], ['Kết nối đang chạy', db.active_connections], ['Pool (dùng/mở/tối đa)', db.pool_open !== undefined ? `${db.pool_in_use}/${db.pool_open}/${db.pool_max_open}` : undefined]].map(([k, v]) => (
+            {[['Nhà cung cấp', db.provider], ['Dung lượng CSDL', db.db_size], ['Dung lượng 3 bảng chính', db.tables_size], ['Bản ghi kho chấm bài', db.record_count?.toLocaleString?.('vi-VN')], ['Kết nối đang chạy', db.active_connections], ['Pool (dùng/mở/tối đa)', db.pool_open !== undefined ? `${db.pool_in_use}/${db.pool_open}/${db.pool_max_open}` : undefined]].map(([k, v]) => (
               <div key={String(k)}><dt className="text-xs text-muted-foreground">{k}</dt><dd className="font-semibold">{v ?? '—'}</dd></div>
             ))}
           </dl>
+          {db.metrics_error && <p role="alert" className="mt-3 text-sm text-destructive">{db.metrics_error}</p>}
+          {db.sampled_at && <p className="mt-3 text-xs text-muted-foreground">Nguồn: PostgreSQL trực tiếp · Đo lúc {new Date(db.sampled_at).toLocaleString('vi-VN')} · Lưu mẫu tối đa {db.refresh_seconds} giây để giảm truy vấn.</p>}
+          <div className="mt-4 rounded-xl border border-border bg-muted/30 p-3 text-sm">
+            <p className="font-semibold">Egress / Cached Egress / hạn mức organization</p>
+            <p className="mt-1 text-muted-foreground">Chưa có dữ liệu API tính phí Supabase. Không thể suy ra các chỉ số này từ dung lượng database; chưa có số liệu không có nghĩa là 0 GB.</p>
+            <a href="https://supabase.com/dashboard/org/_/usage" target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-primary underline">Xem Usage trên Supabase (chọn organization mới)</a>
+          </div>
+          {Array.isArray(db.tables) && <details className="mt-4">
+            <summary className="cursor-pointer text-sm font-semibold">Chi tiết {db.tables.length} bảng ứng dụng</summary>
+            <div className="mt-3 overflow-x-auto">
+              <DataTable head={['Bảng', 'Dung lượng', 'Index', 'Dòng ước tính', 'Dòng chết ước tính', 'RLS', 'ANALYZE gần nhất']}>
+                {db.tables.map((table: any) => <tr key={table.name}>
+                  <td className="px-3 py-2 font-mono text-xs">{table.name}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">{(table.total_bytes / 1024).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} KiB</td>
+                  <td className="px-3 py-2">{table.index_count}</td>
+                  <td className="px-3 py-2">{table.estimated_rows?.toLocaleString('vi-VN') ?? '—'}</td>
+                  <td className="px-3 py-2">{table.estimated_dead_rows?.toLocaleString('vi-VN') ?? '—'}</td>
+                  <td className="px-3 py-2">{table.rls_enabled ? 'Bật' : 'Tắt'}</td>
+                  <td className="px-3 py-2 whitespace-nowrap">{table.last_analyzed ? new Date(table.last_analyzed).toLocaleString('vi-VN') : 'Chưa ghi nhận'}</td>
+                </tr>)}
+              </DataTable>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">Số dòng lấy từ thống kê PostgreSQL, là ước tính. Dòng chết là phiên bản cũ chờ VACUUM, không phải dữ liệu bị mất. Dung lượng gồm cả index và TOAST.</p>
+          </details>}
         </Card>
 
         <Card title="Hàng đợi chấm" action={<StatusBadge status={data.queue?.status} />}>
@@ -111,6 +135,23 @@ export function MonitorTab({ onGo }: { onGo: Go }) {
       </Card>
 
       <Card title="Máy chấm (worker)" subtitle={`${pool.ready ?? 0}/${pool.total ?? 0} sẵn sàng · ${pool.in_flight ?? 0}/${pool.capacity ?? 0} tác vụ đang chạy`} action={<StatusBadge status={pool.status} />}>
+        {!!nodes.length && <div className="mb-5 grid gap-4 md:grid-cols-2">
+          {nodes.map((n, i) => <section key={n.host || i} className="rounded-xl border border-border bg-muted/20 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="flex items-center gap-2 font-semibold"><Server className="size-4 text-primary" />Server {i + 1} · {n.provider || 'Chưa xác minh nhà cung cấp'}</h3>
+              <StatusBadge status={n.status === 'UNREACHABLE' ? 'UNAVAILABLE' : n.status} label={n.status} />
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">{n.with_gateway === true ? 'Gateway/API và máy chấm trên cùng server' : n.with_gateway === false ? 'Máy chấm qua mạng, tách khỏi tiến trình gateway' : 'Chưa xác minh vai trò server'}</p>
+            <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <div><dt className="text-xs text-muted-foreground">IP công khai (cấu hình)</dt><dd className="font-mono font-semibold">{n.public_ip || 'Chưa cấu hình'}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Địa chỉ gateway gọi</dt><dd className="break-all font-mono">{n.host || '—'}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Tác vụ đang chạy / sức chứa</dt><dd>{n.active ?? '—'} / {n.capacity ?? '—'}</dd></div>
+              <div><dt className="text-xs text-muted-foreground">Thời gian kiểm tra health</dt><dd>{n.latency_ms !== undefined ? `${n.latency_ms} ms` : '—'}</dd></div>
+            </dl>
+            <p className="mt-3 text-xs text-muted-foreground">{n.checked_at ? `Kiểm tra lúc ${new Date(n.checked_at).toLocaleTimeString('vi-VN')}` : 'Chưa có thời điểm kiểm tra'} · Trạng thái lấy từ API /health.</p>
+          </section>)}
+        </div>}
+        <p className="mb-3 text-xs text-muted-foreground">Nhà cung cấp do worker nhận diện từ hệ điều hành. Số tác vụ bên dưới do gateway ghi nhận từ lần khởi động gần nhất; không phải số liệu CloudWatch.</p>
         {nodes.length ? (
           <DataTable head={['Máy', 'Trạng thái', 'Đang chạy / Sức chứa', 'Đã chạy', 'Lỗi', 'Trung bình', 'Thành công']}>
             {nodes.map((n, i) => (

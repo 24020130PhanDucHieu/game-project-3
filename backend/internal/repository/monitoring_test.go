@@ -3,7 +3,38 @@ package repository
 import (
 	"context"
 	"testing"
+	"time"
 )
+
+func TestDatabaseMonitorCacheAndFailure(t *testing.T) {
+	d := &readDriver{failures: 10}
+	repo := testReadRepository(t, d)
+	s := &QualifierRecords{db: repo.db, monitorAt: time.Now(), monitorData: map[string]interface{}{"db_bytes": int64(42)}}
+	got, err := s.DatabaseStats(context.Background())
+	if err != nil || got["db_bytes"] != int64(42) || d.calls != 0 {
+		t.Fatalf("cached sample: %v %v calls=%d", got, err, d.calls)
+	}
+	got["status"] = "READY"
+	if _, ok := s.monitorData["status"]; ok {
+		t.Fatal("caller mutated cached map")
+	}
+	s.monitorAt = time.Now().Add(-2 * time.Minute)
+	got, err = s.DatabaseStats(context.Background())
+	if err == nil || got != nil {
+		t.Fatal("expired sample must not hide database failure")
+	}
+}
+
+func TestDatabaseMonitorCanceledContext(t *testing.T) {
+	d := &readDriver{}
+	repo := testReadRepository(t, d)
+	s := &QualifierRecords{db: repo.db, monitorAt: time.Now(), monitorData: map[string]interface{}{"db_bytes": 42}}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if got, err := s.DatabaseStats(ctx); err == nil || got != nil || d.calls != 0 {
+		t.Fatal("canceled request should not query or return cached data")
+	}
+}
 
 func TestQueueCountsExcludesSourcesAndCompleted(t *testing.T) {
 	store, err := NewQualifierRecords(nil, t.TempDir())

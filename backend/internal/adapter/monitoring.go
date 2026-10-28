@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -49,6 +50,8 @@ func (a *HTTPBotRunnerAdapter) Monitor(ctx context.Context) map[string]interface
 			u, err := url.Parse(address)
 			if err == nil {
 				node["host"] = u.Host
+				ip := net.ParseIP(u.Hostname())
+				node["with_gateway"] = strings.EqualFold(u.Hostname(), "localhost") || (ip != nil && ip.IsLoopback())
 				if i < len(publicHosts) && strings.TrimSpace(publicHosts[i]) != "" {
 					node["public_ip"] = strings.TrimSpace(publicHosts[i])
 				}
@@ -61,14 +64,22 @@ func (a *HTTPBotRunnerAdapter) Monitor(ctx context.Context) map[string]interface
 					res, callErr := a.client.Do(req)
 					if callErr == nil {
 						var body struct {
-							Status string `json:"status"`
+							Status   string `json:"status"`
+							Provider string `json:"provider"`
 						}
 						decodeErr := json.NewDecoder(io.LimitReader(res.Body, 8192)).Decode(&body)
 						res.Body.Close()
 						node["status"] = "UNHEALTHY"
 						if decodeErr == nil && res.StatusCode == 200 && strings.EqualFold(body.Status, "HEALTHY") {
 							node["status"] = "READY"
+							if body.Provider == "AWS EC2" {
+								node["provider"] = body.Provider
+								node["name"] = fmt.Sprintf("AWS EC2 · Máy chấm %d", i+1)
+							}
 							a.observeCapacity(i, res.Header.Get("X-Worker-Capacity"))
+							a.poolMu.Lock()
+							node["capacity"], node["reported_capacity"] = a.workerCapacity(i), a.reportedCapacity[i]
+							a.poolMu.Unlock()
 						}
 						if a.expectedRelease != "" && res.Header.Get("X-Arena-Release") != a.expectedRelease {
 							node["status"] = "RELEASE_MISMATCH"
@@ -76,6 +87,7 @@ func (a *HTTPBotRunnerAdapter) Monitor(ctx context.Context) map[string]interface
 					}
 				}
 			}
+			node["checked_at"] = time.Now().UTC().Format(time.RFC3339)
 			node["latency_ms"] = time.Since(started).Milliseconds()
 			nodes[i] = node
 		}(i, address)

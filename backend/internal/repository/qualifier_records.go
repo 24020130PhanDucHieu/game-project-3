@@ -20,12 +20,15 @@ import (
 // Separate records keep source code and job results out of tournament snapshots.
 // Local batches use a write-ahead journal; PostgreSQL batches use a transaction.
 type QualifierRecords struct {
-	mu     sync.Mutex
-	db     *sql.DB
-	dir    string
-	items  map[string]json.RawMessage
-	failed error
-	views  map[string]qualifierView
+	monitorMu   sync.Mutex
+	monitorAt   time.Time
+	monitorData map[string]interface{}
+	mu          sync.Mutex
+	db          *sql.DB
+	dir         string
+	items       map[string]json.RawMessage
+	failed      error
+	views       map[string]qualifierView
 }
 type qualifierView struct {
 	prefix  string

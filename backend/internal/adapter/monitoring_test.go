@@ -10,9 +10,10 @@ import (
 
 func TestMonitorReportsActualWorkersAndRelease(t *testing.T) {
 	t.Setenv("WORKER_RELEASE", "release-test")
+	t.Setenv("WORKER_PUBLIC_HOSTS", "203.0.113.10,203.0.113.11")
 	good := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Arena-Release", "release-test")
-		w.Write([]byte(`{"status":"HEALTHY"}`))
+		w.Write([]byte(`{"status":"HEALTHY","provider":"AWS EC2"}`))
 	}))
 	defer good.Close()
 	bad := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write([]byte(`{"status":"HEALTHY"}`)) }))
@@ -25,6 +26,12 @@ func TestMonitorReportsActualWorkersAndRelease(t *testing.T) {
 		t.Fatalf("unexpected snapshot: %v", got)
 	}
 	nodes := got["nodes"].([]map[string]interface{})
+	if nodes[0]["provider"] != "AWS EC2" || nodes[0]["with_gateway"] != true || nodes[0]["public_ip"] != "203.0.113.10" || nodes[0]["checked_at"] == nil {
+		t.Fatal(nodes[0])
+	}
+	if _, exists := nodes[1]["provider"]; exists {
+		t.Fatal("must not invent provider for old workers")
+	}
 	if nodes[1]["status"] != "RELEASE_MISMATCH" {
 		t.Fatal(nodes)
 	}

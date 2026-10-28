@@ -2,8 +2,8 @@ package http
 
 import (
 	"context"
-	"database/sql"
 	cryptorand "crypto/rand"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -83,6 +83,9 @@ func (h *AccountsHandler) Monitoring(c *gin.Context) {
 			for k, v := range stats {
 				dbData[k] = v
 			}
+		} else {
+			dbData["status"] = "UNAVAILABLE"
+			dbData["metrics_error"] = "Không đọc được số liệu database; hãy thử làm mới."
 		}
 	}
 

@@ -16,11 +16,12 @@ if os.getenv('ENVIRONMENT','').lower()=='production':
 
 app = FastAPI(title="Stateless Engine Worker")
 from app.worker_admission import install_worker_admission
+from app.host_identity import host_provider
 install_worker_admission(app)
 
 @app.get("/health")
 def worker_health():
-    return {"status": "HEALTHY"}
+    return {"status": "HEALTHY", "provider": host_provider()}
 
 # Create a dummy database instance that doesn't use background threads or files
 class StatelessDatabase(Database):
