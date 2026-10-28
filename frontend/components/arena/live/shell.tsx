@@ -173,7 +173,7 @@ function Topbar({ onMenu }: { onMenu: () => void }) {
     <header className="sticky top-0 z-30 flex flex-wrap items-center gap-3 border-b border-border bg-background/95 px-4 py-3 md:px-8">
       <Button variant="ghost" size="sm" className="md:hidden" aria-label="Mở menu" onClick={onMenu}><Menu className="size-5" /></Button>
       <div className="md:hidden"><Brand /></div>
-      <div className="ml-auto flex items-center gap-1.5">
+      <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-1.5">
         {showTournament && tournamentId && (
           <span className={cn('flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] font-semibold sm:px-2.5', socketOpen ? 'border-emerald-500/30 text-emerald-700 dark:text-emerald-300' : 'border-amber-500/30 text-amber-700 dark:text-amber-300')} title={socketOpen ? 'Nhận cập nhật tức thời từ server' : 'Mất kết nối trực tiếp — dữ liệu được làm mới định kỳ'}>
             {socketOpen ? <span className="dot-live size-1.5 rounded-full bg-current" aria-hidden /> : <WifiOff className="size-3.5" />}<span className="hidden sm:inline">{socketOpen ? 'Trực tiếp' : 'Định kỳ'}</span>

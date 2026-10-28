@@ -59,3 +59,25 @@
   .holo-navigation button { min-width:32px; height:32px; }
 }
 @media (prefers-reduced-motion:reduce) { .holo-arena *, .holo-arena *::after { animation:none!important; transition:none!important; } .holo-board { transform:rotateX(52deg) rotateZ(-32deg)!important; } }
+
+/* Compact floating card: foreground and arena move at different depths. */
+.holo-arena { padding:20px; transform:perspective(1100px) rotateX(calc(2deg + var(--tilt-x,0deg))) rotateY(calc(-3deg + var(--tilt-y,0deg))); transition:transform .35s ease,box-shadow .35s; }
+.holo-topline { padding-right:28px; }
+.holo-stage { min-height:220px; }
+.holo-visual { height:220px; transform:translate(calc(var(--par-x,0) * 9px),calc(var(--par-y,0) * 7px)); transition:transform .35s ease; }
+.holo-orbit { transform:translate(calc(var(--par-x,0) * -8px),calc(var(--par-y,0) * -5px)) rotate(-18deg); transition:transform .35s ease; }
+.holo-copy h2 { font-size:clamp(24px,6cqw,34px); }
+.holo-actions { padding:8px 0 0; }
+.holo-pause { position:absolute; top:13px; right:12px; display:grid; place-items:center; width:30px; height:30px; border-radius:50%; color:inherit; cursor:pointer; background:#ffffff12; }
+html:not(.dark) .holo-arena { color:#202642; border-color:#c4c9e0; background:radial-gradient(ellipse at 85% 35%,color-mix(in srgb,var(--holo-accent) 18%,transparent),transparent 65%),#f7f8ff; box-shadow:0 24px 45px -25px #303b6355,inset 0 1px #fff; }
+html:not(.dark) .holo-copy p,html:not(.dark) .holo-topline,html:not(.dark) .holo-illustration,html:not(.dark) .holo-invitation { color:#52607a; }
+html:not(.dark) .holo-status { color:#6540a0; background:#fff9; }
+html:not(.dark) .holo-cta { color:#fff; background:#34305e; }
+html:not(.dark) .holo-pause { background:#34305e0d; }
+.hero-parallax .hero-grid { inset:-20px; transform:translate(calc(var(--par-x,0) * -10px),calc(var(--par-y,0) * -8px)); transition:transform .4s ease; }
+.holo-arena[data-motion='off'] { transform:none; }
+.holo-arena[data-motion='off'] .holo-visual { transform:none; }
+.holo-arena[data-motion='off'] .holo-orbit { transform:rotate(-18deg); }
+[data-fx='off'] .hero-parallax .hero-grid,[data-fx='lite'] .hero-parallax .hero-grid { transform:none; transition:none; }
+@media (max-width:640px), (prefers-reduced-motion:reduce) { .holo-arena { transform:none; } }
+@media (prefers-reduced-motion:reduce) { .holo-visual,.holo-orbit,.hero-parallax .hero-grid { transform:none!important; transition:none!important; } }

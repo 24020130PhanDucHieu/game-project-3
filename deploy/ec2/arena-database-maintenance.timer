@@ -1,0 +1,11 @@
+[Unit]
+Description=Clean expired Arena cache and tokens every six hours
+
+[Timer]
+OnCalendar=*-*-* 00,06,12,18:30:00 UTC
+RandomizedDelaySec=15m
+Persistent=true
+Unit=arena-database-maintenance.service
+
+[Install]
+WantedBy=timers.target

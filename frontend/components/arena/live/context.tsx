@@ -145,7 +145,7 @@ export function LiveProvider({ children }: { children: ReactNode }) {
     { refreshMs: 30_000 },
   )
 
-  // Tự chọn giải: ưu tiên giải của phiên trận (đội đã vào phòng), sau đó giải đang diễn ra.
+  // Giữ giải của phiên trận; khách mới xem giải k71 demo trước khi chọn giải khác.
   useEffect(() => {
     const list = tournaments.data
     if (!list?.length) return
@@ -154,7 +154,8 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       // Mặc định chọn giải thường; giải chính của Giải AI được mở từ tab Giải AI hoặc bộ chọn giải.
       const regular = list.filter((t) => t.track !== 'AI')
       const pool = regular.length ? regular : list
-      setTournamentIdState(own || pool.find((t) => t.status === 'RUNNING')?.tournament_id || pool[0].tournament_id)
+      const demo = pool.find((t) => t.name?.trim().toLowerCase().replace(/[-_\s]+/g, ' ') === 'k71 demo')
+      setTournamentIdState(own || demo?.tournament_id || pool.find((t) => t.status === 'RUNNING')?.tournament_id || pool[0].tournament_id)
     }
   }, [tournaments.data, tournamentId, session.tournament_id])
   // Phiên trận mới (vào phòng trận khác giải) thì chuyển sang đúng giải đó.

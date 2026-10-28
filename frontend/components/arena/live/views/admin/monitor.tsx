@@ -6,6 +6,7 @@ import { invalidate, useResource } from '@/lib/cache'
 import { Badge, Button, Card, DataTable, EmptyState, ErrorNote, SkeletonCards, SkeletonRows, Stat, StatusBadge } from '../../ui'
 import { useLive } from '../../context'
 import { statusOf } from '@/lib/format'
+import { MonitorCharts } from './monitor-charts'
 
 function formatUptime(seconds: number) {
   const d = Math.floor(seconds / 86400)
@@ -36,7 +37,7 @@ function Checklist({ onGo }: { onGo: Go }) {
   const doneCount = items.filter((i) => i.done).length
   return (
     <Card title="Việc cần làm" subtitle={`${doneCount}/${items.length} bước đã xong`} action={<Badge tone={doneCount === items.length ? 'success' : 'accent'}>{Math.round((doneCount / items.length) * 100)}%</Badge>}>
-      <ul className="grid gap-2 md:grid-cols-2">
+      <ul className="grid grid-cols-1 gap-2 md:grid-cols-2">
         {items.map((item) => (
           <li key={item.title} className={`flex items-center gap-3 rounded-xl border p-3 ${item.done ? 'border-emerald-500/25 bg-emerald-500/5' : 'border-border bg-muted/30'}`}>
             {item.done ? <CheckCircle2 className="size-5 shrink-0 text-emerald-500" aria-label="Đã xong" /> : <Circle className="size-5 shrink-0 text-muted-foreground" aria-label="Chưa xong" />}
@@ -66,6 +67,7 @@ export function MonitorTab({ onGo }: { onGo: Go }) {
   return (
     <div className="space-y-6">
       <Checklist onGo={onGo} />
+      <MonitorCharts key={tournamentId} data={data} />
       <div>
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold"><Users className="size-4 text-primary" />Cuộc thi — {contest.tournament_name}</p>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

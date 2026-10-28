@@ -9,6 +9,7 @@ import (
 // Dữ liệu bị bỏ khi có thao tác ghi (InvalidateDerived) và tự hết hạn sau derivedTTL
 // để những thay đổi không đi qua HTTP (chuyển hiệp tự động, khôi phục) vẫn hiện ra.
 const derivedTTL = 5 * time.Second
+const derivedMaxEntries = 128
 
 type derivedEntry struct {
 	value   interface{}
@@ -27,6 +28,7 @@ func derivedGet(key string) (interface{}, bool) {
 	defer derived.Unlock()
 	entry, ok := derived.items[key]
 	if !ok || entry.version != derived.version || time.Now().After(entry.expires) {
+		delete(derived.items, key)
 		return nil, false
 	}
 	return entry.value, true
@@ -38,6 +40,15 @@ func derivedSet(key string, startVersion uint64, value interface{}) {
 	defer derived.Unlock()
 	if startVersion != derived.version {
 		return
+	}
+	for k, entry := range derived.items {
+		if time.Now().After(entry.expires) {
+			delete(derived.items, k)
+		}
+	}
+	if _, exists := derived.items[key]; !exists && len(derived.items) >= derivedMaxEntries {
+		// Derived values can always be recomputed; keep memory bounded.
+		clear(derived.items)
 	}
 	derived.items[key] = derivedEntry{value: value, expires: time.Now().Add(derivedTTL), version: startVersion}
 }
@@ -52,5 +63,6 @@ func derivedVersion() uint64 {
 func InvalidateDerived() {
 	derived.Lock()
 	derived.version++
+	clear(derived.items)
 	derived.Unlock()
 }

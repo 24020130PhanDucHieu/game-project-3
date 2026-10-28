@@ -39,6 +39,7 @@ func NewPostgresTournamentRepository(databaseURL string) (*PostgresTournamentRep
 	db.SetMaxOpenConns(8)
 	db.SetMaxIdleConns(2)
 	db.SetConnMaxLifetime(5 * time.Minute)
+	db.SetConnMaxIdleTime(time.Minute)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()

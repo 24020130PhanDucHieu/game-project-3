@@ -65,6 +65,8 @@ install -m 0644 /opt/arena/app/deploy/ec2/arena-backup.service /etc/systemd/syst
 install -m 0644 /opt/arena/app/deploy/ec2/arena-backup.timer /etc/systemd/system/arena-backup.timer
 
 # 4. Health Watchdog Timer (every 2 minutes)
+install -m 0644 /opt/arena/app/deploy/ec2/arena-database-maintenance.service /etc/systemd/system/arena-database-maintenance.service
+install -m 0644 /opt/arena/app/deploy/ec2/arena-database-maintenance.timer /etc/systemd/system/arena-database-maintenance.timer
 cat > /etc/systemd/system/arena-watchdog.service << 'WATCHDOG_SVC'
 [Unit]
 Description=Arena health check watchdog
@@ -94,7 +96,7 @@ Unit=arena-watchdog.service
 WantedBy=timers.target
 WATCHDOG_TMR
 
-# 5. Backup Retention Cleanup (weekly Sunday 04:00 UTC)
+# 5. Backup Retention Cleanup (daily 04:00 UTC, after the daily backup)
 cat > /etc/systemd/system/arena-backup-cleanup.service << 'CLEANUP_SVC'
 [Unit]
 Description=Arena backup retention cleanup
@@ -106,14 +108,17 @@ User=root
 EnvironmentFile=/etc/arena/backend.env
 ExecStart=/usr/bin/python3 /opt/arena/app/scripts/postgres_backup_restore_drill.py --cleanup --directory /var/backups/arena --keep-count 7
 TimeoutStartSec=60
+Nice=10
+CPUQuota=25%
+MemoryMax=96M
 CLEANUP_SVC
 
 cat > /etc/systemd/system/arena-backup-cleanup.timer << 'CLEANUP_TMR'
 [Unit]
-Description=Weekly Arena backup cleanup
+Description=Daily Arena backup cleanup
 
 [Timer]
-OnCalendar=Sun *-*-* 04:00:00 UTC
+OnCalendar=*-*-* 04:00:00 UTC
 Persistent=true
 Unit=arena-backup-cleanup.service
 
@@ -143,6 +148,9 @@ systemctl start arena-watchdog.timer
 # Enable and start cleanup timer
 systemctl enable arena-backup-cleanup.timer
 systemctl start arena-backup-cleanup.timer
+if [ -s /etc/arena/backend.env ]; then
+    systemctl enable --now arena-database-maintenance.timer
+fi
 
 # Reload Caddy
 systemctl reload caddy
@@ -162,7 +170,8 @@ if [ -s /etc/arena/backend.env ]; then
     echo '  ✔ arena-worker (Python bot runner)'
     echo '  ✔ arena-backup.timer (daily database backup at 03:00 UTC)'
     echo '  ✔ arena-watchdog.timer (health check every 2 minutes)'
-    echo '  ✔ arena-backup-cleanup.timer (weekly backup cleanup)'
+    echo '  ✔ arena-backup-cleanup.timer (daily backup cleanup)'
+    echo '  ✔ arena-database-maintenance.timer (expired cache/token cleanup)'
     echo '  ✔ caddy (reverse proxy)'
     echo ''
     echo 'Verify with: sudo sh /opt/arena/app/deploy/ec2/check.sh'

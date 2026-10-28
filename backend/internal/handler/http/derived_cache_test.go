@@ -1,6 +1,10 @@
 package http
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+	"time"
+)
 
 func TestDerivedCacheInvalidatesOnWriteAndIgnoresStaleCompute(t *testing.T) {
 	InvalidateDerived()
@@ -17,5 +21,34 @@ func TestDerivedCacheInvalidatesOnWriteAndIgnoresStaleCompute(t *testing.T) {
 	derivedSet("k", v, 2)
 	if _, ok := derivedGet("k"); ok {
 		t.Fatal("stale computation was cached")
+	}
+}
+
+func TestDerivedCacheReleasesMemoryAndBoundsKeys(t *testing.T) {
+	InvalidateDerived()
+	v := derivedVersion()
+	for i := 0; i < 2*derivedMaxEntries; i++ {
+		derivedSet(fmt.Sprint(i), v, i)
+	}
+	derived.Lock()
+	if len(derived.items) > derivedMaxEntries {
+		t.Error("derived cache grew beyond limit")
+	}
+	derived.items["expired"] = derivedEntry{value: "large result", expires: time.Now().Add(-time.Second), version: v}
+	derived.Unlock()
+	if _, ok := derivedGet("expired"); ok {
+		t.Error("expired entry returned")
+	}
+	derived.Lock()
+	_, retained := derived.items["expired"]
+	derived.Unlock()
+	if retained {
+		t.Error("expired entry retained in memory")
+	}
+	InvalidateDerived()
+	derived.Lock()
+	defer derived.Unlock()
+	if len(derived.items) != 0 {
+		t.Error("invalidated values retained in memory")
 	}
 }

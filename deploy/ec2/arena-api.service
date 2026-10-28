@@ -15,6 +15,7 @@ Environment=PORT=8080
 Environment=WORKER_URL=http://127.0.0.1:8001/mutate-tournament
 Environment=DB_PATH=/var/lib/arena/tournaments_store.json
 Environment=QUALIFIER_WORKERS=1
+Environment=GOMEMLIMIT=128MiB
 ExecStart=/opt/arena/app/server
 Restart=on-failure
 RestartSec=5

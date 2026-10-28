@@ -1,8 +1,8 @@
 [Unit]
-Description=Weekly Arena backup cleanup
+Description=Daily Arena backup cleanup
 
 [Timer]
-OnCalendar=Sun *-*-* 04:00:00 UTC
+OnCalendar=*-*-* 04:00:00 UTC
 Persistent=true
 Unit=arena-backup-cleanup.service
 

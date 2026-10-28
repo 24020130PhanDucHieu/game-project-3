@@ -40,7 +40,7 @@ export function Billboard() {
       out.push({ key: `t-${t.tournament_id}`, eyebrow: STATUS[t.status] || t.status || 'GIẢI ĐẤU', title: t.name, lines: [champ ? `Quán quân: ${champ}` : `${t.num_teams} đội · Loại trực tiếp Bo5`, 'Bấm để xem bảng đấu'], variant: i % 4, onClick: () => { setTournamentId(t.tournament_id); navigate('bracket') } })
     })
     out.push({ key: 'cta', eyebrow: 'FRESHMAN BOT ARENA · K69', title: 'Viết bot. Ra trận. Lên ngôi.', lines: ['Oẳn Tù Tì trên bàn cờ 9×9', 'Python hoặc C++ — đấu thử boss miễn phí'], variant: 3 })
-    return out
+    return out.sort((a, b) => Number(b.title.trim().toLowerCase().replace(/[-_\s]+/g, ' ') === 'k71 demo') - Number(a.title.trim().toLowerCase().replace(/[-_\s]+/g, ' ') === 'k71 demo'))
   }, [tournaments.data, qualifiers.data, tournament.data, now, enterMatch, navigate, setQualifierId, setTournamentId])
 
   useEffect(() => { if (index >= slides.length) setIndex(0) }, [slides.length, index])

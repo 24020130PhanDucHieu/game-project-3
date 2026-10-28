@@ -8,3 +8,6 @@ User=root
 EnvironmentFile=-/etc/arena/backend.env
 ExecStart=/usr/bin/python3 /opt/arena/app/scripts/postgres_backup_restore_drill.py --cleanup --directory /var/backups/arena --keep-count 7
 TimeoutStartSec=60
+Nice=10
+CPUQuota=25%
+MemoryMax=96M

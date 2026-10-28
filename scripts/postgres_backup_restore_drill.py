@@ -72,7 +72,7 @@ def _parse_pg_url(url: str) -> dict:
     return env
 
 
-def _run_pg(cmd: list, env: dict, timeout: int = 1800, capture: bool = False) -> subprocess.CompletedResult:
+def _run_pg(cmd: list, env: dict, timeout: int = 1800, capture: bool = False) -> subprocess.CompletedProcess:
     """Run a PostgreSQL command with connection environment."""
     full_env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin")}
     full_env.update(env)
@@ -323,22 +323,45 @@ def do_offsite_s3(archive: Path) -> dict:
 
 # ─── RETENTION CLEANUP ────────────────────────────────────────────────────
 
-def cleanup_old_backups(backup_dir: str, keep_count: int = 7):
-    """Keep only the N newest backups, delete older ones."""
-    backup_path = Path(backup_dir)
-    dumps = sorted(backup_path.glob("arena-*.dump"), key=lambda p: p.stat().st_mtime, reverse=True)
+def cleanup_old_backups(backup_dir: str, keep_count: int = 7, dry_run: bool = False):
+    """Prune only scheduled backups after verifying the copies we will retain.
 
+    Migration/manual archives, partial files and symlinks are always preserved.
+    Timestamp names are shared by deploy/ec2/backup.py and this script.
+    """
+    if keep_count < 1:
+        raise ValueError("At least one verified backup must be retained")
+    backup_path = Path(backup_dir).resolve(strict=True)
+    pattern = re.compile(r"(?:arena-)?[0-9]{8}T[0-9]{6}(?:[0-9]{6})?Z\.dump")
+    dumps = sorted((p for p in backup_path.iterdir()
+                    if pattern.fullmatch(p.name) and p.is_file() and not p.is_symlink()),
+                   key=lambda p: p.stat().st_mtime, reverse=True)
     if len(dumps) <= keep_count:
-        _log("INFO", f"Giữ nguyên {len(dumps)} bản backup (tối đa {keep_count})")
-        return
-
+        _log("INFO", f"Retention: {len(dumps)} scheduled backups; nothing to remove")
+        return []
+    # Fail closed: a missing, malformed or corrupt newest backup must not cause
+    # deletion of older copies that may be the last usable restore point.
+    for dump in dumps[:keep_count]:
+        checksum = dump.with_suffix('.sha256')
+        if checksum.is_symlink() or not checksum.is_file():
+            raise RuntimeError("Retention stopped: retained backup lacks a regular checksum file")
+        parts = checksum.read_text(encoding='utf-8').strip().split()
+        if len(parts) != 2 or parts[1] != dump.name or parts[0] != _digest(dump):
+            raise RuntimeError("Retention stopped: retained backup checksum mismatch")
     to_delete = dumps[keep_count:]
     for dump in to_delete:
-        _log("INFO", f"  Xóa backup cũ: {dump.name}")
-        dump.unlink(missing_ok=True)
-        dump.with_suffix(".sha256").unlink(missing_ok=True)
-        dump.with_suffix(".meta.json").unlink(missing_ok=True)
-    _log("INFO", f"✔ Đã dọn {len(to_delete)} bản backup cũ")
+        _log("INFO", f"{'Would remove' if dry_run else 'Removing'} scheduled backup: {dump.name}")
+        if dry_run:
+            continue
+        # All paths are single files in the resolved backup directory.
+        if dump.is_symlink() or dump.parent != backup_path:
+            raise RuntimeError("Retention path changed; refusing deletion")
+        dump.unlink()
+        for suffix in ('.sha256', '.meta.json'):
+            sidecar = dump.with_suffix(suffix)
+            if sidecar.is_file() and not sidecar.is_symlink():
+                sidecar.unlink()
+    return [p.name for p in to_delete]
 
 
 # ─── MAIN ──────────────────────────────────────────────────────────────────
@@ -365,8 +388,11 @@ def main():
                         help="Thư mục lưu backup (mặc định: database/backups)")
     parser.add_argument("--keep-count", type=int, default=7,
                         help="Số bản backup giữ lại khi --cleanup")
+    parser.add_argument("--dry-run", action="store_true", help="Preview backup cleanup without deleting files")
 
     args = parser.parse_args()
+    if args.dry_run and not args.cleanup:
+        parser.error("--dry-run is supported only with --cleanup")
 
     # Validate arguments
     modes = [args.full_drill, args.backup_only, args.restore_only, args.offsite_only, args.cleanup]
@@ -380,7 +406,7 @@ def main():
 
     try:
         if args.cleanup:
-            cleanup_old_backups(args.directory, args.keep_count)
+            cleanup_old_backups(args.directory, args.keep_count, args.dry_run)
             return 0
 
         if args.full_drill or args.backup_only:

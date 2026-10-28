@@ -4,6 +4,7 @@ import { Bell, Bot, CalendarClock, CheckCircle2, Flag, History, Radio, Swords, T
 import { countdown, relative, shortTime, toDate } from '@/lib/format'
 import { Badge, Button, Card, EmptyState, ProgressBar, Skeleton, SkeletonCards, SkeletonRows, Stat, StatusBadge } from '../ui'
 import { useLive } from '../context'
+import { usePointerMotion } from '@/lib/interaction-motion'
 import { Billboard } from '../billboard'
 import { CurrentTournamentChip } from '../tournament-picker'
 import { MatchCard, historyWinner, useHistory, useNow, useRanking } from '../shared'
@@ -36,12 +37,13 @@ function StageClock({ tournament }: { tournament: any }) {
 }
 
 function Hero() {
+  const parallax = usePointerMotion<HTMLElement>('tilt')
   const { role, session, navigate, openAuth, tournament, ownMatches, enterMatch, qualifiers } = useLive()
   const live = Object.values(tournament.data?.matches || {}).some((m: any) => m.status === 'IN_PROGRESS')
   const openQualifier = qualifiers.data?.find((q) => q.status === 'OPEN')
   const nextOwn = ownMatches.find(([, m]) => m.status !== 'COMPLETED' && m.team_a && m.team_b)
   return (
-    <section className="relative isolate overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary/25 via-card to-cyan/10 p-6 shadow-lg md:p-10">
+    <section ref={parallax} className="hero-parallax relative isolate overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-primary/25 via-card to-cyan/10 p-6 shadow-lg md:p-10">
       <div className="hero-grid absolute inset-0 -z-10" aria-hidden />
       <div className="grid items-center gap-8 lg:grid-cols-[1fr_minmax(0,560px)]">
       <div className="max-w-2xl">
