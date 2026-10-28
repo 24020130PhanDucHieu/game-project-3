@@ -1,5 +1,7 @@
 'use client'
 
+import { MotionBanner } from '../../motion-banner'
+
 import { useEffect, useState } from 'react'
 import { Ban, BookOpenCheck, BrainCircuit, CalendarClock, Check, CheckCircle2, Circle, ClipboardList, Cpu, FileText, Flag, LineChart, ListChecks, ListOrdered, LogIn, Medal, Swords, Timer, Trophy, Users } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
@@ -133,7 +135,7 @@ export function AiCupView() {
   return (
     <div className="space-y-6">
       {detail.loading && !event ? <Skeleton className="h-72 w-full rounded-3xl" /> : detail.error && !detail.data ? <ErrorNote message={detail.error.message} onRetry={() => void detail.reload()} /> : event && (
-        <section className="banner-soft relative overflow-hidden rounded-3xl p-6 sm:p-8" style={{ ['--tint-a' as string]: (TINT[event.status] || TINT.OPEN)[0], ['--tint-b' as string]: (TINT[event.status] || TINT.OPEN)[1] }}>
+        <MotionBanner className="banner-soft relative overflow-hidden rounded-3xl p-6 sm:p-8" style={{ ['--tint-a' as string]: (TINT[event.status] || TINT.OPEN)[0], ['--tint-b' as string]: (TINT[event.status] || TINT.OPEN)[1] }}>
           <div className="aurora-blob pointer-events-none absolute -right-16 -top-24 -z-10 size-80 rounded-full opacity-25 blur-3xl" style={{ background: 'var(--tint-b)' }} aria-hidden />
           <div className="aurora-blob-slow pointer-events-none absolute -bottom-28 left-6 -z-10 size-72 rounded-full opacity-20 blur-3xl" style={{ background: 'var(--tint-a)' }} aria-hidden />
           <div className="soft-dots pointer-events-none absolute inset-0 -z-10" aria-hidden />
@@ -166,7 +168,7 @@ export function AiCupView() {
             </div>
             {event.error && <ErrorNote message={event.error} />}
           </div>
-        </section>
+        </MotionBanner>
       )}
 
       {event && role === 'GUEST' && (

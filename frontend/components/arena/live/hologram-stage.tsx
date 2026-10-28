@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { ArrowRight, Pause, Play } from 'lucide-react'
 import { usePointerMotion } from '@/lib/interaction-motion'
+import { CursorFollow } from './cursor-follow'
 import './hologram.css'
 
 const PALETTES = [['#a78bfa', '#22d3ee'], ['#fb7185', '#a78bfa'], ['#22d3ee', '#34d399'], ['#fbbf24', '#fb7185']]
@@ -29,6 +30,7 @@ export function HologramStage({ slide, index, count, go, onPause, effectsEnabled
     onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
     onFocusCapture={() => setFocus(true)} onBlurCapture={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setFocus(false) }}
     onKeyDown={e => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); go(e.key === 'ArrowLeft' ? -1 : 1) } }}>
+    {effectsEnabled && visible && <CursorFollow />}
     <div className="holo-topline"><span><i /> FRESHMAN ARENA</span><span>TOURNAMENT / {String(index + 1).padStart(2, '0')}</span></div>
     <button className="holo-pause" aria-label={paused ? 'Tiếp tục tự chuyển' : 'Tạm dừng tự chuyển'} aria-pressed={paused} onClick={() => setPaused(p => !p)}>{paused ? <Play size={13} /> : <Pause size={13} />}</button>
     <div className="holo-stage"

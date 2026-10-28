@@ -1,0 +1,10 @@
+.motion-banner { --par-x:0; --par-y:0; --pointer-x:50%; --pointer-y:50%; }
+.motion-banner-glow { position:absolute; inset:0; pointer-events:none; z-index:-1; opacity:0; background:radial-gradient(340px circle at var(--pointer-x) var(--pointer-y),color-mix(in srgb,var(--tint-b,#38bdf8) 38%,transparent),transparent 75%); transition:opacity .3s; }
+.motion-banner[data-pointer='active'][data-motion='on'] .motion-banner-glow { opacity:1; }
+.motion-banner .soft-dots { inset:-30px; transform:translate(calc(var(--par-x) * -24px),calc(var(--par-y) * -18px)); transition:transform .2s ease-out; }
+.motion-banner h1 { transform:perspective(800px) translate(calc(var(--par-x) * 10px),calc(var(--par-y) * 7px)) rotateY(calc(var(--par-x) * 3deg)); transition:transform .2s ease-out; }
+.motion-banner[data-motion='off'] .soft-dots,.motion-banner[data-motion='off'] h1 { transform:none; }
+@media (hover:none),(pointer:coarse),(prefers-reduced-motion:reduce) {
+  .motion-banner .soft-dots,.motion-banner h1 { transform:none!important; transition:none!important; }
+  .motion-banner-glow { display:none; }
+}

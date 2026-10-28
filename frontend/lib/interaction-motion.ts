@@ -40,8 +40,8 @@ export function usePointerMotion<T extends HTMLElement>(mode: 'light' | 'tilt' |
         el.style.setProperty('--pointer-x', `${x * 100}%`)
         el.style.setProperty('--pointer-y', `${y * 100}%`)
         if (mode === 'tilt' || mode === 'parallax') {
-          el.style.setProperty('--tilt-x', `${(0.5 - y) * (mode === 'parallax' ? 12 : 5)}deg`)
-          el.style.setProperty('--tilt-y', `${(x - 0.5) * (mode === 'parallax' ? 16 : 7)}deg`)
+          el.style.setProperty('--tilt-x', `${(0.5 - y) * (mode === 'parallax' ? 18 : 5)}deg`)
+          el.style.setProperty('--tilt-y', `${(x - 0.5) * (mode === 'parallax' ? 24 : 7)}deg`)
           el.style.setProperty('--par-x', String((x - 0.5) * 2))
           el.style.setProperty('--par-y', String((y - 0.5) * 2))
         }

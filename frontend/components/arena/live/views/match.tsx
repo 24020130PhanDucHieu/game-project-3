@@ -1,5 +1,7 @@
 'use client'
 
+import { MotionBanner } from '../motion-banner'
+
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, Check, CheckCircle2, ClipboardList, Clock, Code2, Crown, DoorOpen, Handshake, Hourglass, History, MessagesSquare, PlayCircle, Radio, Search, ShieldAlert, Swords, Trophy } from 'lucide-react'
 import { arenaApi } from '@/lib/api-client'
@@ -152,7 +154,7 @@ function Scoreboard({ match, task }: { match: any; task?: boolean }) {
     <div className="relative space-y-4">
       <RoundBanner round={match.current_round_idx || 1} matchId={match.match_id} />
       {match.status === 'COMPLETED' && match.winner_name && <VictoryBanner name={match.winner_name} />}
-      <section className="banner-soft relative overflow-hidden rounded-3xl p-4 md:p-6" style={{ ['--tint-a' as string]: '#fb7185', ['--tint-b' as string]: '#38bdf8' }} aria-label="Bảng tỉ số">
+      <MotionBanner className="banner-soft relative overflow-hidden rounded-3xl p-4 md:p-6" style={{ ['--tint-a' as string]: '#fb7185', ['--tint-b' as string]: '#38bdf8' }} aria-label="Bảng tỉ số">
         <div className="aurora-blob pointer-events-none absolute -left-16 top-1/2 -z-10 size-64 -translate-y-1/2 rounded-full bg-rose-400/20 blur-3xl" aria-hidden />
         <div className="aurora-blob-slow pointer-events-none absolute -right-16 top-1/2 -z-10 size-64 -translate-y-1/2 rounded-full bg-sky-400/20 blur-3xl" aria-hidden />
         <div className="soft-dots pointer-events-none absolute inset-0 -z-10" aria-hidden />
@@ -180,7 +182,7 @@ function Scoreboard({ match, task }: { match: any; task?: boolean }) {
           </div>
           <RoundTrack match={match} />
         </div>
-      </section>
+      </MotionBanner>
     </div>
   )
 }
