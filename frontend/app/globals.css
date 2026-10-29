@@ -533,10 +533,13 @@ html[data-fx='lite'] .fx-screen-enter,html[data-fx='off'] .fx-screen-enter { ani
 }
 
 /* Compact desktop navigation; mobile keeps full labels. */
-.desktop-sidebar { transition:width .2s ease-out; }
+.desktop-sidebar { transition:width .24s cubic-bezier(.2,.7,.2,1); }
+.desktop-sidebar nav > button { min-height:44px; }
+.desktop-sidebar .sidebar-label { white-space:nowrap; }
 .sidebar-body[data-collapsed='true'] .sidebar-brand { justify-content:center; padding-inline:0; }
 .sidebar-body[data-collapsed='true'] nav { padding-inline:8px; }
-.sidebar-body[data-collapsed='true'] nav > p,.sidebar-body[data-collapsed='true'] .sidebar-label { display:none; }
+.sidebar-body[data-collapsed='true'] nav > p { visibility:hidden; white-space:nowrap; }
+.sidebar-body[data-collapsed='true'] .sidebar-label { display:none; }
 .sidebar-body[data-collapsed='true'] nav > button { justify-content:center; min-height:44px; padding-inline:0; }
 .sidebar-body[data-collapsed='true'] .sidebar-footer { padding:10px 8px; }
 .sidebar-body[data-collapsed='true'] .sidebar-footer > div { justify-content:center; padding:8px 0; }

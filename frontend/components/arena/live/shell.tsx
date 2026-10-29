@@ -1,7 +1,6 @@
 'use client'
 
 import { AiLauncher } from './ai-assistant'
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { releaseOrphanLock, useModalLayer } from '@/lib/scroll-lock'
 import { fetching } from '@/lib/cache'
@@ -114,7 +113,7 @@ function Brand() {
   )
 }
 
-function SidebarBody({ onPick, collapsed = false, onToggle }: { onPick: () => void; collapsed?: boolean; onToggle?: () => void }) {
+function SidebarBody({ onPick, collapsed = false }: { onPick: () => void; collapsed?: boolean }) {
   const { view, navigate, role, session, logout, outbox } = useLive()
   const navRef = useRef<HTMLElement>(null)
   const [tip, setTip] = useState<{ label: string; top: number } | null>(null)
@@ -143,9 +142,6 @@ function SidebarBody({ onPick, collapsed = false, onToggle }: { onPick: () => vo
       {collapsed && tip && <span role="tooltip" className="pointer-events-none fixed left-[86px] z-50 -translate-y-1/2 rounded-lg border border-border bg-popover px-3 py-2 text-sm font-medium text-popover-foreground shadow-lg" style={{ top: tip.top }}>{tip.label}</span>}
       {indicator && <span aria-hidden data-testid="nav-curve" className="nav-curve" style={{ height: indicator.height, transform: `translateY(${indicator.top}px)` }} />}
       <div className="sidebar-brand flex h-20 shrink-0 items-center border-b border-border px-5">{collapsed ? <span className="bg-brand grid size-11 place-items-center rounded-xl text-sm font-black text-primary-foreground" aria-label="BOT K69 Arena">K69</span> : <Brand />}</div>
-      {onToggle && <button type="button" onClick={onToggle} aria-expanded={!collapsed} aria-label={collapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'} className="mx-3 mt-3 flex min-h-10 items-center justify-center gap-2 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary">
-        {collapsed ? <PanelLeftOpen size={19} /> : <><PanelLeftClose size={19} /><span>Thu gọn</span></>}
-      </button>}
       <nav ref={navRef} onScroll={() => setTip(null)} className="relative isolate flex-1 space-y-1 overflow-y-auto px-3 py-5" aria-label="Điều hướng chính">
         <p className="mb-2 px-3 text-[11px] font-bold tracking-widest text-muted-foreground">THI ĐẤU</p>
         {NAV.filter((item) => !item.adminOnly || role === 'ADMIN').map((item) => {
@@ -212,15 +208,9 @@ function Topbar({ onMenu }: { onMenu: () => void }) {
 export function Shell() {
   const { view, authRequest, closeAuth, refreshSession, navigate } = useLive()
   const [drawer, setDrawer] = useState(false)
-  const [collapsed, setCollapsed] = useState(false)
-  useEffect(() => {
-    try { setCollapsed(localStorage.getItem('arena.sidebar.collapsed') === 'true') } catch { /* Storage may be unavailable. */ }
-  }, [])
-  const toggleSidebar = () => {
-    const next = !collapsed
-    setCollapsed(next)
-    try { localStorage.setItem('arena.sidebar.collapsed', String(next)) } catch { /* Keep the session choice. */ }
-  }
+  const [sidebarHovered, setSidebarHovered] = useState(false)
+  const [sidebarKeyboardFocus, setSidebarKeyboardFocus] = useState(false)
+  const collapsed = !sidebarHovered && !sidebarKeyboardFocus
   const drawerRef = useRef<HTMLElement>(null)
   const drawerOpener = useRef<HTMLElement | null>(null)
   useModalLayer(() => setDrawer(false), drawer)
@@ -259,9 +249,16 @@ export function Shell() {
     <div className="min-h-dvh bg-background text-foreground md:flex">
       <TopProgress />
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[90] focus:rounded-lg focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground">Bỏ qua điều hướng</a>
-      <aside data-testid="desktop-sidebar" data-collapsed={collapsed} className={cn('desktop-sidebar relative z-40 hidden shrink-0 border-r border-border bg-sidebar text-sidebar-foreground md:sticky md:top-0 md:block md:h-dvh', collapsed ? 'w-[76px]' : 'w-[264px]')}>
-        <SidebarBody collapsed={collapsed} onToggle={toggleSidebar} onPick={() => undefined} />
-      </aside>
+      <div className="hidden w-[76px] shrink-0 md:block">
+        <aside data-testid="desktop-sidebar" data-collapsed={collapsed}
+          onPointerEnter={e => { if (e.pointerType !== 'touch') setSidebarHovered(true) }}
+          onPointerLeave={() => setSidebarHovered(false)}
+          onFocusCapture={e => { if (e.target.matches(':focus-visible')) setSidebarKeyboardFocus(true) }}
+          onBlurCapture={e => { if (!e.currentTarget.contains(e.relatedTarget)) setSidebarKeyboardFocus(false) }}
+          className={cn('desktop-sidebar fixed inset-y-0 left-0 z-40 overflow-hidden border-r border-border bg-sidebar text-sidebar-foreground', collapsed ? 'w-[76px]' : 'w-[264px] shadow-xl')}>
+          <SidebarBody collapsed={collapsed} onPick={() => undefined} />
+        </aside>
+      </div>
       {drawer && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setDrawer(false)} />

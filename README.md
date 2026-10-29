@@ -74,7 +74,7 @@ wrangler.jsonc             Cấu hình frontend Cloudflare
 
 Giao diện chia thành hồ sơ đội, tổng quan, bảng đấu, xếp hạng, trận đấu, vòng loại, Giải AI, hướng dẫn và quản trị. Các khu vực quản trị phải được backend kiểm tra quyền, kể cả khi nút tương ứng đã bị ẩn trên giao diện.
 
-Thanh điều hướng desktop có thể thu gọn còn biểu tượng và mở rộng lại. Trạng thái được lưu trên trình duyệt; tên chức năng vẫn có nhãn truy cập và tooltip. Trên màn hình nhỏ, thanh điều hướng chuyển thành menu có quản lý focus, đóng bằng Escape và khóa tương tác với nền khi đang mở.
+Thanh điều hướng desktop mặc định chỉ hiện biểu tượng. Rê chuột vào sẽ tự mở rộng, rời chuột sẽ thu lại; không cần nút bấm. Khi dùng bàn phím, thanh mở trong lúc focus nằm bên trong. Phần mở rộng phủ lên nội dung thay vì đẩy trang qua lại. Trên màn hình nhỏ, menu vẫn hiển thị đầy đủ nhãn, quản lý focus và hỗ trợ đóng bằng Escape.
 
 Banner tổng quan ưu tiên giải minh họa `k71 demo` khi có dữ liệu phù hợp. Banner tự đổi nội dung mỗi 4 giây khi có nhiều mục; dừng khi người dùng rê chuột, đặt focus, bấm tạm dừng hoặc khi trang bị ẩn. Việc đổi banner dùng dữ liệu đã tải, không gọi lại database sau mỗi 4 giây.
 
