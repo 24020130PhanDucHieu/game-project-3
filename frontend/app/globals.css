@@ -534,6 +534,8 @@ html[data-fx='lite'] .fx-screen-enter,html[data-fx='off'] .fx-screen-enter { ani
 
 /* Compact desktop navigation; mobile keeps full labels. */
 .desktop-sidebar { transition:width .24s cubic-bezier(.2,.7,.2,1); }
+.sidebar-body nav { min-height:0; overflow-x:hidden; scrollbar-width:none; -ms-overflow-style:none; }
+.sidebar-body nav::-webkit-scrollbar { display:none; width:0; height:0; }
 .desktop-sidebar nav > button { min-height:44px; }
 .desktop-sidebar .sidebar-label { white-space:nowrap; }
 .sidebar-body[data-collapsed='true'] .sidebar-brand { justify-content:center; padding-inline:0; }
