@@ -368,8 +368,6 @@ html[data-fx='off'] .toast-ok svg path:last-child { stroke-dashoffset: 0; }
 
 /* Tương tác theo chuột: một frame cho phần tử đang tương tác, không chạy nền. */
 .fx-light { position: relative; isolation: isolate; }
-.fx-light::after { content: ''; position: absolute; inset: 0; z-index: 2; border-radius: inherit; pointer-events: none; opacity: 0; background: radial-gradient(420px circle at var(--pointer-x,50%) var(--pointer-y,50%), color-mix(in oklab,var(--primary) 26%,transparent), transparent 72%); box-shadow: inset 0 0 0 1px color-mix(in oklab,var(--primary) 30%,transparent); transition: opacity .3s ease; }
-.fx-light[data-pointer='active']::after { opacity: 1; }
 .fx-tilt { transform: perspective(1200px) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg)); transform-style: preserve-3d; transition: transform .38s cubic-bezier(.2,.8,.2,1); }
 .fx-tilt[data-pointer='active'] { transition-duration: .12s; }
 .fx-depth { transform: translateZ(20px); }
@@ -474,21 +472,9 @@ html[data-fx='lite'] .fx-stagger > *, html[data-fx='lite'] .lesson-connector { a
 @media (max-width: 640px) { .bn-copy { min-height: 0; } }
 
 /* ===== Chạm mặt nước (tab, nút, banner) ===== */
-.water { isolation: isolate; }
-.water:not(.bn-card):not(.cf-card)::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 28%; z-index: -1; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .3s ease, height .55s cubic-bezier(.22,1,.36,1); background: radial-gradient(80px circle at var(--wx,50%) 40%, #ffffff8c, transparent 70%), linear-gradient(to top, #22d3eed9, #38bdf885 62%, #7dd3fc40); -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 40' preserveAspectRatio='none'><path d='M0 7 Q12 0 24 7 T48 7 V40 H0Z'/></svg>") repeat-x 0 0 / 48px 100%; mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 40' preserveAspectRatio='none'><path d='M0 7 Q12 0 24 7 T48 7 V40 H0Z'/></svg>") repeat-x 0 0 / 48px 100%; }
-.water[data-water='on']:not(.bn-card):not(.cf-card)::before { opacity: 1; height: 100%; animation: water-flow 1.3s linear infinite; }
-@keyframes water-flow { to { -webkit-mask-position: 48px 0; mask-position: 48px 0; } }
-.water[data-water='on']:not(.cf-card) { box-shadow: 0 0 0 1px #67e8f980, 0 0 18px -2px #22d3ee80; }
-@keyframes water-pulse { from { opacity: .72; } to { opacity: 1; } }
-.water-ring { position: fixed; z-index: 400; width: var(--s); height: var(--s); margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2); border-radius: 50%; pointer-events: none; border: 3px solid #cffafe; box-shadow: 0 0 22px 2px #22d3eeb3, inset 0 0 18px #22d3ee80, 0 0 0 1px #0891b280; transform: scale(.12); opacity: .95; animation: water-ring .8s cubic-bezier(.15,.7,.3,1) forwards; }
-.water-ring-small { animation-duration: .6s; border-width: 1.5px; }
-@keyframes water-ring { to { transform: scale(3); opacity: 0; border-width: .5px; } }
-html[data-fx='lite'] .water-ring, html[data-fx='off'] .water-ring, html[data-fx='lite'] .water::before, html[data-fx='off'] .water::before { display: none; }
-html[data-fx='lite'] .water[data-water], html[data-fx='off'] .water[data-water] { box-shadow: none; }
 html[data-fx='lite'] .bn-card, html[data-fx='off'] .bn-card { transform: none; transition: none; }
 html[data-fx='off'] .bn-copy { animation: none; }
 @media (prefers-reduced-motion: reduce) {
-  .water-ring, .water::before { display: none; }
   .bn-card { transform: none !important; transition: none; }
   .bn-blob, .bn-copy, .bn-live { animation: none; }
   .bn-fx { transform: none !important; filter: none !important; }
@@ -526,7 +512,7 @@ html[data-fx='lite'] .bn-layer, html[data-fx='off'] .bn-layer, html[data-fx='lit
 }
 
 /* ===== Tab cong ra ngoài ở thanh bên: dải đang chọn nối liền với vùng nội dung ===== */
-.nav-curve { position: absolute; left: .75rem; right: -1px; top: 0; z-index: 0; border-radius: 14px 0 0 14px; background: linear-gradient(90deg, color-mix(in oklab, var(--primary) 20%, var(--background)), var(--background) 58%); box-shadow: inset 3px 0 0 var(--primary), 0 0 0 1px color-mix(in oklab, var(--primary) 18%, transparent); pointer-events: none; transition: transform .55s cubic-bezier(.34,1.45,.4,1), height .35s ease; will-change: transform; }
+.nav-curve { position: absolute; left: .75rem; right: -1px; top: 0; z-index: 0; border-radius: 14px 0 0 14px; background: linear-gradient(90deg, color-mix(in oklab, var(--primary) 20%, var(--background)), var(--background) 58%); box-shadow: inset 3px 0 0 var(--primary), 0 0 0 1px color-mix(in oklab, var(--primary) 18%, transparent); pointer-events: none; transition: transform .2s ease-out, height .2s ease; will-change: transform; }
 .nav-curve::before, .nav-curve::after { content: ''; position: absolute; right: 0; width: 18px; height: 18px; pointer-events: none; }
 .nav-curve::before { top: -18px; background: radial-gradient(circle at 0 0, transparent 17.5px, var(--background) 18px); }
 .nav-curve::after { bottom: -18px; background: radial-gradient(circle at 0 100%, transparent 17.5px, var(--background) 18px); }
@@ -534,12 +520,14 @@ html[data-fx='lite'] .nav-curve, html[data-fx='off'] .nav-curve { transition: no
 @media (prefers-reduced-motion: reduce) { .nav-curve { transition: none; } }
 
 /* ===== Chuyển màn hình 3D (cover-flow): màn cũ lùi xoay đi, màn mới xoay vào ===== */
-.arena-content { perspective: 1500px; }
-html[data-vt='next']::view-transition-old(arena-content) { animation: arena-3d-out-next .34s cubic-bezier(.4,0,.6,1) both; }
-html[data-vt='next']::view-transition-new(arena-content) { animation: arena-3d-in-next .46s cubic-bezier(.22,1,.36,1) both; }
-html[data-vt='prev']::view-transition-old(arena-content) { animation: arena-3d-out-prev .34s cubic-bezier(.4,0,.6,1) both; }
-html[data-vt='prev']::view-transition-new(arena-content) { animation: arena-3d-in-prev .46s cubic-bezier(.22,1,.36,1) both; }
-@keyframes arena-3d-out-next { to { opacity: 0; transform: perspective(1500px) translateX(-9%) translateZ(-140px) rotateY(14deg) scale(.96); } }
-@keyframes arena-3d-in-next { from { opacity: 0; transform: perspective(1500px) translateX(9%) translateZ(-140px) rotateY(-14deg) scale(.96); } }
-@keyframes arena-3d-out-prev { to { opacity: 0; transform: perspective(1500px) translateX(9%) translateZ(-140px) rotateY(-14deg) scale(.96); } }
-@keyframes arena-3d-in-prev { from { opacity: 0; transform: perspective(1500px) translateX(-9%) translateZ(-140px) rotateY(14deg) scale(.96); } }
+/* One short content transition; keep the navigation stationary. */
+html[data-vt] .fx-screen-enter { animation:none; }
+html[data-vt] .animate-fade-up,html[data-vt] .stagger > tr { animation:none; }
+html[data-vt]::view-transition-old(arena-content) { animation: calm-page-out .16s ease-out both; }
+html[data-vt]::view-transition-new(arena-content) { animation: calm-page-in .2s ease-out both; }
+@keyframes calm-page-out { to { opacity:0; } }
+@keyframes calm-page-in { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:none; } }
+html[data-fx='lite'] .fx-screen-enter,html[data-fx='off'] .fx-screen-enter { animation:none; }
+@media (prefers-reduced-motion:reduce) {
+  html[data-vt]::view-transition-old(arena-content),html[data-vt]::view-transition-new(arena-content) { animation:none!important; }
+}

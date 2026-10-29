@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils'
 import { statusOf, type Tone } from '@/lib/format'
 import { useCountUp, useReducedMotion } from '@/lib/motion'
 import { useModalLayer } from '@/lib/scroll-lock'
-import { usePointerMotion } from '@/lib/interaction-motion'
 
 export const toneClass: Record<Tone, string> = {
   neutral: 'border-border bg-muted text-muted-foreground',
@@ -22,9 +21,8 @@ export function Card({ children, className, title, subtitle, action, padded = tr
   /** Icon nhỏ cạnh tiêu đề (lucide). */
   icon?: ReactNode
 }) {
-  const motionRef = usePointerMotion<HTMLElement>()
   return (
-    <section ref={motionRef} className={cn('fx-light animate-fade-up surface rounded-2xl border border-border text-card-foreground', className)}>
+    <section className={cn('animate-fade-up surface rounded-2xl border border-border text-card-foreground', className)}>
       {(title || action) && (
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-gradient-to-r from-primary/[0.09] via-primary/[0.03] to-transparent px-5 py-3.5">
           <div className="flex min-w-0 items-center gap-2.5">
@@ -49,7 +47,6 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 export function Button({ variant = 'primary', size = 'md', loading, className, children, disabled, type = 'button', ...rest }: ButtonProps) {
-  const motionRef = usePointerMotion<HTMLButtonElement>(variant === 'primary' ? 'magnet' : 'none')
   const styles = {
     primary: 'bg-brand text-primary-foreground shadow-md shadow-primary/25 glow-hover hover:brightness-110 active:translate-y-px active:scale-[.98]',
     secondary: 'border border-border bg-card/70 text-foreground shadow-sm hover:border-primary/50 hover:bg-accent/50 active:scale-[.98]',
@@ -58,15 +55,13 @@ export function Button({ variant = 'primary', size = 'md', loading, className, c
   }[variant]
   return (
     <button
-      ref={motionRef}
       type={type}
       disabled={disabled || loading}
       className={cn(
         'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50',
         size === 'sm' ? 'h-8 px-3 text-xs' : 'h-10 px-4 text-sm',
         styles,
-        'water relative',
-        variant === 'primary' && 'fx-magnet',
+        'relative',
         className,
       )}
       {...rest}
@@ -250,7 +245,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, className }: {
   }, [value, tabs.length])
   return (
     <div ref={listRef} role="tablist" className={cn('relative flex gap-1 overflow-x-auto rounded-xl border border-border bg-muted/60 p-1', className)}>
-      {box && <span aria-hidden className="bg-brand pointer-events-none absolute bottom-1 left-0 top-1 rounded-lg shadow-md shadow-primary/30 transition-[transform,width] duration-300 ease-[cubic-bezier(.22,1,.36,1)]" style={{ transform: `translateX(${box.left}px)`, width: box.width }} />}
+      {box && <span aria-hidden className="bg-brand pointer-events-none absolute bottom-1 left-0 top-1 rounded-lg shadow-md shadow-primary/30 transition-[transform,width] duration-200 ease-[cubic-bezier(.22,1,.36,1)]" style={{ transform: `translateX(${box.left}px)`, width: box.width }} />}
       {tabs.map((tab) => (
         <button
           key={tab.id}
@@ -267,7 +262,7 @@ export function Tabs<T extends string>({ tabs, value, onChange, className }: {
             listRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus({ preventScroll: true })
           }}
           className={cn(
-            'water relative z-10 inline-flex shrink-0 items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+            'relative z-10 inline-flex shrink-0 items-center gap-2 min-h-10 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
             value === tab.id ? (box ? 'text-primary-foreground' : 'bg-brand text-primary-foreground shadow-md shadow-primary/25') : 'text-muted-foreground hover:bg-card/70 hover:text-foreground',
           )}
         >

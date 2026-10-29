@@ -2,7 +2,7 @@
 
 import { AiLauncher } from './ai-assistant'
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { releaseOrphanLock } from '@/lib/scroll-lock'
+import { releaseOrphanLock, useModalLayer } from '@/lib/scroll-lock'
 import { fetching } from '@/lib/cache'
 import { useFx, type FxMode } from '@/lib/fx'
 import { BookOpen, Bell, BrainCircuit, Flag, LayoutDashboard, LogIn, LogOut, Medal, Menu, Monitor, Moon, Network, RefreshCw, Shield, Sun, Swords, UserPlus, UserRound, WifiOff, X, Zap, ZapOff, type LucideIcon } from 'lucide-react'
@@ -23,7 +23,6 @@ import { GuideView } from './views/guide'
 import { AdminView } from './views/admin'
 import { AlertsToggle, AlertsWatcher } from './alerts'
 import { StageView } from './views/stage'
-import { installWaterTouch } from '@/lib/water-touch'
 
 const NAV: { id: ViewId; label: string; icon: LucideIcon; adminOnly?: boolean }[] = [
   { id: 'profile', label: 'Hồ sơ đội', icon: UserRound },
@@ -144,7 +143,7 @@ function SidebarBody({ onPick }: { onPick: () => void }) {
           const active = view === item.id
           return (
             <button key={item.id} aria-current={active ? 'page' : undefined} onClick={() => { navigate(item.id); onPick() }}
-              className={cn('water relative flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm transition-colors', active ? 'font-bold text-foreground' : 'text-muted-foreground hover:translate-x-0.5 hover:bg-muted/70 hover:text-foreground')}>
+              className={cn('relative flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm transition-colors', active ? 'font-bold text-foreground' : 'text-muted-foreground hover:translate-x-0.5 hover:bg-muted/70 hover:text-foreground')}>
               <span className={cn('grid size-7 shrink-0 place-items-center rounded-lg transition-colors', active ? 'icon-tile text-primary' : 'text-muted-foreground')}><Icon className="size-[18px]" aria-hidden /></span>
               <span className="min-w-0 flex-1 truncate">{item.label}</span>
               {(item.id === 'qualifier' || item.id === 'aicup') && outbox.length > 0 && <Badge tone="warning">{outbox.length}</Badge>}
@@ -203,6 +202,9 @@ function Topbar({ onMenu }: { onMenu: () => void }) {
 export function Shell() {
   const { view, authRequest, closeAuth, refreshSession, navigate } = useLive()
   const [drawer, setDrawer] = useState(false)
+  const drawerRef = useRef<HTMLElement>(null)
+  const drawerOpener = useRef<HTMLElement | null>(null)
+  useModalLayer(() => setDrawer(false), drawer)
   const [stage, setStage] = useState(false)
   useEffect(() => {
     const read = () => setStage(window.location.hash === '#trinh-chieu')
@@ -210,13 +212,28 @@ export function Shell() {
     window.addEventListener('hashchange', read)
     return () => window.removeEventListener('hashchange', read)
   }, [])
-  useEffect(() => installWaterTouch(), [])
   useEffect(() => { releaseOrphanLock(); window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior }) }, [view])
   useEffect(() => {
     if (!drawer) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setDrawer(false) }
+    const panel = drawerRef.current
+    const focusables = () => Array.from(panel?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], [tabindex="0"]') || []).filter(el => el.getClientRects().length)
+    focusables()[0]?.focus({ preventScroll: true })
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return
+      const nodes = focusables(), first = nodes[0], last = nodes[nodes.length - 1]
+      if (!first) return
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+    }
+    const desktop = window.matchMedia('(min-width: 768px)')
+    const closeOnDesktop = () => { if (desktop.matches) setDrawer(false) }
+    desktop.addEventListener('change', closeOnDesktop)
     document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      desktop.removeEventListener('change', closeOnDesktop)
+      drawerOpener.current?.focus({ preventScroll: true })
+    }
   }, [drawer])
 
   return (
@@ -229,14 +246,14 @@ export function Shell() {
       {drawer && (
         <div className="fixed inset-0 z-50 md:hidden">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setDrawer(false)} />
-          <aside role="dialog" aria-modal="true" aria-label="Menu điều hướng" className="absolute inset-y-0 left-0 w-72 max-w-[85vw] border-r border-border bg-sidebar text-sidebar-foreground shadow-xl">
-            <button className="absolute right-2 top-2 z-10 rounded-lg p-2 text-muted-foreground hover:bg-muted" autoFocus aria-label="Đóng menu" onClick={() => setDrawer(false)}><X className="size-5" /></button>
+          <aside ref={drawerRef} role="dialog" aria-modal="true" aria-label="Menu điều hướng" className="absolute inset-y-0 left-0 w-72 max-w-[85vw] border-r border-border bg-sidebar text-sidebar-foreground shadow-xl">
+            <button className="absolute right-2 top-2 z-10 rounded-lg p-2 text-muted-foreground hover:bg-muted" aria-label="Đóng menu" onClick={() => setDrawer(false)}><X className="size-5" /></button>
             <SidebarBody onPick={() => setDrawer(false)} />
           </aside>
         </div>
       )}
-      <div className="min-w-0 flex-1">
-        <Topbar onMenu={() => setDrawer(true)} />
+      <div className="min-w-0 flex-1" inert={drawer}>
+        <Topbar onMenu={() => { drawerOpener.current = document.activeElement as HTMLElement; setDrawer(true) }} />
         <main id="main" className="arena-content mx-auto w-full max-w-[1400px] px-4 py-6 md:px-8 md:py-8">
           <div key={view} className="fx-screen-enter">
           {view === 'profile' && <ProfileView />}
@@ -252,15 +269,6 @@ export function Shell() {
         </main>
         <AiLauncher />
       </div>
-      {/* Bộ lọc gợn nước dùng cho lớp nền banner khi rê chuột (chỉ tính khi được áp dụng). */}
-      <svg width="0" height="0" aria-hidden="true" focusable="false" style={{ position: 'absolute' }}>
-        <filter id="arena-water" x="-5%" y="-5%" width="110%" height="110%" colorInterpolationFilters="sRGB">
-          <feTurbulence type="fractalNoise" baseFrequency="0.012 0.02" numOctaves="2" seed="4" result="noise">
-            <animate attributeName="baseFrequency" dur="8s" values="0.012 0.02;0.02 0.013;0.012 0.02" repeatCount="indefinite" />
-          </feTurbulence>
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="16" xChannelSelector="R" yChannelSelector="G" />
-        </filter>
-      </svg>
       <AlertsWatcher />
       {stage && <StageView onExit={() => { history.replaceState(null, '', window.location.pathname + window.location.search); setStage(false) }} />}
       <AuthModal

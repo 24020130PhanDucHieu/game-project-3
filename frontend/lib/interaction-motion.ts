@@ -15,6 +15,7 @@ export function usePointerMotion<T extends HTMLElement>(mode: 'light' | 'tilt' |
     if (!el || mode === 'none') return
     let frame = 0
     let bounds: DOMRect | null = null
+    const enabled = motionEnabled
     const reset = () => {
       cancelAnimationFrame(frame)
       bounds = null
@@ -23,7 +24,7 @@ export function usePointerMotion<T extends HTMLElement>(mode: 'light' | 'tilt' |
       for (const key of ['--par-x', '--par-y', '--tilt-x', '--tilt-y', '--magnet-x', '--magnet-y']) el.style.removeProperty(key)
     }
     const enter = (event: PointerEvent) => {
-      if (event.pointerType !== 'mouse' || !motionEnabled() || !window.matchMedia('(hover: hover) and (pointer: fine)').matches || el.matches(':disabled')) return
+      if (event.pointerType !== 'mouse' || !enabled() || !window.matchMedia('(hover: hover) and (pointer: fine)').matches || el.matches(':disabled')) return
       bounds = el.getBoundingClientRect()
       el.dataset.pointer = 'active'
       window.addEventListener('blur', reset, { once: true })
@@ -32,7 +33,7 @@ export function usePointerMotion<T extends HTMLElement>(mode: 'light' | 'tilt' |
       // Effects can become enabled while the cursor is already inside the card.
       if (!bounds) enter(event)
       if (!bounds) return
-      if (!motionEnabled() || el.matches(':disabled')) { reset(); return }
+      if (!enabled() || el.matches(':disabled')) { reset(); return }
       const x = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width))
       const y = Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height))
       cancelAnimationFrame(frame)

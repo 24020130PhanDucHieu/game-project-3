@@ -1,6 +1,4 @@
 .holo-arena { container-type:inline-size; position:relative; width:100%; min-width:0; color:#edf0ff; border:1px solid #ffffff20; border-radius:24px; padding:24px; overflow:hidden; background:radial-gradient(ellipse at 85% 35%,color-mix(in srgb,var(--holo-accent) 15%,transparent),transparent 65%),#0c1021; box-shadow:0 25px 65px -35px #000b,inset 0 1px #ffffff0c; }
-.holo-arena::before { content:''; pointer-events:none; position:absolute; inset:0; background:radial-gradient(250px circle at var(--pointer-x,75%) var(--pointer-y,50%),color-mix(in srgb,var(--holo-accent) 10%,transparent),transparent); opacity:0; transition:opacity .5s; }
-.holo-arena:hover::before { opacity:1; }
 .holo-topline { display:flex; justify-content:space-between; gap:12px; font:9px monospace; letter-spacing:.12em; color:#9ca6c2; }
 .holo-topline > span:first-child { display:flex; align-items:center; gap:7px; }
 .holo-topline i { width:5px; height:5px; border-radius:50%; background:var(--holo-accent); box-shadow:0 0 12px var(--holo-accent); }
@@ -62,10 +60,8 @@
 
 /* Compact floating card: foreground and arena move at different depths. */
 .holo-arena { --par-x:0; --par-y:0; --tilt-x:0deg; --tilt-y:0deg; padding:20px; transform:perspective(1100px) translate3d(calc(var(--par-x) * 5px),calc(var(--par-y) * 4px),0) rotateX(calc(2deg + var(--tilt-x))) rotateY(calc(-3deg + var(--tilt-y))); transition:transform .22s ease-out,box-shadow .35s; }
-.holo-arena::before { background:radial-gradient(220px circle at var(--pointer-x,50%) var(--pointer-y,50%),color-mix(in srgb,var(--holo-accent) 30%,transparent),transparent 80%); }
 .holo-arena[data-pointer='active'][data-motion='on']::before { opacity:1; }
 .holo-arena[data-motion='off']::before { opacity:0; }
-.holo-copy h2,.holo-copy p,.holo-status { transform:translate(calc(var(--par-x) * -7px),calc(var(--par-y) * -5px)); transition:transform .22s ease-out; }
 .holo-topline { padding-right:28px; }
 .holo-copy { padding-inline:8px; }
 .holo-stage { min-height:220px; }
@@ -88,3 +84,18 @@ html:not(.dark) .holo-pause { background:#34305e0d; }
 @media (max-width:640px), (prefers-reduced-motion:reduce) { .holo-arena { transform:none; } }
 @media (prefers-reduced-motion:reduce) { .holo-visual,.holo-orbit,.hero-parallax .hero-grid { transform:none!important; transition:none!important; } }
 @media (prefers-reduced-motion:reduce) { .holo-copy h2,.holo-copy p,.holo-status { transform:none!important; } }
+
+/* Restrained motion: one tilt, no cursor overlays or moving decorative layers. */
+.holo-arena::before { content:none; }
+.holo-arena { transform:perspective(1200px) rotateX(var(--tilt-x,0deg)) rotateY(var(--tilt-y,0deg)); }
+.holo-visual { transform:none; }
+.holo-orbit { transform:rotate(-18deg); }
+.holo-board { transform:rotateX(52deg) rotateZ(-32deg); }
+.holo-piece,.holo-scan::after { animation:none; }
+.holo-arena[data-motion="off"] { transform:none; }
+@media (hover:none),(pointer:coarse),(prefers-reduced-motion:reduce) { .holo-arena { transform:none!important; } }
+
+/* Secondary information remains readable at narrow widths. */
+.holo-topline,.holo-caption { font-size:11px; letter-spacing:.06em; }
+.holo-status,.holo-illustration { font-size:12px; }
+.holo-topline { flex-wrap:wrap; }
