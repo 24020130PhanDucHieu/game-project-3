@@ -99,3 +99,12 @@ html:not(.dark) .holo-pause { background:#34305e0d; }
 .holo-topline,.holo-caption { font-size:11px; letter-spacing:.06em; }
 .holo-status,.holo-illustration { font-size:12px; }
 .holo-topline { flex-wrap:wrap; }
+
+/* Semantic accents supplement the written status; no decorative color cycling. */
+.holo-arena .holo-status[data-status='FINISHED'] { color:#6ee7b7; border-color:#34d39955; background:#10b98112; }
+.holo-arena .holo-status[data-status='RUNNING'],.holo-arena .holo-status[data-status='OPEN'] { color:#7dd3fc; border-color:#38bdf855; background:#0ea5e912; }
+.holo-arena .holo-status[data-status='CONFIGURING'],.holo-arena .holo-status[data-status='READY'] { color:#fde68a; border-color:#fbbf2455; background:#f59e0b12; }
+.holo-champion { color:#fde68a; font-weight:700; }
+html:not(.dark) .holo-arena .holo-status[data-status='FINISHED'] { color:#047857; }
+html:not(.dark) .holo-arena .holo-status[data-status='RUNNING'],html:not(.dark) .holo-arena .holo-status[data-status='OPEN'] { color:#0369a1; }
+html:not(.dark) .holo-arena .holo-status[data-status='CONFIGURING'],html:not(.dark) .holo-arena .holo-status[data-status='READY'],html:not(.dark) .holo-champion { color:#92400e; }

@@ -1,6 +1,7 @@
 'use client'
 
 import { AiLauncher } from './ai-assistant'
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { releaseOrphanLock, useModalLayer } from '@/lib/scroll-lock'
 import { fetching } from '@/lib/cache'
@@ -113,9 +114,14 @@ function Brand() {
   )
 }
 
-function SidebarBody({ onPick }: { onPick: () => void }) {
+function SidebarBody({ onPick, collapsed = false, onToggle }: { onPick: () => void; collapsed?: boolean; onToggle?: () => void }) {
   const { view, navigate, role, session, logout, outbox } = useLive()
   const navRef = useRef<HTMLElement>(null)
+  const [tip, setTip] = useState<{ label: string; top: number } | null>(null)
+  const showTip = (el: HTMLElement, label: string) => {
+    if (collapsed) setTip({ label, top: Math.min(window.innerHeight - 32, Math.max(24, el.getBoundingClientRect().top + el.offsetHeight / 2)) })
+  }
+  useEffect(() => setTip(null), [collapsed, view])
   const [indicator, setIndicator] = useState<{ top: number; height: number } | null>(null)
   useLayoutEffect(() => {
     const nav = navRef.current
@@ -131,34 +137,38 @@ function SidebarBody({ onPick }: { onPick: () => void }) {
     nav.querySelectorAll('button').forEach((el) => observer.observe(el))
     nav.addEventListener('scroll', measure, { passive: true })
     return () => { observer.disconnect(); nav.removeEventListener('scroll', measure) }
-  }, [view, role])
+  }, [view, role, collapsed])
   return (
-    <div className="relative isolate flex h-full flex-col">
+    <div className="sidebar-body relative isolate flex h-full flex-col" data-collapsed={collapsed} onKeyDown={e => { if (e.key === 'Escape') setTip(null) }}>
+      {collapsed && tip && <span role="tooltip" className="pointer-events-none fixed left-[86px] z-50 -translate-y-1/2 rounded-lg border border-border bg-popover px-3 py-2 text-sm font-medium text-popover-foreground shadow-lg" style={{ top: tip.top }}>{tip.label}</span>}
       {indicator && <span aria-hidden data-testid="nav-curve" className="nav-curve" style={{ height: indicator.height, transform: `translateY(${indicator.top}px)` }} />}
-      <div className="flex h-20 items-center border-b border-border px-5"><Brand /></div>
-      <nav ref={navRef} className="relative isolate flex-1 space-y-1 overflow-y-auto px-3 py-5" aria-label="Điều hướng chính">
+      <div className="sidebar-brand flex h-20 shrink-0 items-center border-b border-border px-5">{collapsed ? <span className="bg-brand grid size-11 place-items-center rounded-xl text-sm font-black text-primary-foreground" aria-label="BOT K69 Arena">K69</span> : <Brand />}</div>
+      {onToggle && <button type="button" onClick={onToggle} aria-expanded={!collapsed} aria-label={collapsed ? 'Mở rộng thanh điều hướng' : 'Thu gọn thanh điều hướng'} className="mx-3 mt-3 flex min-h-10 items-center justify-center gap-2 rounded-lg text-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-2 focus-visible:outline-primary">
+        {collapsed ? <PanelLeftOpen size={19} /> : <><PanelLeftClose size={19} /><span>Thu gọn</span></>}
+      </button>}
+      <nav ref={navRef} onScroll={() => setTip(null)} className="relative isolate flex-1 space-y-1 overflow-y-auto px-3 py-5" aria-label="Điều hướng chính">
         <p className="mb-2 px-3 text-[11px] font-bold tracking-widest text-muted-foreground">THI ĐẤU</p>
         {NAV.filter((item) => !item.adminOnly || role === 'ADMIN').map((item) => {
           const Icon = item.icon
           const active = view === item.id
           return (
-            <button key={item.id} aria-current={active ? 'page' : undefined} onClick={() => { navigate(item.id); onPick() }}
+            <button key={item.id} aria-label={item.label} aria-current={active ? 'page' : undefined} onClick={() => { setTip(null); navigate(item.id); onPick() }} onMouseEnter={e => showTip(e.currentTarget, item.label)} onMouseLeave={() => setTip(null)} onFocus={e => showTip(e.currentTarget, item.label)} onBlur={() => setTip(null)}
               className={cn('relative flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left text-sm transition-colors', active ? 'font-bold text-foreground' : 'text-muted-foreground hover:translate-x-0.5 hover:bg-muted/70 hover:text-foreground')}>
               <span className={cn('grid size-7 shrink-0 place-items-center rounded-lg transition-colors', active ? 'icon-tile text-primary' : 'text-muted-foreground')}><Icon className="size-[18px]" aria-hidden /></span>
-              <span className="min-w-0 flex-1 truncate">{item.label}</span>
-              {(item.id === 'qualifier' || item.id === 'aicup') && outbox.length > 0 && <Badge tone="warning">{outbox.length}</Badge>}
-              {item.adminOnly && <Badge tone="accent">ADMIN</Badge>}
+              <span className="sidebar-label min-w-0 flex-1 truncate">{item.label}</span>
+              {(item.id === 'qualifier' || item.id === 'aicup') && outbox.length > 0 && (collapsed ? <span className="absolute right-1 top-1 size-2 rounded-full bg-amber-500" aria-label={`${outbox.length} bài đang chờ gửi`} /> : <Badge tone="warning">{outbox.length}</Badge>)}
+              {item.adminOnly && !collapsed && <Badge tone="accent">ADMIN</Badge>}
             </button>
           )
         })}
       </nav>
-      <div className="border-t border-border p-4">
+      <div className="sidebar-footer border-t border-border p-4">
         <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3">
           <Avatar name={role === 'GUEST' ? 'Khách' : session.team_name || session.display_name || 'Admin'} size="md" ring={role === 'ADMIN' ? 'gold' : undefined} />
           <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{role === 'GUEST' ? 'Khách tham quan' : session.team_name || session.display_name || session.student_id || 'Quản trị viên'}</p>
             <p className="truncate text-xs text-muted-foreground">{role === 'ADMIN' ? (session.judge ? `Giám khảo · ${session.judge}` : 'Tài khoản chủ BTC') : role === 'TEAM' ? `MSSV ${session.student_id}` : 'Chưa đăng nhập'}</p></div>
         </div>
-        {role !== 'GUEST' && <button onClick={() => void logout()} className="mt-3 flex items-center gap-2 px-1 text-xs font-semibold text-muted-foreground hover:text-red-600 dark:hover:text-red-400"><LogOut className="size-4" />Đăng xuất</button>}
+        {role !== 'GUEST' && <button aria-label="Đăng xuất" title="Đăng xuất" onClick={() => void logout()} className="mt-3 flex min-h-10 items-center gap-2 px-1 text-sm font-semibold text-muted-foreground hover:text-red-600 dark:hover:text-red-400"><LogOut className="size-4" /><span className="sidebar-label">Đăng xuất</span></button>}
       </div>
     </div>
   )
@@ -202,6 +212,15 @@ function Topbar({ onMenu }: { onMenu: () => void }) {
 export function Shell() {
   const { view, authRequest, closeAuth, refreshSession, navigate } = useLive()
   const [drawer, setDrawer] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
+  useEffect(() => {
+    try { setCollapsed(localStorage.getItem('arena.sidebar.collapsed') === 'true') } catch { /* Storage may be unavailable. */ }
+  }, [])
+  const toggleSidebar = () => {
+    const next = !collapsed
+    setCollapsed(next)
+    try { localStorage.setItem('arena.sidebar.collapsed', String(next)) } catch { /* Keep the session choice. */ }
+  }
   const drawerRef = useRef<HTMLElement>(null)
   const drawerOpener = useRef<HTMLElement | null>(null)
   useModalLayer(() => setDrawer(false), drawer)
@@ -240,8 +259,8 @@ export function Shell() {
     <div className="min-h-dvh bg-background text-foreground md:flex">
       <TopProgress />
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[90] focus:rounded-lg focus:bg-primary focus:px-3 focus:py-2 focus:text-primary-foreground">Bỏ qua điều hướng</a>
-      <aside className="hidden w-[264px] shrink-0 border-r border-border bg-sidebar text-sidebar-foreground md:sticky md:top-0 md:block md:h-dvh">
-        <SidebarBody onPick={() => undefined} />
+      <aside data-testid="desktop-sidebar" data-collapsed={collapsed} className={cn('desktop-sidebar relative z-40 hidden shrink-0 border-r border-border bg-sidebar text-sidebar-foreground md:sticky md:top-0 md:block md:h-dvh', collapsed ? 'w-[76px]' : 'w-[264px]')}>
+        <SidebarBody collapsed={collapsed} onToggle={toggleSidebar} onPick={() => undefined} />
       </aside>
       {drawer && (
         <div className="fixed inset-0 z-50 md:hidden">

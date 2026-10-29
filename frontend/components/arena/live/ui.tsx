@@ -29,7 +29,7 @@ export function Card({ children, className, title, subtitle, action, padded = tr
             {icon && <span className="grid size-8 shrink-0 place-items-center rounded-xl icon-tile text-primary [&_svg]:size-4" aria-hidden>{icon}</span>}
             <div className="min-w-0">
             {title && <h2 className="truncate text-[15px] font-bold tracking-tight">{title}</h2>}
-            {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
+            {subtitle && <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{subtitle}</p>}
             </div>
           </div>
           {action && <div className="flex flex-wrap items-center gap-2">{action}</div>}
@@ -74,7 +74,7 @@ export function Button({ variant = 'primary', size = 'md', loading, className, c
 
 export function Badge({ tone = 'neutral', children, className, dot, pulse }: { tone?: Tone; children: ReactNode; className?: string; dot?: boolean; pulse?: boolean }) {
   return (
-    <span className={cn('inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-[11px] font-semibold', toneClass[tone], className)}>
+    <span className={cn('inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs font-semibold', toneClass[tone], className)}>
       {dot && <span className={cn('size-1.5 rounded-full bg-current', pulse && 'dot-live')} aria-hidden />}
       {children}
     </span>
@@ -118,11 +118,11 @@ export function Stat({ label, value, hint, tone, icon }: { label: string; value:
     <div className="surface surface-hover relative overflow-hidden rounded-2xl border border-border p-4">
       <div className="pointer-events-none absolute -right-6 -top-6 size-20 rounded-full bg-primary/10 blur-2xl" aria-hidden />
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold text-muted-foreground">{label}</p>
+        <p className="text-sm font-semibold text-muted-foreground">{label}</p>
         {icon && <span className="grid size-7 place-items-center rounded-lg icon-tile text-primary [&_svg]:size-3.5" aria-hidden>{icon}</span>}
       </div>
       <p className={cn('font-display mt-2 text-3xl font-extrabold tracking-tight tabular-nums', tone === 'danger' ? 'text-red-500 dark:text-red-400' : tone === 'success' ? 'text-emerald-500 dark:text-emerald-400' : 'gradient-text')}>{shown}</p>
-      {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+      {hint && <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{hint}</p>}
     </div>
   )
 }
@@ -153,7 +153,7 @@ export function EmptyState({ title, hint, action, icon }: { title: string; hint?
         <span className="relative grid size-10 place-items-center rounded-full icon-tile text-primary [&_svg]:size-5">{icon ?? <Inbox className="size-5" />}</span>
       </div>
       <p className="text-sm font-semibold">{title}</p>
-      {hint && <p className="max-w-md text-xs text-muted-foreground">{hint}</p>}
+      {hint && <p className="max-w-md text-sm leading-relaxed text-muted-foreground">{hint}</p>}
       {action && <div className="mt-2">{action}</div>}
     </div>
   )
@@ -198,9 +198,9 @@ export function Field({ label, hint, className, ...rest }: InputHTMLAttributes<H
   const id = useId()
   return (
     <div className={className}>
-      {label && <label htmlFor={id} className="mb-1 block text-xs font-semibold text-muted-foreground">{label}</label>}
+      {label && <label htmlFor={id} className="mb-1 block text-sm font-semibold text-muted-foreground">{label}</label>}
       <input id={id} className={inputBase} {...rest} />
-      {hint && <p className="mt-1 text-[11px] text-muted-foreground">{hint}</p>}
+      {hint && <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{hint}</p>}
     </div>
   )
 }
@@ -209,7 +209,7 @@ export function TextArea({ label, className, mono, ...rest }: TextareaHTMLAttrib
   const id = useId()
   return (
     <div className={className}>
-      {label && <label htmlFor={id} className="mb-1 block text-xs font-semibold text-muted-foreground">{label}</label>}
+      {label && <label htmlFor={id} className="mb-1 block text-sm font-semibold text-muted-foreground">{label}</label>}
       <textarea id={id} className={cn(inputBase, mono && 'font-mono text-[13px] leading-relaxed')} {...rest} />
     </div>
   )
@@ -294,7 +294,7 @@ export function DataTable({ head, children, className }: { head: string[]; child
   return (
     <div className={cn('overflow-x-auto rounded-xl border border-border', className)}>
       <table className="w-full min-w-[520px] text-left text-sm">
-        <thead className="bg-muted/60 text-xs tracking-wide text-muted-foreground">
+        <thead className="bg-muted/60 text-sm text-muted-foreground">
           <tr>{head.map((h, i) => <th key={i} scope="col" className="whitespace-nowrap px-3 py-2.5 font-semibold">{h}</th>)}</tr>
         </thead>
         <tbody className="stagger divide-y divide-border [&>tr]:transition-colors [&>tr:hover]:bg-primary/[0.05] [&>tr:hover]:shadow-[inset_3px_0_0_var(--primary)] [&>tr:nth-child(even)]:bg-muted/25">{children}</tbody>

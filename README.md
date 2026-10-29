@@ -1,432 +1,331 @@
 # Freshman Bot Arena
 
-Nền tảng tổ chức giải đấu bot Oẳn Tù Tì V2 dành cho sinh viên năm nhất
+Hệ thống tổ chức giải đấu lập trình bot Oẳn Tù Tì trên bàn cờ 9 × 9, quản lý vòng loại và chấm bài Giải AI. Người thi nộp chương trình; máy chấm chạy chương trình trong môi trường giới hạn tài nguyên và trả kết quả về hệ thống quản lý giải.
 
-Go API Gateway · Python Bot Runner · Next.js Frontend
+README mô tả mã nguồn và cách vận hành tại ngày 29/10/2026. Các số liệu kiểm tra tại một thời điểm không phải cam kết về công suất hoặc trạng thái hiện tại của máy chủ.
 
-## Giới thiệu
+## 1. Chức năng
 
-**Dành cho thành viên dự án:** xem [Web hiện đã làm được những gì?](docs/PRODUCT_OVERVIEW.md) để nắm chức năng, luồng demo, trạng thái triển khai và các phần cần góp ý.
+| Đối tượng | Chức năng chính |
+| --- | --- |
+| Khách | Xem tổng quan, giải đấu, bảng đấu, xếp hạng, trận đấu và hướng dẫn |
+| Đội thi | Quản lý hồ sơ, nộp bot, xem kết quả, tham gia vòng loại và Giải AI |
+| Ban tổ chức | Quản lý giải, luật từng giai đoạn, lịch thi đấu, đề AI, tài khoản, thông báo và hỏi đáp |
+| Quản trị viên | Theo dõi máy chấm, tài nguyên, database, nhật ký và các thao tác quản trị được phân quyền |
 
-**Dành cho ban tổ chức:** xem [Vận hành và phục hồi giải đấu](docs/RELEASE_READINESS.md) về nhận bài, gia hạn, tạm dừng, theo dõi dịch vụ, sao lưu và đo tải.
+Trợ lý AI hỗ trợ hỏi đáp dựa trên tài liệu và dữ liệu giải. Chức năng này cần khóa nhà cung cấp được cấu hình ở backend; không thay thế luật chính thức hoặc quyết định của ban tổ chức.
 
-**Freshman Bot Arena** là hệ thống tổ chức giải đấu bot Oẳn Tù Tì (Rock–Paper–Scissors) theo thể thức đấu loại trực tiếp. Người chơi nộp mã bot, hệ thống chạy bot trong môi trường sandbox, tự động xếp cặp, thi đấu và cập nhật bảng đấu theo thời gian thực.
-
-Hệ thống hướng đến tổ chức giải lập trình bot cho tân sinh viên. Giới hạn đăng ký 4.000 đội đã có kiểm thử chức năng; năng lực phục vụ hàng nghìn người đồng thời vẫn cần được đo tải trên hạ tầng thực tế.
-
----
-
-## Mục lục
-
-- [Kiến trúc hệ thống](#-kiến-trúc-hệ-thống)
-- [Cấu trúc thư mục](#-cấu-trúc-thư-mục)
-- [Công nghệ sử dụng](#-công-nghệ-sử-dụng)
-- [Chạy local](#-chạy-local)
-- [Biến môi trường](#-biến-môi-trường)
-- [Đăng nhập và vận hành giải](#-đăng-nhập-và-vận-hành-giải)
-- [API Endpoints](#-api-endpoints)
-- [Kiểm thử](#-kiểm-thử)
-- [Build và triển khai](#-build-và-triển-khai)
-- [Ghi chú Sandbox](#-ghi-chú-sandbox)
-- [Tài liệu tham khảo](#-tài-liệu-tham-khảo)
-
----
-
-## Kiến trúc hệ thống
-
-Hệ thống theo mô hình **client-server phân tán** với ba tầng chính:
+## 2. Kiến trúc
 
 ```text
-┌─────────────────────────────────────────────────────────────┐
-│                    FRONTEND (HTML/JS/CSS)                   │
-│            Next.js · React · WebSocket Client              │
-└──────────────────────────┬──────────────────────────────────┘
-                           │  REST API + WebSocket
-┌──────────────────────────▼──────────────────────────────────┐
-│                    GO API GATEWAY (:8080)                   │
-│   Middleware: Logger → Recovery → CORS → Rate Limit → Auth  │
-│   Handler → Service → Repository → Database                 │
-└──────────────────────────┬──────────────────────────────────┘
-                           │  Internal Adapter
-┌──────────────────────────▼──────────────────────────────────┐
-│                  PYTHON BOT RUNNER (:8001)                  │
-│   Sandbox Execution · FSM Engine · Matchmaker · Ranking     │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────┐
-│        PostgreSQL (Production)  │  JSON Store (Local)       │
-└─────────────────────────────────────────────────────────────┘
+Trình duyệt
+    |
+    | HTTPS: tải giao diện Next.js đã xuất tĩnh
+    v
+Cloudflare Workers Static Assets
+    |
+    | Trình duyệt gọi API qua HTTPS
+    v
+Go API gateway trên AWS EC2
+    |-- Xác thực, phân quyền, giới hạn yêu cầu
+    |-- Quản lý giải, hàng đợi, cache và lưu kết quả
+    |-- PostgreSQL trên Supabase qua kết nối TLS
+    |-- Máy chấm Python 1 qua mạng riêng
+    |-- Máy chấm Python 2 qua mạng riêng
+    |-- Nhà cung cấp AI và SMTP khi được cấu hình
 ```
 
-### Luồng xử lý chính
+Frontend không kết nối trực tiếp PostgreSQL và không giữ mật khẩu database. Go gateway là nơi điều phối và lưu dữ liệu. Máy chấm nhận dữ liệu cần thiết, thực hiện công việc rồi trả kết quả; không đóng vai trò database chính.
 
-| Luồng | Mô tả |
-| :--- | :--- |
-| **HTTP API** | Client → Middleware (auth, CORS) → Handler → Service → Repository → DB |
-| **WebSocket** | Cập nhật trạng thái giải, tiến độ trận, kết quả bot; tải lại snapshot khi reconnect |
-| **Bot Execution** | Nộp code → Sandbox (timeout + giới hạn tài nguyên) → FSM Engine → Kết quả → Bracket tiến |
+Luồng nộp bài gồm kiểm tra quyền và dữ liệu đầu vào, đưa công việc vào hàng đợi, chọn máy chấm còn khả năng xử lý, chạy chương trình, lưu kết quả rồi cập nhật giao diện. Trạng thái và lỗi phải lấy từ API; giao diện không tự tạo kết quả chấm.
 
-### Luồng triển khai một giải đấu
+## 3. Công nghệ và cấu trúc mã nguồn
+
+| Thành phần | Công nghệ |
+| --- | --- |
+| Frontend | Next.js 16.4.2, React 19, TypeScript, Tailwind CSS 4 |
+| API | Go theo `backend/go.mod`, Gin, PostgreSQL driver, WebSocket |
+| Máy chấm | Python, FastAPI, Uvicorn, Wasmtime |
+| Database | PostgreSQL; triển khai hiện tại dùng Supabase |
+| Triển khai | Cloudflare Static Assets, AWS EC2, systemd; có cấu hình Docker |
+| Kiểm thử | Go test/vet, Python unittest, Playwright, kiểm thử tích hợp và sandbox |
 
 ```text
-1. Admin tạo giải đấu        →  Sinh cây bảng đấu
-2. Đội đăng ký (MSSV/SBD)    →  Nhận tài khoản truy cập
-3. Hệ thống xếp cặp          →  Dựa trên ranking
-4. Bot thi đấu               →  Python runner chạy trong sandbox
-5. Xử lý kết quả             →  Xác định đội thắng, tiến nhánh
-6. Chung kết                 →  Tuyên bố vô địch
+backend/
+  cmd/server/              Điểm khởi động Go API
+  internal/                Handler, xác thực, repository, điều phối, monitoring
+bot-runner/
+  main.py                  API máy chấm
+  app/                     Luật, engine, sandbox và xử lý bài thi
+frontend/
+  app/                     Điểm vào Next.js và CSS toàn cục
+  components/arena/live/   Giao diện giải đấu, quản trị và banner
+  public/offline/          Tài nguyên hỗ trợ chạy thử trong trình duyệt
+database/                  Dữ liệu và tài liệu schema tham khảo
+deploy/                    Docker, systemd, cấu hình triển khai mẫu
+scripts/                   Build, deploy, backup, bảo trì và benchmark
+tests/                     Unit, security, e2e và load tests
+docs/                      Tài liệu chuyên đề, runbook và báo cáo kiểm tra
+.github/workflows/         Kiểm thử và triển khai tự động
+wrangler.jsonc             Cấu hình frontend Cloudflare
 ```
 
----
+## 4. Frontend và trải nghiệm sử dụng
 
-## Cấu trúc thư mục
+Giao diện chia thành hồ sơ đội, tổng quan, bảng đấu, xếp hạng, trận đấu, vòng loại, Giải AI, hướng dẫn và quản trị. Các khu vực quản trị phải được backend kiểm tra quyền, kể cả khi nút tương ứng đã bị ẩn trên giao diện.
+
+Thanh điều hướng desktop có thể thu gọn còn biểu tượng và mở rộng lại. Trạng thái được lưu trên trình duyệt; tên chức năng vẫn có nhãn truy cập và tooltip. Trên màn hình nhỏ, thanh điều hướng chuyển thành menu có quản lý focus, đóng bằng Escape và khóa tương tác với nền khi đang mở.
+
+Banner tổng quan ưu tiên giải minh họa `k71 demo` khi có dữ liệu phù hợp. Banner tự đổi nội dung mỗi 4 giây khi có nhiều mục; dừng khi người dùng rê chuột, đặt focus, bấm tạm dừng hoặc khi trang bị ẩn. Việc đổi banner dùng dữ liệu đã tải, không gọi lại database sau mỗi 4 giây.
+
+Hiệu ứng tập trung vào chuyển tab ngắn và nghiêng banner nhẹ. Không dùng vòng sáng bám chuột, hạt hoặc hiệu ứng nước. Chế độ giảm chuyển động và các mức hiệu ứng nhẹ/tắt hạn chế hoạt ảnh; nội dung vẫn sử dụng được. Giao diện có cả chế độ sáng và tối, tăng độ rõ của chữ phụ và dùng màu có chủ đích cho trạng thái giải, cảnh báo và quán quân.
+
+Các tài nguyên engine offline được đồng bộ bằng `frontend/scripts/sync-offline-engine.mjs` trước khi chạy dev hoặc build. Chạy thử trong trình duyệt phục vụ minh họa và luyện tập; kết quả chính thức vẫn do máy chấm backend quyết định. Dữ liệu cục bộ hoặc cache trình duyệt không thay thế bản lưu trên server.
+
+## 5. Go API và máy chấm
+
+Go API mặc định chạy cổng `8080`. Worker Python mặc định chạy `127.0.0.1:8001`. Với nhiều máy chấm, `WORKER_URLS` chứa danh sách endpoint `/mutate-tournament`; kết nối production nên đi qua mạng riêng và có `WORKER_TOKEN`.
+
+Phân biệt các giới hạn:
+
+| Biến | Ý nghĩa |
+| --- | --- |
+| `JUDGE_CONCURRENCY` | Trần số tác vụ chấm đồng thời do gateway điều phối |
+| `WORKER_CONCURRENCY` | Giới hạn điều phối trên mỗi worker |
+| `WORKER_CAPACITY` | Khả năng nhận tác vụ được worker công bố/cấu hình |
+| `QUALIFIER_WORKERS` | Mức song song của bộ xử lý vòng loại |
+| `VALIDATION_WORKERS` | Mức song song của kiểm tra bài nộp |
+
+Cấu hình hai máy đã chọn sau đo đạc là mỗi máy 2 tác vụ, tổng cộng 4. Gateway dùng `JUDGE_CONCURRENCY=4`, `WORKER_CONCURRENCY=2`, `QUALIFIER_WORKERS=4`, `VALIDATION_WORKERS=4`; mỗi worker dùng `WORKER_CAPACITY=2`. Đây là cấu hình cho cụm đã kiểm tra, không phải giá trị phù hợp cho mọi máy.
+
+Không tăng song song chỉ dựa vào số CPU. Cần theo dõi RAM khả dụng, thời gian chấm, độ dài hàng đợi, timeout và tỷ lệ lỗi. Worker và gateway phải chạy phiên bản tương thích; `WORKER_RELEASE` hỗ trợ nhận diện phiên bản.
+
+Sandbox có kiểm tra bảo mật riêng. C++ dùng chuỗi công cụ WASI/Wasmtime; Python cần cơ chế cô lập được hỗ trợ trên máy triển khai. Nếu cô lập không khả dụng, phải xử lý lỗi và sửa môi trường, không vô hiệu hóa bảo vệ để chạy mã không tin cậy. Xem [sandbox C++](docs/CPP_SANDBOX.md) và thư mục `tests/security`.
+
+## 6. Database
+
+### Kết nối và schema
+
+Backend đọc `DATABASE_URL`; các tên tương thích `POSTGRES_URL` và `NEON_DATABASE_URL` chỉ được dùng khi biến chính không có. Production nên cấu hình rõ `DATABASE_URL` để tránh kết nối nhầm hệ thống cũ.
+
+Supabase hiện được dùng như PostgreSQL, không phải dịch vụ xác thực tài khoản ứng dụng. Tài khoản đội và quản trị do backend quản lý. Dùng Session pooler cổng `5432` với TLS, không dùng Transaction pooler `6543` cho luồng cần session advisory lock.
 
 ```text
-project-tuan3/
-├── backend/               # Go API gateway, WebSocket, service và migration
-│   ├── cmd/server/        # Điểm khởi động HTTP server
-│   ├── internal/          # Handler, middleware, model, repository và service
-│   └── migrations/        # Migration cơ sở dữ liệu PostgreSQL
-├── bot-runner/            # Python worker và engine chạy các trận đấu bot
-│   └── app/               # API, engine, matchmaker, repository và sandbox
-├── frontend/              # Source giao diện Next.js chính và bản build deploy
-│   ├── app/                # App Router và layout
-│   ├── components/         # Thành phần giao diện Arena
-│   └── dist/               # Bản export tĩnh để triển khai (git bỏ qua)
-├── config/                # Cấu hình môi trường, reverse proxy và tunnel
-├── database/              # Schema và dữ liệu JSON dùng khi phát triển local
-├── deploy/                # Docker Compose, Dockerfile và cấu hình Render
-├── docs/                  # Tài liệu API, kiến trúc, triển khai và báo cáo
-├── scripts/               # Script build, backup, benchmark và vận hành
-├── tests/                 # Test unit, integration, e2e, load và security
-├── data/                  # Tài nguyên và script phục vụ phát triển giao diện
-├── Dockerfile             # Dockerfile ở cấp dự án
-├── Makefile               # Các lệnh build, test và vận hành
-└── README.md              # Tài liệu hướng dẫn dự án
+postgresql://postgres.PROJECT_REF:URL_ENCODED_PASSWORD@POOLER_HOST:5432/postgres?sslmode=require&connect_timeout=15
 ```
 
-> [!NOTE]
-> Các thư mục `dist/`, file thực thi và dữ liệu tạm có thể được sinh tự động.
-> Nên chỉnh sửa mã nguồn trong `backend/`, `bot-runner/` và `frontend/` thay vì các bản build.
+Đây chỉ là mẫu. Mật khẩu chứa ký tự đặc biệt phải được URL-encode. Không đưa chuỗi kết nối thật vào README, Git hoặc biến `NEXT_PUBLIC_*`.
 
-### Chi tiết các module
+Schema runtime được tạo/cập nhật trong các repository của backend. Không chạy `database/schema.sql` như bản migration thay thế cho schema đang dùng. Một phần dữ liệu giải lưu dưới dạng JSONB; đây không phải mô hình toàn bộ dữ liệu được tách thành bảng quan hệ riêng.
 
-<details>
-<summary><b>🔷 Backend (Go)</b></summary>
+| Bảng hoặc nhóm dữ liệu | Vai trò |
+| --- | --- |
+| `tournaments` | Trạng thái và dữ liệu giải đấu |
+| `arena_accounts` | Tài khoản ứng dụng |
+| `arena_team_profiles` | Hồ sơ đội |
+| `arena_qualifier_records` | Bản ghi vòng loại |
+| `arena_notifications`, `arena_notification_reads` | Thông báo và trạng thái đã đọc |
+| `arena_password_resets` | Yêu cầu khôi phục mật khẩu có thời hạn |
+| `arena_password_audit_logs`, `arena_admin_audit_logs` | Nhật ký bảo mật và quản trị |
+| `arena_gateway_lease` | Điều phối quyền xử lý của gateway |
+| Dữ liệu trợ lý AI | Cache, hạn mức và thông tin phục vụ hỏi đáp |
 
-- **`cmd/server/`** — Khởi động HTTP server, cấu hình routes và middleware
-- **`internal/handler/`** — Xử lý HTTP requests và validation (`http/`, `websocket/`)
-- **`internal/middleware/`** — Logging, recovery, CORS, rate limiting
-- **`internal/model/`** — Cấu trúc dữ liệu và DTOs
-- **`internal/repository/`** — Tầng trừu tượng truy cập dữ liệu (PostgreSQL)
-- **`internal/service/`** — Business logic (quản lý giải đấu, matchmaking)
-- **`migrations/`** — SQL migrations cho PostgreSQL
+Danh sách trên giúp định hướng; định nghĩa trong mã nguồn là căn cứ khi thay đổi schema. Bảng nghiệp vụ được bảo vệ bằng quyền database/RLS theo phần khởi tạo tương ứng. Không mở quyền đọc công khai cho dữ liệu tài khoản, mã bot hoặc nhật ký.
 
-</details>
+### Tối ưu truy vấn và egress
 
-<details>
-<summary><b>🐍 Bot Runner (Python)</b></summary>
+Pool PostgreSQL của repository giải giới hạn 8 kết nối mở, 2 kết nối rảnh, thời gian sống 5 phút và thời gian rảnh 1 phút. Cache có giới hạn và được vô hiệu hóa khi ghi dữ liệu; các phản hồi danh sách cần tránh kéo toàn bộ source bot và replay không cần thiết.
 
-- **`app/main.py`** — Entry point, khởi động worker
-- **`app/core/`** — Cấu hình, cache, rate limiting
-- **`app/api/`** — API endpoints giao tiếp với gateway
-- **`app/engine/`** — Game logic: rules engine, FSM matching
-- **`app/matchmaker/`** — Thuật toán xếp cặp và hệ thống ranking
-- **`app/sandbox/`** — Chạy code bot trong môi trường cô lập
-- **`app/models/`** — Data schemas (Pydantic)
+Egress là dữ liệu truyền ra, không phải dung lượng database. Database nhỏ vẫn có thể phát sinh egress lớn nếu bị đọc toàn bộ liên tục. Những việc cần theo dõi gồm số request, kích thước phản hồi, truy vấn JSONB lớn, polling, cache hit/miss và số client đang mở trang.
 
-</details>
+Deploy mã tối ưu, xóa bản ghi hoặc chuyển organization không hoàn lại lượng egress đã dùng. Số liệu hạn mức theo kỳ phải đối chiếu Supabase Usage hoặc API quản trị được cấp quyền. Số byte phản hồi của ứng dụng không đồng nghĩa với số liệu tính hạn mức Supabase.
 
-<details>
-<summary><b>🎨 Frontend</b></summary>
+### Bảo trì và sao lưu
 
-- **`app/`** — Next.js App Router, trang chính và layout
-- **`components/arena/`** — Giao diện giải đấu, trận đấu và quản trị
-- **`lib/api-client.ts`** — Kết nối Go API và quản lý phiên
-- **`dist/`** — Bản static export phục vụ production, không commit
+Script `scripts/database_maintenance.py` dọn dữ liệu tạm theo chính sách có giới hạn: token khôi phục đã hết hạn, OTP quản trị cũ, cache AI hết hạn và bộ đếm hạn mức AI quá thời gian lưu. Cấu hình triển khai chạy mỗi 6 giờ, chia lô tối đa 500 bản ghi mỗi bảng với timeout và khóa để tránh chạy chồng.
 
-</details>
+Không dùng tác vụ này để xóa giải, tài khoản, bài nộp hoặc kết quả chấm. PostgreSQL vẫn cần autovacuum; việc xóa bản ghi không đồng nghĩa file database trên đĩa giảm ngay.
 
-Go phục vụ bản build `frontend/dist/`. Mã nguồn bot mẫu ở `examples/bots_sdk/`. Xem thêm [frontend/README.md](frontend/README.md).
+Backup định kỳ giữ 7 bản theo chính sách triển khai, xác minh checksum trước khi xóa bản cũ. Backup migration/thủ công không thuộc nhóm tự xóa đó. Thử phục hồi vào database riêng trước khi dùng backup cho sự cố thật; không thử restore lên production đang phục vụ.
 
----
+Xem [bảo trì tài nguyên](docs/resource-maintenance.md), [tối ưu egress](docs/egress-optimization.md) và script `scripts/postgres_backup_restore_drill.py`.
 
-## 🛠 Công nghệ sử dụng
-
-| Tầng | Công nghệ |
-| :--- | :--- |
-| **Backend** | Go 1.26 · [Gin](https://github.com/gin-gonic/gin) · [Gorilla WebSocket](https://github.com/gorilla/websocket) |
-| **Bot Runner** | Python 3 · [FastAPI](https://fastapi.tiangolo.com/) · [Uvicorn](https://www.uvicorn.org/) · [Pydantic](https://docs.pydantic.dev/) |
-| **Frontend** | Next.js 16 · React 19 · TypeScript · Tailwind CSS |
-| **Database** | PostgreSQL (production) · JSON store (local) |
-| **Triển khai** | Docker · Docker Compose · Nginx · Cloudflare Tunnel · Render |
-
----
-
-## 🚀 Chạy local
+## 7. Chạy trên máy phát triển
 
 ### Yêu cầu
 
-- Go 1.26+
-- Python 3.10+
-- (Tùy chọn) Docker & Docker Compose
+- Git, Node.js 22 và npm.
+- Go theo phiên bản khai báo trong `backend/go.mod` (hiện là 1.26.0).
+- Python 3.11 là phiên bản dùng trong CI.
+- PostgreSQL cho kiểm tra đầy đủ luồng dữ liệu; CI dùng PostgreSQL 17.
+- Linux/Docker và công cụ WASI khi kiểm tra sandbox production.
 
-### Các bước
+Các lệnh dưới đây chạy từ thư mục gốc repository, mỗi dịch vụ trong một terminal riêng. Trên Windows có thể dùng `npm.cmd` thay `npm` nếu PowerShell chặn script npm.
 
-**1. Cài đặt dependencies Python**
+### Cài dependency
 
 ```powershell
-cd bot-runner
-python -m pip install -r requirements.txt
+npm.cmd ci --prefix frontend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r bot-runner/requirements.txt
+python -m pip install -r tests/requirements.txt
 ```
 
-**2. Khởi động Bot Runner** (terminal 1)
+Trên Linux/macOS, kích hoạt môi trường bằng `source .venv/bin/activate`. Việc cài dependency không tự tạo database hoặc cấu hình sandbox đầy đủ.
+
+### Chạy worker
 
 ```powershell
 cd bot-runner
 python main.py
 ```
 
-**3. Khởi động Go Backend** (terminal 2)
+### Chạy API
+
+Trong terminal mới, đặt cấu hình cho database phát triển riêng:
 
 ```powershell
+$env:DATABASE_URL = 'postgresql://USER:PASSWORD@localhost:5432/arena_dev?sslmode=disable'
+$env:ADMIN_PASSWORD = 'CHANGE_TO_A_LOCAL_DEVELOPMENT_PASSWORD'
+$env:SESSION_SECRET = 'CHANGE_TO_A_LONG_RANDOM_LOCAL_SECRET'
+$env:ACCOUNT_ENCRYPTION_KEY = 'KEEP_A_STABLE_LOCAL_ENCRYPTION_SECRET'
+$env:CORS_ORIGIN = 'http://localhost:3000'
 cd backend
 go run ./cmd/server
 ```
 
-**4. Mở trình duyệt**
+Các giá trị trên là placeholder. `sslmode=disable` chỉ dành cho database local trong ví dụ. Cấu hình môi trường của terminal này không tự truyền sang terminal khác. Không giả định Go tự đọc file `.env` chỉ vì file đó tồn tại.
 
-```text
-http://localhost:8080
-```
-
-> [!TIP]
-> Khi phát triển local, backend dùng JSON store nếu chưa cấu hình `DATABASE_URL`.
-> Khi deploy production, backend **yêu cầu** PostgreSQL qua `DATABASE_URL` để tránh mất dữ liệu khi container khởi động lại.
-
-### Lệnh nhanh với Makefile
-
-```bash
-make help            # Xem danh sách lệnh
-make run-backend     # Chạy Go API gateway (:8080)
-make run-runner      # Chạy Python worker (:8001)
-make test            # Chạy toàn bộ test
-make frontend-build  # Build frontend tĩnh vào frontend/dist
-make docker-up       # Khởi động Docker Compose
-```
-
----
-
-## ⚙ Biến môi trường
-
-Cấu hình mẫu nằm tại [`config/.env.example`](config/.env.example).
-
-### Backend (Go)
-
-| Biến | Mô tả | Bắt buộc |
-| :--- | :--- | :---: |
-| `ADMIN_PASSWORD` | Mật khẩu đăng nhập Ban Tổ Chức | ✅ |
-| `SESSION_SECRET` | Khóa ký phiên (mặc định dùng `ADMIN_PASSWORD`) | ⬜ |
-| `DATABASE_URL` | Chuỗi kết nối PostgreSQL | ✅ (production) |
-| `CORS_ORIGIN` | Danh sách origin cách nhau bằng dấu phẩy | ✅ |
-| `PORT` | Cổng HTTP server | ⬜ |
-
-### Bot Runner (Python)
-
-| Biến | Mô tả | Mặc định |
-| :--- | :--- | :--- |
-| `ENVIRONMENT` | Môi trường chạy | `production` |
-| `SECRET_KEY` | Khóa bảo mật | — |
-| `ALLOWED_ORIGINS` | Origin được phép | — |
-| `DATA_DIR` | Thư mục lưu dữ liệu | `data` |
-| `MAX_SUBMISSIONS_PER_MATCH` | Giới hạn bài nộp mỗi trận | `200` |
-| `CACHE_ENABLED` | Bật cache in-memory | `true` |
-| `CACHE_DEFAULT_TTL_SEC` | TTL cache mặc định (giây) | `2` |
-| `RATE_LIMIT_ENABLED` | Bật rate limiting | `true` |
-| `RATE_LIMIT_PER_MINUTE` | Giới hạn request mỗi phút | `600` |
-| `RATE_LIMIT_SUBMIT_PER_MINUTE` | Giới hạn bài nộp mỗi phút | `60` |
-| `SANDBOX_TIMEOUT_SEC` | Timeout chạy bot (giây) | `0.5` |
-| `SANDBOX_MAX_WORKERS` | Số worker sandbox tối đa | `8` |
-
----
-
-## 🔑 Đăng nhập và vận hành giải
-
-- **Ban Tổ Chức**: Đặt `ADMIN_PASSWORD` trong biến môi trường backend. Không dùng mật khẩu mẫu trong mã nguồn.
-- **Đội thi**: Dùng MSSV/SBD làm tài khoản, mật khẩu cố định là `k69` + MSSV/SBD.
-  Ví dụ: `24020001` / `k6924020001`. Có thể đăng nhập ngay sau khi đăng ký đội, trước khi xếp lịch.
-- **Chọn trận**: Admin và đội chọn trận trên cây bảng đấu trước khi vào tab Trận đấu. Khi chuyển giải, cần chọn trận thuộc giải đó.
-- **Phiên đăng nhập**: Ký với thời hạn 7 ngày, giữ qua F5 hoặc restart nếu `SESSION_SECRET` ổn định. Nếu không cấu hình biến này, backend dùng `ADMIN_PASSWORD` làm cơ sở ký phiên. Thay đổi khóa ký làm phiên cũ hết hiệu lực.
-- **Bảo mật**: API công khai không trả credential hash hoặc mã nguồn đội khác. WebSocket thông báo theo giải, giữ kết nối bằng heartbeat và tải lại snapshot khi kết nối trở lại.
-- **Vòng đấu**: Máy chủ tự chuyển round theo thời điểm đã lưu. Mỗi round và mỗi trận mới cần bài nộp mới; không cần đăng nhập lại mỗi round. Không xếp lại nhánh hoặc xóa đội khi giải đã có kết quả.
-- **Trạng thái trình duyệt**: Bản nháp, ngôn ngữ, vị trí replay, tab nhật ký và lựa chọn giải/trận được lưu trong trình duyệt theo tài khoản và trận.
-- **CORS**: `CORS_ORIGIN` nhận danh sách origin cách nhau bằng dấu phẩy. Đặt đúng domain frontend khi triển khai.
-
----
-
-## 🔌 API Endpoints
-
-### Go Backend
-
-| Nhóm | Đường dẫn | Mô tả |
-| :--- | :--- | :--- |
-| Auth | `/api/v1/auth` | Xác thực và quản lý phiên |
-| Tournaments | `/api/v1/tournaments` | Tạo, quản lý và theo dõi giải đấu |
-| Matches | `/api/v1/matches` | Quản lý trận đấu |
-| Bots | `/api/v1/bots` | Nộp và thực thi bot |
-| Arena | `/api/v1/arena` | Giao diện thi đấu realtime |
-| WebSocket | `/ws` | Cập nhật trạng thái theo thời gian thực |
-
-Chi tiết đầy đủ xem tại [docs/API.md](docs/API.md).
-
-### Bot Runner
-
-- Nộp và thực thi code
-- Yêu cầu matchmaking
-- Poll kết quả trận đấu
-
----
-
-## 🧪 Kiểm thử
+### Chạy giao diện
 
 ```powershell
-# Test Go backend
+npm.cmd run dev --prefix frontend
+```
+
+Mở `http://localhost:3000`. Next dev chuyển tiếp API tới `127.0.0.1:8080` theo cấu hình mặc định. Khi trỏ đến API khác, cấu hình `NEXT_PUBLIC_API_URL` phù hợp rồi khởi động/build lại frontend.
+
+### Build
+
+```powershell
+# Kiểm tra build Next thông thường
+npm.cmd run build --prefix frontend
+
+# Xuất bản tĩnh để Go hoặc Cloudflare phục vụ
+python scripts/build_frontend.py
+
+# Cách build dành cho Cloudflare từ root
+npm.cmd run build
+```
+
+Hai lệnh xuất tĩnh tạo `frontend/dist`. `next start` dùng build Next thông thường, không dùng cho đầu ra static export. Không chạy đồng thời nhiều build vào cùng thư mục `.next`.
+
+## 8. Cấu hình môi trường
+
+Tham khảo file mẫu [deploy/ec2.env.example](deploy/ec2.env.example). Không commit file đã điền secret.
+
+| Biến | Nơi dùng | Ghi chú |
+| --- | --- | --- |
+| `DATABASE_URL` | Backend | Chuỗi kết nối PostgreSQL |
+| `ADMIN_PASSWORD` | Backend | Cấu hình tài khoản chủ theo cơ chế hiện có |
+| `SESSION_SECRET` | Backend | Khóa phiên; phải giữ ổn định khi chuyển database |
+| `ACCOUNT_ENCRYPTION_KEY` | Backend | Khóa mã hóa tài khoản; không tự đổi khi migration |
+| `CORS_ORIGIN` | Backend | Danh sách origin được phép, phân cách dấu phẩy |
+| `HOST`, `PORT` | Backend | Địa chỉ bind và cổng API |
+| `WORKER_URL`, `WORKER_URLS` | Backend | Một hoặc nhiều endpoint máy chấm |
+| `WORKER_TOKEN` | Gateway/worker | Secret dùng chung cho truy cập worker |
+| `WORKER_RELEASE` | Worker | Nhận diện bản phát hành |
+| `WORKER_PUBLIC_HOSTS` | Backend | Thông tin hiển thị máy chấm, không thay endpoint riêng |
+| `NEXT_PUBLIC_API_URL` | Frontend | Địa chỉ API công khai, được đưa vào bản build |
+| `ARENA_STATIC_EXPORT` | Build | Bật xuất tĩnh; script build đã đặt biến này |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Backend | Gửi email khôi phục và xác thực |
+| `ADMIN_EMAIL` | Backend | Địa chỉ nhận xác thực quản trị |
+| `GEMINI_API_KEY`, `ANTHROPIC_API_KEY` | Backend | Khóa nhà cung cấp AI |
+| `AI_PROVIDER`, `AI_MODEL` | Backend | Chọn nhà cung cấp và model được tài khoản hỗ trợ |
+| `AI_ENABLED`, `AI_DAILY_PER_TEAM`, `AI_DAILY_BUDGET` | Backend | Bật/tắt và giới hạn trợ lý AI |
+
+Không đưa service role key, mật khẩu PostgreSQL, SSH private key hoặc khóa AI vào frontend. Model có sẵn hay không phụ thuộc nhà cung cấp và tài khoản; cần kiểm tra thực tế trước khi đổi cấu hình.
+
+## 9. Kiểm thử
+
+```powershell
 cd backend
 go test ./...
-
-# Test unit (rules, FSM)
-python -m unittest discover -s tests/unit -p "test_*.py"
-
-# Test bảo mật sandbox
-python tests/security/test_sandbox_security.py
-
-# Build binary kiểm chứng
-go build -C backend -o bin/arena-verification.exe ./cmd/server/main.go
-
-# Test E2E (cần Playwright)
-python -m pip install playwright
-python -X utf8 tests/e2e/test_reliability.py
-
-# Kiểm tra cú pháp worker
-cd bot-runner
-python -m py_compile main.py app/repository/database.py app/sandbox/runner.py
+go vet ./...
+cd ..
+python -m unittest discover -s tests/unit -p 'test_*.py'
+python -m unittest discover -s tests/security -p 'test_*.py'
+npm.cmd run build --prefix frontend
 ```
 
-Hoặc chạy toàn bộ bằng một lệnh:
+Các test PostgreSQL cần `ARENA_TEST_DATABASE_URL` trỏ đến database dùng riêng cho kiểm thử. Các test e2e cần dependency trình duyệt và binary server theo từng script; xem [.github/workflows/verify.yml](.github/workflows/verify.yml) để tái lập môi trường CI.
 
-```bash
-make test
+Những nhóm kiểm tra quan trọng trước phát hành:
+
+1. Đăng nhập, phân quyền, hồ sơ và khôi phục mật khẩu.
+2. Nộp bài, hàng đợi, khôi phục sau gián đoạn và điều phối nhiều máy chấm.
+3. Luật, kết quả trận, vòng loại và chốt đội.
+4. Giải AI, dữ liệu đề, chạy thử và chấm chính thức.
+5. Giao diện desktop/mobile, sáng/tối, thao tác bàn phím, menu và chuyển tab.
+6. Backup/restore, lỗi database và hành vi khi worker không sẵn sàng.
+
+Test với dữ liệu mô phỏng kiểm tra hành vi giao diện, không xác nhận độ trễ API production hoặc sức chịu tải thật. Benchmark tải chỉ chạy trên môi trường được phép, với ngưỡng dừng và theo dõi tài nguyên.
+
+## 10. Triển khai
+
+### Cloudflare
+
+Build command tại root là `npm run build`. File `wrangler.jsonc` phục vụ `frontend/dist` và cấu hình fallback SPA. Nếu thay URL API, phải build lại vì biến frontend công khai được đóng vào bản build.
+
+Push GitHub chưa có nghĩa deployment đã thành công. Cần kiểm tra log Cloudflare, commit được deploy và tải lại trang để xác minh bản frontend mới. Nếu giao diện cũ vẫn xuất hiện, kiểm tra deployment trước, sau đó mới kiểm tra cache trình duyệt/service worker.
+
+### AWS
+
+Workflow [.github/workflows/deploy-aws.yml](.github/workflows/deploy-aws.yml) chạy trên push `main` hoặc kích hoạt thủ công. Nó dùng secret của GitHub Actions để triển khai; repository không chứa giá trị secret.
+
+```powershell
+python scripts/deploy_aws.py --check-only
+python scripts/deploy_aws.py
 ```
 
-### Phân loại test
-
-| Thư mục | Loại test |
-| :--- | :--- |
-| `tests/unit/` | Game rules, FSM, credentials |
-| `tests/integration/` | Luồng round, tích hợp hệ thống |
-| `tests/e2e/` | Vòng đời arena, giải đấu đầy đủ, độ tin cậy |
-| `tests/load/` | Kiểm thử tải |
-| `tests/security/` | Bảo mật sandbox |
-
-Kết quả và phạm vi kiểm thử: [docs/VERIFICATION_RELIABILITY.md](docs/VERIFICATION_RELIABILITY.md).
-
----
-
-## 📦 Build và triển khai
+Đọc [hướng dẫn EC2](docs/AWS_EC2.md) trước khi triển khai sang máy mới. `--skip-tests` chỉ là tùy chọn khẩn cấp, không phải quy trình phát hành thường ngày. Worker cần được cập nhật đồng bộ với gateway khi giao thức hoặc engine thay đổi.
 
 ### Docker
 
 ```powershell
-docker build -t ottv2-arena -f deploy/Dockerfile .
+docker compose -f deploy/docker-compose.yml up -d --build
+docker compose -f deploy/docker-compose.yml logs -f
 ```
 
-Hoặc dùng Docker Compose:
+Đặt biến môi trường cần thiết trước khi chạy. Cấu hình worker tách riêng nằm trong `deploy/judge-compose.yml`; không mặc định rằng một lệnh Compose sẽ tái tạo toàn bộ cụm AWS hai máy hiện tại.
 
-```bash
-make docker-build
-make docker-up
-```
+## 11. Monitoring và xử lý sự cố
 
-### Hosting tĩnh (Cloudflare Workers/Pages)
+Theo dõi trạng thái API, độ trễ, tỷ lệ lỗi, RAM/CPU/đĩa, số tác vụ chấm, hàng đợi, worker không khả dụng, kết nối PostgreSQL và tốc độ tăng dữ liệu. Biểu đồ cần ghi rõ nguồn số liệu, thời gian cập nhật và khoảng thời gian đo.
 
-```powershell
-npm run build
-```
+Số liệu hệ điều hành/backend và số liệu billing của Supabase là hai nguồn khác nhau. Khi không có quyền/API lấy một chỉ số, hiển thị chưa có dữ liệu thay vì thay bằng số 0 hoặc tự suy diễn. Đợt rà soát tài nguyên trước đó không xác minh trực tiếp tổng egress tính hạn mức của Supabase.
 
-Với Cloudflare Workers Builds, đặt thư mục gốc là repository root, **Build command** là `npm run build`, và **Deploy command** là `npx wrangler deploy`. `wrangler.jsonc` trỏ static assets tới `frontend/dist`; lệnh build xuất Next.js vào thư mục này. Workers Builds không tự chạy lệnh build khai báo trong Wrangler, vì vậy phải đặt Build command trong phần cài đặt của Cloudflare. Với Cloudflare Pages, dùng cùng Build command và đặt thư mục publish là `frontend/dist`.
+| Dấu hiệu | Kiểm tra đầu tiên |
+| --- | --- |
+| Giao diện không gọi được API | URL build, HTTPS, CORS, health API và log gateway |
+| Banner đứng yên | Có nhiều giải hay không, trạng thái pause, hover/focus và tab đang ẩn |
+| Không có hiệu ứng nghiêng | Mức hiệu ứng, reduced motion và khả năng hover của thiết bị |
+| Bài nộp chờ lâu | Hàng đợi, số slot đang dùng, worker health, timeout và RAM |
+| Egress tăng nhanh | Tần suất request, payload lớn, truy vấn toàn snapshot, polling và cache |
+| Database báo hết kết nối | Pool, truy vấn lâu, transaction rảnh và số tiến trình gateway |
+| Worker báo sandbox unavailable | Phụ thuộc hệ điều hành, quyền cô lập và log sandbox |
+| Mất dữ liệu sau đổi database | Kiểm tra URL đích và bản restore; đổi URL không tự sao chép dữ liệu |
 
-### Triển khai tự động lên AWS EC2 (CI/CD & CLI)
+Xem [monitoring](docs/MONITORING.md), [runbook sự cố](docs/RUNBOOK_INCIDENT_RESPONSE.md), [vận hành ngày thi](docs/TOURNAMENT_DAY_RUNBOOK.md) và [báo cáo ngày 29/10/2026](docs/health-review-20261029.md).
 
-Hệ thống hỗ trợ 2 hình thức tự động deploy lên AWS EC2:
+## 12. Tài liệu liên quan và quy trình đóng góp
 
-1. **Tự động qua GitHub Actions CI/CD** (`.github/workflows/deploy-aws.yml`):
-   - Kích hoạt tự động khi `push` vào nhánh `main` hoặc chạy thủ công qua `workflow_dispatch`.
-   - Tự động chạy bộ test kiểm tra, biên dịch Go binary (Linux amd64), đóng gói release, tải lên EC2 qua SSH, cập nhật dịch vụ systemd (`arena-worker`, `arena-api`), reload Caddy và kiểm tra sức khỏe (/health, /ready).
-   - Yêu cầu cấu hình GitHub Secrets: `AWS_EC2_SSH_KEY`, `AWS_EC2_HOST` (mặc định `13.250.49.111`), `AWS_EC2_USER` (mặc định `ubuntu`).
+- [Kiến trúc](docs/ARCHITECTURE.md), [API](docs/API.md).
+- [Vòng loại](docs/QUALIFIERS.md), [Giải AI](docs/AI_CUP.md), [luật từng giai đoạn](docs/STAGE_RULES.md).
+- [Email](docs/EMAIL_SETUP.md), [quản trị mật khẩu](docs/ADMIN_PASSWORD.md).
+- [Nhiều máy chấm](docs/MULTI_JUDGE.md), [năng lực và dự phòng](docs/CAPACITY_PLANNING_AND_HA.md).
+- [Điều kiện phát hành](docs/RELEASE_READINESS.md).
 
-2. **Deploy trực tiếp một lệnh từ máy cục bộ**:
-   ```bash
-   # Deploy đầy đủ (chạy test, build Linux, upload, restart, verify)
-   make deploy-aws
-   # hoặc:
-   python scripts/deploy_aws.py
+Một số tài liệu lịch sử còn mô tả Render, Neon hoặc luồng frontend cũ. Khi có khác biệt, đối chiếu mã nguồn, workflow và cấu hình triển khai đang chạy; không sao chép nguyên các lệnh cũ vào production.
 
-   # Deploy nhanh bỏ qua bước chạy test
-   make deploy-aws-quick
-
-   # Kiểm tra sức khỏe & chẩn đoán server AWS từ xa
-   make check-aws
-
-   # Rollback khẩn cấp về bản binary trước đó
-   make rollback-aws
-   ```
-
-Xem thêm: [docs/AWS_EC2.md](docs/AWS_EC2.md) · [docs/CLOUD_DEPLOYMENT.md](docs/CLOUD_DEPLOYMENT.md) · [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md)
-
----
-
-
-## 🔒 Ghi chú Sandbox
-
-Bot Python chạy trong subprocess có **timeout** và **giới hạn tài nguyên**.
-
-> [!WARNING]
-> Native C++ bị tắt ở production vì container hiện tại chưa cung cấp runtime cô lập riêng cho từng lần chạy.
-> Có thể bật C++ trong môi trường local phục vụ phát triển; trước khi dùng C++ trong giải công khai, cần triển khai sandbox native riêng.
-
----
-
-## 📚 Tài liệu tham khảo
-
-| Tài liệu | Nội dung |
-| :--- | :--- |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Kiến trúc hệ thống chi tiết |
-| [docs/API.md](docs/API.md) | Đặc tả API đầy đủ |
-| [docs/LOCAL_DEVELOPMENT.md](docs/LOCAL_DEVELOPMENT.md) | Hướng dẫn phát triển local |
-| [docs/TOURNAMENT_OPERATIONS.md](docs/TOURNAMENT_OPERATIONS.md) | Vận hành giải, sự cố mất điện/mạng, chia máy chấm và dữ liệu |
-| [docs/VERIFICATION_EXAM_READINESS.md](docs/VERIFICATION_EXAM_READINESS.md) | Kết quả kiểm thử và điều kiện cần trước kỳ thi thật |
-| [docs/OFFLINE_EXAMS.md](docs/OFFLINE_EXAMS.md) | Nộp bài offline, đồng bộ và giới hạn tải |
-| [docs/CLOUD_DEPLOYMENT.md](docs/CLOUD_DEPLOYMENT.md) | Triển khai lên cloud |
-| [docs/BENCHMARK_REPORT.md](docs/BENCHMARK_REPORT.md) | Báo cáo hiệu năng |
-| [docs/VERIFICATION_RELIABILITY.md](docs/VERIFICATION_RELIABILITY.md) | Kiểm chứng độ tin cậy |
-| [docs/VERIFICATION_BATTLE_UI.md](docs/VERIFICATION_BATTLE_UI.md) | Kiểm chứng giao diện thi đấu |
-| [docs/VERIFICATION_FRONTEND.md](docs/VERIFICATION_FRONTEND.md) | Kiểm chứng frontend |
-| [docs/BASELINE_AUDIT.md](docs/BASELINE_AUDIT.md) | Kiểm toán baseline |
-
----
-
-## 💡 Gợi ý cải tiến
-
-- [ ] Thêm Docker health checks cho các service
-- [ ] Triển khai circuit breaker cho các lời gọi API bên ngoài
-- [ ] Bổ sung unit test toàn diện cho các edge case
-- [ ] Tối ưu logic reconnect WebSocket cho mạng không ổn định
-- [ ] Thêm API versioning cho tương thích ngược
-- [ ] Cải thiện error logging và monitoring
-- [x] Thiết lập CI/CD pipeline tự động cho deploy (GitHub Actions + scripts/deploy_aws.py)
-
-
----
-# Triển khai nhiều máy chấm
-
-Xem [hướng dẫn nhiều máy chấm](docs/MULTI_JUDGE.md) để cấu hình worker riêng, giới hạn tải, phục hồi công việc và đo thời gian trả kết quả trước giải.
+Trước khi gửi thay đổi, kiểm tra diff, chạy kiểm thử phù hợp, cập nhật tài liệu liên quan và bảo đảm không đưa secret hoặc dữ liệu cá nhân vào commit. Thay đổi schema, khóa mã hóa hoặc cơ chế hàng đợi cần có kế hoạch backup và rollback. Thay đổi UI nên được kiểm tra ở desktop/mobile, cả sáng/tối và bằng bàn phím.

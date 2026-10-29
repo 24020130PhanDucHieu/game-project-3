@@ -69,7 +69,7 @@
   --secondary: oklch(0.968 0.007 247);
   --secondary-foreground: oklch(0.28 0.03 265);
   --muted: oklch(0.968 0.007 247);
-  --muted-foreground: oklch(0.55 0.025 257);
+  --muted-foreground: oklch(0.48 0.025 257);
   --accent: oklch(0.955 0.02 274);
   --accent-foreground: oklch(0.42 0.2 274);
   --destructive: oklch(0.6 0.22 22);
@@ -111,7 +111,7 @@
   --secondary: oklch(0.26 0.045 280);
   --secondary-foreground: oklch(0.97 0.006 280);
   --muted: oklch(0.24 0.04 280);
-  --muted-foreground: oklch(0.74 0.03 280);
+  --muted-foreground: oklch(0.79 0.02 280);
   --accent: oklch(0.3 0.08 285);
   --accent-foreground: oklch(0.92 0.06 290);
   --destructive: oklch(0.704 0.191 22.216);
@@ -531,3 +531,18 @@ html[data-fx='lite'] .fx-screen-enter,html[data-fx='off'] .fx-screen-enter { ani
 @media (prefers-reduced-motion:reduce) {
   html[data-vt]::view-transition-old(arena-content),html[data-vt]::view-transition-new(arena-content) { animation:none!important; }
 }
+
+/* Compact desktop navigation; mobile keeps full labels. */
+.desktop-sidebar { transition:width .2s ease-out; }
+.sidebar-body[data-collapsed='true'] .sidebar-brand { justify-content:center; padding-inline:0; }
+.sidebar-body[data-collapsed='true'] nav { padding-inline:8px; }
+.sidebar-body[data-collapsed='true'] nav > p,.sidebar-body[data-collapsed='true'] .sidebar-label { display:none; }
+.sidebar-body[data-collapsed='true'] nav > button { justify-content:center; min-height:44px; padding-inline:0; }
+.sidebar-body[data-collapsed='true'] .sidebar-footer { padding:10px 8px; }
+.sidebar-body[data-collapsed='true'] .sidebar-footer > div { justify-content:center; padding:8px 0; }
+.sidebar-body[data-collapsed='true'] .sidebar-footer > div > div:last-child { display:none; }
+.sidebar-body[data-collapsed='true'] .sidebar-footer > button { justify-content:center; width:100%; }
+.sidebar-body[data-collapsed='true'] .nav-curve { left:8px; right:8px; border-radius:10px; }
+.sidebar-body[data-collapsed='true'] .nav-curve::before,.sidebar-body[data-collapsed='true'] .nav-curve::after { display:none; }
+@media (prefers-reduced-motion:reduce) { .desktop-sidebar { transition:none; } }
+html[data-fx='lite'] .desktop-sidebar,html[data-fx='off'] .desktop-sidebar { transition:none; }
