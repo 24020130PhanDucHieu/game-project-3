@@ -13,7 +13,9 @@ import { MatchCard, useNow, useRanking, winnerSide } from '../shared'
 import { BOARD_THEMES } from '../board-themes'
 import { BracketTree } from '../bracket-tree'
 
-const Board3D = dynamic(() => import('../board-3d'), { ssr: false })
+import { safeBoard3D } from '../board-3d-loader'
+
+const Board3D = dynamic(() => safeBoard3D(() => import('../board-3d')), { ssr: false })
 
 const SLIDE_MS = 20_000
 type Slide = 'bracket' | 'live' | 'top' | 'clock'

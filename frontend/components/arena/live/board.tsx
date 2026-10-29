@@ -10,7 +10,9 @@ import type { Board3DHandle, CameraMode } from './board-3d'
 import { BASES, BOARD_THEMES, PIECE_ICON, useBoardTheme, type BoardTheme } from './board-themes'
 import { asCells, findPiece, highlightFor, NO_HIGHLIGHT, type Highlight } from './board-logic'
 
-const Board3D = dynamic(() => import('./board-3d'), {
+import { safeBoard3D } from './board-3d-loader'
+
+const Board3D = dynamic(() => safeBoard3D(() => import('./board-3d')), {
   ssr: false,
   loading: () => <div className="grid aspect-[4/3] min-h-[320px] w-full place-items-center rounded-2xl border border-border bg-muted/40 text-sm text-muted-foreground">Đang dựng sân đấu 3D…</div>,
 })

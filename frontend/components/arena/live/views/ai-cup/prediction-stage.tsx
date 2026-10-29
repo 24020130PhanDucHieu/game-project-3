@@ -8,7 +8,9 @@ import { Board } from '../../board'
 import { BOARD_THEMES } from '../../board-themes'
 import { Button } from '../../ui'
 
-const Board3D = dynamic(() => import('../../board-3d'), { ssr: false, loading: () => <div className="grid min-h-80 place-items-center text-sm text-muted-foreground">Đang dựng bàn cờ 3D…</div> })
+import { safeBoard3D } from '../../board-3d-loader'
+
+const Board3D = dynamic(() => safeBoard3D(() => import('../../board-3d')), { ssr: false, loading: () => <div className="grid min-h-80 place-items-center text-sm text-muted-foreground">Đang dựng bàn cờ 3D…</div> })
 const theme = BOARD_THEMES[0]
 
 export function PredictionStage({ step, index, total, side, truth, prediction, error, onIndex }: {
