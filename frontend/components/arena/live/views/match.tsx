@@ -4,7 +4,7 @@ import { MotionBanner } from '../motion-banner'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, Check, CheckCircle2, ClipboardList, Clock, Code2, Crown, DoorOpen, Handshake, Hourglass, History, MessagesSquare, PlayCircle, Radio, Search, ShieldAlert, Swords, Trophy } from 'lucide-react'
-import { arenaApi } from '@/lib/api-client'
+import { arenaApi, prefetchTaskData } from '@/lib/api-client'
 import { invalidate, useResource } from '@/lib/cache'
 import { cn } from '@/lib/utils'
 import { countdown, decodeRule, sameStudent, shortTime, stamp } from '@/lib/format'
@@ -350,6 +350,10 @@ function SubmitPanel({ tournamentId, matchId, match, tournament }: { tournamentI
   else if (['BATTLE_RUNNING', 'ROUND_FINISHED'].includes(match.round_status)) blocked = 'Hiệp đang chạy / nghỉ giữa hiệp — chờ hiệp kế tiếp để nộp bot mới.'
   const [submitting, setSubmitting] = useState(false)
   const taskCheck = useRoundTaskCheck(tournamentId, matchId)
+  const hasTask = tournament.round_mode === 'TASK' && !!match.current_task
+  useEffect(() => {
+    if (hasTask && inRoom) prefetchTaskData([() => arenaApi.getAiMainMatchTask(tournamentId, matchId)])
+  }, [hasTask, inRoom, tournamentId, matchId, match.current_round_idx])
   const pending = outbox.filter((o) => o.kind === 'match' && o.matchId === matchId)
   const round = match.current_round_idx || 1
   const subs = useResource<any[]>(inRoom ? `subs:${scope}:${tournamentId}:${matchId}` : null, () => arenaApi.getSubmissions(tournamentId, matchId).then((r: any) => (Array.isArray(r) ? r : [])), { ttl: 5_000, refreshMs: 15_000 })

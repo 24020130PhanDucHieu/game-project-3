@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Cpu, FlaskConical, Info, Save } from 'lucide-react'
-import { arenaApi } from '@/lib/api-client'
+import { arenaApi, prefetchTaskData } from '@/lib/api-client'
 import { invalidate } from '@/lib/cache'
 import { offlineEngine } from '@/lib/offline-engine'
 import { enqueue, isRetryable, newSubmissionId } from '@/lib/outbox'
@@ -67,6 +67,11 @@ export function SubmitTab({ eventId, event, problem, detail, mine, blocked, onMi
   const [checkError, setCheckError] = useState('')
   const [viewing, setViewing] = useState<any>(null)
   const [taskIndex, setTaskIndex] = useState('1')
+  // Tải sẵn dữ liệu mọi đề vào thiết bị khi còn mạng để chấm thử offline chạy ngay từ lần đầu.
+  const taskCount = tasksMode ? (problem?.tasks?.length || 0) : 0
+  useEffect(() => {
+    if (taskCount) prefetchTaskData(Array.from({ length: taskCount }, (_, i) => () => arenaApi.getAiCupTaskData(eventId, i + 1)))
+  }, [eventId, taskCount])
   const [taskCheck, setTaskCheck] = useState<{ n: number; name: string; visual: CheckVisualData } | null>(null)
   const [live, setLive] = useState<number[]>([])
   const history: any[] = detail.data?.history || []

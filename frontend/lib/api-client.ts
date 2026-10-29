@@ -44,6 +44,39 @@ export function clearSessionToken(): void {
   localStorage.removeItem('ARENA_TEAM_NAME')
 }
 
+export type TaskData = { kind: string; meta: any; train: { X: any[]; y: number[] } }
+
+/**
+ * Dữ liệu đề học máy được lưu bền trên thiết bị (Cache Storage) mỗi khi tải được, để chấm thử trên máy vẫn chạy
+ * khi mất mạng ngay cả lần đầu bấm "chấm thử". Có mạng thì luôn lấy bản mới; chỉ khi lỗi mạng mới dùng bản đã lưu.
+ */
+const TASK_STORE = 'arena-task-data-v1'
+async function withTaskStore(key: string, load: () => Promise<TaskData>): Promise<TaskData> {
+  const url = `/__task-data/${key}`
+  const store = async () => (typeof caches === 'undefined' ? null : caches.open(TASK_STORE).catch(() => null))
+  try {
+    const data = await load()
+    void store().then((c) => c?.put(url, new Response(JSON.stringify(data), { headers: { 'content-type': 'application/json' } }))).catch(() => undefined)
+    return data
+  } catch (error) {
+    const offline = (typeof navigator !== 'undefined' && navigator.onLine === false) || error instanceof TypeError || (error instanceof Error && /Failed to fetch|NetworkError|Load failed|quá chậm|mất kết nối/i.test(error.message))
+    if (offline) {
+      try {
+        const hit = await (await store())?.match(url)
+        if (hit) return (await hit.json()) as TaskData
+      } catch { /* dùng lỗi gốc */ }
+      throw new Error('Chưa có dữ liệu đề trên máy này. Hãy mở trang này một lần khi còn mạng (trang sẽ tự tải sẵn đề), rồi chấm thử offline được.')
+    }
+    throw error
+  }
+}
+
+/** Tải sẵn dữ liệu các đề vào bộ nhớ thiết bị (lặng lẽ, bỏ qua lỗi). */
+export function prefetchTaskData(loads: (() => Promise<unknown>)[]) {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return
+  void (async () => { for (const load of loads) { try { await load() } catch { /* bỏ qua */ } } })()
+}
+
 export async function apiRequest<T = any>(
   endpoint: string,
   options: RequestInit = {},
@@ -484,7 +517,7 @@ export const arenaApi = {
     return apiRequest<{ tasks: any[]; locked: boolean; count: number }>(`/ai-cup/${encodeURIComponent(qid)}/tasks`, { cache: 'no-store' })
   },
   async getAiCupTaskData(qid: string, n: number) {
-    return apiRequest<{ kind: string; meta: any; train: { X: any[]; y: number[] } }>(`/ai-cup/${encodeURIComponent(qid)}/tasks/${n}/data`)
+    return withTaskStore(`ai-cup/${qid}/${n}`, () => apiRequest<TaskData>(`/ai-cup/${encodeURIComponent(qid)}/tasks/${n}/data`))
   },
   aiCupTaskDataUrl(qid: string, n: number) {
     return `${getApiBaseUrl()}/api/ai-cup/${encodeURIComponent(qid)}/tasks/${n}/data`
@@ -507,7 +540,7 @@ export const arenaApi = {
     return apiRequest<any>(`/ai-main/${encodeURIComponent(tid)}/tasks/${lock ? 'lock' : 'unlock'}`, { method: 'POST' })
   },
   async getAiMainMatchTask(tid: string, mid: string) {
-    return apiRequest<{ kind: string; meta: any; train: { X: any[]; y: number[] } }>(`/ai-main/${encodeURIComponent(tid)}/matches/${encodeURIComponent(mid)}/task`, { cache: 'no-store' })
+    return withTaskStore(`ai-main/${tid}/${mid}`, () => apiRequest<TaskData>(`/ai-main/${encodeURIComponent(tid)}/matches/${encodeURIComponent(mid)}/task`, { cache: 'no-store' }))
   },
 
   // Giải chính AI: báo cáo kỹ thuật, chấm rubric, huy hiệu
