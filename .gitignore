@@ -51,6 +51,7 @@ cloudflared.exe
 # Deployment credentials
 *.pem
 *.key
+*.pub
 .env
 .env.*
 !.env.example
