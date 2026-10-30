@@ -136,14 +136,14 @@ export function MonitorTab({ onGo }: { onGo: Go }) {
         </div>
       </Card>
 
-      <Card title="Máy chấm (worker)" subtitle={`${pool.ready ?? 0}/${pool.total ?? 0} sẵn sàng · ${pool.in_flight ?? 0}/${pool.capacity ?? 0} tác vụ đang chạy`} action={<StatusBadge status={pool.status} />}>
-        {!!nodes.length && <div className="mb-5 grid gap-4 md:grid-cols-2">
+      <Card title={`Máy chấm (${pool.total ?? nodes.length} máy)`} subtitle={`${pool.ready ?? 0}/${pool.total ?? 0} sẵn sàng · ${pool.in_flight ?? 0}/${pool.capacity ?? 0} tác vụ đang chạy`} action={<StatusBadge status={pool.status} />}>
+        {!!nodes.length && <div className="mb-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {nodes.map((n, i) => <section key={n.host || i} className="rounded-xl border border-border bg-muted/20 p-4">
             <div className="flex items-center justify-between gap-3">
               <h3 className="flex items-center gap-2 font-semibold"><Server className="size-4 text-primary" />Server {i + 1} · {n.provider || 'Chưa xác minh nhà cung cấp'}</h3>
               <StatusBadge status={n.status === 'UNREACHABLE' ? 'UNAVAILABLE' : n.status} label={n.status} />
             </div>
-            <p className="mt-2 text-sm text-muted-foreground">{n.with_gateway === true ? 'Gateway/API và máy chấm trên cùng server' : n.with_gateway === false ? 'Máy chấm qua mạng, tách khỏi tiến trình gateway' : 'Chưa xác minh vai trò server'}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{n.transport === 'ssh-tunnel' ? 'Máy chấm từ xa qua đường hầm SSH mã hóa' : n.with_gateway === true ? 'Gateway/API và máy chấm trên cùng server' : n.with_gateway === false ? 'Máy chấm qua mạng, tách khỏi tiến trình gateway' : 'Chưa xác minh vai trò server'}</p>
             <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
               <div><dt className="text-xs text-muted-foreground">IP công khai (cấu hình)</dt><dd className="font-mono font-semibold">{n.public_ip || 'Chưa cấu hình'}</dd></div>
               <div><dt className="text-xs text-muted-foreground">Địa chỉ gateway gọi</dt><dd className="break-all font-mono">{n.host || '—'}</dd></div>
@@ -158,7 +158,7 @@ export function MonitorTab({ onGo }: { onGo: Go }) {
           <DataTable head={['Máy', 'Trạng thái', 'Đang chạy / Sức chứa', 'Đã chạy', 'Lỗi', 'Trung bình', 'Thành công']}>
             {nodes.map((n, i) => (
               <tr key={i}>
-                <td className="px-3 py-2.5 font-medium">{n.name}{n.public_ip && <span className="ml-2 rounded bg-primary/10 px-1.5 py-0.5 font-mono text-xs text-primary">{n.public_ip}</span>}<span className="block font-mono text-xs text-muted-foreground">{n.public_ip ? 'gọi qua ' : ''}{n.host}{/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(n.host || '') ? ' · IP nội bộ VPC' : /^(127\.|localhost)/.test(n.host || '') ? ' · cùng máy với gateway' : ''}</span></td>
+                <td className="px-3 py-2.5 font-medium">{n.name}{n.public_ip && <span className="ml-2 rounded bg-primary/10 px-1.5 py-0.5 font-mono text-xs text-primary">{n.public_ip}</span>}<span className="block font-mono text-xs text-muted-foreground">{n.public_ip ? 'gọi qua ' : ''}{n.host}{n.transport === 'ssh-tunnel' ? ' · đường hầm SSH tới máy từ xa' : /^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(n.host || '') ? ' · IP nội bộ VPC' : n.with_gateway === true ? ' · cùng máy với gateway' : ''}</span></td>
                 <td className="px-3 py-2.5"><StatusBadge status={n.status === 'UNREACHABLE' ? 'UNAVAILABLE' : n.status === 'HEALTHY' || n.status === 'READY' ? 'READY' : n.status} label={n.status} /></td>
                 <td className="px-3 py-2.5 tabular-nums">{n.active}/{n.capacity}</td>
                 <td className="px-3 py-2.5 tabular-nums">{n.finished}</td>

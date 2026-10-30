@@ -1,0 +1,27 @@
+[Unit]
+Description=Encrypted connection to the Oracle judge
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+User=arena-tunnel
+Group=arena-tunnel
+ExecStart=/usr/bin/ssh -N -T -o BatchMode=yes -o ConnectTimeout=10 -o ExitOnForwardFailure=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=3 -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/var/lib/arena-tunnel/known_hosts -i /var/lib/arena-tunnel/id_ed25519 -L 127.0.0.1:18003:127.0.0.1:8001 ubuntu@129.225.130.7
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+MemoryMax=64M
+TasksMax=16
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

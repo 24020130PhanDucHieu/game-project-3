@@ -120,12 +120,14 @@ jobs:
         env:
           AWS_HOST: ${{ secrets.AWS_EC2_HOST || '13.250.49.111' }}
           AWS_WORKER_HOST: ${{ secrets.AWS_EC2_WORKER_HOST || '13.212.114.254' }}
+          ORACLE_WORKER_HOST: ${{ vars.ORACLE_WORKER_HOST || '129.225.130.7' }}
           AWS_USER: ${{ secrets.AWS_EC2_USER || 'ubuntu' }}
         run: |
           python scripts/deploy_aws.py \
             --skip-tests \
             --host "$AWS_HOST" \
             --worker-host "$AWS_WORKER_HOST" \
+            --oracle-host "$ORACLE_WORKER_HOST" \
             --user "$AWS_USER" \
             --key ~/.ssh/ec2_key.pem
 

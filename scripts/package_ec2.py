@@ -15,6 +15,7 @@ with tarfile.open(args.output, 'w:gz') as archive:
     archive.add(args.binary, arcname='server')
     files = [ROOT / name for name in tracked if name]
     files += list((ROOT / 'deploy/ec2').glob('*'))
+    files += list((ROOT / 'deploy/oracle').glob('*'))
     # The verified Next export is generated, so git ls-files cannot include it.
     files += [p for p in (ROOT / 'frontend/dist').rglob('*') if p.is_file()]
     for path in files:

@@ -25,6 +25,14 @@ class HostIdentityTests(unittest.TestCase):
         with patch('app.host_identity.Path.read_text', side_effect=PermissionError):
             self.assertIsNone(host_provider())
 
+    def test_oracle_micro_detected_from_local_cloud_init(self):
+        with patch('app.host_identity.Path.read_text', side_effect=['QEMU\n', 'oracle\n']):
+            self.assertEqual(host_provider(), 'Oracle Cloud')
+
+    def test_generic_qemu_without_oracle_datasource_is_unknown(self):
+        with patch('app.host_identity.Path.read_text', side_effect=['QEMU\n', 'nocloud\n']):
+            self.assertIsNone(host_provider())
+
 
 if __name__ == '__main__':
     unittest.main()

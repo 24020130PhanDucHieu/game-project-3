@@ -21,6 +21,7 @@ func (a *HTTPBotRunnerAdapter) Monitor(ctx context.Context) map[string]interface
 	var wg sync.WaitGroup
 	// IP công khai của từng máy chấm (cùng thứ tự WORKER_URLS); gateway vẫn gọi qua địa chỉ nội bộ cho nhanh và an toàn.
 	publicHosts := strings.Split(os.Getenv("WORKER_PUBLIC_HOSTS"), ",")
+	transports := strings.Split(os.Getenv("WORKER_TRANSPORTS"), ",")
 	for i, address := range a.workers {
 		wg.Add(1)
 		go func(i int, address string) {
@@ -52,6 +53,10 @@ func (a *HTTPBotRunnerAdapter) Monitor(ctx context.Context) map[string]interface
 				node["host"] = u.Host
 				ip := net.ParseIP(u.Hostname())
 				node["with_gateway"] = strings.EqualFold(u.Hostname(), "localhost") || (ip != nil && ip.IsLoopback())
+				if i < len(transports) && strings.TrimSpace(transports[i]) == "ssh-tunnel" {
+					node["transport"] = "ssh-tunnel"
+					node["with_gateway"] = false
+				}
 				if i < len(publicHosts) && strings.TrimSpace(publicHosts[i]) != "" {
 					node["public_ip"] = strings.TrimSpace(publicHosts[i])
 				}
@@ -72,9 +77,9 @@ func (a *HTTPBotRunnerAdapter) Monitor(ctx context.Context) map[string]interface
 						node["status"] = "UNHEALTHY"
 						if decodeErr == nil && res.StatusCode == 200 && strings.EqualFold(body.Status, "HEALTHY") {
 							node["status"] = "READY"
-							if body.Provider == "AWS EC2" {
+							if body.Provider == "AWS EC2" || body.Provider == "Oracle Cloud" {
 								node["provider"] = body.Provider
-								node["name"] = fmt.Sprintf("AWS EC2 · Máy chấm %d", i+1)
+								node["name"] = fmt.Sprintf("%s · Máy chấm %d", body.Provider, i+1)
 							}
 							a.observeCapacity(i, res.Header.Get("X-Worker-Capacity"))
 							a.poolMu.Lock()

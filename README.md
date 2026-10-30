@@ -96,7 +96,7 @@ Phân biệt các giới hạn:
 | `QUALIFIER_WORKERS` | Mức song song của bộ xử lý vòng loại |
 | `VALIDATION_WORKERS` | Mức song song của kiểm tra bài nộp |
 
-Cấu hình hai máy đã chọn sau đo đạc là mỗi máy 2 tác vụ, tổng cộng 4. Gateway dùng `JUDGE_CONCURRENCY=4`, `WORKER_CONCURRENCY=2`, `QUALIFIER_WORKERS=4`, `VALIDATION_WORKERS=4`; mỗi worker dùng `WORKER_CAPACITY=2`. Đây là cấu hình cho cụm đã kiểm tra, không phải giá trị phù hợp cho mọi máy.
+Cụm gồm hai máy AWS, mỗi máy 2 tác vụ, và một máy Oracle Micro với 1 tác vụ: tổng cộng tối đa 5. Gateway dùng `JUDGE_CONCURRENCY=5`, `WORKER_CONCURRENCY=2`, `QUALIFIER_WORKERS=5`, `VALIDATION_WORKERS=5`. Hai AWS dùng `WORKER_CAPACITY=2`; Oracle dùng `WORKER_CAPACITY=1` và `AI_TASK_CACHE=8` vì chỉ có khoảng 1 GB RAM. Gateway đọc giới hạn từng worker từ phản hồi thật, không áp mức 2 tác vụ cho Oracle. Chi tiết cấu hình và khôi phục kết nối nằm trong [hướng dẫn máy chấm Oracle](docs/oracle-worker.md).
 
 Không tăng song song chỉ dựa vào số CPU. Cần theo dõi RAM khả dụng, thời gian chấm, độ dài hàng đợi, timeout và tỷ lệ lỗi. Worker và gateway phải chạy phiên bản tương thích; `WORKER_RELEASE` hỗ trợ nhận diện phiên bản.
 
@@ -297,7 +297,7 @@ docker compose -f deploy/docker-compose.yml up -d --build
 docker compose -f deploy/docker-compose.yml logs -f
 ```
 
-Đặt biến môi trường cần thiết trước khi chạy. Cấu hình worker tách riêng nằm trong `deploy/judge-compose.yml`; không mặc định rằng một lệnh Compose sẽ tái tạo toàn bộ cụm AWS hai máy hiện tại.
+Đặt biến môi trường cần thiết trước khi chạy. Cấu hình worker tách riêng nằm trong `deploy/judge-compose.yml`; một lệnh Compose không tái tạo các máy AWS, Oracle và đường hầm SSH của cụm production.
 
 ## 11. Monitoring và xử lý sự cố
 

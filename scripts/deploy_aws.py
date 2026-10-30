@@ -26,6 +26,8 @@ import ssl
 import subprocess
 import sys
 import time
+import tarfile
+import tempfile
 import urllib.request
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -36,6 +38,7 @@ if hasattr(sys.stderr, "reconfigure"):
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_HOST = os.environ.get("AWS_EC2_HOST", "13.250.49.111")
 DEFAULT_WORKER_HOST = os.environ.get("AWS_EC2_WORKER_HOST", "13.212.114.254")
+DEFAULT_ORACLE_HOST = os.environ.get("ORACLE_WORKER_HOST", "129.225.130.7")
 DEFAULT_USER = os.environ.get("AWS_EC2_USER", "ubuntu")
 DEFAULT_KEY = os.environ.get("AWS_EC2_SSH_KEY_PATH", str(ROOT / "bot-backend-key.pem"))
 DEFAULT_HTTPS_URL = os.environ.get("AWS_BACKEND_URL", f"https://arena.{DEFAULT_HOST}.sslip.io")
@@ -230,6 +233,7 @@ fi
 sudo rm -rf -- /opt/arena/app/frontend-cu /opt/arena/app/frontend/dist
 sudo tar -xzf {remote_archive} -C /opt/arena/app
 rm -f {remote_archive}
+sudo /opt/arena/venv/bin/pip install --no-cache-dir -r /opt/arena/app/bot-runner/requirements.txt
 sudo systemctl restart arena-worker
 echo "WORKER_DEPLOY_OK"
 """
@@ -240,6 +244,17 @@ echo "WORKER_DEPLOY_OK"
     else:
         log(f"Warning: Secondary worker update had issues:\n{res.stdout}\n{res.stderr}", "WARN")
         return False
+
+
+def remote_deploy_oracle(user, host, key_path, local_archive):
+    """Send only worker source to the small Oracle host, not frontend assets."""
+    with tempfile.TemporaryDirectory(prefix="arena-oracle-") as tmp:
+        worker_archive = Path(tmp) / "worker.tar.gz"
+        with tarfile.open(local_archive, "r:gz") as source, tarfile.open(worker_archive, "w:gz") as target:
+            for member in source.getmembers():
+                if member.isfile() and member.name.startswith("bot-runner/"):
+                    target.addfile(member, source.extractfile(member))
+        return remote_deploy_worker(user, host, key_path, worker_archive)
 
 
 def verify_remote_health(https_url, user, host, key_path, retries=15, delay=2):
@@ -338,6 +353,7 @@ def main():
     parser = argparse.ArgumentParser(description="Automated AWS EC2 Deployment for Freshman Bot Arena")
     parser.add_argument("--host", default=DEFAULT_HOST, help=f"EC2 hostname or IP (default: {DEFAULT_HOST})")
     parser.add_argument("--worker-host", default=DEFAULT_WORKER_HOST, help=f"Secondary EC2 worker IP (default: {DEFAULT_WORKER_HOST})")
+    parser.add_argument("--oracle-host", default=DEFAULT_ORACLE_HOST, help="Oracle worker IP; pass an empty string to omit")
     parser.add_argument("--user", default=DEFAULT_USER, help=f"SSH username (default: {DEFAULT_USER})")
     parser.add_argument("--key", default=DEFAULT_KEY, help=f"Path to SSH .pem private key (default: {DEFAULT_KEY})")
     parser.add_argument("--https-url", default=DEFAULT_HTTPS_URL, help=f"Public HTTPS endpoint (default: {DEFAULT_HTTPS_URL})")
@@ -366,6 +382,8 @@ def main():
     print(f"  Primary:   {args.user}@{args.host} ({args.https_url})")
     if args.worker_host:
         print(f"  Secondary: {args.user}@{args.worker_host} (Worker Pool)")
+    if args.oracle_host:
+        print(f"  Oracle:    {args.user}@{args.oracle_host} (Worker Pool)")
     print(f"  Key:       {key_path.name}")
     print("=" * 65)
 
@@ -392,7 +410,11 @@ def main():
 
     # 5b. Remote deployment on secondary worker host (if configured)
     if args.worker_host:
-        remote_deploy_worker(args.user, args.worker_host, key_path, archive_path)
+        if not remote_deploy_worker(args.user, args.worker_host, key_path, archive_path):
+            sys.exit("Secondary AWS worker deployment failed")
+    if args.oracle_host:
+        if not remote_deploy_oracle(args.user, args.oracle_host, key_path, archive_path):
+            sys.exit("Oracle worker deployment failed")
 
     # 6. Post-deployment verification
     healthy = verify_remote_health(args.https_url, args.user, args.host, key_path)

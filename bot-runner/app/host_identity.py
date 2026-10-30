@@ -8,5 +8,13 @@ def host_provider():
     try:
         vendor = Path('/sys/class/dmi/id/sys_vendor').read_text().strip()
     except (OSError, UnicodeError):
-        return None
-    return 'AWS EC2' if vendor == 'Amazon EC2' else None
+        vendor = ''
+    if vendor == 'Amazon EC2':
+        return 'AWS EC2'
+    # OCI Micro exposes generic QEMU DMI. cloud-init records the actual
+    # datasource locally, so health never needs access to cloud metadata.
+    try:
+        cloud = Path('/run/cloud-init/cloud-id').read_text().strip().lower()
+    except (OSError, UnicodeError):
+        cloud = ''
+    return 'Oracle Cloud' if cloud == 'oracle' else None

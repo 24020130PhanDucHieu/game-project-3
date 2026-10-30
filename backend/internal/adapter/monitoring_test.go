@@ -37,6 +37,38 @@ func TestMonitorReportsActualWorkersAndRelease(t *testing.T) {
 	}
 }
 
+func TestMonitorThreeCloudWorkersWithTunnelAndMixedCapacity(t *testing.T) {
+	t.Setenv("WORKER_RELEASE", "")
+	t.Setenv("WORKER_CONCURRENCY", "2")
+	t.Setenv("JUDGE_CONCURRENCY", "5")
+	t.Setenv("WORKER_TRANSPORTS", "local,private,ssh-tunnel")
+	t.Setenv("WORKER_PUBLIC_HOSTS", "203.0.113.10,203.0.113.11,203.0.113.12")
+	aws := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Worker-Capacity", "2")
+		w.Write([]byte(`{"status":"HEALTHY","provider":"AWS EC2"}`))
+	}))
+	defer aws.Close()
+	aws2 := httptest.NewServer(aws.Config.Handler)
+	defer aws2.Close()
+	oracle := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Worker-Capacity", "1")
+		w.Write([]byte(`{"status":"HEALTHY","provider":"Oracle Cloud"}`))
+	}))
+	defer oracle.Close()
+	a := NewHTTPBotRunnerAdapter(aws.URL + "/mutate-tournament," + aws2.URL + "/mutate-tournament," + oracle.URL + "/mutate-tournament")
+	got := a.Monitor(context.Background())
+	nodes := got["nodes"].([]map[string]interface{})
+	if got["ready"] != 3 || got["total"] != 3 || got["capacity"] != 5 {
+		t.Fatal(got)
+	}
+	if nodes[2]["provider"] != "Oracle Cloud" || nodes[2]["with_gateway"] != false || nodes[2]["transport"] != "ssh-tunnel" || nodes[2]["capacity"] != 1 {
+		t.Fatal(nodes[2])
+	}
+	if nodes[0]["capacity"] != 2 || nodes[1]["capacity"] != 2 {
+		t.Fatal(nodes)
+	}
+}
+
 func TestMonitoringCountsFailedAttemptsAndLearnsCapacity(t *testing.T) {
 	t.Setenv("WORKER_CONCURRENCY", "2")
 	t.Setenv("WORKER_RELEASE", "")
